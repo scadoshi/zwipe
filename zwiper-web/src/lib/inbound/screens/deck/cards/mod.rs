@@ -7,9 +7,14 @@ pub(crate) mod editor;
 pub(crate) mod quick_add;
 pub mod remove;
 
-use components::{CardDetailsPanel, CardDetailsPanelSkeleton, TOAST_NORMAL};
+use std::collections::HashMap;
+
+use components::{
+    CardDetailsPanel, CardDetailsPanelSkeleton, TOAST_NORMAL, share_face, use_shared_face,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts};
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_ui::deck_signals::Level;
 use zwipe_ui::stack::NO_CARDS_LEFT;
@@ -94,26 +99,49 @@ impl OneLine {
 
 /// The top card's details beside it on a wide window, what the phone keeps
 /// behind the eye button, or their ghost while the cards load. With
-/// `on_printings` the pane offers Printings, as the drawer does.
+/// `on_printings` the pane offers Printings, as the drawer does. `faces`,
+/// when the screen keeps each card's face there, is the face the pane shows
+/// and the one its Flip turns.
 #[component]
 fn SwipeDetails(
     card: Option<Card>,
     #[props(default)] loading: bool,
     #[props(default)] on_printings: Option<EventHandler<()>>,
+    #[props(default)] faces: Option<Signal<HashMap<Uuid, usize>>>,
 ) -> Element {
-    let describe_tag = use_describe_tag();
     rsx! {
         div { class: "web-swipe-details",
             if let Some(card) = card {
-                CardDetailsPanel {
+                SwipeDetailsPanel {
                     key: "{card.scryfall_data.id}",
                     card,
-                    describe_tag: Some(describe_tag),
                     on_printings,
+                    faces,
                 }
             } else if loading {
                 CardDetailsPanelSkeleton {}
             }
+        }
+    }
+}
+
+/// One card's pane in [`SwipeDetails`], keyed by the card so its face is that card's.
+#[component]
+fn SwipeDetailsPanel(
+    card: Card,
+    on_printings: Option<EventHandler<()>>,
+    faces: Option<Signal<HashMap<Uuid, usize>>>,
+) -> Element {
+    let describe_tag = use_describe_tag();
+    let id = card.scryfall_data.id;
+    let face = use_shared_face(faces, id);
+    rsx! {
+        CardDetailsPanel {
+            card,
+            describe_tag: Some(describe_tag),
+            on_printings,
+            face,
+            on_face_change: share_face(faces, id),
         }
     }
 }

@@ -14,7 +14,11 @@
 //!
 //! [`CardRow`]: crate::CardRow
 
+use std::collections::HashMap;
+use std::hash::BuildHasher;
+
 use dioxus::prelude::*;
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
@@ -108,6 +112,49 @@ fn build_rules(card: &Card) -> Option<Vec<FaceRules>> {
 #[must_use]
 pub fn card_face_count(card: &Card) -> usize {
     build_rules(card).map_or(0, |f| f.len())
+}
+
+/// The face Flip turns `card` to from `face`, the front after the last, or `None` for a card
+/// with one face (a meld half turns through Meld instead).
+#[must_use]
+pub fn next_card_face(card: &Card, face: usize) -> Option<usize> {
+    let count = card_face_count(card);
+    (count > 1).then(|| face.saturating_add(1).checked_rem(count).unwrap_or(0))
+}
+
+/// The face card `id` shows when its host keeps every card's face in `faces`, as a signal for
+/// one surface's image or details: it follows the map, so a flip anywhere turns every surface
+/// the host gives the map. The surface writes its own flips back through its `on_face_change`.
+/// `None` without a map, leaving the surface its own face. Call it from a component keyed by
+/// the card.
+pub fn use_shared_face<S: BuildHasher + 'static>(
+    faces: Option<Signal<HashMap<Uuid, usize, S>>>,
+    id: Uuid,
+) -> Option<Signal<usize>> {
+    let shared = faces.map(|faces| faces.read().get(&id).copied().unwrap_or(0));
+    let mut face = use_signal(|| shared.unwrap_or(0));
+    use_effect(use_reactive!(|shared| {
+        if let Some(shared) = shared
+            && *face.peek() != shared
+        {
+            face.set(shared);
+        }
+    }));
+    faces.map(|_| face)
+}
+
+/// The `on_face_change` that writes card `id`'s flips into its host's `faces`, the other half
+/// of [`use_shared_face`].
+#[must_use]
+pub fn share_face<S: BuildHasher + 'static>(
+    faces: Option<Signal<HashMap<Uuid, usize, S>>>,
+    id: Uuid,
+) -> Option<EventHandler<usize>> {
+    faces.map(|mut faces| {
+        EventHandler::new(move |face: usize| {
+            faces.write().insert(id, face);
+        })
+    })
 }
 
 /// A face's kind as a chip row: its mana cost's pips when `cost` is given,
@@ -689,5 +736,59 @@ mod tests {
         }
         let back = render(back);
         assert!(back.contains(r#"data-face="1""#), "{back}");
+    }
+
+    /// A split card: the fixture with Response // Resurgence's two halves, one image between them.
+    fn response() -> Card {
+        let mut card: Value = serde_json::from_str(CARD_JSON).unwrap();
+        let sd = card.get_mut("scryfall_data").unwrap();
+        sd["name"] = json!("Response // Resurgence");
+        sd["oracle_text"] = Value::Null;
+        sd["card_faces"] = json!([
+            {
+                "object": "card_face",
+                "name": "Response",
+                "mana_cost": "{R/W}{R/W}",
+                "type_line": "Instant",
+                "oracle_text": "Response deals 5 damage to target attacking or blocking creature."
+            },
+            {
+                "object": "card_face",
+                "name": "Resurgence",
+                "mana_cost": "{3}{R}{W}",
+                "type_line": "Sorcery",
+                "oracle_text": "Creatures you control gain first strike and vigilance until end of turn."
+            }
+        ]);
+        serde_json::from_value(card).unwrap()
+    }
+
+    #[test]
+    fn flip_turns_a_split_card_to_its_other_half_and_back() {
+        let split = response();
+        assert_eq!(next_card_face(&split, 0), Some(1));
+        assert_eq!(next_card_face(&split, 1), Some(0));
+        assert_eq!(next_card_face(&delver(), 1), Some(0));
+        let single: Card = serde_json::from_str(CARD_JSON).unwrap();
+        assert_eq!(
+            next_card_face(&single, 0),
+            None,
+            "one face has nothing to turn to"
+        );
+    }
+
+    #[test]
+    fn a_shared_face_shows_that_half_in_the_panel() {
+        fn shared() -> Element {
+            let card = response();
+            let id = card.scryfall_data.id;
+            let faces = use_signal(|| HashMap::from([(id, 1)]));
+            let face = use_shared_face(Some(faces), id);
+            rsx! { CardDetailsPanel { card, face } }
+        }
+        let html = render(shared);
+        assert!(html.contains("Sorcery"), "{html}");
+        assert!(html.contains("first strike and vigilance"), "{html}");
+        assert!(!html.contains("5 damage"), "{html}");
     }
 }

@@ -10,16 +10,16 @@
 //! The search stack and the filters live in the root stores, so leaving and
 //! coming back to the same deck resumes where swiping stopped.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use components::icons::{BoltIcon, DockIcon, REFRESH};
-use components::keys::{use_page_keys, use_undo_key};
+use components::keys::{use_page_keys_through, use_undo_key};
 use components::swipe_stack::{
     self, Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use components::{
     CardSkeleton, Chip, DockEye, DockFilter, LoadFailed, SheetFrame, SheetWide, Surface,
-    TOAST_NORMAL, TOAST_QUICK, reset_image_ease, use_back_online, use_details_eye,
+    TOAST_NORMAL, TOAST_QUICK, next_card_face, reset_image_ease, use_back_online, use_details_eye,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -110,6 +110,12 @@ impl AddSource {
 /// The swipe directions every Add stack takes.
 const ALL_SWIPES: [Swipe; 4] = [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Down];
 
+/// The class of the card details drawer, the one sheet `v` reaches the screen through.
+const DETAILS_DRAWER_CLASS: &str = "card-details-drawer";
+
+/// The keys that turn the card, from the screen or its details drawer.
+const FLIP_KEYS: [&str; 2] = ["v", "V"];
+
 /// The Add cards screen for `deck_id`.
 #[component]
 pub fn AddDeckCard(deck_id: Uuid) -> Element {
@@ -154,6 +160,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let mut first_run = use_signal(|| true);
     let mut show_details = use_signal(|| false);
     let eye = use_details_eye(show_details, Surface::Window);
+    // The face each card shows, the front where it has none: its stack image,
+    // its pane and its drawer show it, and Flip, the image's flip and `v`
+    // turn it.
+    let mut faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
     let mut printing_open = use_signal(|| false);
     let mut filter_open = use_signal(|| false);
     let mut pull_from: Signal<Option<(f64, f64)>> = use_signal(|| None);
@@ -964,36 +974,62 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         );
     });
     // The swipe screen's letter keys, each the same action as its dock
-    // button; the swipes come through the swipe keys above.
-    use_page_keys(Callback::new(move |key: String| {
-        match shortcuts::swipe_screen_shortcut(&key) {
-            Some(Shortcut::Printings) => {
-                if *source.peek() == AddSource::Search
-                    && stack.peek().current().is_some()
-                    && revealing.peek().is_none()
-                {
-                    printing_open.set(true);
-                }
-            }
-            Some(Shortcut::Details) => {
-                // As the eye button, which is off while no card shows.
-                let has_card = match *source.peek() {
-                    AddSource::Search => {
-                        stack.peek().current().is_some() && revealing.peek().is_none()
+    // button; the swipes come through the swipe keys above. `v` also turns
+    // the card from its open details drawer.
+    use_page_keys_through(
+        DETAILS_DRAWER_CLASS,
+        &FLIP_KEYS,
+        Callback::new(move |key: String| {
+            match shortcuts::swipe_screen_shortcut(&key) {
+                Some(Shortcut::Printings) => {
+                    if *source.peek() == AddSource::Search
+                        && stack.peek().current().is_some()
+                        && revealing.peek().is_none()
+                    {
+                        printing_open.set(true);
                     }
-                    AddSource::Maybeboard => mb_stack.peek().current_wrapping().is_some(),
-                };
-                if has_card {
-                    eye.press();
                 }
+                Some(Shortcut::Details) => {
+                    // As the eye button, which is off while no card shows.
+                    let has_card = match *source.peek() {
+                        AddSource::Search => {
+                            stack.peek().current().is_some() && revealing.peek().is_none()
+                        }
+                        AddSource::Maybeboard => mb_stack.peek().current_wrapping().is_some(),
+                    };
+                    if has_card {
+                        eye.press();
+                    }
+                }
+                Some(Shortcut::Flip) => {
+                    let card = match *source.peek() {
+                        AddSource::Search => stack
+                            .peek()
+                            .current()
+                            .filter(|_| revealing.peek().is_none())
+                            .cloned(),
+                        AddSource::Maybeboard => mb_stack.peek().current_wrapping().cloned(),
+                    };
+                    let Some(card) = card else {
+                        return;
+                    };
+                    let id = card.scryfall_data.id;
+                    let face = faces.peek().get(&id).copied().unwrap_or(0);
+                    match next_card_face(&card, face) {
+                        Some(next) => {
+                            faces.write().insert(id, next);
+                        }
+                        // A meld half: the stack card's Meld.
+                        None => swipe_stack::flip_top_card(),
+                    }
+                }
+                Some(Shortcut::Filter) => filter_open.set(true),
+                Some(Shortcut::Refresh) => refresh.call(()),
+                Some(Shortcut::Synergy) => toggle_synergy.call(()),
+                Some(Shortcut::Swipe(_)) | None => {}
             }
-            Some(Shortcut::Flip) => swipe_stack::flip_top_card(),
-            Some(Shortcut::Filter) => filter_open.set(true),
-            Some(Shortcut::Refresh) => refresh.call(()),
-            Some(Shortcut::Synergy) => toggle_synergy.call(()),
-            Some(Shortcut::Swipe(_)) | None => {}
-        }
-    }));
+        }),
+    );
 
     let ctx = deck.read().as_ref().map_or_default(AddDeck::context);
     let has_commander = ctx.has_commander;
@@ -1108,6 +1144,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                     },
                                     ghost: rsx! { CardSkeleton {} },
                                     hold: reveal.is_some(),
+                                    faces,
                                 }
                             }
                         } else if end_of_pile {
@@ -1144,6 +1181,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 }
                 SwipeDetails {
                     card: current.clone(),
+                    faces,
                     on_printings: (at == AddSource::Search).then(|| EventHandler::new(move |()| printing_open.set(true))),
                     loading: (end_of_pile && loading_more())
                         || (at == AddSource::Search && (loading_cards() || reveal.is_some())),
@@ -1197,15 +1235,31 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             }
         }
         if let Some(card) = current {
-            SheetFrame { wide: SheetWide::Modal,
-                if at == AddSource::Search {
-                    CardDetailsSheet {
-                        open: show_details,
-                        card: card.clone(),
-                        on_printings: move |()| printing_open.set(true),
+            {
+                let id = card.scryfall_data.id;
+                let face = faces.read().get(&id).copied().unwrap_or(0);
+                let on_face_change = move |next: usize| {
+                    faces.write().insert(id, next);
+                };
+                rsx! {
+                    SheetFrame { wide: SheetWide::Modal,
+                        if at == AddSource::Search {
+                            CardDetailsSheet {
+                                open: show_details,
+                                card: card.clone(),
+                                on_printings: move |()| printing_open.set(true),
+                                face,
+                                on_face_change,
+                            }
+                        } else {
+                            CardDetailsSheet {
+                                open: show_details,
+                                card: card.clone(),
+                                face,
+                                on_face_change,
+                            }
+                        }
                     }
-                } else {
-                    CardDetailsSheet { open: show_details, card: card.clone() }
                 }
             }
             if at == AddSource::Search {

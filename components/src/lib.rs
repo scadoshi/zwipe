@@ -113,6 +113,7 @@ pub use buy::{CART, CartButton, StoreDialog, store_actions};
 pub use card_actions::{CardBoardMoves, CardEditButtons};
 pub use card_details::{
     CardDetails, CardDetailsCost, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count,
+    next_card_face, share_face, use_shared_face,
 };
 pub use card_details_sheet::CardDetailsSheet;
 pub use card_filter::{CardFilterPanel, DictionarySlot, OPEN_SECTION_SCROLL_JS};

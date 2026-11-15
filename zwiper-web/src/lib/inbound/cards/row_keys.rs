@@ -135,10 +135,8 @@ pub(crate) fn use_card_row_keys_and(
                         }
                     }
                     RowKey::Flip => {
-                        let count = components::card_face_count(&card);
-                        if count > 1 {
+                        if let Some(next) = components::next_card_face(&card, face) {
                             if let Some(faces) = faces {
-                                let next = face.saturating_add(1).checked_rem(count).unwrap_or(0);
                                 faces.set(id, next);
                             }
                         } else if card.scryfall_data.meld().is_some() {

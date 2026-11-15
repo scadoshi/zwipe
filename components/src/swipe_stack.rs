@@ -9,13 +9,13 @@
 //! animate the same way a drag does, and a press before the last card is half way out is dropped, so
 //! two exits overlap at most by half.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_ui::stack::{Direction, STACK_DEPTH, ghost_held};
 use zwipe_ui::telemetry::SwipeDirection;
 use zwipe_ui::timing::TOP_PAINT_GRACE;
@@ -200,6 +200,8 @@ pub fn use_swipe_control() -> SwipeControl {
 #[derive(Debug, Clone, PartialEq)]
 struct Exiting {
     key: Uuid,
+    /// The face it shows as it goes.
+    face: usize,
     card: Card,
     direction: Direction,
     from_x: f64,
@@ -228,7 +230,9 @@ impl Drag {
 /// stack draws `ghost` under its cards and hides the cards under the top,
 /// so neither an empty slot nor another card shows while the top's image
 /// arrives. `hold` keeps the ghost up regardless, for a pile the host has
-/// yet to show.
+/// yet to show. `faces`, when the host keeps each card's face there, is the
+/// face every card shows: the top card's flip writes it, and a flip the host
+/// writes elsewhere turns the image.
 #[component]
 pub fn SwipeStack(
     cards: Vec<Card>,
@@ -240,6 +244,7 @@ pub fn SwipeStack(
     #[props(default)] on_top_shown: Option<EventHandler<()>>,
     #[props(default)] ghost: Option<Element>,
     #[props(default)] hold: bool,
+    #[props(default)] faces: Option<Signal<HashMap<Uuid, usize>>>,
 ) -> Element {
     let mut drag: Signal<Option<Drag>> = use_signal(|| None);
     // The cards whose image has loaded and decoded, failed, or has no art,
@@ -257,6 +262,9 @@ pub fn SwipeStack(
             last_exit_at.set(Some(Utc::now()));
             exiting.write().push(Exiting {
                 key: Uuid::new_v4(),
+                face: faces.map_or(0, |f| {
+                    f.peek().get(&card.scryfall_data.id).copied().unwrap_or(0)
+                }),
                 card: card.clone(),
                 direction,
                 from_x: from.0,
@@ -345,7 +353,6 @@ pub fn SwipeStack(
             ),
             style,
             loaded: shown_cards.read().contains(&id),
-            sd: card.scryfall_data.clone(),
             card,
             allowed: allowed.clone(),
         }
@@ -398,16 +405,11 @@ pub fn SwipeStack(
                             handler.call(());
                         }
                     },
-                    crate::FlippableCardImage {
-                        sd: layer.sd,
-                        profile: Some(layer.card.card_profile.clone()),
-                        size: ImageSize::Large,
-                        class: "card-image".to_string(),
-                        draggable: false,
-                        flippable: layer.is_top,
-                        // Shows at once if this stack already had it in, else
-                        // only from its own load.
-                        trust_seen: layer.loaded,
+                    StackCardImage {
+                        card: layer.card.clone(),
+                        is_top: layer.is_top,
+                        loaded: layer.loaded,
+                        faces,
                         on_load: move |()| {
                             if layer.is_top && !shown_cards.peek().contains(&layer.id) {
                                 painting.set(Some(layer.id));
@@ -441,9 +443,37 @@ struct Layer {
     style: String,
     /// Whether this stack already had the card's image in.
     loaded: bool,
-    sd: ScryfallData,
     card: Card,
     allowed: Vec<Swipe>,
+}
+
+/// One stack card's image, the top one flippable, on its face in `faces` when
+/// the host shares them. It shows at once if this stack already had it in
+/// (`loaded`), else only from its own load.
+#[component]
+fn StackCardImage(
+    card: Card,
+    is_top: bool,
+    loaded: bool,
+    faces: Option<Signal<HashMap<Uuid, usize>>>,
+    on_load: EventHandler<()>,
+) -> Element {
+    let id = card.scryfall_data.id;
+    let face = crate::use_shared_face(faces, id);
+    rsx! {
+        crate::FlippableCardImage {
+            sd: card.scryfall_data.clone(),
+            profile: Some(card.card_profile),
+            size: ImageSize::Large,
+            class: "card-image".to_string(),
+            draggable: false,
+            flippable: is_top,
+            trust_seen: loaded,
+            face,
+            on_face_change: crate::share_face(faces, id),
+            on_load,
+        }
+    }
 }
 
 /// One card flying off on its exit keyframe, keyed by its own id so the
@@ -470,6 +500,7 @@ fn ExitingCard(gone: Exiting, on_end: EventHandler<Uuid>) -> Element {
                 class: "card-image".to_string(),
                 draggable: false,
                 flippable: false,
+                initial_face: gone.face,
             }
         }
     }
@@ -731,5 +762,68 @@ mod swipe_key_tests {
                 "{key}"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod face_tests {
+    use std::collections::HashMap;
+
+    use dioxus::dioxus_core::NoOpMutations;
+    use serde_json::{Value, json};
+
+    use super::*;
+
+    /// A real card, as the API serves it.
+    const CARD_JSON: &str = include_str!("../../zwipe-ui/src/test_support/card.json");
+
+    /// A transform card with an image per face, as Delver of Secrets is served.
+    fn delver() -> Card {
+        let mut card: Value = serde_json::from_str(CARD_JSON).unwrap();
+        let sd = card.get_mut("scryfall_data").unwrap();
+        let front = sd["image_uris"].clone();
+        sd["image_uris"] = Value::Null;
+        sd["oracle_text"] = Value::Null;
+        sd["card_faces"] = json!([
+            {
+                "object": "card_face",
+                "name": "Delver of Secrets",
+                "mana_cost": "{U}",
+                "type_line": "Creature — Human Wizard",
+                "oracle_text": "At the beginning of your upkeep, look at the top card of your library.",
+                "image_uris": front
+            },
+            {
+                "object": "card_face",
+                "name": "Insectile Aberration",
+                "mana_cost": "",
+                "type_line": "Creature — Human Insect",
+                "oracle_text": "Flying",
+                "image_uris": front
+            }
+        ]);
+        serde_json::from_value(card).unwrap()
+    }
+
+    #[test]
+    fn the_top_card_shows_the_face_the_host_shares() {
+        fn app() -> Element {
+            let card = delver();
+            let faces = use_signal(|| HashMap::from([(card.scryfall_data.id, 1)]));
+            rsx! {
+                SwipeStack {
+                    cards: vec![card],
+                    allowed: vec![Swipe::Left, Swipe::Right],
+                    control: use_swipe_control(),
+                    on_swipe: |_| {},
+                    faces,
+                }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dom.render_immediate(&mut NoOpMutations);
+        let html = dioxus_ssr::render(&dom);
+        assert!(html.contains(r#"alt="Insectile Aberration""#), "{html}");
     }
 }
