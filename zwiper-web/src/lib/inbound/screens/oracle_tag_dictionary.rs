@@ -174,45 +174,8 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
         }
     };
     if modal() {
-        let class = if shown() {
-            "bottom-sheet show"
-        } else {
-            "bottom-sheet"
-        };
         return rsx! {
-            div { class: "web-dict-sheet",
-                SheetFrame { wide: SheetWide::Modal,
-                    div {
-                        class: if shown() { "sheet-backdrop show" } else { "sheet-backdrop" },
-                        onclick: move |_| open.set(false),
-                    }
-                    div {
-                        class,
-                        role: "dialog",
-                        "aria-label": "Oracle tags",
-                        "aria-modal": "true",
-                        div { class: "sheet-header", style: "position: relative;",
-                            button {
-                                class: "sheet-close",
-                                "aria-label": "Close",
-                                onclick: move |_| open.set(false),
-                                "\u{00d7}"
-                            }
-                            span { class: "sheet-title", "Oracle tags" }
-                            Button {
-                                variant: ButtonVariant::Action,
-                                class: "drawer-sheet-hint",
-                                onclick: move |_| {
-                                    let mut hint_open = hint_open;
-                                    hint_open.set(true);
-                                },
-                                "?"
-                            }
-                        }
-                        div { class: "sheet-content", {body} }
-                    }
-                }
-            }
+            DictionaryModal { open, layer: layer(), shown: shown(), hint_open, body }
             OneTimeHintDialog { hint: OneTimeHint::OracleTagDictionary, open: hint_open }
             {examples}
         };
@@ -307,5 +270,99 @@ fn DictionarySkeleton() -> Element {
                 }
             }
         }
+    }
+}
+
+/// The dictionary as the kit's modal, from the kit's modal width on: a dimmed backdrop that closes
+/// it, then the sheet titled Oracle tags with its × and `?` (`hint_open`) over `body`. It draws at
+/// its own `layer`, its place among the open overlays, so it sits over a filter drawer opened
+/// before it even inside a host with a layer of its own (the commander swipe screen); without
+/// one it falls back to the stylesheet's.
+#[component]
+fn DictionaryModal(
+    mut open: Signal<bool>,
+    layer: Option<u32>,
+    shown: bool,
+    hint_open: Signal<bool>,
+    body: Element,
+) -> Element {
+    let class = if shown {
+        "bottom-sheet show"
+    } else {
+        "bottom-sheet"
+    };
+    rsx! {
+        div {
+            class: "web-dict-sheet",
+            style: layer.map(|z| format!("--overlay-z: {z};")),
+            SheetFrame { wide: SheetWide::Modal,
+                div {
+                    class: if shown { "sheet-backdrop show" } else { "sheet-backdrop" },
+                    onclick: move |_| open.set(false),
+                }
+                div {
+                    class,
+                    role: "dialog",
+                    "aria-label": "Oracle tags",
+                    "aria-modal": "true",
+                    div { class: "sheet-header", style: "position: relative;",
+                        button {
+                            class: "sheet-close",
+                            "aria-label": "Close",
+                            onclick: move |_| open.set(false),
+                            "\u{00d7}"
+                        }
+                        span { class: "sheet-title", "Oracle tags" }
+                        Button {
+                            variant: ButtonVariant::Action,
+                            class: "drawer-sheet-hint",
+                            onclick: move |_| {
+                                let mut hint_open = hint_open;
+                                hint_open.set(true);
+                            },
+                            "?"
+                        }
+                    }
+                    div { class: "sheet-content", {body} }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dioxus::dioxus_core::NoOpMutations;
+
+    use super::*;
+
+    #[test]
+    fn the_wide_dictionary_draws_at_its_own_place_over_what_opened_before_it() {
+        fn app() -> Element {
+            let open = use_signal(|| true);
+            let hint_open = use_signal(|| false);
+            rsx! {
+                // A host with a layer of its own, as the commander swipe screen is at 200, whose
+                // filter drawer sits at 202: the dictionary opened over it is at 204.
+                div { style: "--overlay-z: 200;",
+                    DictionaryModal {
+                        open,
+                        layer: Some(204),
+                        shown: true,
+                        hint_open,
+                        body: rsx! { p { "list" } },
+                    }
+                }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dom.render_immediate(&mut NoOpMutations);
+        let html = dioxus_ssr::render(&dom);
+        assert!(
+            html.contains(r#"<div class="web-dict-sheet" style="--overlay-z: 204;">"#),
+            "its own layer, not the host's 200: {html}"
+        );
+        assert!(html.contains(r#"aria-modal="true""#), "{html}");
     }
 }
