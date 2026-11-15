@@ -1735,11 +1735,12 @@ i.ms.ms-cost.ms-gp {
 
 /* The deck charts' bar: a blocky track the fill spans at full height. The
    track shows under a short fill and stays visible under a white one on a
-   cream background. */
+   cream background. Its radius is a sixth of its thickness, the deck charts'
+   bars' proportion, so a grown bar keeps their corners. */
 .color-bar-track {
     flex: 1;
     height: var(--color-bar-thickness, 0.9rem);
-    border-radius: 0.15rem;
+    border-radius: calc(var(--color-bar-thickness, 0.9rem) / 6);
     background-color: var(--border-secondary);
     overflow: hidden;
 }
@@ -1771,7 +1772,7 @@ i.ms.ms-cost.ms-gp {
 
 .skeleton-bar.color-bar-track {
     height: var(--color-bar-thickness, 0.9rem);
-    border-radius: 0.15rem;
+    border-radius: calc(var(--color-bar-thickness, 0.9rem) / 6);
 }
 
 .color-bar-count-ghost {
