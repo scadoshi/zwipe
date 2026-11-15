@@ -272,6 +272,32 @@ mod tests {
         );
     }
 
+    /// The z-index the script gives a ghost copy.
+    fn ghost_layer() -> u32 {
+        let (_, rest) = SWAP_JS.split_once("zIndex: '").unwrap();
+        let (layer, _) = rest.split_once('\'').unwrap();
+        layer.parse().unwrap()
+    }
+
+    #[test]
+    fn a_row_s_keyboard_ring_stays_over_its_ghost_copies() {
+        let (_, rule) = crate::MAGIC_CSS
+            .split_once(".card-row-compact:focus-visible::after {")
+            .unwrap_or_else(|| panic!("the row's ring is a layer of its own"));
+        let (rule, _) = rule.split_once('}').unwrap();
+        let (_, layer) = rule
+            .split_once("z-index:")
+            .unwrap_or_else(|| panic!("{rule}"));
+        let (layer, _) = layer.split_once(';').unwrap();
+        let layer: u32 = layer.trim().parse().unwrap();
+        assert!(
+            layer > ghost_layer(),
+            "the ring ({layer}) over the ghosts ({}): {rule}",
+            ghost_layer()
+        );
+        assert!(rule.contains("pointer-events: none"), "{rule}");
+    }
+
     #[test]
     fn the_script_carries_its_duration() {
         let script = SWAP_JS.replace("__MS__", &SWAP_MS.to_string());

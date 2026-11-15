@@ -3143,10 +3143,31 @@ footer.site-footer .site-footer-note {
     min-width: 0;
 }
 
-/* The keyboard's ring on a row head or a group header, drawn inside so
-   the rounded clip never cuts it, and on a fold's toggle, out in the
-   header's padding. */
-.card-row-compact:focus-visible,
+/* The keyboard's ring on a row head: the same ring as a group header's,
+   drawn on a layer of its own above the copies a flip or meld crossfades
+   (drawer_swap, z-index 3), so the fading art never paints over it. The
+   head is positioned without a z-index, so it makes no stacking context
+   and its own art still fades under the copies. */
+.card-row-compact {
+    position: relative;
+}
+
+.card-row-compact:focus-visible {
+    outline: none;
+}
+
+.card-row-compact:focus-visible::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--accent-primary);
+    border-radius: 0.5rem;
+    z-index: 4;
+    pointer-events: none;
+}
+
+/* The keyboard's ring on a group header, drawn inside so the rounded clip
+   never cuts it, and on a fold's toggle, out in the header's padding. */
 .card-group-header:focus-visible,
 .card-group-toggle:focus-visible,
 .deck-fold-toggle:focus-visible {
