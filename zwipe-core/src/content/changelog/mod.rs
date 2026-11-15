@@ -46,19 +46,20 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 4);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 21, 6),
-    date: None,
-    entries: &[
-        "Printings opens on the face its card shows, and a Flip or Meld button, or v on the web, turns every printing at once, on the web and in the app",
-        "On the web's Playstyle, h, l and the left and right arrows move the keyboard cursor between Suggested commanders and Staples",
-        "Flipping or melding a card eases its details to the other face instead of cutting, on the web and in the app",
-        "On the web's Home, the Colors bars grow to fill the panel beside Decks on a wide screen",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 21, 6),
+        date: NaiveDate::from_ymd_opt(2026, 11, 14),
+        entries: &[
+            "Printings opens on the face its card shows, and a Flip or Meld button, or v on the web, turns every printing at once, on the web and in the app",
+            "On the web's Playstyle, h, l and the left and right arrows move the keyboard cursor between Suggested commanders and Staples",
+            "Flipping or melding a card eases its details to the other face instead of cutting, on the web and in the app",
+            "On the web's Home, the Colors bars grow to fill the panel beside Decks on a wide screen",
+        ],
+    },
     Release {
         version: Version::new(1, 21, 5),
         date: NaiveDate::from_ymd_opt(2026, 11, 14),
