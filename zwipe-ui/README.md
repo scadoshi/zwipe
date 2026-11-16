@@ -22,7 +22,7 @@ Anything that decides what a screen shows or does and that two or more clients n
 - Hint copy as typed spans: every `?` topic and every one-time hint (`hint`).
 - Usage telemetry: the buffer, handled-error reports, error kinds and the screen vocabulary (`telemetry`), with each client's lock, flush timer and send left to the client.
 - Toasts as values (`toast`), behavior timings and search limits (`timing`), and the generation ticket for replies that arrive out of order.
-- Screen models (`screens`): a screen's state, actions and effects, so a client only draws and wires input. The deck list (`screens::deck_list`) is the first; `zwipe-context zwipe/zwipe-ui/context/screen-models.md` holds the pattern.
+- Screen models (`screens`): a screen's state, actions and effects, so a client only draws and wires input. The deck list (`screens::deck_list`) is the first; `zwipe-context zwipe-ui/screen-models.md` holds the pattern.
 
 ## What stays out
 
@@ -40,8 +40,8 @@ orangui-core comes from orangui main, the same source components uses for orangu
 
 One session owns the shared crates: zwipe-ui, zwipe-core, zwipe-client and components, plus orangui and orangui-core. Feature branches never edit them. A shared change goes on a small branch off main, the owner merges it, and feature branches then merge main. zwiper-web and zwiper-tui send requests to the owning session instead of changing shared code themselves.
 
-`zwipe-context zwipe/zwipe-ui/context/shared-plan.md` lists the shared branches in order, the drift still to settle and the owner's decisions. `zwipe-context zwipe/zwipe-ui/context/inventory.md` records where each piece landed.
+`zwipe-context zwipe-ui/shared-plan.md` lists the shared branches in order, the drift still to settle and the owner's decisions. `zwipe-context zwipe-ui/inventory.md` records where each piece landed.
 
 ## Not yet
 
-Screen models (a state, actions and effects per screen) are built for every screen, under `screens::`, and the app draws all of them. `zwipe-context zwipe/zwipe-ui/context/screen-models.md` describes the pattern and the variations the screens needed. zwiper-tui has switched to the Part 1 helpers; it and zwiper-web switch to the screen models on their own branches, screen by screen. Help and feedback and Update required have no model: their copy and the mailto live in `support`, and each client's action differs on purpose.
+Screen models (a state, actions and effects per screen) are built for every screen, under `screens::`, and the app draws all of them. `zwipe-context zwipe-ui/screen-models.md` describes the pattern and the variations the screens needed. zwiper-tui has switched to the Part 1 helpers; it and zwiper-web switch to the screen models on their own branches, screen by screen. Help and feedback and Update required have no model: their copy and the mailto live in `support`, and each client's action differs on purpose.

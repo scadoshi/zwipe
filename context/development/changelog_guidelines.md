@@ -27,7 +27,7 @@ The changelog lives in `zwipe-core/src/content/changelog/mod.rs` and is rendered
 
 ## Store notes
 
-The "What's New" text in `zwipe-context zwipe/context/operations/store-submissions/<version>/whats_new.md` is written from these entries and follows the same rules, compressed to Play's 500 characters.
+The "What's New" text in `zwipe-context operations/store-submissions/<version>/whats_new.md` is written from these entries and follows the same rules, compressed to Play's 500 characters.
 
 ## Mechanics
 

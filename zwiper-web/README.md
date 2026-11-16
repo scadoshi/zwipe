@@ -1,10 +1,10 @@
 # zwiper-web
 
-Zwipe in a browser. Every screen of the phone app (zwiper) is here, from Login to the swipe screens. Below 900px wide it is the app's layout as `zwipe-context zwipe/context/plans/unified_ui.md` lays it out: the app's header with its back arrow and hamburger, the app's menu, a screen's actions floating in the dock at the bottom right, no bars and no footers. At 900px and up it is laid out for a big window: a top nav like zwipe.net's, panels side by side, keys for the swipes, the same docks.
+Zwipe in a browser. Every screen of the phone app (zwiper) is here, from Login to the swipe screens. Below 900px wide it is the app's layout as `zwipe-context plans/unified_ui.md` lays it out: the app's header with its back arrow and hamburger, the app's menu, a screen's actions floating in the dock at the bottom right, no bars and no footers. At 900px and up it is laid out for a big window: a top nav like zwipe.net's, panels side by side, keys for the swipes, the same docks.
 
 It is a client-rendered Dioxus app and its own crate. It talks to zerver through `zwipe-client`, takes its screen logic from `zwipe-ui` and draws with `components` (and orangui under it), so copy, rules and look come from the same places the app uses.
 
-More reading in `zwipe-context zwipe/zwiper-web/context/`: `parity-plan.md` (what was built, the kept deviations, the launch blockers), `web-layout.md` (how each screen sits on a wide window), `ARCHITECTURE.md` (how the crate fits together), `audit.md` (the last screen-by-screen check against the specs) and `specs/` (the app's behavior, the source of truth).
+More reading in `zwipe-context zwiper-web/`: `parity-plan.md` (what was built, the kept deviations, the launch blockers), `web-layout.md` (how each screen sits on a wide window), `ARCHITECTURE.md` (how the crate fits together), `audit.md` (the last screen-by-screen check against the specs) and `specs/` (the app's behavior, the source of truth).
 
 ## Run it
 
@@ -26,7 +26,7 @@ BACKEND_URL=http://localhost:3000 dx serve
 
 `BACKEND_URL` is read at build time, from the process env or a `.env` in this folder (see `.env.example`); a change to either rebuilds. Without it a debug build talks to `http://localhost:3000` and a release build to `https://api.zwipe.net`. A browser enforces zerver's `ALLOWED_ORIGINS`, so the zerver you point at must list `http://localhost:8080`. The session, the last theme, the last counters and Home's count scope live in the browser's `localStorage` for this origin.
 
-`dx build --platform web` makes the bundle without serving it. The gate every commit passes is in `zwipe-context zwipe/zwiper-web/context/parity-plan.md`.
+`dx build --platform web` makes the bundle without serving it. The gate every commit passes is in `zwipe-context zwiper-web/parity-plan.md`.
 
 ## Before it ships
 

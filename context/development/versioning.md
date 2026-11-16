@@ -21,4 +21,4 @@ History note: numbers through 1.13.0 were chosen under older rules (feature-carr
 ## At store submission
 
 - On the day the mobile builds are submitted to the App Store and Play, set `MOBILE_STORE_VERSION` in `zwipe-core/src/content/changelog/mod.rs` to the submitted version, in a PR to release. The changelog marks that release Mobile, and a newer one Web.
-- Set it on submission day, not when review clears: until Apple and Google release it, a phone may still offer the version before. The publish steps for each store say the same (iOS (`zwipe-context zwipe/context/operations/ios/app-store/submission/publish.md`), Android (`zwipe-context zwipe/context/operations/android/play-store/submission/publish.md`)).
+- Set it on submission day, not when review clears: until Apple and Google release it, a phone may still offer the version before. The publish steps for each store say the same (iOS (`zwipe-context operations/ios/app-store/submission/publish.md`), Android (`zwipe-context operations/android/play-store/submission/publish.md`)).

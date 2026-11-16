@@ -62,7 +62,7 @@ dx build --release --platform desktop
 cargo sqlx prepare --workspace
 # Commit the generated .sqlx/ directory; CI builds use it instead of a live DB
 ```
-The workspace-root `.sqlx/` is the ONLY offline-data directory. Never create a crate-local `zerver/.sqlx/` (i.e., never run `cargo sqlx prepare` from inside `zerver/` without `--workspace`): the macros prefer it over the root, and a stale copy shadows correct data (broke the 2026-07-05 deploy; details in `zwipe-context zwipe/context/operations/infrastructure/cicd.md`).
+The workspace-root `.sqlx/` is the ONLY offline-data directory. Never create a crate-local `zerver/.sqlx/` (i.e., never run `cargo sqlx prepare` from inside `zerver/` without `--workspace`): the macros prefer it over the root, and a stale copy shadows correct data (broke the 2026-07-05 deploy; details in `zwipe-context operations/infrastructure/cicd.md`).
 
 ## Architecture
 
@@ -85,7 +85,7 @@ zwipe-core owns all shared domain types, including every `Http*` contract (`zwip
 - So both clients import everything as `components::` (`::components::` in a module that has its own `components` submodule), and `cargo update -p orangui` moves the pin.
 - The portfolio site and cairn (the counter app) take orangui directly as a git dependency. Nothing outside this repo imports components.
 - zwipe-client holds the typed API client and depends on zwipe-core and reqwest only, so it carries no Dioxus and no platform code. Both clients use it; neither builds a request by hand.
-- zwipe-ui holds the logic behind the screens that the app, zwiper-web and zwiper-tui share. It depends on zwipe-core and on orangui-core, orangui's Dioxus-free half (number formatting, chart math, toast bands), and never on zwipe-client or a UI crate. Clients fetch, then hand the results in. It also holds a screen model for every screen (`zwipe_ui::screens`, the pattern in `zwipe-context zwipe/zwipe-ui/context/screen-models.md`): the app draws all of them, and zwiper-web and zwiper-tui switch over on their own branches.
+- zwipe-ui holds the logic behind the screens that the app, zwiper-web and zwiper-tui share. It depends on zwipe-core and on orangui-core, orangui's Dioxus-free half (number formatting, chart math, toast bands), and never on zwipe-client or a UI crate. Clients fetch, then hand the results in. It also holds a screen model for every screen (`zwipe_ui::screens`, the pattern in `zwipe-context zwipe-ui/screen-models.md`): the app draws all of them, and zwiper-web and zwiper-tui switch over on their own branches.
 
 ### Hexagonal (Ports & Adapters) Pattern
 
@@ -160,4 +160,4 @@ context/
 └── development/            # coding standards (commits, comments, changelog, release notes, docs, newtypes, dioxus, API evolution)
 ```
 
-This repo is code-only. Plans, issues, the progress log and backlog, QA notes, operations (building, deploying, store submissions, hosting, runbooks) and the archive live in the private `zwipe-context` repo, checked out beside zwipe, under `zwipe/` at the paths they had here: `zwipe-context zwipe/context/plans/`, `zwipe-context zwipe/context/issues/`, `zwipe-context zwipe/context/operations/`, `zwipe-context zwipe/context/README.md` and so on, with zwiper-web's and zwipe-ui's notes under `zwipe-context zwipe/zwiper-web/context/` and `zwipe-context zwipe/zwipe-ui/context/`. Marketing, product ideas and business strategy live there too: `marketing/`, `ideas/`, `business/` and `video-factory/`. Docs here name its files as `zwipe-context <path>`, without a link. Code comments never refer to docs at all; see `development/comment_guidelines.md`.
+This repo is code-only. Plans, issues, the progress log and backlog, QA notes, operations (building, deploying, store submissions, hosting, runbooks) and the archive live in the private `zwipe-context` repo, checked out beside zwipe, at its top level: `zwipe-context plans/`, `zwipe-context issues/`, `zwipe-context operations/`, the progress log at `zwipe-context progress/log.md` and so on, with zwiper-web's and zwipe-ui's notes under `zwipe-context zwiper-web/` and `zwipe-context zwipe-ui/`. Marketing, product ideas and business strategy live there too: `marketing/`, `ideas/`, `business/` and `video-factory/`. Docs here name its files as `zwipe-context <path>`, without a link. Code comments never refer to docs at all; see `development/comment_guidelines.md`.
