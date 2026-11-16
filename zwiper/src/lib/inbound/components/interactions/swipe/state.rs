@@ -163,6 +163,30 @@ impl SwipeState {
         self.return_animation_seconds = s;
     }
 
+    /// Ends the gesture with the finger lifted at `end`: decides the swipe against `config`,
+    /// keeps where the finger let go for the exit's first frame, and clears the points.
+    pub fn end_at(&mut self, end: TimePoint, config: &SwipeConfig) {
+        self.calculate_return_animation_seconds();
+        // A lift reported where the last move was (Android's touchend) adds no segment, so the
+        // last move's segment stays the one the speed is read from; otherwise a quick flick
+        // would read as standing still.
+        let moved = self
+            .current_point
+            .as_ref()
+            .is_none_or(|current| current.point != end.point);
+        if moved {
+            self.previous_point = self.current_point.clone();
+            self.current_point = Some(end);
+        }
+        self.is_swiping = false;
+        self.set_latest_swipe(config);
+        // Where the finger let go, kept before reset() clears the points: the exit overlay
+        // seeds its first animation frame from it.
+        self.release_delta = self.delta_from_start_point();
+        tracing::trace!("swipe end={:?}", self.current_point);
+        self.reset();
+    }
+
     /// Evaluates the current swipe and sets `latest_swipe` if thresholds are met.
     pub fn set_latest_swipe(&mut self, config: &SwipeConfig) {
         // A flick (speed path) only counts after this much travel; low values
@@ -612,6 +636,22 @@ mod tests {
         let mut state = swiping_state(-111.0, 0.0, 1.0);
         state.set_latest_swipe(&config);
         assert!(state.latest_swipe.is_none());
+    }
+
+    #[test]
+    fn a_quick_down_flick_counts_when_the_lift_reports_the_last_move_s_point() {
+        // Android reports the lift where the last move was: 30px then 70px down in 20ms
+        // (4px/ms), lifted at 70px. Under the 90px travel, over 32px at speed.
+        let config = SwipeConfig::new(vec![Direction::Down], 90.0, 2.5);
+        let mut state = SwipeState {
+            start_point: Some(tp(0.0, 0.0, 0)),
+            previous_point: Some(tp(0.0, 30.0, 10)),
+            current_point: Some(tp(0.0, 70.0, 20)),
+            is_swiping: true,
+            ..SwipeState::default()
+        };
+        state.end_at(tp(0.0, 70.0, 25), &config);
+        assert_eq!(state.latest_swipe, Some(Direction::Down));
     }
 
     // ── reset ─────────────────────────────────────────────────────────────────

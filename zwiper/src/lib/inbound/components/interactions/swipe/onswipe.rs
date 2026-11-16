@@ -48,21 +48,6 @@ impl OnSwipe for SwipeState {
     }
 
     fn onswipeend(&mut self, end_point: ClientPoint, config: &SwipeConfig) {
-        self.calculate_return_animation_seconds();
-        let time_point = TimePoint::new(end_point, Utc::now().naive_utc());
-
-        self.previous_point = self.current_point.clone();
-        self.current_point = Some(time_point);
-
-        self.is_swiping = false;
-
-        self.set_latest_swipe(config);
-
-        // Capture where the finger released BEFORE reset() clears the points,
-        // the exit overlay seeds its first animation frame from this.
-        self.release_delta = self.delta_from_start_point();
-
-        tracing::trace!("swipe end={:?}", self.current_point);
-        self.reset();
+        self.end_at(TimePoint::new(end_point, Utc::now().naive_utc()), config);
     }
 }

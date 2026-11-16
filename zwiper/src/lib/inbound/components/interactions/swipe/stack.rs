@@ -339,6 +339,9 @@ pub fn SwipeStack(
                 state.ontouchend(e, config);
                 dispatch_latest(state, exiting_overlay, handlers, card);
             },
+            // A touch the browser cancels ends with no swipe and leaves
+            // nothing behind for the next one.
+            ontouchcancel: move |_| state.write().reset(),
             onmousedown: move |e: Event<MouseData>| {
                 if entering.peek().is_none() { return; }
                 take_hold(&mut entering);
@@ -387,6 +390,11 @@ pub fn SwipeStack(
                         let Some((card, config)) = &layer.touch else { return; };
                         state.ontouchend(e, config);
                         dispatch_latest(state, exiting_overlay, handlers, card);
+                    },
+
+                    ontouchcancel: move |e: Event<TouchData>| {
+                        e.stop_propagation();
+                        state.write().reset();
                     },
 
                     onmousedown: move |e: Event<MouseData>| {
@@ -517,6 +525,18 @@ mod tests {
     use dioxus::dioxus_core::NoOpMutations;
 
     use super::*;
+
+    #[test]
+    fn the_app_s_stack_keeps_every_drag_from_the_browser() {
+        // A vertical drag on the stack is a swipe (down undoes, up saves); offered to the
+        // browser as a pan, Android can take it and cancel the touch, losing the swipe.
+        const MAIN: &str = include_str!("../../../../../../assets/main.css");
+        let (_, rule) = MAIN
+            .split_once("\n.swipe-stack {")
+            .expect("the app's own rule for the stack");
+        let (body, _) = rule.split_once('}').expect("its end");
+        assert!(body.contains("touch-action: none;"), "{body}");
+    }
 
     #[test]
     fn a_grab_during_a_return_ends_the_return_so_the_gesture_counts() {

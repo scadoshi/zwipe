@@ -268,6 +268,13 @@ body {
     }
 }
 
+/* Every drag on the app's stack is a swipe (down undoes, up saves), so the
+   browser gets none of them as a pan: offered one, Android can take it and
+   cancel the touch, losing the swipe. */
+.swipe-stack {
+    touch-action: none;
+}
+
 .swipe-stack-card.top.card-stack-enter-down {
     animation: card-stack-enter-down 0.2s ease-out;
 }
