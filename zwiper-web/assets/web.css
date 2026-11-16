@@ -905,14 +905,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 /* ---- About ---- */
 
 /* About on a wide window: the Changelog panel and the release panels, each
-   at the page's width. The footer carries the credits and the Privacy policy
-   link there, so the panels above the Changelog show only below the
-   breakpoint. */
+   at the page's width. */
 @media (min-width: 900px) {
-    .web-about > .web-columns {
-        display: none;
-    }
-
     .changelog-screen.web-about {
         width: 100%;
         max-width: var(--web-page-max);

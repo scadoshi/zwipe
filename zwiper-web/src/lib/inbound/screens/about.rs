@@ -1,26 +1,21 @@
-//! About: the web build's links and credits, then the full release history
-//! with the build's version beside its title, at the app's shape. On a wide window the rows and
-//! Credits sit side by side under the page head, and the Changelog panel
-//! and the release panels run the page's width under them.
+//! About: the full release history with the build's version beside its title, at every width.
+//! The page footer under every web screen carries the Privacy policy link and the credits, so
+//! About draws neither; the apps, which have no footer, keep both in theirs. The nav's `?`
+//! explains the version.
 //!
-//! The top panel holds the Privacy policy row; the app's Website row has no
-//! place on the website itself. The nav's `?` explains the version. Under it
-//! a Credits panel holds the Scryfall credit and the Fan Content notice from
-//! `zwipe_core::legal`, then the shared [`components::Changelog`] that
-//! zwipe.net and the app draw too: its panel with the chips, each release a
-//! panel of its own under it. It draws the compiled copy from the first
-//! render and the root cache's server copy once the visit's fetch brings a
-//! different one; a failed fetch leaves the compiled copy.
+//! The release history is the shared [`components::Changelog`] that zwipe.net and the app draw
+//! too: its panel with the chips, each release a panel of its own under it. It draws the
+//! compiled copy from the first render and the root cache's server copy once the visit's fetch
+//! brings a different one; a failed fetch leaves the compiled copy.
 //!
 //! What the screen knows and does is `zwipe_ui::screens::about`; this file
 //! draws its state and performs its effects.
 
-use components::{Button, ButtonVariant, Changelog as ChangelogView};
+use components::Changelog as ChangelogView;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use zwipe_core::legal::{FAN_CONTENT_HTML, SCRYFALL_CREDIT_HTML};
 use zwipe_ui::changelog::ChangelogCache;
-use zwipe_ui::screens::about::{self, Action, Destination, Effect, Row, State};
+use zwipe_ui::screens::about::{self, Action, Destination, Effect, State};
 use zwipe_ui::telemetry::vocabulary::Screen;
 
 use crate::config::APP_VERSION;
@@ -90,33 +85,6 @@ pub fn About() -> Element {
         ScreenFrame { title: about::TITLE, on_hint: move |()| hint.set(Some(HintTopic::Version)),
             div { class: "screen-content content-enter",
                 div { class: "changelog-screen web-about",
-                    div { class: "web-columns",
-                    div { class: "web-column",
-                    div { class: "settings-list",
-                        div { class: "settings-row web-about-privacy",
-                            span { class: "settings-row-label", {Row::PrivacyPolicy.label()} }
-                            div { class: "settings-row-value",
-                                Button {
-                                    variant: ButtonVariant::Action,
-                                    onclick: move |_| driver.dispatch(Action::PrivacyPolicy),
-                                    {about::VIEW}
-                                }
-                            }
-                        }
-                    }
-                    }
-                    div { class: "web-column about-credits-column",
-                    div { class: "settings-list about-panel",
-                        div { class: "settings-list-header",
-                            span { class: "settings-list-title", {about::CREDITS} }
-                        }
-                        div { class: "about-credits",
-                            p { dangerous_inner_html: SCRYFALL_CREDIT_HTML }
-                            p { dangerous_inner_html: FAN_CONTENT_HTML }
-                        }
-                    }
-                    }
-                    }
                     ChangelogView {
                         data,
                         page_size: CHANGELOG_PAGE_SIZE,
