@@ -2,6 +2,11 @@
 //! swapped in when its fetch lands with a different copy, and the compiled one kept when
 //! the fetch fails.
 
+#![expect(
+    clippy::unwrap_used,
+    reason = "test helpers: a failed read or render fails the test"
+)]
+
 use components::{Changelog, ChangelogLook};
 use dioxus::core::NoOpMutations;
 use dioxus::prelude::*;
