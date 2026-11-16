@@ -2,32 +2,36 @@
 
 The handoff for the composer session: where the factory stands, so a fresh or compacted composer can pick it up. The rules are in [`../development/factory.md`](../development/factory.md). Open issues are in zwipe-context's GitHub issues and [`../issues/`](../issues/README.md). Older handoff logs are in this file's git history.
 
-## As of 2026-11-14: stopped
+## As of 2026-11-16: stopped
 
-Scotty stopped the factory on 2026-11-14 after a wind-down. Nothing is in flight, every agent is standing down, and no builds, dev servers or test sessions are running. Start nothing until Scotty says.
+Scotty wound the factory down on 2026-11-16 (weekly context limit). Every agent has stood down; no builds, dev servers or test sessions are running, apart from droider's emulator (release app 6c0b24ead). Start nothing until Scotty says.
 
-- `main` = `release` at `f2c707615` (orangui repinned to `0a589a3`), deployed green: web, zerver, zite. Web is 1.21.4. UPCOMING 1.21.5 holds the 517 Shift+G, 518 Printings and #47 cheapest-printing lines.
-- Stores: Zwipe 1.21.4 and Cairn 1.4.2 submitted 2026-11-13. Cairn's Unreleased 1.4.3 has the centered menu icons (also in portfolio's changelog).
-- orangui main `0a589a3`, pinned in zwipe, portfolio (`fe77a09`) and Cairn (`357c8ec`).
-- Next phase (Scotty): marketing and signups. The web app is settled; AI features come later. No nit work.
+- `main` = `release` at `2a329c957`, deployed green: web, zerver, zite. Web is 1.21.9; UPCOMING 1.21.10 holds the undo, shared changelog, stacks, password rules, Try a filter and About lines.
+- Stores: Zwipe 1.21.9 (iOS 117, Android vc79) and Cairn 1.4.3 (build 17) submitted 2026-11-15/16. `MOBILE_STORE_VERSION` is 1.21.9.
+- orangui main has PR #58 (ReleaseCard `tags`), merge `242c208`; zwipe pins its commit `db8a9d7`. Portfolio moves its one ReleaseCard call to `tags` on its next repin.
+- Signups: 104 in the week of Nov 10 (9 the week before). Dashboard: https://claude.ai/artifact/TW4A9bxiDQfRcz3EAiLEsP (fixed copies of the zerver reports; rerun them to refresh).
 
-## Done in the last stretch (2026-11-12 to 11-14)
+## Done 2026-11-15 to 11-16
 
-- 1.21.4 cut and submitted to both stores, with Cairn 1.4.2.
-- Security fixes #43 (text criteria capped, search statement timeout), #44 (cookie logout), #46 (ACAO on /api/changelog). No changelog lines, by rule.
-- scadoshi-rust audit closed: zwipe-context #29 to #42, orangui #40 to #43. `clippy::wildcard_enum_match_arm` is on in zwipe and orangui and in the scadoshi-rust lint set (one-variant picks use `if let` or `matches!`; foreign enums take an `#[expect]`).
-- Verified live by Surfer: #47 (Quick add and import skip a printing whose USD is under a tenth of its EUR), #48 (no half-faded cursor image), 517 reopen (Shift+G with a lowercase key), portfolio #49 and the fleet chart no longer replaying on metric switches.
-- Laptop's leftover branches pruned (13 deleted); the list is in zwipe-context `ideas/laptop_branches_2026-11-14.md`.
-- Five QoL videos approved in zwipe-context `video-factory/finals/not-scheduled/`: Share your deck, Undo, Themes, Pick your commander, Quick add.
+- Undo: rapid undos coalesce; per-deck undo history on web Add (the cross-deck leak dated from 655d462bb, Nov 7); Android down-swipe bursts land (flick speed, touch-action, stale-card touches); writes for one card go in order (`spawn_write_in_order`); a promote's undo waits for the promote.
+- Web writes survive leaving a screen: `components::spawn_write` and `use_mounted` everywhere; the `zwiper-web/tests/screen_writes.rs` guard finds 0 screen-scoped writes.
+- Stacks: regroup ~1.1s to ~0.3s, raise 1.0s to 0.5s, a raised card holds still on phones, drawer flip 0.39s to 0.23s, render-count guard tests, `zcripts/perf/stacks_probe.py`. Keep-cards-mounted is parked (zwipe-context `ideas/stacks_keep_cards_mounted.md`).
+- Shared changelog: one `components::Changelog` on zwipe.net, app.zwipe.net and the app, compiled copy first, then the server's. About cleanup: one look, no Version panel, version chip, both Web and Mobile tags.
+- Password rules checked as you type with zwipe-core's policy on Register, Change password and the reset form; the migration rule is in `context/development/api_evolution.md`.
+- Square deck art, deck loading ghosts that match the loaded page, card count with the command zone, Try a filter on Add's ghost.
+- heron audit (quinn bumps), zynergy repinned and its stale rsa audit ignore removed.
 
-## Parked
+## Open for next week
 
-- Themes: Scotty records the theme sweeps on his iPhone, then the video is re-cut with them.
-- The three web videos (vim bindings, card stacks, no mouse): parked by Scotty. Shot lists in zwipe-context `marketing/plans/31_scotty_shot_lists.md`.
-- `feat/tui` (zwipe-context #50): extra large, kept.
-- Branches kept on purpose: settings phase 3, pip-color-classic, rustmas `scadoshi`.
-- Scotty to re-upload `scadoshi-rust/dist/scadoshi-rust.zip` to claude.ai so agents load the two new match rules.
-- zwiper's iOS and Android cfg code wasn't checked by the new lint (it doesn't compile on a Mac desktop); the next mobile build checks it.
+- Android undo: one unreproduced maybeboard save that stayed saved after a burst (before 289331eae); watch for it.
+- App write hand-off on leaving a screen: not reproduced on Android; the ready patch is zwipe-context `ideas/patches/app-undo-handoff.patch`.
+- Budget's '(N unpriced)' wraps at phone width (25px loading jump): waits on a design idea; the composer suggested `$497.16+` plus a Warnings entry.
+- Signup funnel: rerun `funnel.sql` to see whether the live password rules cut the retries (65 of 135 sessions retried before).
+- zwiper-tui must drop zwipe-ui `about::Status` and `FAILED` when it merges.
+- zynergy's RUSTSEC-2026-0459 ignore waits for a sqlx-sqlite release that allows libsqlite3-sys 0.39.
+- Small About nits from surfer: zwipe.net's 390 gutter (347 vs 358 wide), panel top margin, the version link on zwipe.net only.
+- Videos: Scotty disliked the No mouse and Vim previews; more shooting later, Vim re-recorded in its theme. Card stacks is final.
+- Test account has 12 decks; big fat chud, satya, shorikai and Snake are probably video decks, kept.
 
 ## Agents
 
@@ -46,7 +50,7 @@ Factory Board: https://claude.ai/artifact/HQVvAtuU45Ze4FZE3eN8iw (collections `i
 ## How the loop runs
 
 - Workers gate locally (nightly fmt, clippy `-D warnings`, tests, rustdoc, wasm clippy) and push to `release`, rebasing if it moved. No PRs in zwipe. Laptop pushes a branch instead.
-- The composer fast-forwards `main` from `release` (`git push origin origin/release:main`) only after a full gate passed on the exact `release` head, and only once no `main` deploy is running. Then it waits for deploy-web, deploy-zerver and deploy-zite and sends QA to check the fix live.
+- The composer fast-forwards `main` from `release` without a second gate (the worker's check counts), checks the deploys in the background (zerver and zite only deploy on their own paths; trigger them by hand when a fix doesn't touch them), and sends QA to check the fix live. Never watch Actions in the foreground.
 - orangui and portfolio: green worker PRs merge without asking; repin the hosts after an orangui merge. Cairn goes straight to its `main`, with every changelog entry mirrored in portfolio `src/changelog.rs`.
 - A worker checking hosts against an orangui branch must confirm with `cargo tree -i orangui` that the patch applied. A CLI `--config` patch reaches `cargo check` but not `cargo clippy`.
 - Workers stop and ask before any wire change; keep shipped apps' wire text and shapes as they are.
