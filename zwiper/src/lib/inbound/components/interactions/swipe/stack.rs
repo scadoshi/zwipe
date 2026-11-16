@@ -554,4 +554,162 @@ mod tests {
             "the card snaps to rest: {html}"
         );
     }
+
+    /// A real card under its own id and name.
+    fn card(n: u128) -> Card {
+        let mut card: Card = serde_json::from_str(include_str!(
+            "../../../../../../../zwipe-ui/src/test_support/card.json"
+        ))
+        .unwrap();
+        card.scryfall_data.id = Uuid::from_u128(n);
+        card.scryfall_data.name = format!("Card {n}");
+        card
+    }
+
+    /// One touch at `(x, y)`, as a touch event's data.
+    fn touch_at(x: f64, y: f64, ended: bool) -> std::rc::Rc<dyn std::any::Any> {
+        let point = serde_json::json!({
+            "identifier": 0, "client_x": x, "client_y": y, "page_x": x, "page_y": y,
+            "screen_x": x, "screen_y": y, "force": 1.0, "radius_x": 1.0, "radius_y": 1.0,
+            "rotation_angle": 0.0
+        });
+        let touches = if ended {
+            serde_json::json!([])
+        } else {
+            serde_json::json!([point])
+        };
+        let data: dioxus::html::SerializedTouchData = serde_json::from_value(serde_json::json!({
+            "alt_key": false, "ctrl_key": false, "meta_key": false, "shift_key": false,
+            "touches": touches, "changed_touches": [point], "target_touches": touches
+        }))
+        .unwrap();
+        std::rc::Rc::new(dioxus::html::PlatformEventData::new(Box::new(data)))
+    }
+
+    /// The host of a burst test: five cards, the cursor on the fifth, and the newest swipe's
+    /// card coming back from the left, as an Undo in flight leaves it. Each down swipe undoes
+    /// one more step.
+    #[derive(Clone, Copy)]
+    struct Host {
+        index: Signal<usize>,
+        undos: Signal<usize>,
+    }
+
+    fn burst_app() -> Element {
+        let cards: Vec<Card> = (0..5).map(card).collect();
+        let mut index = use_signal(|| 3_usize);
+        let mut undos = use_signal(|| 0_usize);
+        let mut entering = use_signal(|| Some(Direction::Left));
+        use_context_provider(|| Host { index, undos });
+        let window: Vec<Card> = cards.get(index()..).map_or_else(Vec::new, <[Card]>::to_vec);
+        let config = SwipeConfig::new(
+            vec![
+                Direction::Left,
+                Direction::Right,
+                Direction::Up,
+                Direction::Down,
+            ],
+            90.0,
+            2.5,
+        );
+        let none = move |_: Card| {};
+        rsx! {
+            SwipeStack {
+                cards: window,
+                config,
+                on_swipe_left: none,
+                on_swipe_right: none,
+                on_swipe_up: none,
+                on_swipe_down: move |_: Card| {
+                    let back = index.peek().saturating_sub(1);
+                    index.set(back);
+                    entering.set(Some(Direction::Left));
+                    *undos.write() += 1;
+                },
+                entering,
+            }
+        }
+    }
+
+    /// Element ids by role: the stack (the first element taking touches) and each card by name.
+    fn ids(
+        edits: &[dioxus::dioxus_core::Mutation],
+        stack: &mut Option<dioxus::dioxus_core::ElementId>,
+        cards: &mut HashMap<String, dioxus::dioxus_core::ElementId>,
+    ) {
+        for edit in edits {
+            if let dioxus::dioxus_core::Mutation::NewEventListener { name, id } = edit
+                && name == "touchstart"
+                && stack.is_none()
+            {
+                *stack = Some(*id);
+            }
+            if let dioxus::dioxus_core::Mutation::SetAttribute {
+                name,
+                value: dioxus::dioxus_core::AttributeValue::Text(v),
+                id,
+                ..
+            } = edit
+                && *name == "aria-label"
+            {
+                cards.insert(v.clone(), *id);
+            }
+        }
+    }
+
+    /// Three quick down swipes during one return, each on `target` (the stack, or the top card).
+    fn burst(on_top: bool) -> (usize, usize, String) {
+        dioxus::html::set_event_converter(Box::new(dioxus::html::SerializedHtmlEventConverter));
+        let mut dom = VirtualDom::new(burst_app);
+        let mut edits = dioxus::dioxus_core::Mutations::default();
+        dom.rebuild(&mut edits);
+        let (mut stack, mut cards) = (None, HashMap::new());
+        ids(&edits.edits, &mut stack, &mut cards);
+        let host = dom.in_scope(ScopeId::APP, consume_context::<Host>);
+        for _ in 0..3 {
+            let top = format!("Card {}", *host.index.peek());
+            let target = if on_top {
+                cards.get(&top).copied()
+            } else {
+                stack
+            }
+            .unwrap();
+            let (x, mut y) = (200.0, 300.0);
+            dom.runtime().handle_event(
+                "touchstart",
+                Event::new(touch_at(x, y, false), true),
+                target,
+            );
+            for _ in 0..4 {
+                y += 30.0;
+                dom.runtime().handle_event(
+                    "touchmove",
+                    Event::new(touch_at(x, y, false), true),
+                    target,
+                );
+            }
+            dom.runtime()
+                .handle_event("touchend", Event::new(touch_at(x, y, true), true), target);
+            let mut more = dioxus::dioxus_core::Mutations::default();
+            dom.render_immediate(&mut more);
+            ids(&more.edits, &mut stack, &mut cards);
+        }
+        let html = dioxus_ssr::render(&dom);
+        let entering = html.matches("card-stack-enter-").count();
+        (*host.undos.peek(), entering, html)
+    }
+
+    #[test]
+    fn three_down_swipes_during_one_return_undo_three_steps_on_the_stack() {
+        let (undos, entering, html) = burst(false);
+        assert_eq!(undos, 3, "{html}");
+        assert_eq!(entering, 1, "only the last card comes in: {html}");
+    }
+
+    #[test]
+    fn three_down_swipes_during_one_return_undo_three_steps_on_the_top_card() {
+        let (undos, entering, html) = burst(true);
+        assert_eq!(undos, 3, "{html}");
+        assert_eq!(entering, 1, "only the last card comes in: {html}");
+    }
 }

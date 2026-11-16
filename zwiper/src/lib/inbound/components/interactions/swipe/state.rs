@@ -13,6 +13,11 @@ use crate::inbound::components::interactions::swipe::time_point::TimePoint;
 
 type DeltaPoint = Point2D<f64, UnknownUnit>;
 
+/// The average speed, start to lift, at or above which a short flick down (past the speed
+/// path's minimum travel) undoes: a 70px flick in 60ms is 1.2px/ms, a slow 50px drag in
+/// 600ms is under 0.1.
+const DOWN_FLICK_PX_PER_MS: f64 = 0.8;
+
 /// Tracks the state of an ongoing swipe gesture.
 #[derive(Debug, Clone)]
 pub struct SwipeState {
@@ -205,7 +210,7 @@ impl SwipeState {
 
         if distance_from_start > config.distance_threshold
             || (distance_from_start > DISTANCE_THRESHOLD_FOR_SPEED_TO_BE_VALID
-                && speed > config.speed_threshold)
+                && (speed > config.speed_threshold || self.is_down_flick()))
         {
             match self.traversing_axis {
                 Some(Axis::X) => {
@@ -251,6 +256,28 @@ impl SwipeState {
         }
 
         tracing::trace!("swipe dir={:?}", self.latest_swipe);
+    }
+
+    /// Whether the gesture so far is a quick flick down: on the vertical axis, downward, at
+    /// [`DOWN_FLICK_PX_PER_MS`] or more from start to now. A down swipe undoes, which a
+    /// burst of short quick flicks must do every time, and an undo is itself undone by a
+    /// swipe, so it takes less than the swipes that add or skip.
+    fn is_down_flick(&self) -> bool {
+        let (Some(start), Some(current)) = (self.start_point.as_ref(), self.current_point.as_ref())
+        else {
+            return false;
+        };
+        let (Some(distance), Some(delta)) = (
+            self.distance_from_start_point(),
+            self.delta_from_start_point(),
+        ) else {
+            return false;
+        };
+        let millis = gesture_math::gap_millis(current.time.signed_duration_since(start.time));
+        self.traversing_axis == Some(Axis::Y)
+            && delta.y > 0.0
+            && millis > 0.0
+            && distance / millis >= DOWN_FLICK_PX_PER_MS
     }
 
     /// Determines and locks the swipe axis (X or Y) based on initial movement.
@@ -652,6 +679,59 @@ mod tests {
         };
         state.end_at(tp(0.0, 70.0, 25), &config);
         assert_eq!(state.latest_swipe, Some(Direction::Down));
+    }
+
+    /// A gesture from the origin straight to `(dx, dy)` in `ms`, in moves 12ms apart, lifted
+    /// where the last move was, as Android reports it.
+    fn flick(dx: f64, dy: f64, ms: i64) -> SwipeState {
+        let steps = i32::try_from(ms / 12).unwrap();
+        let at = |i: i32| {
+            let f = f64::from(i) / f64::from(steps);
+            tp(dx * f, dy * f, i64::from(i) * 12)
+        };
+        let mut state = SwipeState {
+            start_point: Some(tp(0.0, 0.0, 0)),
+            previous_point: Some(at(steps - 1)),
+            current_point: Some(at(steps)),
+            is_swiping: true,
+            ..SwipeState::default()
+        };
+        state.set_traversing_axis();
+        state.end_at(tp(dx, dy, ms + 2), &remove_config());
+        state
+    }
+
+    /// Remove's thresholds: 90px of travel, or 2.5px/ms past 32px.
+    fn remove_config() -> SwipeConfig {
+        SwipeConfig::new(
+            vec![
+                Direction::Left,
+                Direction::Right,
+                Direction::Up,
+                Direction::Down,
+            ],
+            90.0,
+            2.5,
+        )
+    }
+
+    #[test]
+    fn a_quick_short_down_flick_undoes() {
+        assert_eq!(flick(0.0, 70.0, 60).latest_swipe, Some(Direction::Down));
+    }
+
+    #[test]
+    fn a_slow_short_drag_down_does_not_undo() {
+        assert_eq!(flick(0.0, 50.0, 600).latest_swipe, None);
+    }
+
+    #[test]
+    fn a_quick_short_flick_to_the_side_still_needs_the_full_travel() {
+        assert_eq!(
+            flick(-70.0, 0.0, 60).latest_swipe,
+            None,
+            "adds and skips stay as hard to trigger"
+        );
     }
 
     // ── reset ─────────────────────────────────────────────────────────────────
