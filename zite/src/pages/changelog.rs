@@ -1,11 +1,9 @@
-use components::{
-    ChangelogCollapseAll, ChangelogFilter, ChangelogFilters, ChangelogReleases, Panel,
-    use_collapse_set,
-};
+use components::Changelog as ChangelogView;
 use dioxus::prelude::*;
+use zwipe_ui::changelog::ChangelogCache;
 
 use crate::components::{PageMeta, sleep_ms};
-use crate::{Footer, Nav};
+use crate::{Footer, Nav, api};
 
 /// One frame for the selected month's cards to mount before the scroll.
 const MOUNT_WAIT_MS: u32 = 50;
@@ -41,9 +39,20 @@ pub fn Changelog() -> Element {
         });
     });
 
-    let selection = use_signal(|| ChangelogFilter::Latest);
-    // Every release starts open; a header or Collapse all shuts them.
-    let collapse = use_collapse_set();
+    // The compiled copy, which the prerender draws in full; once hydrated, the browser asks
+    // the server and swaps its copy in only when it differs.
+    let mut cache = use_signal(ChangelogCache::default);
+    use_future(move || async move {
+        if !cfg!(target_arch = "wasm32") {
+            return;
+        }
+        let fetched = api::client().fetch_changelog().await.ok();
+        let next = cache.peek().after_fetch(fetched);
+        if let Some(next) = next {
+            cache.set(next);
+        }
+    });
+    let data = cache.read().shown().clone();
 
     rsx! {
         PageMeta {
@@ -53,18 +62,7 @@ pub fn Changelog() -> Element {
         }
         Nav {}
         main { id: "content", class: "page content-enter",
-            div { class: "page-header",
-                Panel {
-                    title: "Changelog",
-                    title_h1: true,
-                    title_end: rsx! {
-                        ChangelogCollapseAll { selection, set: collapse }
-                    },
-                    p { class: "tagline", "Every release, newest first." }
-                    ChangelogFilters { selection, anchor: anchor() }
-                }
-            }
-            ChangelogReleases { selection, collapse, link_versions: true, page_size: PAGE_SIZE }
+            ChangelogView { data, anchor: anchor(), link_versions: true, page_size: PAGE_SIZE }
         }
         Footer {}
     }

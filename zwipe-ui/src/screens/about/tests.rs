@@ -78,7 +78,7 @@ fn lit(rows: &[Vec<Chip>]) -> Vec<&str> {
 fn on(data: HttpChangelog, filter: Filter) -> State {
     let mut state = State::new();
     assert_eq!(
-        state.update(Action::Load(ChangelogCache::Loaded(data))),
+        state.update(Action::Load(ChangelogCache::Fetched(data))),
         NONE
     );
     assert_eq!(state.update(Action::Pick(filter)), NONE);
@@ -103,49 +103,38 @@ fn the_copy_matches_the_app() {
     assert_eq!(labels, ["Version", "Website", "Privacy policy"]);
     assert_eq!(CREDITS, "Credits");
     assert_eq!(CHANGELOG, "Changelog");
-    assert_eq!(FAILED, "Couldn't load the changelog");
     assert_eq!(LATEST, "Latest");
     assert_eq!(BACK, "Back");
 }
 
 #[test]
-fn a_new_screen_is_loading_on_latest() {
+fn a_new_screen_shows_the_compiled_copy_on_latest() {
     let state = State::new();
-    assert_eq!(state.status(), Status::Loading);
     assert_eq!(state.filter(), &Filter::Latest);
-    assert!(state.changelog().is_none());
-    assert_eq!(state.chip_rows(), Vec::<Vec<Chip>>::new());
-    assert_eq!(state.shown().len(), 0);
+    assert_eq!(state.changelog(), &HttpChangelog::current());
+    assert!(!state.chip_rows().is_empty());
+    assert!(!state.shown().is_empty());
 }
 
 #[test]
-fn a_failed_fetch_shows_the_note() {
+fn the_fetch_landing_while_open_swaps_in_the_servers_copy() {
     let mut state = State::new();
-    assert_eq!(state.update(Action::Load(ChangelogCache::Failed)), NONE);
-    assert_eq!(state.status(), Status::Failed);
-    assert_eq!(state.chip_rows(), Vec::<Vec<Chip>>::new());
+    let _ = state.update(Action::Load(ChangelogCache::Fetched(two_years())));
+    assert_eq!(state.changelog(), &two_years());
 }
 
 #[test]
-fn the_fetch_landing_while_open_loads_the_history() {
-    let mut state = State::new();
-    let _ = state.update(Action::Load(ChangelogCache::Loading));
-    let _ = state.update(Action::Load(ChangelogCache::Loaded(two_years())));
-    assert_eq!(state.status(), Status::Loaded);
-    assert_eq!(state.changelog(), Some(&two_years()));
-}
-
-#[test]
-fn picking_before_the_history_loads_does_nothing() {
-    let mut state = State::new();
-    let _ = state.update(Action::Pick(year("2026")));
-    assert_eq!(state.filter(), &Filter::Latest);
-}
-
-#[test]
-fn loading_again_starts_on_latest() {
+fn a_fetch_landing_keeps_a_pick_it_still_shows() {
     let mut state = on(two_years(), year("2026"));
-    let _ = state.update(Action::Load(ChangelogCache::Loaded(two_years())));
+    let _ = state.update(Action::Load(ChangelogCache::Fetched(two_years())));
+    assert_eq!(state.filter(), &year("2026"));
+}
+
+#[test]
+fn a_fetch_landing_goes_back_to_latest_from_a_pick_it_no_longer_shows() {
+    let mut state = on(two_years(), year("2026"));
+    let only_2027 = history(&[], &[("1.15.1", "Jan 20, 2027")]);
+    let _ = state.update(Action::Load(ChangelogCache::Fetched(only_2027)));
     assert_eq!(state.filter(), &Filter::Latest);
 }
 

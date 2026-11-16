@@ -35,9 +35,8 @@ const CATALOG_TTL_HOURS: i64 = 24;
 
 /// State of one cached catalog list.
 ///
-/// Mirrors [`ChangelogCache`](super::auth::session_upkeep::ChangelogCache): a
-/// consumer shows a skeleton on `Loading`, renders on `Loaded`, and falls back to
-/// an empty list (or its own error state) on `Failed`.
+/// A consumer shows a skeleton on `Loading`, renders on `Loaded`, and falls back
+/// to an empty list (or its own error state) on `Failed`.
 #[derive(Debug, Clone, PartialEq)]
 pub enum CatalogCell<T> {
     /// No successful fetch yet; a fetch is in flight or about to be.

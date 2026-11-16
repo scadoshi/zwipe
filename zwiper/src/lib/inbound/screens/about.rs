@@ -3,30 +3,24 @@
 //!
 //! The top panel holds the Version, Website and Privacy policy rows. Under it
 //! a Credits panel holds the Scryfall credit and the Fan Content notice from
-//! `zwipe_core::legal`, then a Changelog panel holds the shared
-//! [`components::ChangelogFilters`] as a row, with each release a panel of
-//! its own under it ([`components::ChangelogReleases`]), the same history the
-//! website shows: the version filter first, then a release per row, five at
-//! a time behind "Show more".
+//! `zwipe_core::legal`, then the shared [`components::Changelog`] that
+//! zwipe.net and the web app draw too: its panel with the chips, then a
+//! release per panel, five at a time behind "Show more".
 //!
-//! The changelog is fetched once in the background at startup and cached for
-//! the session (see [`crate::inbound::components::auth::session_upkeep`]).
-//! This screen reads that cache: a skeleton while the fetch is in flight, the
-//! fetched copy once it lands, and a note when it failed. There is no compiled
-//! fallback: the compiled copy is the one that shipped with this build, so it
-//! could never show anything the reader has not already got.
+//! It draws the session's cache (see
+//! [`crate::inbound::components::auth::session_upkeep`]): the compiled copy
+//! from the first render, and the server's once the startup fetch brings a
+//! different one, so entries added after this build show without a store
+//! update. A failed fetch leaves the compiled copy.
 //!
 //! What the screen knows and does is `zwipe_ui::screens::about`; this file
 //! draws its state and performs its effects.
 
-use components::{
-    Button, ButtonVariant, ChangelogCollapseAll, ChangelogFilter, ChangelogFilters, ChangelogLook,
-    ChangelogReleases, use_collapse_set,
-};
+use components::{Button, ButtonVariant, Changelog as ChangelogView, ChangelogLook};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_core::legal::{FAN_CONTENT_HTML, SCRYFALL_CREDIT_HTML};
-use zwipe_ui::screens::about::{self, Action, Destination, Effect, Row, State, Status};
+use zwipe_ui::screens::about::{self, Action, Destination, Effect, Row, State};
 
 use crate::inbound::components::auth::session_upkeep::ChangelogCache;
 use crate::inbound::components::hint_host::HintTopic;
@@ -85,13 +79,7 @@ pub fn About() -> Element {
     // The launch fetch can land while the screen is up.
     use_effect(move || driver.dispatch(Action::Load(cache())));
 
-    let (status, data) = {
-        let screen = model.read();
-        (screen.status(), screen.changelog().cloned())
-    };
-    let selection = use_signal(|| ChangelogFilter::Latest);
-    // Every release starts open; a header or Collapse all shuts them.
-    let collapse = use_collapse_set();
+    let data = model.read().changelog().clone();
 
     rsx! {
         div { class: "screen",
@@ -144,73 +132,7 @@ pub fn About() -> Element {
                         }
                     }
 
-                    div { class: "settings-list about-panel",
-                        div { class: "settings-list-header",
-                            span { class: "settings-list-title", {about::CHANGELOG} }
-                            if let (Status::Loaded, Some(data)) = (status, &data) {
-                                ChangelogCollapseAll { data: data.clone(), selection, set: collapse }
-                            }
-                        }
-                        match (status, &data) {
-                            (Status::Loaded, Some(data)) => rsx! {
-                                ChangelogFilters { data: data.clone(), selection, look: ChangelogLook::App }
-                            },
-                            (Status::Failed, _) => rsx! {
-                                div { class: "settings-row changelog-filters-row",
-                                    span { class: "chip-note", {about::FAILED} }
-                                }
-                            },
-                            (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeletonChips {} },
-                        }
-                    }
-                    match (status, data) {
-                        (Status::Loaded, Some(data)) => rsx! {
-                            ChangelogReleases { data, selection, collapse, look: ChangelogLook::App, page_size: CHANGELOG_PAGE_SIZE }
-                        },
-                        (Status::Failed, _) => rsx! {},
-                        (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeletonPanels {} },
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// The chips' placeholder while the startup changelog fetch is still in
-/// flight: one row of chip-sized bars in the Changelog panel.
-#[component]
-fn ChangelogSkeletonChips() -> Element {
-    rsx! {
-        div { class: "settings-row changelog-filters-row",
-            div { class: "changelog-skeleton-chips",
-                for i in 0..8 {
-                    div { key: "{i}", class: "skeleton-bar changelog-skeleton-chip" }
-                }
-            }
-        }
-    }
-}
-
-/// The releases' placeholder while the fetch is in flight: a panel per
-/// release, its header a version and a date, its body the bullets.
-#[component]
-fn ChangelogSkeletonPanels() -> Element {
-    // Bullet counts per placeholder panel, roughly matching a real release.
-    const CARD_BULLETS: &[usize] = &[5, 3, 4];
-
-    rsx! {
-        div { class: "changelog-panels",
-            for (c , bullets) in CARD_BULLETS.iter().enumerate() {
-                div { key: "{c}", class: "release-card",
-                    div { class: "release-card-head changelog-skeleton-row",
-                        div { class: "skeleton-bar changelog-skeleton-version" }
-                        div { class: "skeleton-bar changelog-skeleton-date" }
-                    }
-                    div { class: "release-card-notes changelog-skeleton-bullets",
-                        for b in 0..*bullets {
-                            div { key: "{b}", class: "skeleton-bar changelog-skeleton-bullet" }
-                        }
-                    }
+                    ChangelogView { data, look: ChangelogLook::App, page_size: CHANGELOG_PAGE_SIZE }
                 }
             }
         }
