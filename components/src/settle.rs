@@ -141,7 +141,9 @@ const SETTLE_JS: &str = r"
     return inScope ? touched : undefined;
   };
   let prev = null, until = 0, observer = null, measured = false, queued = null;
-  const ghost = (old) => {
+  // `timing` is the check's, read once: reading the easing here would restyle the page once per
+  // copy, each copy just added to it.
+  const ghost = (old, timing) => {
     const copy = old.el.cloneNode(true);
     copy.setAttribute('data-settle-ghost', '');
     for (const keyed of [copy, ...copy.querySelectorAll(KEYED)]) {
@@ -153,7 +155,7 @@ const SETTLE_JS: &str = r"
       pointerEvents: 'none', zIndex: '5', boxSizing: 'border-box', translate: 'none',
     });
     document.body.appendChild(copy);
-    copy.animate([{ opacity: 1 }, { opacity: 0 }], { duration: MS, easing: ease() })
+    copy.animate([{ opacity: 1 }, { opacity: 0 }], timing)
       .finished.then(() => copy.remove(), () => copy.remove());
   };
   // Measures what the change can have moved and moves what jumped.
@@ -187,7 +189,7 @@ const SETTLE_JS: &str = r"
     const goneSet = new Set(gone);
     for (const key of gone) {
       const old = prev.get(key);
-      if (!(old.parent && goneSet.has(old.parent))) ghost(old);
+      if (!(old.parent && goneSet.has(old.parent))) ghost(old, timing);
       prev.delete(key);
     }
     for (const [key, cur] of now) prev.set(key, cur);
@@ -302,5 +304,33 @@ mod tests {
             "the script hands its watch to settle::watch"
         );
         assert!(WATCH_JS.contains("window.__zwSettleWatch"));
+    }
+
+    /// The body of the script's `ghost`, the copy a gone thing leaves.
+    fn ghost_body(script: &str) -> &str {
+        script
+            .split_once("const ghost = (old, timing) => {")
+            .and_then(|(_, rest)| rest.split_once("\n  };"))
+            .map_or("", |(body, _)| body)
+    }
+
+    #[test]
+    fn a_ghost_takes_the_check_s_timing_and_reads_no_style() {
+        let script = script();
+        let body = ghost_body(&script);
+        assert!(!body.is_empty(), "the script has its ghost");
+        assert!(
+            !body.contains("getComputedStyle") && !body.contains("ease()"),
+            "a copy just added to the page and a style read after it restyle the page once per copy: {body}"
+        );
+        assert!(
+            body.contains("copy.animate([{ opacity: 1 }, { opacity: 0 }], timing)"),
+            "{body}"
+        );
+        assert_eq!(
+            script.matches("ease()").count(),
+            1,
+            "the easing is read once per check, into its timing"
+        );
     }
 }

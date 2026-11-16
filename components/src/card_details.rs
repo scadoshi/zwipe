@@ -144,20 +144,23 @@ pub fn turn_face<S: BuildHasher + 'static>(
 /// one surface's image or details: it follows the map, so a flip anywhere turns every surface
 /// the host gives the map. The surface writes its own flips back through its `on_face_change`.
 /// `None` without a map, leaving the surface its own face. Call it from a component keyed by
-/// the card.
+/// the card. The card's face is read out of the map in a memo, so a flip of another card
+/// re-renders nothing here.
 pub fn use_shared_face<S: BuildHasher + 'static>(
     faces: Option<Signal<HashMap<Uuid, usize, S>>>,
     id: Uuid,
 ) -> Option<Signal<usize>> {
-    let shared = faces.map(|faces| faces.read().get(&id).copied().unwrap_or(0));
-    let mut face = use_signal(|| shared.unwrap_or(0));
-    use_effect(use_reactive!(|shared| {
-        if let Some(shared) = shared
+    let shared = use_memo(use_reactive((&faces, &id), |(faces, id)| {
+        faces.map(|faces| faces.read().get(&id).copied().unwrap_or(0))
+    }));
+    let mut face = use_signal(|| shared.peek().unwrap_or(0));
+    use_effect(move || {
+        if let Some(shared) = shared()
             && *face.peek() != shared
         {
             face.set(shared);
         }
-    }));
+    });
     faces.map(|_| face)
 }
 

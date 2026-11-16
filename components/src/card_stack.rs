@@ -58,6 +58,7 @@ pub fn CardStack(
     #[props(default)] on_leave: Option<EventHandler<Uuid>>,
     on_select: EventHandler<Uuid>,
 ) -> Element {
+    crate::count_render!("CardStack");
     let tap = on_hover.is_none();
     let at = revealed.and_then(|r| cards.iter().position(|c| c.card.scryfall_data.id == r));
     let (tucks, shifts) = if tap {
