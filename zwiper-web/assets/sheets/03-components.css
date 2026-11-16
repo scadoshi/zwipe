@@ -1031,6 +1031,13 @@ a.nav-dropdown-item.active:visited {
     transition: bottom 0.25s ease;
 }
 
+/* Rides the keyboard at once under reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+    .action-dock {
+        transition: none;
+    }
+}
+
 /* Pinned to the bottom right instead of centered. */
 .action-dock.action-dock-right {
     margin-right: var(--dock-gap);
@@ -1722,6 +1729,19 @@ html:has(.bottom-sheet.show) body,
     pointer-events: none;
 }
 
+/* Under reduced motion a banner shows without rising and goes without
+   folding; its leave runs for 1ms, since the banner leaves the page when
+   that animation ends. */
+@media (prefers-reduced-motion: reduce) {
+    .banner {
+        animation: none;
+    }
+
+    .banner.banner-leaving {
+        animation-duration: 1ms;
+    }
+}
+
 @keyframes banner-leave {
     0% {
         opacity: 1;
@@ -2258,6 +2278,14 @@ html:has(.bottom-sheet.show) body,
         width 0.2s ease,
         margin-left 0.2s ease,
         opacity 0.2s ease;
+}
+
+/* Under reduced motion the field gives up the button's width at once and
+   only the button's fade runs. */
+@media (prefers-reduced-motion: reduce) {
+    .input-clear-btn {
+        transition: opacity 0.2s ease;
+    }
 }
 
 .input-clear-wrap.has-text > .input-clear-btn {

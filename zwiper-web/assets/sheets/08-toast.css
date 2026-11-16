@@ -57,6 +57,14 @@
     transition: gap 0.2s ease;
 }
 
+/* The stack expands and collapses at once under reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+    .toast-container.animating li,
+    .toast-container.animating ol {
+        transition: none;
+    }
+}
+
 .toast-container li:first-child {
     margin-top: 0;
 }
