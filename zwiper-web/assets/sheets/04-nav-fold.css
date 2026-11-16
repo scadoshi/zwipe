@@ -18,11 +18,11 @@
     max-height: 100vh;
     max-height: 100dvh;
     /* The header row's inset, the same on every side. */
-    --nav-pad: 0.75rem;
+    --nav-pad: var(--space-3);
     padding: var(--nav-pad);
     /* no row-gap: the collapsed panel is a zero-height row, and a gap
        would add phantom space below the toggle row */
-    gap: 0 0.5rem;
+    gap: 0 var(--space-2);
 }
 /* The header row's three items share one center line. */
 .nav-wrapper nav > .nav-brand {
@@ -45,14 +45,14 @@
 .nav-panel {
     /* One link row's vertical padding and the gap between rows; an
        app that caps the link list in whole rows counts in these. */
-    --nav-row-pad: 0.65rem;
-    --nav-row-gap: 0.75rem;
+    --nav-row-pad: var(--space-3);
+    --nav-row-gap: var(--space-3);
     /* The space between the panel's rule and the first link row, and
        under the last row above the trailing rule. */
-    --nav-list-start: 1rem;
-    --nav-list-end: 1rem;
+    --nav-list-start: var(--space-4);
+    --nav-list-end: var(--space-4);
     /* The theme row's trigger padding. */
-    --nav-trigger-pad: 0.55rem;
+    --nav-trigger-pad: var(--space-2);
     /* The open menu lays over the page from the nav's bottom edge instead of
        pushing the page down: it leaves the grid, whose area would inset it by
        the nav's padding, and runs edge to edge. Its own stacking context, so
@@ -164,7 +164,7 @@
     height: auto;
     text-align: center;
     font-size: 0.95rem;
-    padding: var(--nav-row-pad) 1rem;
+    padding: var(--nav-row-pad) var(--space-4);
     justify-content: center;
 }
 /* A dropdown in the links slot stretches its trigger with its siblings;
@@ -182,7 +182,7 @@
 .nav-panel .nav-trailing {
     margin-left: calc(-1 * var(--nav-pad));
     margin-right: calc(-1 * var(--nav-pad));
-    padding: 0.75rem var(--nav-pad) 0;
+    padding: var(--space-3) var(--nav-pad) 0;
     border-top: 1px solid var(--border-primary);
     background-color: var(--bg-primary);
 }
@@ -191,14 +191,14 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    gap: var(--space-3);
     height: auto;
 }
 .nav-panel .nav-dropdown-trigger,
 .nav-panel .mode-toggle {
     height: auto;
     font-size: 0.95rem;
-    padding: var(--nav-trigger-pad) 1rem;
+    padding: var(--nav-trigger-pad) var(--space-4);
 }
 /* Make .nav-dropdown static so the open dropdown's containing block is the
    relative <nav> (inside the sticky .nav-wrapper) rather than .nav-dropdown.
@@ -212,7 +212,7 @@
     top: auto;
     right: auto;
     left: auto;
-    margin-top: 0.5rem;
+    margin-top: var(--space-2);
     max-height: 50vh;
     overflow-y: auto;
 }
@@ -267,7 +267,7 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     padding: 0;
     transform: translateY(-0.4rem);
     transition:
@@ -275,7 +275,7 @@
         padding 0s linear 100ms;
 }
 .nav-panel .nav-links .nav-dropdown-open .nav-dropdown-rows {
-    padding: 0.25rem 0.25rem 0.75rem;
+    padding: var(--space-1) var(--space-1) var(--space-3);
     transform: none;
     transition:
         transform 150ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -285,7 +285,7 @@
 .nav-panel .nav-links a.nav-dropdown-item:visited {
     display: inline-block;
     width: auto;
-    padding: 0.3rem 0.65rem;
+    padding: var(--space-1) var(--space-3);
     border: 1px solid var(--border-muted);
     border-radius: 0.6rem;
     background-color: var(--bg-primary);
@@ -324,29 +324,29 @@
    before the links have to scroll. */
 @media (max-height: 30rem) {
     .nav-panel-open {
-        margin-top: 0.75rem;
+        margin-top: var(--space-3);
     }
     .nav-panel {
-        --nav-list-start: 0.5rem;
-        --nav-list-end: 0.5rem;
-        --nav-row-pad: 0.4rem;
-        --nav-row-gap: 0.4rem;
-        --nav-trigger-pad: 0.4rem;
+        --nav-list-start: var(--space-2);
+        --nav-list-end: var(--space-2);
+        --nav-row-pad: var(--space-2);
+        --nav-row-gap: var(--space-2);
+        --nav-trigger-pad: var(--space-2);
     }
     .nav-panel .theme-picker {
-        padding-top: 0.5rem;
+        padding-top: var(--space-2);
     }
 }
 
 .nav-persistent {
     display: flex;
-    gap: 0.35rem;
+    gap: var(--space-1);
 }
 
 .nav-persistent .nav-cta {
     /* The toggle's height, so the pills and the toggle line up. */
     height: 1.7rem;
-    padding: 0 0.55rem;
+    padding: 0 var(--space-2);
     font-size: 0.7rem;
 }
 

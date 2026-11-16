@@ -12,7 +12,7 @@
 /* A diagram carousel reuses the gallery frame for short, wide diagrams: no video-height floor, and side padding so prev and next sit beside the slide. */
 .gallery-body.diagram-carousel {
     min-height: 0;
-    padding: 0 3rem;
+    padding: 0 var(--space-7);
 }
 
 .diagram-slide {
@@ -65,7 +65,7 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    gap: 1rem;
+    gap: var(--space-4);
     color: var(--ink-text-muted, var(--text-muted));
     font-size: 0.85rem;
 }

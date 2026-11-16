@@ -4,11 +4,22 @@
  * THEMES_CSS. Rules reference theme CSS variables only, never color literals,
  * so a component resolves to whichever theme the host has active. */
 
-/* The space between stacked panels on every screen of every app and site.
+/* The spacing scale: seven steps on a 4px base. Every padding, margin and
+   gap names one of these, except hairlines (0.15rem and under), em padding
+   that follows its own text, and the few lengths that make room for
+   something rather than space things apart, each commented where it sits.
+   The space between stacked panels on every screen of every app and site.
    The entrance curve and length an opening surface shares: a soft ease-out
    that starts quick and settles. */
 :root {
-    --panel-gap: 1rem;
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+    --space-7: 3rem;
+    --panel-gap: var(--space-4);
     --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
     --enter-duration: 280ms;
 }
@@ -34,7 +45,7 @@
 
 .chip {
     display: inline-block;
-    padding: 0.3rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
     border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
     /* A button element, so the host's face has to be named. */
@@ -96,7 +107,7 @@
    defaults, so a host rule of any specificity resizes a tag. */
 :where(.tag) {
     border-radius: 0.6rem;
-    padding: 0.2rem 0.7rem;
+    padding: var(--space-1) var(--space-3);
     font-size: 0.78rem;
     letter-spacing: 0.02em;
 }
@@ -113,7 +124,7 @@
    label wraps onto a second line, centered, instead of overflowing the
    border. The size and shape are soft defaults, as on .tag. */
 :where(.stat-chip) {
-    padding: 0.2rem 0.55rem;
+    padding: var(--space-1) var(--space-2);
     border-radius: 0.6rem;
     font-size: 0.75rem;
 }
@@ -216,7 +227,7 @@ a.stat-chip {
 /* Primary: full-width form/dialog button. */
 .btn {
     width: 100%;
-    padding: 1rem;
+    padding: var(--space-4);
     background-color: var(--bg-primary);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-primary);
@@ -227,7 +238,7 @@ a.stat-chip {
     font-weight: 400;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-6);
 }
 
 .btn:disabled {
@@ -238,10 +249,10 @@ a.stat-chip {
 
 /* Small: compact inline button. */
 .btn-xs {
-    padding: 0.4rem 0.8rem;
+    padding: var(--space-2) var(--space-3);
     font-size: 0.75rem;
     border-radius: 0.5rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-2);
     width: auto;
     background: none;
     border: 1px solid var(--palette-2);
@@ -260,7 +271,7 @@ a.stat-chip {
 
 /* Action: compact ActionBar button. */
 .btn-action {
-    padding: 0.4rem 0.8rem;
+    padding: var(--space-2) var(--space-3);
     font-size: 0.8rem;
     border-radius: 0.5rem;
     width: auto;
@@ -299,9 +310,9 @@ a.stat-chip {
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    padding-bottom: 1rem;
-    padding-top: 1rem;
+    gap: var(--space-2);
+    padding-bottom: var(--space-4);
+    padding-top: var(--space-4);
 
     /* Force GPU acceleration to fix iOS keyboard repositioning bug */
     -webkit-transform: translateZ(0);
@@ -319,7 +330,7 @@ a.stat-chip {
     z-index: 101;
     background-color: var(--bg-primary);
     /* 1rem to the first panel, the gap the apps leave under their header. */
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-4);
     border-bottom: 1px solid var(--border-primary);
     box-shadow: var(--shadow-sm);
 }
@@ -342,8 +353,8 @@ a.stat-chip {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 2rem;
-    padding: 1.25rem 1.5rem;
+    gap: var(--space-6);
+    padding: var(--space-4) var(--space-5);
     margin: 0 auto;
     position: relative;
 }
@@ -359,7 +370,7 @@ a.stat-chip {
     align-items: center;
     justify-content: flex-end;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: var(--space-3);
 }
 
 /* The hamburger: a small faded box with short 2px bars, at full strength
@@ -371,10 +382,10 @@ a.stat-chip {
     justify-content: center;
     align-items: center;
     box-sizing: border-box;
-    gap: 0.22rem;
+    gap: var(--space-1);
     width: 2.1rem;
     height: 1.7rem;
-    padding: 0.2rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
     background: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
@@ -425,7 +436,7 @@ a.stat-chip {
 .nav-brand {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: var(--space-3);
     text-decoration: none;
     cursor: pointer;
 }
@@ -459,7 +470,7 @@ a.stat-chip {
     align-items: center;
     justify-content: flex-end;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: var(--space-3);
     list-style: none;
     margin: 0;
     padding: 0;
@@ -491,7 +502,7 @@ a.stat-chip {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
-    padding: 0 0.8rem;
+    padding: 0 var(--space-3);
     font-family: inherit;
     font-size: 0.8rem;
     letter-spacing: 0.04em;
@@ -536,7 +547,7 @@ a.stat-chip {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
-    padding: 0 0.8rem;
+    padding: 0 var(--space-3);
     font-family: inherit;
     font-size: 0.8rem;
     letter-spacing: 0.04em;
@@ -568,7 +579,7 @@ a.stat-chip {
 .nav-persistent {
     display: none;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 /* An icon-only call to action (a.nav-cta.nav-cta-icon): a square of the
@@ -601,7 +612,7 @@ a.stat-chip {
 
 .theme-picker {
     display: flex;
-    gap: 0.75rem;
+    gap: var(--space-3);
     align-items: center;
     height: 1.85rem;
     line-height: 1;
@@ -619,7 +630,7 @@ a.stat-chip {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
-    padding: 0 0.8rem;
+    padding: 0 var(--space-3);
     font-family: inherit;
     font-size: 0.8rem;
     letter-spacing: 0.04em;
@@ -722,12 +733,12 @@ a.stat-chip {
         visibility 0s linear 100ms;
     position: absolute;
     top: 100%;
-    margin-top: 0.5rem;
+    margin-top: var(--space-2);
     background: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     min-width: 11rem;
-    padding: 0.5rem 0;
+    padding: var(--space-2) 0;
     /* One above the triggers (200). In the hamburger panel a menu drops over
        the stacked triggers below its own, which won the tie and covered it. */
     z-index: 201;
@@ -780,7 +791,7 @@ a.nav-dropdown-item:visited {
     color: var(--ink-text-muted, var(--text-muted));
     font-family: inherit;
     font-size: 0.85rem;
-    padding: 0.4rem 1rem;
+    padding: var(--space-2) var(--space-4);
     text-align: left;
     cursor: pointer;
     width: 100%;
@@ -814,9 +825,9 @@ a.nav-dropdown-item.active:visited {
 .theme-picker-sheet .theme-swatches {
     display: flex;
     align-items: center;
-    gap: 0.2rem;
+    gap: var(--space-1);
     flex-shrink: 0;
-    padding: 0.2rem 0.25rem;
+    padding: var(--space-1) var(--space-1);
     border-radius: 0.35rem;
     background: var(--bg-primary);
     border: 1px solid var(--text-muted);
@@ -827,7 +838,7 @@ a.nav-dropdown-item.active:visited {
    app.css so a site's settings sheet gets it too. */
 /* Soft: the padding, radius and font. */
 :where(.pref-row) {
-    padding: 0.6rem 1rem;
+    padding: var(--space-2) var(--space-4);
     border-radius: 0.4rem;
     font-family: "JetBrains Mono", monospace;
     font-weight: 400;
@@ -868,7 +879,7 @@ a.nav-dropdown-item.active:visited {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: var(--space-2);
     width: 100%;
 }
 
@@ -877,7 +888,7 @@ a.nav-dropdown-item.active:visited {
     color: var(--ink-accent-primary, var(--accent-primary));
     letter-spacing: 0.1em;
     text-align: center;
-    margin: 0.75rem 0 0.4rem;
+    margin: var(--space-3) 0 var(--space-2);
 }
 
 /* A theme group's name, a chip centered over its rows; the first sits
@@ -885,7 +896,7 @@ a.nav-dropdown-item.active:visited {
 .theme-group-label {
     display: flex;
     justify-content: center;
-    margin: 0.5rem 0 0.1rem;
+    margin: var(--space-2) 0 0.1rem;
 }
 
 .theme-group-label:first-child {
@@ -910,8 +921,8 @@ a.nav-dropdown-item.active:visited {
    accent. */
 /* Soft: the row's gap, padding, radius and font size. */
 :where(.theme-picker-sheet .nav-dropdown-item) {
-    gap: 1rem;
-    padding: 0.65rem 1rem;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
     border-radius: 0.4rem;
     font-size: 0.95rem;
 }
@@ -941,7 +952,7 @@ a.nav-dropdown-item.active:visited {
 
 /* The group chip sits centered above its rows, as the app's sheet has it. */
 .theme-picker-sheet .nav-dropdown-label {
-    margin: 0.5rem 0 0.1rem;
+    margin: var(--space-2) 0 0.1rem;
     padding: 0;
 }
 
@@ -954,8 +965,8 @@ a.nav-dropdown-item.active:visited {
 /* Section subtitles ("Themes" / "Color blind") that group the picker. The
    gap above each later section carries the separation (no divider line). */
 .nav-dropdown-label {
-    margin-top: 0.85rem;
-    padding: 0.4rem 1rem 0.25rem;
+    margin-top: var(--space-3);
+    padding: var(--space-2) var(--space-4) var(--space-1);
     color: var(--ink-accent-primary, var(--accent-primary));
     font-size: 0.65rem;
     letter-spacing: 0.1em;
@@ -976,7 +987,7 @@ a.nav-dropdown-item.active:visited {
 
 /* Soft: the row's bottom padding. */
 :where(.nav-trailing-row) {
-    padding-bottom: 0.6rem;
+    padding-bottom: var(--space-2);
 }
 
 .nav-trailing-row {
@@ -987,7 +998,7 @@ a.nav-dropdown-item.active:visited {
 
 /* Soft: the gap between the group's icons. */
 :where(.nav-trailing-group) {
-    gap: 0.4rem;
+    gap: var(--space-2);
 }
 
 .nav-trailing-group {
@@ -1037,9 +1048,9 @@ a.nav-dropdown-item.active:visited {
        button's corner is the dock's less the border and that inset, so the
        gap around each end button stays even. */
     --dock-radius: 0.9rem;
-    --dock-inset: 0.3rem;
-    gap: 0.25rem;
-    padding: 0 0.4rem;
+    --dock-inset: var(--space-1);
+    gap: var(--space-1);
+    padding: 0 var(--space-2);
     border-radius: var(--dock-radius);
 }
 
@@ -1051,7 +1062,7 @@ a.nav-dropdown-item.active:visited {
        45 degree line from the corner: half the home indicator's safe area
        plus a margin, which puts it over the indicator's strip rather than
        stacked above it and clears the phone's rounded corner. */
-    --dock-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem);
+    --dock-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2));
     bottom: calc(var(--dock-gap) + var(--keyboard-inset, 0px));
     z-index: 50;
     width: fit-content;
@@ -1162,7 +1173,7 @@ a.nav-dropdown-item.active:visited {
 
 /* Soft: the divider's side margin. */
 :where(.action-dock-divider) {
-    margin: 0 0.25rem;
+    margin: 0 var(--space-1);
 }
 
 .action-dock-divider {
@@ -1386,11 +1397,11 @@ html:has(.bottom-sheet.show) body,
 }
 
 .bottom-sheet .action-bar {
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
 }
 
 .sheet-header {
-    padding: 1.5rem;
+    padding: var(--space-5);
     border-bottom: 1px solid var(--border-secondary);
     display: flex;
     justify-content: center;
@@ -1457,7 +1468,7 @@ html:has(.bottom-sheet.show) body,
 /* The body starts as close under the title bar as a panel's body under
    its header. */
 .sheet-content {
-    padding: 1rem 1.5rem 1.5rem;
+    padding: var(--space-4) var(--space-5) var(--space-5);
     overflow-y: auto;
     flex: 1;
     display: flex;
@@ -1468,7 +1479,7 @@ html:has(.bottom-sheet.show) body,
 /* A sheet with no action bar ends on its content, which keeps clear of
    the home indicator itself. */
 .bottom-sheet > .sheet-content:last-child {
-    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
 }
 
 /* ---- Keyboard shortcuts (orangui::ShortcutsSheet, ShortcutRow) ----
@@ -1483,7 +1494,7 @@ html:has(.bottom-sheet.show) body,
     padding: 0;
     display: grid;
     grid-template-columns: max-content 1fr;
-    gap: 0.6rem 0.75rem;
+    gap: var(--space-2) var(--space-3);
 }
 
 .shortcut {
@@ -1498,7 +1509,7 @@ html:has(.bottom-sheet.show) body,
 }
 
 .shortcuts-note {
-    margin: 0 0 0.75rem;
+    margin: 0 0 var(--space-3);
     color: var(--ink-text-muted, var(--text-muted));
 }
 
@@ -1507,12 +1518,12 @@ html:has(.bottom-sheet.show) body,
 .shortcut-groups {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-4);
 }
 
 /* A group's heading holds its chip (`stat-chip-heading`). */
 .shortcut-group-title {
-    margin: 0 0 0.5rem;
+    margin: 0 0 var(--space-2);
     font-size: inherit;
     font-weight: inherit;
 }
@@ -1524,19 +1535,19 @@ html:has(.bottom-sheet.show) body,
 
     .shortcut-groups {
         columns: 2;
-        column-gap: 2rem;
+        column-gap: var(--space-6);
         display: block;
     }
 
     .shortcut-group {
         break-inside: avoid;
-        margin-bottom: 0.75rem;
+        margin-bottom: var(--space-3);
     }
 
     /* Two columns hold more rows at once, a little closer, so a screen
        with many keys (the deck page) fits a laptop's window. */
     .shortcut-groups .shortcuts {
-        row-gap: 0.35rem;
+        row-gap: var(--space-1);
     }
 }
 
@@ -1675,6 +1686,7 @@ html:has(.bottom-sheet.show) body,
 }
 
 .bottom-sheet:has(.sheet-dock) > .sheet-content > .flex-col {
+    /* 5rem is the room for the dock, off the scale. */
     padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px) + var(--keyboard-inset, 0px));
 }
 
@@ -1701,7 +1713,7 @@ html:has(.bottom-sheet.show) body,
     z-index: 100;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: var(--space-2);
     /* Viewport-aware cap: 420px on desktop, viewport minus 3rem on phones so
        the stack keeps a 1.5rem right margin mirroring the 1.5rem left offset
        instead of running off the edge when a banner's copy is long. */
@@ -1715,12 +1727,13 @@ html:has(.bottom-sheet.show) body,
     background: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 0.4rem;
-    padding: 0.8rem 2.4rem 0.9rem 1.2rem;
+    /* 2.4rem on the right is the room for the close button, off the scale. */
+    padding: var(--space-3) 2.4rem var(--space-4) var(--space-4);
     font-size: 0.75rem;
     color: var(--text-primary);
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: var(--space-2);
     animation: banner-rise-in 0.5s ease-out both;
     animation-delay: 1s;
     box-shadow: var(--shadow-md);
@@ -1729,7 +1742,7 @@ html:has(.bottom-sheet.show) body,
 .banner-header {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
 }
 
 .banner-category {
@@ -1787,7 +1800,7 @@ html:has(.bottom-sheet.show) body,
     100% {
         opacity: 0;
         max-height: 0;
-        margin-bottom: -0.6rem;
+        margin-bottom: calc(-1 * var(--space-2));
         padding-top: 0;
         padding-bottom: 0;
         border-top-width: 0;
@@ -1896,7 +1909,7 @@ html:has(.bottom-sheet.show) body,
     display: inline-block;
     font-size: 0.75rem;
     letter-spacing: 0.05em;
-    padding: 0.3rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
     border: 1px solid transparent;
     border-radius: 0.6rem;
     vertical-align: middle;
@@ -1948,15 +1961,15 @@ html:has(.bottom-sheet.show) body,
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border-secondary);
 }
 
 .release-card-head .collapse-caret {
     width: 1.25rem;
     height: 1.25rem;
-    margin-left: -0.25rem;
+    margin-left: calc(-1 * var(--space-1));
 }
 
 .release-card-version {
@@ -1984,7 +1997,7 @@ html:has(.bottom-sheet.show) body,
 .release-card-notes {
     list-style: none;
     margin: 0;
-    padding: 0.75rem 1rem;
+    padding: var(--space-3) var(--space-4);
     text-align: left;
 }
 
@@ -1992,9 +2005,9 @@ html:has(.bottom-sheet.show) body,
     font-size: 0.8rem;
     color: var(--text-subtle);
     line-height: 1.7;
-    padding-left: 1rem;
+    padding-left: var(--space-4);
     position: relative;
-    margin-bottom: 0.35rem;
+    margin-bottom: var(--space-1);
 }
 
 .release-card-notes li:last-child {
@@ -2050,7 +2063,7 @@ html:has(.bottom-sheet.show) body,
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
-    padding: 1.5rem;
+    padding: var(--space-5);
     box-shadow: var(--shadow-sm);
     transition: border-color 0.2s;
 }
@@ -2064,8 +2077,8 @@ html:has(.bottom-sheet.show) body,
 .panel-eyebrow-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.4rem;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
 }
 
 .panel-eyebrow {
@@ -2087,14 +2100,14 @@ html:has(.bottom-sheet.show) body,
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 /* Full-bleed divider to the card edges, matching the dialogs. */
 .panel-rule {
     border: none;
     border-top: 1px solid var(--border-secondary);
-    margin: 1rem -1.5rem;
+    margin: var(--space-4) calc(-1 * var(--space-5));
 }
 
 /* Grow the body so the footer rule + actions pin to the bottom. In a normal
@@ -2115,7 +2128,7 @@ html:has(.bottom-sheet.show) body,
 .panel-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: var(--space-3);
 }
 
 /* A dialog-style panel: title and actions centered, body left to read, as the
@@ -2134,7 +2147,7 @@ html:has(.bottom-sheet.show) body,
 .panel-action {
     display: inline-flex;
     align-items: center;
-    padding: 0.35rem 0.9rem;
+    padding: var(--space-1) var(--space-4);
     border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
     background-color: var(--bg-primary);
@@ -2160,7 +2173,7 @@ html:has(.bottom-sheet.show) body,
    Solid background gives native press feedback and suppresses WKWebView's
    focus ring. */
 .stepper-btn {
-    padding: 0.3rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     background-color: var(--bg-primary);
@@ -2181,6 +2194,7 @@ html:has(.bottom-sheet.show) body,
 }
 
 .password-input-wrapper .input-password {
+    /* Room for the show button, off the scale. */
     padding-right: 4rem;
 }
 
@@ -2194,7 +2208,7 @@ html:has(.bottom-sheet.show) body,
     color: var(--ink-text-muted, var(--text-muted));
     font-family: "JetBrains Mono", monospace;
     font-size: 0.85rem;
-    padding: 0.25rem 0.5rem;
+    padding: var(--space-1) var(--space-2);
     cursor: pointer;
     border-radius: 0.3rem;
 }
@@ -2274,7 +2288,7 @@ html:has(.bottom-sheet.show) body,
     display: flex;
     align-items: center;
     width: 100%;
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-4);
 }
 
 .input-clear-wrap > :first-child {
@@ -2323,7 +2337,7 @@ html:has(.bottom-sheet.show) body,
 
 .input-clear-wrap.has-text > .input-clear-btn {
     width: 2.2rem;
-    margin-left: 0.5rem;
+    margin-left: var(--space-2);
     opacity: 1;
     pointer-events: auto;
 }
@@ -2638,11 +2652,11 @@ html:has(.bottom-sheet.show) body,
 }
 
 :where(.heat-readout) {
-    margin-top: 0.5rem;
+    margin-top: var(--space-2);
 }
 
 :where(.heat-readout-row) {
-    gap: 0.4rem;
+    gap: var(--space-2);
 }
 
 :where(.heat-readout-tag) {
@@ -2936,7 +2950,7 @@ html[data-wipe="left"]::view-transition-new(root) {
 .stats-strip {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
+    gap: var(--space-2);
     margin: 0;
 }
 
@@ -2953,7 +2967,7 @@ html[data-wipe="left"]::view-transition-new(root) {
 }
 
 :where(.stats-strip .stat) {
-    padding: 0.7rem 0.35rem 0.6rem;
+    padding: var(--space-3) var(--space-1) var(--space-2);
 }
 
 :where(.stats-strip .stat-num) {
@@ -2989,7 +3003,7 @@ html[data-wipe="left"]::view-transition-new(root) {
     justify-content: center;
     min-width: 1.5rem;
     min-height: 1.5rem;
-    margin-left: 0.35rem;
+    margin-left: var(--space-1);
     padding: 0;
     border: 1px solid var(--border-primary);
     border-radius: 0.5rem;
@@ -3014,7 +3028,7 @@ html[data-wipe="left"]::view-transition-new(root) {
     border: 1px solid var(--accent-tertiary);
     color: var(--ink-accent-tertiary, var(--accent-tertiary));
     border-radius: 0.5rem;
-    padding: 0.05rem 0.45rem;
+    padding: 0.05rem var(--space-2);
     font-size: 0.8rem;
     line-height: 1;
     white-space: nowrap;
@@ -3038,7 +3052,7 @@ html[data-wipe="left"]::view-transition-new(root) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.2rem 0.3rem;
+    padding: var(--space-1) var(--space-1);
     vertical-align: -0.3em;
 }
 
@@ -3173,11 +3187,11 @@ html[data-wipe="left"]::view-transition-new(root) {
     max-height: 100vh;
     max-height: 100dvh;
     /* The header row's inset, the same on every side. */
-    --nav-pad: 0.75rem;
+    --nav-pad: var(--space-3);
     padding: var(--nav-pad);
     /* no row-gap: the collapsed panel is a zero-height row, and a gap
        would add phantom space below the toggle row */
-    gap: 0 0.5rem;
+    gap: 0 var(--space-2);
 }
 /* The header row's three items share one center line. */
 .nav-wrapper nav > .nav-brand {
@@ -3200,14 +3214,14 @@ html[data-wipe="left"]::view-transition-new(root) {
 .nav-panel {
     /* One link row's vertical padding and the gap between rows; an
        app that caps the link list in whole rows counts in these. */
-    --nav-row-pad: 0.65rem;
-    --nav-row-gap: 0.75rem;
+    --nav-row-pad: var(--space-3);
+    --nav-row-gap: var(--space-3);
     /* The space between the panel's rule and the first link row, and
        under the last row above the trailing rule. */
-    --nav-list-start: 1rem;
-    --nav-list-end: 1rem;
+    --nav-list-start: var(--space-4);
+    --nav-list-end: var(--space-4);
     /* The theme row's trigger padding. */
-    --nav-trigger-pad: 0.55rem;
+    --nav-trigger-pad: var(--space-2);
     /* The open menu lays over the page from the nav's bottom edge instead of
        pushing the page down: it leaves the grid, whose area would inset it by
        the nav's padding, and runs edge to edge. Its own stacking context, so
@@ -3319,7 +3333,7 @@ html[data-wipe="left"]::view-transition-new(root) {
     height: auto;
     text-align: center;
     font-size: 0.95rem;
-    padding: var(--nav-row-pad) 1rem;
+    padding: var(--nav-row-pad) var(--space-4);
     justify-content: center;
 }
 /* A dropdown in the links slot stretches its trigger with its siblings;
@@ -3337,7 +3351,7 @@ html[data-wipe="left"]::view-transition-new(root) {
 .nav-panel .nav-trailing {
     margin-left: calc(-1 * var(--nav-pad));
     margin-right: calc(-1 * var(--nav-pad));
-    padding: 0.75rem var(--nav-pad) 0;
+    padding: var(--space-3) var(--nav-pad) 0;
     border-top: 1px solid var(--border-primary);
     background-color: var(--bg-primary);
 }
@@ -3346,14 +3360,14 @@ html[data-wipe="left"]::view-transition-new(root) {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
+    gap: var(--space-3);
     height: auto;
 }
 .nav-panel .nav-dropdown-trigger,
 .nav-panel .mode-toggle {
     height: auto;
     font-size: 0.95rem;
-    padding: var(--nav-trigger-pad) 1rem;
+    padding: var(--nav-trigger-pad) var(--space-4);
 }
 /* Make .nav-dropdown static so the open dropdown's containing block is the
    relative <nav> (inside the sticky .nav-wrapper) rather than .nav-dropdown.
@@ -3367,7 +3381,7 @@ html[data-wipe="left"]::view-transition-new(root) {
     top: auto;
     right: auto;
     left: auto;
-    margin-top: 0.5rem;
+    margin-top: var(--space-2);
     max-height: 50vh;
     overflow-y: auto;
 }
@@ -3422,7 +3436,7 @@ html[data-wipe="left"]::view-transition-new(root) {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     padding: 0;
     transform: translateY(-0.4rem);
     transition:
@@ -3430,7 +3444,7 @@ html[data-wipe="left"]::view-transition-new(root) {
         padding 0s linear 100ms;
 }
 .nav-panel .nav-links .nav-dropdown-open .nav-dropdown-rows {
-    padding: 0.25rem 0.25rem 0.75rem;
+    padding: var(--space-1) var(--space-1) var(--space-3);
     transform: none;
     transition:
         transform 150ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -3440,7 +3454,7 @@ html[data-wipe="left"]::view-transition-new(root) {
 .nav-panel .nav-links a.nav-dropdown-item:visited {
     display: inline-block;
     width: auto;
-    padding: 0.3rem 0.65rem;
+    padding: var(--space-1) var(--space-3);
     border: 1px solid var(--border-muted);
     border-radius: 0.6rem;
     background-color: var(--bg-primary);
@@ -3479,29 +3493,29 @@ html[data-wipe="left"]::view-transition-new(root) {
    before the links have to scroll. */
 @media (max-height: 30rem) {
     .nav-panel-open {
-        margin-top: 0.75rem;
+        margin-top: var(--space-3);
     }
     .nav-panel {
-        --nav-list-start: 0.5rem;
-        --nav-list-end: 0.5rem;
-        --nav-row-pad: 0.4rem;
-        --nav-row-gap: 0.4rem;
-        --nav-trigger-pad: 0.4rem;
+        --nav-list-start: var(--space-2);
+        --nav-list-end: var(--space-2);
+        --nav-row-pad: var(--space-2);
+        --nav-row-gap: var(--space-2);
+        --nav-trigger-pad: var(--space-2);
     }
     .nav-panel .theme-picker {
-        padding-top: 0.5rem;
+        padding-top: var(--space-2);
     }
 }
 
 .nav-persistent {
     display: flex;
-    gap: 0.35rem;
+    gap: var(--space-1);
 }
 
 .nav-persistent .nav-cta {
     /* The toggle's height, so the pills and the toggle line up. */
     height: 1.7rem;
-    padding: 0 0.55rem;
+    padding: 0 var(--space-2);
     font-size: 0.7rem;
 }
 

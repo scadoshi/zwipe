@@ -40,6 +40,7 @@
     display: flex;
     /* Pulls each toast up behind the one before it, leaving a sliver showing.
        Tuned against a one-line toast; a taller one shows a little more. */
+    /* The overlap with the toast before, off the scale. */
     margin-top: -2.75rem;
     position: relative;
 }
@@ -78,7 +79,7 @@
 
 /* Expanded: no overlap, a real gap, and the z-index ladder stops mattering. */
 .toast-container.expanded ol {
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .toast-container.expanded li {
@@ -100,7 +101,7 @@
     box-sizing: border-box;
     align-items: center;
     justify-content: flex-start;
-    padding: 1rem;
+    padding: var(--space-4);
     border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
     background: var(--bg-primary);
@@ -154,13 +155,13 @@
     /* Lets the text column shrink below its longest word, so that word
        wraps instead of pushing the toast wider than the container. */
     min-width: 0;
-    margin-right: 0.5rem;
+    margin-right: var(--space-2);
 }
 
 /* A message shows whole, wrapped over as many lines as it needs, collapsed
    or not. A URL or any other unbroken run breaks wherever it has to. */
 .toast-container [role="alertdialog"] [id$="-label"] {
-    margin-bottom: 0.25rem;
+    margin-bottom: var(--space-1);
     color: var(--text-primary);
     font-size: 0.9rem;
     font-weight: 400;
@@ -193,7 +194,7 @@
     padding: 0;
     border: none;
     border-radius: 0.6rem;
-    margin: -0.5rem -0.5rem -0.5rem 0;
+    margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
     background: transparent;
     color: var(--text-primary);
     cursor: pointer;
