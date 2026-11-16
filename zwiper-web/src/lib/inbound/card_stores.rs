@@ -35,6 +35,9 @@ pub struct CardStores {
     pub undo: Signal<UndoStore>,
     /// Adds whose create call has not answered.
     pub in_flight: Signal<InFlightAdds>,
+    /// Moves from the maybeboard to the deck whose PATCH has not answered, counted as
+    /// `in_flight` counts adds: an undo pressed meanwhile waits on the move.
+    pub promotes: Signal<InFlightAdds>,
     /// Remove's deletes that have not answered, and the restores undos parked on
     /// them, which go out once the delete lands even after Remove is gone.
     pub removes: Signal<InFlightRemoves<Restore>>,
@@ -57,6 +60,7 @@ pub fn use_card_stores() {
         stacks: use_root_signal(AddStackCache::default),
         undo: use_root_signal(UndoStore::default),
         in_flight: use_root_signal(InFlightAdds::default),
+        promotes: use_root_signal(InFlightAdds::default),
         removes: use_root_signal(InFlightRemoves::default),
         add_stack: use_root_signal(CardStack::default),
         add_stack_deck: use_root_signal(|| None),

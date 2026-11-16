@@ -136,6 +136,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         mut stacks,
         mut undo,
         mut in_flight,
+        mut promotes,
         add_stack: mut stack,
         mut last_search,
         ..
@@ -684,6 +685,12 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         };
         let card = *card;
         let card_id = card.scryfall_data.id;
+        // Its move is still out: the card comes back now, and the move's answer moves it back
+        // on the server once, or finds nothing to undo.
+        if promotes.write().undo(card_id) {
+            mb_stack.write().insert_current(card);
+            return;
+        }
         let taken = undo.write().take_newest(deck_id, |a| {
             matches!(a, UndoAction::MovedBoard { card_id: id, from: Board::Maybeboard, .. } if *id == card_id)
         });
@@ -792,6 +799,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             let card_id = card.scryfall_data.id;
             let card_name = card.scryfall_data.name.clone();
             let oracle_id = card.scryfall_data.oracle_id;
+            let promoted = card.clone();
             mb_stack.write().record(MaybeboardAction::Promote {
                 card: Box::new(card),
             });
@@ -813,17 +821,19 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 line.ran_out();
             }
             line.raise(confirm, toast);
+            promotes.write().begin(card_id);
             spawn_write_in_order(card_id, async move {
                 let to_deck =
                     HttpPatchDeckCard::new(None, Some(Board::Deck.display_name().to_owned()));
-                if authed
+                let moved = authed
                     .run("promote_maybeboard", |c, s| async move {
                         c.update_deck_card(deck_id, card_id, &to_deck, &s).await
                     })
                     .await
-                    .is_some()
-                {
-                    undo.write().push(
+                    .is_some();
+                let outcome = promotes.write().finish(card_id);
+                match promote_next(moved, outcome) {
+                    PromoteNext::Log => undo.write().push(
                         deck_id,
                         UndoAction::MovedBoard {
                             card_id,
@@ -831,7 +841,33 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                             from: Board::Maybeboard,
                             starred: None,
                         },
-                    );
+                    ),
+                    PromoteNext::MoveBack => {
+                        let back = HttpPatchDeckCard::new(
+                            None,
+                            Some(Board::Maybeboard.display_name().to_owned()),
+                        );
+                        let moved_back = authed
+                            .run("undo_maybeboard", |c, s| async move {
+                                c.update_deck_card(deck_id, card_id, &back, &s).await
+                            })
+                            .await;
+                        if let Some(deck_card) = moved_back
+                            && mounted.get()
+                        {
+                            if let Some(d) = deck.write().as_mut() {
+                                if let Some(oracle_id) = oracle_id {
+                                    d.in_deck.remove(&oracle_id);
+                                }
+                                d.maybeboard.push(DeckEntry {
+                                    card: promoted,
+                                    deck_card,
+                                });
+                            }
+                            confirm.success("Undid move to mainboard");
+                        }
+                    }
+                    PromoteNext::Nothing => {}
                 }
             });
         }
@@ -1318,5 +1354,63 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 }
         }
         OneTimeHintDialog { hint: OneTimeHint::AddDeckCards, open: hint_open }
+    }
+}
+
+/// What a move from the maybeboard to the deck does once its PATCH answers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PromoteNext {
+    /// It stands: its undo entry goes on the log.
+    Log,
+    /// Its undo was pressed while it was out: the one move back goes now, and nothing is logged.
+    MoveBack,
+    /// It never went through: nothing to log and nothing to move back.
+    Nothing,
+}
+
+/// The step after a promote's PATCH: `moved` says it went through, `outcome` whether its undo
+/// was pressed while it was out.
+fn promote_next(moved: bool, outcome: AddOutcome) -> PromoteNext {
+    match (moved, outcome) {
+        (true, AddOutcome::Keep) => PromoteNext::Log,
+        (true, AddOutcome::Undo) => PromoteNext::MoveBack,
+        (false, AddOutcome::Keep | AddOutcome::Undo) => PromoteNext::Nothing,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use zwipe_ui::stores::in_flight::InFlightAdds;
+
+    use super::*;
+
+    #[test]
+    fn a_promote_undone_while_out_moves_back_once_when_it_lands_and_never_logs() {
+        let card = Uuid::from_u128(1);
+        let mut promotes = InFlightAdds::default();
+
+        promotes.begin(card);
+        assert_eq!(
+            promote_next(true, promotes.finish(card)),
+            PromoteNext::Log,
+            "no undo: it logs"
+        );
+
+        promotes.begin(card);
+        assert!(promotes.undo(card), "the undo waits on the promote");
+        assert_eq!(
+            promote_next(true, promotes.finish(card)),
+            PromoteNext::MoveBack
+        );
+        assert!(!promotes.undo(card), "and owns nothing after");
+
+        promotes.begin(card);
+        assert!(promotes.undo(card));
+        assert_eq!(
+            promote_next(false, promotes.finish(card)),
+            PromoteNext::Nothing,
+            "it never went through: no move back"
+        );
+        assert_eq!(promote_next(false, AddOutcome::Keep), PromoteNext::Nothing);
     }
 }

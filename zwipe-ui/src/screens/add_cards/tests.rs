@@ -1126,7 +1126,10 @@ fn an_undo_promote_still_standing_without_its_entry_moves_it_back() {
         remembered: None,
     });
     let _filtered = state.update(Action::Filter(state.filter().clone()));
-    let _promoted = state.update(Action::Swipe(Direction::Right));
+    let promoted = state.update(Action::Swipe(Direction::Right));
+    let _landed = state.update(Action::Landed {
+        ticket: ticket_of(&promoted),
+    });
     // The entry aged out of the log, but the card is still off the maybeboard.
     let undo = state.update(Action::Undo);
     let effects = state.update(Action::Taken {
@@ -1152,7 +1155,9 @@ fn an_undo_promote_finding_the_card_back_changes_nothing() {
     let _filtered = state.update(Action::Filter(state.filter().clone()));
     let effects = state.update(Action::Swipe(Direction::Right));
     let promote = ticket_of(&effects);
+    let _landed = state.update(Action::Landed { ticket: promote });
     let undo = state.update(Action::Undo);
+    // The deck cards view's own Undo put the card back first.
     let _reloaded = {
         let refresh = state.update(Action::Refresh);
         state.update(Action::DeckLoaded {
@@ -1160,7 +1165,6 @@ fn an_undo_promote_finding_the_card_back_changes_nothing() {
             deck: Box::new(built),
         })
     };
-    let _late = state.update(Action::Landed { ticket: promote });
     let effects = state.update(Action::Taken {
         ticket: ticket_of(&undo),
         taken: None,
@@ -1557,4 +1561,76 @@ fn undo_or_a_source_switch_ends_the_ghost_hold() {
         remembered: None,
     });
     assert_eq!(state.revealing(), None);
+}
+
+/// A maybeboard of one card, "Maybe", on the Maybeboard source with its filter applied.
+fn maybeboard_of_one() -> State {
+    let mut built = commander_deck(&["Maybe"]);
+    built.entries[0].deck_card.board = Board::Maybeboard;
+    let (mut state, _) = with_deck(&built);
+    let _picked = state.update(Action::PickSource {
+        source: Source::Maybeboard,
+        remembered: None,
+    });
+    let _filtered = state.update(Action::Filter(state.filter().clone()));
+    state
+}
+
+/// Whether `effects` send or record anything for the move: its undo's move back, a claim on
+/// the log, or a log entry.
+fn moves(effects: &[Effect]) -> usize {
+    effects
+        .iter()
+        .filter(|e| {
+            matches!(
+                e,
+                Effect::UndoPromote { .. } | Effect::TakeUndo { .. } | Effect::RecordUndo { .. }
+            )
+        })
+        .count()
+}
+
+#[test]
+fn undoing_a_promote_still_out_waits_for_it_then_moves_it_back_once() {
+    let mut state = maybeboard_of_one();
+    let promoted = state.update(Action::Swipe(Direction::Right));
+    let promote = ticket_of(&promoted);
+    let undo = state.update(Action::Undo);
+    assert_eq!(
+        moves(&undo),
+        0,
+        "nothing goes out while the promote is out: {undo:?}"
+    );
+    assert_eq!(
+        top(&state).as_deref(),
+        Some("Maybe"),
+        "the card is back at once"
+    );
+    let landed = state.update(Action::Landed { ticket: promote });
+    assert!(
+        matches!(landed.as_slice(), [Effect::UndoPromote { .. }]),
+        "the promote landed: its undo sends the one move back and records nothing: {landed:?}"
+    );
+    let back = state.update(Action::Landed {
+        ticket: ticket_of(&landed),
+    });
+    assert_eq!(
+        toasts(&back),
+        [Toast::quick(ToastKind::Success, UNDID_MOVE_TO_MAINBOARD)]
+    );
+}
+
+#[test]
+fn undoing_a_promote_that_then_fails_sends_nothing() {
+    let mut state = maybeboard_of_one();
+    let promoted = state.update(Action::Swipe(Direction::Right));
+    let promote = ticket_of(&promoted);
+    let _undo = state.update(Action::Undo);
+    let failed = state.update(Action::Failed { ticket: promote });
+    assert_eq!(
+        moves(&failed),
+        0,
+        "the card never moved, so nothing moves it back: {failed:?}"
+    );
+    assert_eq!(top(&state).as_deref(), Some("Maybe"));
 }

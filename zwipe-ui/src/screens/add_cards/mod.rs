@@ -545,8 +545,13 @@ enum Pending {
     Page { epoch: Ticket, synergy: bool },
     /// An add to `board`.
     Add { card: Box<Card>, board: Board },
-    /// A move from the maybeboard to the deck.
-    Promote { card_id: Uuid, card_name: String },
+    /// A move from the maybeboard to the deck. `undone` holds the card once its undo was
+    /// pressed while the move was out: the move's answer then moves it back, once.
+    Promote {
+        card_id: Uuid,
+        card_name: String,
+        undone: Option<Box<Card>>,
+    },
     /// An undone add waiting for the client to take its log entry.
     ClaimAdd { card: Box<Card>, board: Board },
     /// An undone add's delete. `taken` goes back on the log if it fails.
@@ -962,13 +967,39 @@ impl State {
         }]
     }
 
+    /// Puts `card` back on the maybeboard this screen keeps of the deck, off the deck.
+    fn back_on_maybeboard(&mut self, deck_id: Uuid, card: Card) {
+        let card_id = card.scryfall_data.id;
+        let oracle_id = card.scryfall_data.oracle_id;
+        if let Some(add_deck) = &mut self.deck {
+            if let Some(oracle_id) = oracle_id {
+                add_deck.in_deck.remove(&oracle_id);
+            }
+            add_deck.maybeboard.push(DeckEntry {
+                card,
+                deck_card: DeckCard {
+                    deck_id,
+                    scryfall_data_id: card_id,
+                    oracle_id: oracle_id.unwrap_or_default(),
+                    quantity: Quantity::one(),
+                    board: Board::Maybeboard,
+                    mvp_at: None,
+                },
+            });
+        }
+    }
+
     /// Settles a request that went through with no body.
     fn landed(&mut self, ticket: Ticket) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
         };
         match self.take(ticket) {
-            Some(Pending::Promote { card_id, card_name }) => vec![Effect::RecordUndo {
+            Some(Pending::Promote {
+                card_id,
+                card_name,
+                undone: None,
+            }) => vec![Effect::RecordUndo {
                 deck_id,
                 action: UndoAction::MovedBoard {
                     card_id,
@@ -977,6 +1008,20 @@ impl State {
                     starred: None,
                 },
             }],
+            // Undone while it was out: the move stood, so the one move back goes now, and
+            // nothing is logged for an undo already made.
+            Some(Pending::Promote {
+                card_id,
+                undone: Some(card),
+                ..
+            }) => {
+                let ticket = self.wait(Pending::UndoPromote { card, taken: None });
+                vec![Effect::UndoPromote {
+                    ticket,
+                    deck_id,
+                    card_id,
+                }]
+            }
             Some(Pending::UndoAdd { card, board, .. }) => {
                 let card_id = card.scryfall_data.id;
                 if let Some(add_deck) = &mut self.deck
@@ -997,24 +1042,7 @@ impl State {
                 }
             }
             Some(Pending::UndoPromote { card, .. }) => {
-                let card_id = card.scryfall_data.id;
-                let oracle_id = card.scryfall_data.oracle_id;
-                if let Some(add_deck) = &mut self.deck {
-                    if let Some(oracle_id) = oracle_id {
-                        add_deck.in_deck.remove(&oracle_id);
-                    }
-                    add_deck.maybeboard.push(DeckEntry {
-                        card: *card,
-                        deck_card: DeckCard {
-                            deck_id,
-                            scryfall_data_id: card_id,
-                            oracle_id: oracle_id.unwrap_or_default(),
-                            quantity: Quantity::one(),
-                            board: Board::Maybeboard,
-                            mvp_at: None,
-                        },
-                    });
-                }
+                self.back_on_maybeboard(deck_id, *card);
                 vec![confirm(ToastKind::Success, UNDID_MOVE_TO_MAINBOARD)]
             }
             _ => Vec::new(),
@@ -1121,6 +1149,14 @@ impl State {
             }
             Some(Pending::Add { card, .. }) => {
                 let _settled = self.in_flight.finish(card.scryfall_data.id);
+                Vec::new()
+            }
+            // Undone while it was out, and it never went through: the card is on the
+            // maybeboard still, where the undo already shows it, so nothing is sent.
+            Some(Pending::Promote {
+                undone: Some(card), ..
+            }) => {
+                self.back_on_maybeboard(deck_id, *card);
                 Vec::new()
             }
             Some(
@@ -1387,7 +1423,11 @@ impl State {
             card: Box::new(card),
         });
         self.maybeboard.remove_current();
-        let ticket = self.wait(Pending::Promote { card_id, card_name });
+        let ticket = self.wait(Pending::Promote {
+            card_id,
+            card_name,
+            undone: None,
+        });
         vec![
             Effect::PromoteCard {
                 ticket,
@@ -1482,6 +1522,25 @@ impl State {
             }
             MaybeboardAction::Promote { card } => {
                 let card_id = card.scryfall_data.id;
+                // Its move is still out: the card comes back now, and the move's answer
+                // moves it back on the server, once, or finds nothing to undo.
+                if let Some(undone) = self.waiting.iter_mut().find_map(|(_, pending)| {
+                    if let Pending::Promote {
+                        card_id: id,
+                        undone: undone @ None,
+                        ..
+                    } = pending
+                        && *id == card_id
+                    {
+                        Some(undone)
+                    } else {
+                        None
+                    }
+                }) {
+                    *undone = Some(card.clone());
+                    self.maybeboard.insert_current(*card);
+                    return vec![enter];
+                }
                 let ticket = self.wait(Pending::ClaimPromote { card });
                 vec![
                     enter,
