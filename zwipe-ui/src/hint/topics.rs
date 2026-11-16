@@ -302,7 +302,7 @@ impl HintTopic {
                 blocks.push(bullet(vec![
                     text("Your "),
                     emph("deck tags", Role::Primary),
-                    text(" pre-pick a starter set from about 4,500. Fine to leave as is"),
+                    text(" pre-pick a starter set from about 4,600. Fine to leave as is"),
                 ]));
                 blocks
             }

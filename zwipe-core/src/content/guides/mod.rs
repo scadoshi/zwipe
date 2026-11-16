@@ -795,7 +795,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Selecting them"),
             Block::P(
-                "The Oracle tags field shows a curated set of the most useful tags up front, and search reaches the rest, about 4,500 in all. A deck can hold up to 30.",
+                "The Oracle tags field shows a curated set of the most useful tags up front, and search reaches the rest, about 4,600 in all. A deck can hold up to 30.",
             ),
             Block::Image {
                 file: "oracle-tags/01-tag-search.webp",
@@ -827,7 +827,7 @@ pub static GUIDES: &[Guide] = &[
         related: &["oracle-tags", "card-roles"],
         blocks: &[
             Block::Lead(
-                "The Oracle tags dictionary describes every Oracle tag, about 4,500 in all.",
+                "The Oracle tags dictionary describes every Oracle tag, about 4,600 in all.",
             ),
             Block::H2("Opening it"),
             Block::P(

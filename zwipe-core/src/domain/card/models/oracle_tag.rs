@@ -33,7 +33,7 @@ pub struct OracleTag {
 /// Curated default oracle tags surfaced up front in any otag picker (card filter
 /// and deck selection): the 24 original mechanical categories mapped to their
 /// best-populated real slug, plus hand-picked functional fills. The full catalog
-/// (~4,500) stays reachable via search; a picker renders only the entries its
+/// (~4,600) stays reachable via search; a picker renders only the entries its
 /// fetched catalog still serves.
 pub const CURATED_ORACLE_TAGS: &[&str] = &[
     // the original mechanical categories -> best-populated slug

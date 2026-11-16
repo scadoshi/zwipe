@@ -1,6 +1,6 @@
 //! Our own oracle-tag descriptions.
 //!
-//! Scryfall describes only ~29% of the ~4,500 oracle tags, and its
+//! Scryfall describes only ~29% of the ~4,600 oracle tags, and its
 //! [`sync_oracle_tags`](crate::outbound::sqlx::card::helpers::oracle_tags::sync_oracle_tags) does a full
 //! `DELETE` + re-`INSERT` of the catalog every run, so anything written into
 //! `oracle_tags.description` out of band is wiped on the next sync. To make our

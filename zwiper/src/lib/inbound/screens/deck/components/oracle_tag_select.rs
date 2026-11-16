@@ -1,7 +1,7 @@
 //! Full-screen oracle-tag picker for a deck's declared strategy tags.
 //!
 //! Mirrors the [`TagSelect`](super::tag_select::TagSelect) overlay, but for the
-//! granular oracle tags: it fetches the ~4,500-tag catalog, shows a curated
+//! granular oracle tags: it fetches the ~4,600-tag catalog, shows a curated
 //! default grid up front (only entries the backend still serves), exposes the
 //! rest through search, and writes selected slugs into the deck. Tapping a tag
 //! reveals its definition in the pinned bar. Picking a Deck Tag pre-seeds some of

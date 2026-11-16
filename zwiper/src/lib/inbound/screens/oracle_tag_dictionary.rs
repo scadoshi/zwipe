@@ -1,6 +1,6 @@
 //! Oracle-tag dictionary screen.
 //!
-//! In-app, read-only reference of the full ~4,500-tag oracle-tag catalog with our
+//! In-app, read-only reference of the full ~4,600-tag oracle-tag catalog with our
 //! authored descriptions. **Letter-first browse**: a horizontally scrolling A–Z
 //! rail where only the selected letter's tags mount, with optional search over
 //! slug + label + description. Reached from the oracle-tag picker and its hint;
@@ -8,7 +8,7 @@
 //!
 //! The catalog is read from the shared app-wide [`CatalogCache`](crate::inbound::components::catalog_cache::CatalogCache) (prefetched at
 //! startup, 1-day TTL, stale-while-revalidate), the same copy the oracle-tag
-//! picker and card filter read: one fetch of the ~4,500-row list per session.
+//! picker and card filter read: one fetch of the ~4,600-row list per session.
 
 use components::{Toasts, use_overlay_back, use_toast};
 use dioxus::prelude::*;

@@ -1,7 +1,7 @@
 //! Oracle tags filter component.
 //!
 //! Oracle tags are Scryfall's community-maintained functional card tags. The
-//! full catalog (~4,500 tags) is fetched from `GET /api/card/oracle-tags`; with
+//! full catalog (~4,600 tags) is fetched from `GET /api/card/oracle-tags`; with
 //! that many tags there's no useful default set, so this picker is search-only:
 //! type to find tags, click to add. Selections write slugs into the
 //! `oracle_tags_*` filter criteria, mirroring the include/any-all/exclude
