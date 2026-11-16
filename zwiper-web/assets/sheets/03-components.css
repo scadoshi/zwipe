@@ -1627,14 +1627,21 @@ html:has(.bottom-sheet.show) body,
 }
 
 /* A sheet's dock (.action-dock.sheet-dock) floats over the sheet's content,
-   which ends with room to scroll its last row clear of it. */
+   which ends with room to scroll its last row clear of it: the dock's height
+   and gap, the safe area and the keyboard's inset. The room is the content
+   column's padding inside the scroller, not the scroller's own, which iOS
+   WebKit can leave out of the scroll height once the content grows. */
 .bottom-sheet .sheet-dock {
     position: fixed;
     z-index: 2;
 }
 
 .bottom-sheet:has(.sheet-dock) > .sheet-content {
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 0;
+}
+
+.bottom-sheet:has(.sheet-dock) > .sheet-content > .flex-col {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px) + var(--keyboard-inset, 0px));
 }
 
 /* A sheet's body sits a step into the sink under its title bar and its
