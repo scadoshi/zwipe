@@ -75,6 +75,7 @@ mod drawer_swap;
 pub mod featured_strip;
 mod flippable_card_image;
 mod fold;
+mod ghost_card;
 mod group_buy;
 mod guides;
 pub mod hint;
@@ -161,6 +162,7 @@ pub use details_eye::{
 pub use drawer_sheet::{DrawerEdge, DrawerSheet};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
+pub use ghost_card::{CardGhost, GhostCard};
 pub use group_buy::{GroupBuy, GroupBuyDialog, use_group_buy};
 pub use guides::{GuideArticle, GuideIndex, GuideMissing};
 pub use home_colors::{ColorsEmpty, HomeColors};

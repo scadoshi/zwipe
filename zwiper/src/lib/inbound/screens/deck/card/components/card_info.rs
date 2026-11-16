@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use components::{
-    CardDetailsCost, CardDetailsPanel, DrawerSheet, OpenFocus, share_face, use_meld,
+    CardDetailsCost, CardDetailsPanel, DrawerSheet, GhostCard, OpenFocus, share_face, use_meld,
     use_overlay_back, use_shared_face,
 };
 use dioxus::prelude::*;
@@ -10,7 +10,6 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
 
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::interactions::swipe::stack::GhostCard;
 
 /// Resolves an oracle tag's description from the app-wide catalog cache, for
 /// the tappable tags in a card-role cluster. Warms the cache on mount so a cold
@@ -97,49 +96,19 @@ pub(crate) fn CardDetailsSheet(
     }
 }
 
-/// Skeleton placeholder for when no card is loaded. A pile that ran out is said with a toast, so
-/// the ghost carries text only as `note`, why a filter left nothing to deal, and `detail` under
-/// it, whether Synergy may be the reason.
+/// The swipe card's ghost where no card shows: the stack's ghost card in a stack of its own, so
+/// it takes the top card's box exactly, with `note`, why a filter left nothing to deal, and
+/// `detail` under it, whether Synergy may be the reason, inside the card's box. A pile that ran
+/// out is said with a toast, so the ghost carries text only as `note`.
 #[component]
 pub(crate) fn CardSkeleton(
     #[props(default)] note: Option<&'static str>,
     #[props(default)] detail: Option<&'static str>,
 ) -> Element {
-    // With nothing to say, the ghost is the stack's own, in the top card's
-    // box; a note needs the text card.
-    if note.is_none() {
-        return rsx! { StackGhost {} };
-    }
-    rsx! {
-        div { class: "skeleton-card",
-            // The stack's slot, the card's ghost centered in it as the real
-            // card is.
-            div { class: "skeleton-stack",
-                if let Some(note) = note {
-                    div { class: "skeleton-image skeleton-note",
-                        span { {note} }
-                        if let Some(detail) = detail {
-                            span { class: "skeleton-note-detail", {detail} }
-                        }
-                    }
-                } else {
-                    div { class: "skeleton-image" }
-                }
-            }
-        }
-    }
-}
-
-/// The ghost of a swipe stack's top card, while a pile is on its way: the
-/// stack's ghost card in a stack of its own, so it takes the top card's
-/// box exactly, as [`SwipeStack`](crate::inbound::components::interactions::swipe::stack::SwipeStack)'s
-/// does while it holds its ghost.
-#[component]
-pub(crate) fn StackGhost() -> Element {
     rsx! {
         div { class: "skeleton-card",
             div { class: "swipe-stack",
-                GhostCard {}
+                GhostCard { note, detail }
             }
         }
     }

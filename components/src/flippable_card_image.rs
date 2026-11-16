@@ -281,7 +281,9 @@ pub fn FlippableCardImage(
                         }
                     }
                 }
-                if flippable && meld.available() && !is_no_image {
+                // Flip and Meld wait for the image itself, so neither shows over an empty
+                // image box while it loads; a stock card has its own Flip in its head.
+                if flippable && meld.available() && !is_no_image && already_loaded {
                     button {
                         class: if meld.on() { "card-flip-button card-meld-button selected" } else { "card-flip-button card-meld-button" },
                         "data-action": data_action::MELD,
@@ -298,7 +300,7 @@ pub fn FlippableCardImage(
                         DockIcon { path: MELD }
                     }
                 }
-                if flippable && total > 1 && !is_no_image {
+                if flippable && total > 1 && !is_no_image && already_loaded {
                     button {
                         class: "card-flip-button",
                         "aria-label": "Flip",
@@ -378,5 +380,35 @@ mod tests {
         let html = dioxus_ssr::render(&dom);
         let id = two_faced().scryfall_data.id;
         assert!(html.contains(&format!(r#"data-face="{id}:1""#)), "{html}");
+    }
+
+    #[test]
+    fn the_flip_button_waits_for_the_card_s_image() {
+        fn seen() -> Element {
+            rsx! {
+                FlippableCardImage { sd: two_faced().scryfall_data, size: ImageSize::Small }
+            }
+        }
+        fn unloaded() -> Element {
+            rsx! {
+                FlippableCardImage { sd: two_faced().scryfall_data, size: ImageSize::Small, trust_seen: false }
+            }
+        }
+        let mut dom = VirtualDom::new(unloaded);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(
+            !html.contains("card-flip-button"),
+            "no button over an empty image box: {html}"
+        );
+        // An image this page already loaded shows at once, and its button with it.
+        let card = two_faced();
+        if let Some(url) = card.scryfall_data.face_image_url(0, ImageSize::Small) {
+            mark_image_seen(url);
+        }
+        let mut dom = VirtualDom::new(seen);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(html.contains("card-flip-button"), "{html}");
     }
 }

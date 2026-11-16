@@ -18,7 +18,7 @@ use components::swipe_stack::{
     self, Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use components::{
-    CardSkeleton, Chip, DockEye, DockFilter, LoadFailed, PrintingsFace, SheetFrame, SheetWide,
+    CardGhost, Chip, DockEye, DockFilter, LoadFailed, PrintingsFace, SheetFrame, SheetWide,
     Surface, TOAST_NORMAL, TOAST_QUICK, hand_face_then, next_card_face, reset_image_ease,
     use_back_online, use_details_eye,
 };
@@ -1152,14 +1152,14 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                             shown.call(ticket);
                                         }
                                     },
-                                    ghost: rsx! { CardSkeleton {} },
+                                    ghost: true,
                                     hold: reveal.is_some(),
                                     faces,
                                 }
                             }
                         } else if end_of_pile {
                             if loading_more() {
-                                CardSkeleton {}
+                                CardGhost {}
                             } else {
                                 div {
                                     class: "web-pile-end",
@@ -1177,15 +1177,15 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                             undo_search.call(());
                                         }
                                     },
-                                    CardSkeleton {}
+                                    CardGhost {}
                                 }
                             }
                         } else if at == AddSource::Search && loading_cards() {
-                            CardSkeleton {}
+                            CardGhost {}
                         } else if load_failed {
                             LoadFailed { message: add_cards::LOAD_FAILED, on_retry: retry }
                         } else {
-                            CardSkeleton { note: ghost_note, detail: ghost_detail }
+                            CardGhost { note: ghost_note, detail: ghost_detail }
                         }
                     }
                 }

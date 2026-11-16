@@ -38,9 +38,9 @@ use components::swipe_stack::{
     Swipe, SwipeControl, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use components::{
-    BackArrow, BottomSheet, CardDetailsPanelSkeleton, CardSkeleton, DockEye, DockFilter,
-    MeldSource, PageHeader, SheetFrame, SheetWide, Surface, TOAST_QUICK, turn_face,
-    use_details_eye, use_overlay_back,
+    BackArrow, BottomSheet, CardDetailsPanelSkeleton, CardGhost, DockEye, DockFilter, MeldSource,
+    PageHeader, SheetFrame, SheetWide, Surface, TOAST_QUICK, turn_face, use_details_eye,
+    use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -806,15 +806,16 @@ fn SwipeSelectBody(
                         on_entered: move |()| stack.write().cancel_entering(),
                         on_swipe,
                         faces,
+                        ghost: true,
                     }
                 } else if loading() || loading_more() {
-                    CardSkeleton {}
+                    CardGhost {}
                 } else if let Some(line) = empty_line {
                     div { class: "message-empty",
                         span { class: "chip-note", "{line}" }
                     }
                 } else {
-                    CardSkeleton {}
+                    CardGhost {}
                 }
             }
             if let Some(card) = current.clone() {

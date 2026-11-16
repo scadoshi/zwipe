@@ -227,7 +227,8 @@ impl Drag {
 /// and `on_entered` clears it once that keyframe ends. `on_top_shown` fires
 /// once the top card's image has its bytes, failed, or has no art. Until
 /// then, and for [`TOP_PAINT_GRACE`] after when it came in on top, the
-/// stack draws `ghost` under its cards and hides the cards under the top,
+/// stack draws, with `ghost`, the top card's ghost ([`GhostCard`](crate::GhostCard), in the
+/// top card's own box) under its cards and hides the cards under the top,
 /// so neither an empty slot nor another card shows while the top's image
 /// arrives. `hold` keeps the ghost up regardless, for a pile the host has
 /// yet to show. `faces`, when the host keeps each card's face there, is the
@@ -242,7 +243,7 @@ pub fn SwipeStack(
     #[props(default)] entering: Option<Direction>,
     #[props(default)] on_entered: Option<EventHandler<()>>,
     #[props(default)] on_top_shown: Option<EventHandler<()>>,
-    #[props(default)] ghost: Option<Element>,
+    #[props(default)] ghost: bool,
     #[props(default)] hold: bool,
     #[props(default)] faces: Option<Signal<HashMap<Uuid, usize>>>,
 ) -> Element {
@@ -360,8 +361,8 @@ pub fn SwipeStack(
 
     rsx! {
         div { class: if held { "swipe-stack web-swipe-stack ghost-held" } else { "swipe-stack web-swipe-stack" },
-            if held && let Some(ghost) = ghost {
-                div { class: "swipe-stack-ghost", {ghost} }
+            if held && ghost {
+                crate::GhostCard {}
             }
             // Keyed by card, the loop's own node, so a swipe drops the top
             // and keeps every other card mounted.
@@ -825,5 +826,29 @@ mod face_tests {
         dom.render_immediate(&mut NoOpMutations);
         let html = dioxus_ssr::render(&dom);
         assert!(html.contains(r#"alt="Insectile Aberration""#), "{html}");
+    }
+
+    #[test]
+    fn a_held_stack_draws_its_ghost_as_a_card_in_the_top_card_s_box() {
+        fn app() -> Element {
+            rsx! {
+                SwipeStack {
+                    cards: vec![delver()],
+                    allowed: vec![Swipe::Left, Swipe::Right],
+                    control: use_swipe_control(),
+                    on_swipe: |_| {},
+                    ghost: true,
+                }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dom.render_immediate(&mut NoOpMutations);
+        let html = dioxus_ssr::render(&dom);
+        assert!(
+            html.contains(r#"<div class="swipe-stack-card swipe-stack-ghost-card" aria-hidden="true"><div class="flippable-card-wrapper card-image"><div class="flip-face"><img class="img-loaded card-ghost""#),
+            "a stack card with the card's own wrapper and a card-shaped blank: {html}"
+        );
+        assert!(!html.contains("swipe-stack-ghost\""), "{html}");
     }
 }

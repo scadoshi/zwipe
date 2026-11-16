@@ -15,7 +15,7 @@ use components::swipe_stack::{
     self, Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use components::{
-    CardSkeleton, Chip, DockEye, DockFilter, SheetFrame, SheetWide, Surface, TOAST_QUICK,
+    CardGhost, Chip, DockEye, DockFilter, SheetFrame, SheetWide, Surface, TOAST_QUICK,
     use_details_eye,
 };
 use dioxus::core::spawn_forever;
@@ -636,7 +636,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                                 on_swipe: move |pair: (Swipe, Card)| on_swipe(pair),
                             }
                         } else {
-                            CardSkeleton {}
+                            CardGhost {}
                         }
                     }
                 }

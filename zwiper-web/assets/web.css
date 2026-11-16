@@ -71,7 +71,7 @@ html:has(.card-swipe) body,
 
 /* The empty end's ghost card is a swipe surface too: a drag on it is a
    swipe, not a scroll. */
-.card-swipe .skeleton-card {
+.card-swipe .card-ghost-stack {
     touch-action: none;
 }
 
@@ -1343,58 +1343,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         max-height: 100cqh;
     }
 
-    /* The card's ghost, the same size in the same room. */
-    .skeleton-card > .skeleton-stack {
-        container-type: size;
-        padding-top: 2.75rem;
-    }
-
-    .skeleton-card > .skeleton-stack > .skeleton-image {
-        width: min(calc(100% - 2rem), calc(100cqh * 63 / 88));
-    }
 }
 
-/* On a wide window the ghost under a held stack is drawn in the top card's
-   own box: the stack card's padding, the card's height cap and the card
-   image's shape (Scryfall's 672 by 936), so its edge never shows beside
-   the card. */
-@media (min-width: 900px) {
-    .web-swipe-stack > .swipe-stack-ghost > .skeleton-card {
-        width: 100%;
-        max-width: none;
-        height: 100%;
-        min-height: 0;
-    }
-
-    .web-swipe-stack > .swipe-stack-ghost > .skeleton-card > .skeleton-stack {
-        padding: 0.75rem 1rem;
-    }
-
-    .web-swipe-stack > .swipe-stack-ghost .skeleton-image {
-        width: min(100%, calc((var(--web-swipe-h) - 3.25rem) * 672 / 936));
-        aspect-ratio: 672 / 936;
-        max-height: none;
-    }
-
-    /* The ghost while a pile is on its way (no stack yet) takes the
-       stack's room and the top card's box too, so it does not jump when the
-       pile lands. */
-    .web-cards-swipe .form-container > .skeleton-card {
-        max-width: none;
-        min-height: min(68vh, 42rem);
-    }
-
-    .web-cards-swipe .form-container > .skeleton-card > .skeleton-stack {
-        padding: 0.75rem 1rem;
-    }
-
-    .web-cards-swipe .form-container > .skeleton-card .skeleton-image {
-        width: min(100%, calc((min(68vh, 42rem) - 3.25rem) * 672 / 936));
-        aspect-ratio: 672 / 936;
-        max-height: none;
-        margin: 1rem 0 0.75rem;
-    }
-}
 
 .web-swipe-stack .swipe-stack-card.top {
     touch-action: none;
@@ -2853,13 +2803,6 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         display: block;
     }
 
-    /* The app sizes the card's ghost to the phone's width; in a column it
-       takes the stack's room instead. */
-    .web-cards-swipe .skeleton-card {
-        width: 100%;
-        max-width: 26rem;
-        min-height: min(55vh, 32rem);
-    }
 }
 
 /* ---- Deck cards ---- */

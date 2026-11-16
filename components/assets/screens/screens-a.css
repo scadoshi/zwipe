@@ -55,12 +55,35 @@
 .swipe-stack-ghost-card img.card-ghost {
     background-color: var(--border-muted);
     box-shadow: none;
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* The ghost under a held swipe stack, and the ghost while a pile is on its
-   way, match the top card's box: the card image's shape (Scryfall's 672 by
-   936) and the card's own margins (`.card-image`). */
-.swipe-stack-ghost .skeleton-image,
+/* A ghost that says why the pile has no card: the words over the card's
+   box, held still, large bold body ink, which clears 3:1 on the ghost's
+   fill in every theme (the lowest is One Dark, 3.97:1). */
+.swipe-stack-ghost-card:has(.card-ghost-note) img.card-ghost {
+    animation: none;
+}
+
+.card-ghost-note {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    box-sizing: border-box;
+    text-align: center;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+/* The ghost while a pile is on its way, where a screen still draws it as a
+   skeleton, matches the top card's box: the card image's shape (Scryfall's
+   672 by 936) and the card's own margins (`.card-image`). */
 .card-swipe .form-container > .skeleton-card .skeleton-image {
     aspect-ratio: 672 / 936;
     margin: 1rem 0 0.75rem;
@@ -74,20 +97,10 @@
 }
 
 /* While the stack holds its ghost (`ghost-held`: the top card's image is
-   not in, or has not had time to paint), the ghost sits under the cards and
-   the cards waiting under the top do not paint, so a pile never shows an
-   empty slot or another card through the top. A card flying off always
-   shows. The stack decides when, from each image's load. */
-.swipe-stack-ghost {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-.swipe-stack-ghost > .skeleton-card {
-    animation: none;
-}
+   not in, or has not had time to paint), the ghost card sits under the
+   cards and the cards waiting under the top do not paint, so a pile never
+   shows an empty slot or another card through the top. A card flying off
+   always shows. The stack decides when, from each image's load. */
 
 .swipe-stack.ghost-held > .swipe-stack-card:not(.top, .swipe-stack-exiting, .swipe-stack-ghost-card) {
     visibility: hidden;

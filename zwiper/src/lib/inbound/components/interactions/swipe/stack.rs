@@ -21,7 +21,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use components::{share_face, use_shared_face};
+use components::{GhostCard, share_face, use_shared_face};
 use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -66,27 +66,6 @@ struct ExitingCard {
     from_y: f64,
     /// Tilt at release, degrees.
     from_rot: f64,
-}
-
-/// A blank in a card image's shape (Scryfall's 672 by 936), which the ghost
-/// card's image shows so it sizes as the card's image does.
-const CARD_GHOST_SRC: &str =
-    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='672' height='936'/%3E";
-
-/// The ghost of the top card: a stack card holding a card-shaped blank in
-/// the card's own wrapper, so the card's own rules give it the top card's
-/// box. Drawn in a `.swipe-stack`.
-#[component]
-pub(crate) fn GhostCard() -> Element {
-    rsx! {
-        div { class: "swipe-stack-card swipe-stack-ghost-card", "aria-hidden": "true",
-            div { class: "flippable-card-wrapper card-image",
-                div { class: "flip-face",
-                    img { class: "img-loaded card-ghost", src: CARD_GHOST_SRC, alt: "", draggable: false }
-                }
-            }
-        }
-    }
 }
 
 /// The stack's swipe callbacks, one per direction.
