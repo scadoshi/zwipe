@@ -48,7 +48,7 @@
  ====================================== */
 
 .card {
-    padding: 1rem;
+    padding: var(--space-4);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
@@ -76,9 +76,9 @@
 .deck-group > .card-group-header.group-collapsible {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.3rem 0.6rem;
-    margin: 0.5rem 0 0;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    margin: var(--space-2) 0 0;
     border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
     background-color: var(--bg-primary);
@@ -156,7 +156,7 @@
 .deck-list-row {
     display: flex;
     align-items: flex-start;
-    gap: 0.6rem;
+    gap: var(--space-2);
     min-width: 0;
 }
 
@@ -168,7 +168,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
     min-width: 0;
 }
 
@@ -178,7 +178,7 @@
     flex: 0 1 auto;
     min-width: 0;
     max-width: 100%;
-    margin: 0 0.25rem 0 0;
+    margin: 0 var(--space-1) 0 0;
     overflow-wrap: anywhere;
     word-break: break-word;
 }
@@ -193,7 +193,7 @@
 .info-row-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.3rem;
+    gap: var(--space-1);
     justify-content: flex-end;
 }
 
@@ -203,7 +203,7 @@
 .settings-row.info-row-stacked {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .settings-row.info-row-stacked .info-row-tags {
@@ -265,7 +265,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.75rem 1rem;
+    padding: var(--space-3) var(--space-4);
     box-sizing: border-box;
 }
 
@@ -300,10 +300,10 @@
    fill in every theme (the lowest is One Dark, 3.97:1). */
 .skeleton-image.skeleton-note {
     animation: none;
-    padding: 1rem;
+    padding: var(--space-4);
     box-sizing: border-box;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-3);
     text-align: center;
     color: var(--text-primary);
     font-size: 1.2rem;
@@ -337,7 +337,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    padding: 0.5rem 0;
+    padding: var(--space-2) 0;
 }
 
 .skeleton-card-group {
@@ -350,15 +350,15 @@
 }
 
 .skeleton-card-group-header {
-    padding: 0.6rem 1rem;
+    padding: var(--space-2) var(--space-4);
     border-bottom: 1px solid var(--border-secondary);
 }
 
 .skeleton-card-row {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.65rem 1rem;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border-secondary);
 }
 
@@ -374,7 +374,7 @@
 .changelog-skeleton-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .changelog-skeleton-chip {
@@ -386,7 +386,7 @@
 .changelog-skeleton-row {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: var(--space-2);
 }
 
 .changelog-skeleton-version {
@@ -401,7 +401,7 @@
 .changelog-skeleton-bullets {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-3);
 }
 
 .changelog-skeleton-bullet {
@@ -431,7 +431,7 @@
 /* A ghost title in a live .card-group-header, padded to the height of the
    header's text line. */
 .card-group-header > .skeleton-bar {
-    margin: 0.2rem 0;
+    margin: var(--space-1) 0;
 }
 
 /* Edit deck / form skeleton */
@@ -446,7 +446,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
     width: 100%;
 }
 
@@ -462,7 +462,7 @@
     align-items: center;
     width: 100%;
     height: 2.75rem;
-    padding: 0 1rem;
+    padding: 0 var(--space-4);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
@@ -478,9 +478,9 @@
 .skeleton-edit-deck-chipbox {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: var(--space-3) var(--space-4);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
@@ -492,14 +492,14 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 /* Deck profile skeleton */
 .skeleton-profile {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: var(--space-2);
     width: 100%;
 }
 
@@ -520,10 +520,10 @@
     border: 1px solid var(--border-secondary);
     border-radius: 0.5rem;
     box-shadow: var(--shadow-sm);
-    padding: 0.75rem;
+    padding: var(--space-3);
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .skeleton-info-row {
@@ -531,8 +531,8 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
-    gap: 0.75rem;
+    padding: var(--space-4);
+    gap: var(--space-3);
     border-bottom: 1px solid var(--border-secondary);
 }
 
@@ -584,7 +584,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     width: 100%;
 }
 

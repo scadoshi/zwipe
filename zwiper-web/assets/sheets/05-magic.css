@@ -27,14 +27,14 @@
 
 /* Keyword abilities (Flying, Trample, …) with a tap-to-reveal reminder. */
 .keyword-section {
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-2);
 }
 
 .keyword-chips {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 /* A tag row's label (Keywords, Card roles, Skipped under) is the kit's
@@ -67,8 +67,8 @@
 }
 
 .keyword-reveal-text {
-    margin: 0.35rem 0 0;
-    padding: 0.35rem 0.5rem;
+    margin: var(--space-1) 0 0;
+    padding: var(--space-1) var(--space-2);
     border-left: 2px solid var(--accent-tertiary);
     border-radius: 0.25rem;
     background-color: var(--bg-primary);
@@ -117,13 +117,13 @@
 .chart-see-more {
     display: flex;
     justify-content: center;
-    margin-top: 0.35rem;
+    margin-top: var(--space-1);
 }
 
 /* ---- CardRow (components::CardRow) ---- */
 
 .card-row {
-    padding: 0.5rem 1rem;
+    padding: var(--space-2) var(--space-4);
     border-bottom: 1px solid var(--border-secondary);
     transition:
         background-color 0.15s ease,
@@ -139,7 +139,7 @@
 /* A row that only says why the list is empty, in the list's own panel:
    its words, muted and centered, at a row's height. */
 .card-row.card-row-note {
-    padding: 0.75rem 1rem;
+    padding: var(--space-3) var(--space-4);
     color: var(--ink-text-muted, var(--text-muted));
     font-size: 0.9rem;
     text-align: center;
@@ -170,7 +170,7 @@
 .card-row-compact {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
     font-size: 0.8rem;
     cursor: pointer;
 }
@@ -180,7 +180,7 @@
     flex: 1 1 auto;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.3rem 0.4rem;
+    gap: var(--space-1) var(--space-2);
     min-width: 0;
 }
 
@@ -188,7 +188,7 @@
     display: flex;
     flex: 0 1 auto;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
     min-width: 0;
 }
 
@@ -204,7 +204,7 @@
         flex: 1 0 100%;
         flex-wrap: wrap;
         align-items: center;
-        gap: 0.3rem 0.4rem;
+        gap: var(--space-1) var(--space-2);
         min-width: 0;
     }
 
@@ -239,7 +239,7 @@
     width: 0;
     height: 0;
     opacity: 0;
-    margin-right: -0.4rem;
+    margin-right: calc(-1 * var(--space-2));
     border-width: 0;
 }
 
@@ -275,7 +275,7 @@
     display: inline-block;
     color: var(--ink-color-star, var(--color-star));
     font-size: 1.1rem;
-    margin-right: 0.3rem;
+    margin-right: var(--space-1);
     line-height: 1;
     vertical-align: 0.02rem;
 }
@@ -293,7 +293,7 @@
 .card-row-price,
 .card-row-stat {
     flex: 0 0 auto;
-    padding: 0.1rem 0.4rem;
+    padding: 0.1rem var(--space-2);
     border: 1px solid transparent;
     border-radius: 0.4rem;
     font-size: 0.7rem;
@@ -360,7 +360,7 @@
        (and page) wider than the viewport on narrow screens. */
     grid-template-columns: minmax(0, 1fr);
     opacity: 0;
-    margin: 0 -1rem;
+    margin: 0 calc(-1 * var(--space-4));
     pointer-events: none;
     transition:
         grid-template-rows 0.22s ease,
@@ -384,7 +384,7 @@
 .card-row-rule {
     border: none;
     border-top: 1px solid var(--border-secondary);
-    margin: 0.5rem 0 0 0;
+    margin: var(--space-2) 0 0 0;
 }
 
 /* The footer rule sits inside the padded detail; pull it out by that padding
@@ -406,7 +406,7 @@
 
 /* Action buttons below the second divider in an expanded card row. */
 .card-row-actions {
-    padding: 0.5rem 1rem 0.25rem;
+    padding: var(--space-2) var(--space-4) var(--space-1);
 }
 
 .card-detail-cost {
@@ -523,7 +523,7 @@
 .identity-pips {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: var(--space-1);
 }
 
 /* Square, at the stat-chip's height rather than the small inline glyph size. */
@@ -750,7 +750,7 @@ i.ms.ms-cost.ms-gp {
 }
 
 .card-detail-oracle {
-    margin: 0 0 0.5rem;
+    margin: 0 0 var(--space-2);
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-wrap: break-word;
@@ -760,15 +760,15 @@ i.ms.ms-cost.ms-gp {
 .card-detail-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
     color: var(--ink-text-muted, var(--text-muted));
 }
 
 /* Non-interactive info chip (type line, rarity, set) in an expanded card row. */
 .detail-chip {
     display: inline-block;
-    padding: 0.15rem 0.5rem;
+    padding: 0.15rem var(--space-2);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     font-size: 0.75rem;
@@ -829,9 +829,9 @@ i.ms.ms-cost.ms-gp {
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
     min-width: 0;
-    margin-top: 0.5rem;
+    margin-top: var(--space-2);
 }
 
 .printing-chips-set {
@@ -884,12 +884,12 @@ i.ms.ms-cost.ms-gp {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
 }
 
 .card-action-btn {
-    padding: 0.2rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
     font-family: inherit;
     font-size: 0.85rem;
     border-radius: 0.4rem;
@@ -967,13 +967,14 @@ i.ms.ms-cost.ms-gp {
     }
 
     .card-action-row {
-        gap: 0.75rem;
-        margin-top: 0.75rem;
+        gap: var(--space-3);
+        margin-top: var(--space-3);
     }
 
     /* The bottom row keeps its reach inside a row that clips as it eases
        open. */
     .card-action-row:last-child {
+        /* The action reach's 0.375rem, so its reach stays inside a clipping row; off the scale. */
         margin-bottom: 0.375rem;
     }
 }
@@ -985,7 +986,7 @@ i.ms.ms-cost.ms-gp {
 }
 
 .card-detail-otags {
-    margin-top: 0.5rem;
+    margin-top: var(--space-2);
 }
 
 .card-detail-otags .detail-chip {
@@ -995,8 +996,8 @@ i.ms.ms-cost.ms-gp {
 
 /* Block-quote frame for a role's exposed otags, echoing .keyword-reveal-text. */
 .otag-reveal-block {
-    margin-top: 0.35rem;
-    padding: 0.4rem 0.5rem;
+    margin-top: var(--space-1);
+    padding: var(--space-2) var(--space-2);
     border-left: 2px solid var(--accent-tertiary);
     border-radius: 0.25rem;
     background-color: var(--bg-primary);
@@ -1017,9 +1018,9 @@ i.ms.ms-cost.ms-gp {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.4rem;
-    margin-top: 0.4rem;
-    padding: 0.35rem 0.5rem;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    padding: var(--space-1) var(--space-2);
     border-left: 2px solid var(--accent-secondary);
     border-radius: 0.25rem;
     background-color: var(--bg-sink);
@@ -1034,7 +1035,7 @@ i.ms.ms-cost.ms-gp {
 }
 
 .otag-examples-btn {
-    padding: 0.1rem 0.55rem;
+    padding: 0.1rem var(--space-2);
     border: 1px solid var(--palette-2);
     border-radius: 0.4rem;
     font-size: 0.72rem;
@@ -1044,12 +1045,12 @@ i.ms.ms-cost.ms-gp {
 }
 
 .card-roles {
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-2);
 }
 
 .chips-label {
     display: block;
-    margin-bottom: 0.25rem;
+    margin-bottom: var(--space-1);
     font-size: 0.7rem;
     color: var(--ink-accent-tertiary, var(--accent-tertiary));
 }
@@ -1063,8 +1064,8 @@ i.ms.ms-cost.ms-gp {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.9rem;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
 }
 
 /* The drawer's header keeps the title clear of the ×: an inset on both
@@ -1084,7 +1085,7 @@ i.ms.ms-cost.ms-gp {
 .card-details-panel .panel-title .card-details-cost,
 .card-details-drawer .sheet-title .card-details-cost {
     display: inline-block;
-    margin: 0 0 0 0.5rem;
+    margin: 0 0 0 var(--space-2);
     white-space: nowrap;
     vertical-align: middle;
 }
@@ -1114,13 +1115,13 @@ i.ms.ms-cost.ms-gp {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.9rem;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
 }
 
 /* The keywords and the card roles after the set and prices. */
 .card-details-analysis {
-    margin-top: 0.9rem;
+    margin-top: var(--space-4);
 }
 
 .card-details-analysis > :last-child {
@@ -1130,7 +1131,7 @@ i.ms.ms-cost.ms-gp {
 /* The host's rows (a staple's deck share, the suggestion reasons, Skipped
    under) as their own section, spaced like the tag rows. */
 .card-details-host {
-    margin-top: 0.9rem;
+    margin-top: var(--space-4);
 }
 
 .card-details-host > :first-child {
@@ -1165,20 +1166,20 @@ i.ms.ms-cost.ms-gp {
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    margin: -1rem -1.5rem;
-    padding: 1rem 1.5rem;
+    margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-5));
+    padding: var(--space-4) var(--space-5);
 }
 
 .card-details-panel > .panel-body:last-child {
-    margin-bottom: -1.5rem;
-    padding-bottom: 1.5rem;
+    margin-bottom: calc(-1 * var(--space-5));
+    padding-bottom: var(--space-5);
 }
 
 /* A headless pane's body opens the panel, so it reaches the panel's top
    edge the same way: a drawer's body scrolls right up to its title bar. */
 .card-details-panel > .panel-body:first-child {
-    margin-top: -1.5rem;
-    padding-top: 1.5rem;
+    margin-top: calc(-1 * var(--space-5));
+    padding-top: var(--space-5);
 }
 
 /* The foot stacks the host's content over the Flip and Image row at the
@@ -1193,7 +1194,7 @@ i.ms.ms-cost.ms-gp {
 
 /* The host's content at the body's end sits a gap under the roles. */
 .card-details-body-end {
-    margin-top: 1rem;
+    margin-top: var(--space-4);
 }
 
 .card-details-body-end > :last-child {
@@ -1259,7 +1260,7 @@ i.ms.ms-cost.ms-gp {
    "Why this commander?" block): a heading over a bullet list whose items hold
    plain text or a row of tag chips. */
 .card-detail-footer {
-    margin: 0.5rem 0;
+    margin: var(--space-2) 0;
 }
 
 .card-detail-bullets {
@@ -1270,8 +1271,8 @@ i.ms.ms-cost.ms-gp {
 
 .card-detail-bullets li {
     position: relative;
-    padding-left: 1rem;
-    margin-bottom: 0.35rem;
+    padding-left: var(--space-4);
+    margin-bottom: var(--space-1);
     font-size: 0.75rem;
     line-height: 1.4;
     color: var(--ink-text-muted, var(--text-muted));
@@ -1289,12 +1290,12 @@ i.ms.ms-cost.ms-gp {
 }
 
 .card-detail-bullets .keyword-chips {
-    margin-top: 0.25rem;
+    margin-top: var(--space-1);
 }
 
 /* Role chips nested under a bullet's lead-in (the suggestion reasons). */
 .card-detail-bullets .card-roles {
-    margin-top: 0.25rem;
+    margin-top: var(--space-1);
     margin-bottom: 0;
 }
 
@@ -1603,7 +1604,7 @@ i.ms.ms-cost.ms-gp {
     top: 0.6rem;
     right: 0.6rem;
     z-index: 2;
-    padding: 0.35rem 0.7rem;
+    padding: var(--space-1) var(--space-3);
     border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
     background: var(--bg-primary);
@@ -1647,7 +1648,7 @@ i.ms.ms-cost.ms-gp {
 
 /* Card details showing a melded card: which card it melds with. */
 .card-details-meld {
-    margin: 0 0 0.75rem;
+    margin: 0 0 var(--space-3);
     font-size: 0.85rem;
     color: var(--ink-text-muted, var(--text-muted));
 }
@@ -1679,13 +1680,13 @@ i.ms.ms-cost.ms-gp {
 .changelog-filters {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .changelog-filter {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .changelog-filter .chip {
@@ -1711,8 +1712,8 @@ i.ms.ms-cost.ms-gp {
 .settings-row.changelog-filters-row {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
     text-align: left;
 }
 
@@ -1737,7 +1738,7 @@ i.ms.ms-cost.ms-gp {
 .color-bars {
     display: flex;
     flex-direction: column;
-    padding: 0 1rem;
+    padding: 0 var(--space-4);
 }
 
 /* A deck chart of color rows: the label over the rows, in the Mana section's
@@ -1745,13 +1746,13 @@ i.ms.ms-cost.ms-gp {
 .color-chart {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    padding: 0 0.75rem;
+    gap: var(--space-1);
+    padding: 0 var(--space-3);
 }
 
 /* Inside a deck chart the bars take the chart's own side padding. */
 .color-chart .color-bars {
-    padding: 0.25rem 0 0;
+    padding: var(--space-1) 0 0;
 }
 
 /* Rows space by their own padding, like the deck charts' Roles rows. The
@@ -1761,8 +1762,8 @@ i.ms.ms-cost.ms-gp {
 .color-bar-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.175rem 0;
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
 }
 
 .color-bar-row > .ms {
@@ -1816,7 +1817,7 @@ i.ms.ms-cost.ms-gp {
     flex: 0 0 auto;
     width: 1.6rem;
     height: 0.75rem;
-    margin-left: 0.6rem;
+    margin-left: var(--space-2);
 }
 
 /* A bar chart's row: the track fills the row beside its label, and the fill
@@ -1867,7 +1868,7 @@ i.ms.ms-cost.ms-gp {
 
 .container-sm {
     width: 20rem;
-    padding: 2rem;
+    padding: var(--space-6);
 }
 
 /* Text for screen readers only, the label of an icon button. */
@@ -1897,7 +1898,7 @@ i.ms.ms-cost.ms-gp {
    button is a control, not a note, so the block's fade lifts. */
 .message-empty.load-failed {
     flex-direction: column;
-    gap: 0.6rem;
+    gap: var(--space-2);
     opacity: 1;
 }
 
@@ -1915,7 +1916,7 @@ i.ms.ms-cost.ms-gp {
 }
 
 .btn-action .filter-dot {
-    margin-left: 0.3rem;
+    margin-left: var(--space-1);
 }
 
 /* The filter dot sits on the funnel's top left, clear of the reset. */
@@ -2199,7 +2200,7 @@ html.keyboard-up .web-dock-pair {
 }
 
 .skeleton-card-header {
-    padding: 0.75rem 1rem;
+    padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border-secondary);
 }
 
@@ -2207,7 +2208,7 @@ html.keyboard-up .web-dock-pair {
 .skeleton-section-label {
     width: 22%;
     height: 0.9rem;
-    margin-bottom: 0.4rem;
+    margin-bottom: var(--space-2);
 }
 
 .skeleton-chip {
@@ -2258,7 +2259,7 @@ html.keyboard-up .web-dock-pair {
 }
 
 .home-colors > .settings-list-header {
-    padding: 0.6rem 1rem;
+    padding: var(--space-2) var(--space-4);
 }
 
 /* A Home panel header whose title group is centered on the panel, with one
@@ -2279,7 +2280,7 @@ html.keyboard-up .web-dock-pair {
 .home-panel-header-title {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     min-width: 0;
     max-width: 100%;
 }
@@ -2295,7 +2296,7 @@ html.keyboard-up .web-dock-pair {
 .home-panel-header-title > .info-button,
 .home-panel-header-title > .skeleton-info-button {
     flex: none;
-    margin: -0.25rem 0;
+    margin: calc(-1 * var(--space-1)) 0;
 }
 
 .home-panel-header-action {
@@ -2305,7 +2306,7 @@ html.keyboard-up .web-dock-pair {
     transform: translateY(-50%);
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
 }
 
 /* A color bar ghost's count (a 0.65rem bar) holds the count's text line,
@@ -2355,20 +2356,20 @@ html.keyboard-up .web-dock-pair {
    Decks tiles do: the rows' own spacing around a track plus this padding
    comes to the tiles' 0.75rem above and 1rem below. */
 .home-colors > .color-bars {
-    padding-top: 0.35rem;
+    padding-top: var(--space-1);
 }
 
 .home-flavor.home-colors {
-    padding-bottom: 0.6rem;
+    padding-bottom: var(--space-2);
 }
 
 .home-colors > .settings-list-header .btn-action {
-    padding: 0.3rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
 }
 
 /* The panel's one line while it has no counts to draw. */
 .home-colors-line {
-    padding: 1rem;
+    padding: var(--space-4);
 }
 
 .home-flavor {
@@ -2384,7 +2385,7 @@ html.keyboard-up .web-dock-pair {
     flex-direction: column;
     justify-content: flex-start;
     transition: min-height 0.3s ease;
-    padding: 0 0 1rem;
+    padding: 0 0 var(--space-4);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
@@ -2417,28 +2418,28 @@ html.keyboard-up .web-dock-pair {
 @container (max-width: 36rem) {
     .home-flavor.home-decks > .settings-list-header.home-decks-header-create {
         justify-content: flex-start;
-        padding-left: 1rem;
+        padding-left: var(--space-4);
     }
 }
 
 .home-decks > .settings-list-header {
-    padding: 0.6rem 1rem;
+    padding: var(--space-2) var(--space-4);
 }
 
 .home-decks > .settings-list-header .btn-action {
-    padding: 0.3rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
 }
 
 /* The panel's one line while it has no deck to draw or the fetch failed. */
 .home-decks-line {
-    padding: 1rem;
+    padding: var(--space-4);
 }
 
 .home-deck-tiles {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.4rem;
-    padding: 0.75rem 1rem 1rem;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4) var(--space-4);
 }
 
 /* A tile is the art square over its chips with nothing drawn around them;
@@ -2447,7 +2448,7 @@ html.keyboard-up .web-dock-pair {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
     width: 100%;
     min-width: 0;
     padding: 0;
@@ -2480,7 +2481,7 @@ html.keyboard-up .web-dock-pair {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.2rem;
+    gap: var(--space-1);
     width: 100%;
     aspect-ratio: 1 / 1;
     border-radius: 1rem;
@@ -2501,7 +2502,7 @@ html.keyboard-up .web-dock-pair {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.3rem;
+    gap: var(--space-1);
     width: 100%;
     min-width: 0;
 }
@@ -2509,7 +2510,7 @@ html.keyboard-up .web-dock-pair {
 /* The name chip's sides are tighter than a chip's, so a short name fits a
    narrow tile whole; a long one still ellipsizes. */
 .home-deck-tile-name {
-    padding-inline: 0.4rem;
+    padding-inline: var(--space-1);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2542,7 +2543,7 @@ html.keyboard-up .web-dock-pair {
    pointer. */
 .chip-note {
     display: inline-block;
-    padding: 0.3rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-muted);
     border-radius: 0.6rem;
@@ -2579,14 +2580,14 @@ html.keyboard-up .web-dock-pair {
 .deck-head {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: var(--space-5);
 }
 
 .deck-head-featured {
     display: flex;
     flex-wrap: nowrap;
     justify-content: center;
-    gap: 1.25rem;
+    gap: var(--space-4);
 }
 
 /* The deck page's featured cards deal in from above once every image has
@@ -2786,8 +2787,8 @@ html.keyboard-up .web-dock-pair {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.3rem;
-    margin-top: 0.55rem;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
     min-width: 0;
 }
 
@@ -2813,7 +2814,7 @@ html.keyboard-up .web-dock-pair {
 .deck-head-text {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-3);
     min-width: 0;
 }
 
@@ -2821,7 +2822,7 @@ html.keyboard-up .web-dock-pair {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: var(--space-4);
 }
 
 /* The deck's name, then its owner's chip on the same line, wrapping under
@@ -2830,7 +2831,7 @@ html.keyboard-up .web-dock-pair {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem 0.75rem;
+    gap: var(--space-2) var(--space-3);
     min-width: 0;
 }
 
@@ -2845,7 +2846,7 @@ html.keyboard-up .web-dock-pair {
 .deck-head-actions {
     display: flex;
     flex: none;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 /* The chips tint over the page background, so the page's cells never show
@@ -2854,21 +2855,21 @@ html.keyboard-up .web-dock-pair {
     --tone-base: var(--bg-primary);
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 /* The three rows over the cards. */
 .deck-controls {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .deck-controls .chip-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     margin: 0;
 }
 
@@ -2879,7 +2880,7 @@ html.keyboard-up .web-dock-pair {
 
 .deck-controls-name {
     width: 10rem;
-    padding: 0.3rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
     border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
     background-color: var(--bg-primary);
@@ -2908,7 +2909,7 @@ html.keyboard-up .web-dock-pair {
 
 .deck-empty {
     margin: 0;
-    padding: 1rem;
+    padding: var(--space-4);
     text-align: center;
     color: var(--ink-text-muted, var(--text-muted));
 }
@@ -2929,8 +2930,8 @@ html.keyboard-up .web-dock-pair {
 .deck-fold-head {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.75rem 1rem;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border-secondary);
     color: var(--ink-accent-tertiary, var(--accent-tertiary));
     font-size: 1rem;
@@ -2956,7 +2957,7 @@ html.keyboard-up .web-dock-pair {
 .deck-fold-accessory {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     margin-left: auto;
 }
 
@@ -3012,8 +3013,8 @@ html.keyboard-up .web-dock-pair {
 .deck-stat-body {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    padding: 1rem 0 1.25rem;
+    gap: var(--space-3);
+    padding: var(--space-4) 0 var(--space-4);
 }
 
 .deck-stat-body:has(> .settings-row:first-child) {
@@ -3021,12 +3022,12 @@ html.keyboard-up .web-dock-pair {
 }
 
 .deck-stat-body > .settings-row + .settings-row {
-    margin-top: -0.75rem;
+    margin-top: calc(-1 * var(--space-3));
 }
 
 @media (max-width: 56rem) {
     .deck-head-featured {
-        gap: 0.5rem;
+        gap: var(--space-2);
     }
 
     .deck-stats,
@@ -3037,7 +3038,7 @@ html.keyboard-up .web-dock-pair {
 
 /* The fold-all button follows the Show chips, in the row's flow. */
 .deck-fold-all {
-    margin-left: 0.25rem;
+    margin-left: var(--space-1);
 }
 
 /* Text for screen readers only, the label of an icon button. */
@@ -3095,7 +3096,7 @@ html.keyboard-up .web-dock-pair {
 
 footer.site-footer {
     margin-top: 0;
-    padding: 1rem 1.5rem;
+    padding: var(--space-4) var(--space-5);
     background-color: var(--bg-primary);
     border-top: 1px solid var(--accent-primary);
     box-shadow: var(--shadow-sm);
@@ -3109,7 +3110,7 @@ footer.site-footer {
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem 1rem;
+    gap: var(--space-2) var(--space-4);
 }
 
 .site-footer-copyright {
@@ -3123,7 +3124,7 @@ footer.site-footer {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     margin: 0;
 }
 
@@ -3144,7 +3145,7 @@ footer.site-footer {
 
 footer.site-footer .site-footer-note {
     max-width: none;
-    margin: 0.75rem 0 0;
+    margin: var(--space-3) 0 0;
     font-size: 0.7rem;
     line-height: 1.5;
     color: var(--text-subtle);
@@ -3173,7 +3174,7 @@ footer.site-footer .site-footer-note {
 /* The Share dialog's link: an accent chip centered under the text, on one
    line while it fits and broken at any character once it does not. */
 .share-url {
-    margin-top: 0.75rem;
+    margin-top: var(--space-3);
     display: flex;
     justify-content: center;
 }
@@ -3189,7 +3190,7 @@ footer.site-footer .site-footer-note {
     display: flex;
     flex: 1 1 auto;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
     min-width: 0;
 }
 
@@ -3325,7 +3326,7 @@ footer.site-footer .site-footer-note {
     position: absolute;
     top: 0.35rem;
     right: 0.35rem;
-    padding: 0.05rem 0.4rem;
+    padding: 0.05rem var(--space-2);
     border: 1px solid var(--border-secondary);
     border-radius: 0.5rem;
     font-size: 0.75rem;
@@ -3414,7 +3415,7 @@ footer.site-footer .site-footer-note {
 .card-group-header.group-collapsible {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
     cursor: pointer;
     user-select: none;
     transition: border-color 0.25s ease;
@@ -3431,7 +3432,7 @@ footer.site-footer .site-footer-note {
    both, and keep to the right edge there. */
 .card-group-header.card-group-header-tailed {
     flex-wrap: wrap;
-    row-gap: 0.35rem;
+    row-gap: var(--space-1);
     cursor: default;
 }
 
@@ -3439,7 +3440,7 @@ footer.site-footer .site-footer-note {
     display: flex;
     flex: 1 1 auto;
     align-items: baseline;
-    gap: 0.4rem;
+    gap: var(--space-2);
     min-width: 0;
     cursor: pointer;
 }
@@ -3448,7 +3449,7 @@ footer.site-footer .site-footer-note {
     display: flex;
     flex: none;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     margin-left: auto;
 }
 
@@ -3512,7 +3513,7 @@ footer.site-footer .site-footer-note {
    stack never lays out the rest again. */
 .deck-stacks.deck-stacks-columns.deck-stacks-touch {
     display: flex;
-    gap: 0.6rem;
+    gap: var(--space-2);
     align-items: flex-start;
 }
 
@@ -3527,7 +3528,7 @@ footer.site-footer .site-footer-note {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    margin-bottom: 0.65rem;
+    margin-bottom: var(--space-3);
 }
 
 .deck-stacks.deck-stacks-touch .deck-stack > .card-group.deck-group {
@@ -3545,10 +3546,10 @@ footer.site-footer .site-footer-note {
     align-items: center;
     align-content: flex-start;
     align-self: stretch;
-    gap: 0.3rem 0.4rem;
+    gap: var(--space-1) var(--space-2);
     box-sizing: border-box;
     width: 100%;
-    margin: 0 0 0.5rem;
+    margin: 0 0 var(--space-2);
     padding: var(--stack-head-inset) var(--stack-head-inset) var(--stack-head-inset) calc(var(--stack-head-inset) + 1.2rem);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
@@ -3592,7 +3593,7 @@ footer.site-footer .site-footer-note {
     display: flex;
     flex: 1 0 100%;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
 }
 
 .deck-stacks.deck-stacks-touch .deck-stack > .deck-group > .card-group-header > .deck-stack-tail > .stat-chip {

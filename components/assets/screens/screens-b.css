@@ -8,8 +8,8 @@
    as one group when the line is short. */
 .label-row-chips {
     display: flex;
-    gap: 0.4rem;
-    margin-left: 0.5rem;
+    gap: var(--space-2);
+    margin-left: var(--space-2);
 }
 
 .label-row .label {
@@ -18,7 +18,7 @@
 
 .label-row .info-button {
     margin-left: 0;
-    margin-right: 0.35rem;
+    margin-right: var(--space-1);
 }
 
 /* Home's panels center while they fit and scroll from the top once they
@@ -79,7 +79,7 @@
     bottom: auto;
     top: 0;
     margin-bottom: 0;
-    margin-top: 0.5rem;
+    margin-top: var(--space-2);
 }
 
 /* Card name and price tags, then the Image button and the cart, centered on
@@ -91,8 +91,8 @@
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.75rem 1rem 0;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4) 0;
     border-top: 1px solid var(--border-secondary);
 }
 
@@ -103,7 +103,7 @@
     align-items: center;
     justify-content: center;
     line-height: 1;
-    padding: 0.4rem 0.8rem;
+    padding: var(--space-2) var(--space-3);
     font-size: 0.8rem;
     border-radius: 0.5rem;
     animation: flavor-enter 0.3s ease-out 0.15s backwards;
@@ -117,7 +117,7 @@
     display: inline-block;
     max-width: 100%;
     flex-shrink: 0;
-    padding: 0.28rem 0.8rem;
+    padding: var(--space-1) var(--space-3);
     line-height: 1.3;
     white-space: normal;
     text-align: center;
@@ -155,10 +155,10 @@
 
 .chip-row {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--space-2);
     flex-wrap: wrap;
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-2);
 }
 
 /* The row's label at its head as a palette-1 tag (the kit's tinted chip,
@@ -173,24 +173,24 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.3rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
     font-size: 0.75rem;
-    margin-bottom: 0.35rem;
+    margin-bottom: var(--space-1);
 }
 
 .chip-bubble-error {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.3rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-error);
     border-radius: 0.6rem;
     font-size: 0.75rem;
-    margin-bottom: 0.35rem;
+    margin-bottom: var(--space-1);
 }
 
 .card-group {
@@ -209,7 +209,7 @@
     font-weight: 400;
     letter-spacing: 0.1em;
     color: var(--ink-accent-tertiary, var(--accent-tertiary));
-    padding: 0.75rem 1rem;
+    padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border-secondary);
 }
 
@@ -219,12 +219,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .card-group-header-with-hint .info-button,
 .card-group-header-with-hint .skeleton-info-button {
-    margin: -0.25rem 0;
+    margin: calc(-1 * var(--space-1)) 0;
 }
 
 /* The "?" button's ghost, its size as a bare chip. */
@@ -237,7 +237,7 @@
 /* The reasons bullets fold open under their chip; the gap rides inside the
    clip so a folded block ends at the chip. */
 .card-detail-footer .collapsible-inner > .card-detail-bullets {
-    margin-top: 0.5rem;
+    margin-top: var(--space-2);
 }
 
 /* The fold chip's arrow: the card rows' disclosure grammar, pointing
@@ -251,7 +251,7 @@
        about the arrow's own middle rather than the glyph cell's. */
     width: 1em;
     height: 1em;
-    margin-right: 0.35rem;
+    margin-right: var(--space-1);
     font-size: 1rem;
     line-height: 1;
     transform-origin: 50% 50%;
@@ -267,7 +267,7 @@
 .card-list-fold-title {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
 }
 
 /* Collapsed: the header's rule fades out in step with the closing body,
@@ -295,7 +295,7 @@
 .box-rule {
     border: none;
     border-top: 1px solid var(--border-secondary);
-    margin: 0.35rem -0.75rem 0.6rem -0.75rem;
+    margin: var(--space-1) calc(-1 * var(--space-3)) var(--space-2) calc(-1 * var(--space-3));
     align-self: stretch;
 }
 
@@ -306,16 +306,16 @@
 .tag-table {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto auto;
-    column-gap: 0.5rem;
+    column-gap: var(--space-2);
     align-items: center;
-    padding: 0 0.75rem;
+    padding: 0 var(--space-3);
 }
 
 .tag-table-head {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding-bottom: 0.25rem;
+    padding-bottom: var(--space-1);
 }
 
 .tag-table-head:first-child {
@@ -329,12 +329,12 @@
 }
 
 .tag-table-head .info-button {
-    margin-left: 0.2rem;
+    margin-left: var(--space-1);
 }
 
 .tag-table-tag {
     min-width: 0;
-    padding: 0.175rem 0;
+    padding: var(--space-1) 0;
 }
 
 /* A long slug wraps inside its chip, the way the deck charts' tag chips do,
@@ -369,7 +369,7 @@
 
 .badge-verified {
     display: inline-block;
-    padding: 0.15rem 0.4rem;
+    padding: 0.15rem var(--space-2);
     border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
     background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
     border-radius: 0.4rem;
@@ -382,7 +382,7 @@
 /* A pending email's link expiry, beside the Verified badge's look. */
 .badge-expiry {
     display: inline-block;
-    padding: 0.15rem 0.4rem;
+    padding: 0.15rem var(--space-2);
     border: 1px solid color-mix(in srgb, var(--text-muted) 35%, transparent);
     background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
     border-radius: 0.4rem;
@@ -394,7 +394,7 @@
 
 .badge-unverified {
     display: inline-block;
-    padding: 0.15rem 0.4rem;
+    padding: 0.15rem var(--space-2);
     border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
     background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
     border-radius: 0.4rem;
@@ -410,7 +410,7 @@
 
 /* On top of the shared app.css .pref-row. */
 .pref-row {
-    margin-bottom: 0.4rem;
+    margin-bottom: var(--space-2);
 }
 
 /* Universes Beyond sheet: grayed franchise chips until the hide toggle is on,
@@ -434,7 +434,7 @@
 
 .ub-exceptions-reason {
     margin: 0;
-    padding: 0 1rem 0.75rem;
+    padding: 0 var(--space-4) var(--space-3);
     font-size: 0.8rem;
     color: var(--ink-text-muted, var(--text-muted));
 }
@@ -442,7 +442,7 @@
 .ub-exception-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
+    gap: var(--space-2);
     width: 100%;
 }
 
@@ -509,11 +509,11 @@
     flex-wrap: wrap;
     justify-content: flex-start;
     align-items: center;
-    gap: 0.3rem;
+    gap: var(--space-1);
     width: 100%;
     min-height: 2.75rem;
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 1rem;
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-4);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     background-color: var(--bg-primary);
@@ -532,7 +532,7 @@
     flex: 0 0 auto;
     width: 100%;
     max-width: 40rem;
-    padding: 0.75rem 1rem 0;
+    padding: var(--space-3) var(--space-4) 0;
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -550,9 +550,9 @@
 .tag-controls-head {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
     width: 100%;
-    margin-bottom: 0.35rem;
+    margin-bottom: var(--space-1);
 }
 
 .tag-count {
@@ -573,14 +573,14 @@
     flex-wrap: wrap;
     align-content: flex-start;
     justify-content: center;
-    gap: 0.4rem;
+    gap: var(--space-2);
 }
 
 /* The bar hugs its text: the hint's two lines when nothing is picked, a
    picked tag's name and description once one is. */
 .tag-def-bar {
-    margin-top: 0.5rem;
-    padding: 0.5rem 0.75rem;
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-3);
     text-align: left;
     border: 1px solid var(--border-secondary);
     border-radius: 0.6rem;
@@ -610,7 +610,7 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
-    padding: 0.5rem 0.75rem;
+    padding: var(--space-2) var(--space-3);
 }
 
 .tag-def-name {
@@ -626,8 +626,8 @@
 }
 
 .tag-def-list {
-    margin: 0.25rem 0 0 0;
-    padding-left: 1.1rem;
+    margin: var(--space-1) 0 0 0;
+    padding-left: var(--space-4);
     color: var(--text-primary);
     opacity: 0.85;
     font-size: 0.85rem;
@@ -635,7 +635,7 @@
 }
 
 .tag-def-list li {
-    margin-bottom: 0.2rem;
+    margin-bottom: var(--space-1);
 }
 
 /* ==================
@@ -648,11 +648,11 @@
     flex: 0 0 auto;
     width: 100%;
     max-width: 40rem;
-    padding: 0.75rem 1rem 0.5rem 1rem;
+    padding: var(--space-3) var(--space-4) var(--space-2) var(--space-4);
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .dict-controls > .tag-controls-head {
@@ -670,9 +670,9 @@
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-y: none;
-    gap: 0.35rem;
-    padding: 0.25rem;
-    margin: -0.25rem -0.25rem 0;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-1)) 0;
     -webkit-overflow-scrolling: touch;
     /* The edge fade is the kit's scroll-fade-x, which lifts at the edge the
        rail is scrolled to, so A is whole at rest. */
@@ -706,7 +706,7 @@
     padding: 0.75rem 1rem calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px) + 1rem);
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--space-2);
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem, #000 calc(100% - 1rem), transparent);
     mask-image: linear-gradient(to bottom, transparent 0, #000 1rem, #000 calc(100% - 1rem), transparent);
 }
@@ -718,7 +718,7 @@
 }
 
 .dict-row {
-    padding: 0.6rem 0.75rem;
+    padding: var(--space-2) var(--space-3);
     text-align: left;
     border: 1px solid var(--border-secondary);
     border-radius: 0.6rem;
@@ -730,13 +730,13 @@
 .dict-row-divider {
     border: none;
     border-top: 1px solid var(--border-secondary);
-    margin: 0.6rem -0.75rem 0;
+    margin: var(--space-2) calc(-1 * var(--space-3)) 0;
 }
 
 .dict-row-actions {
     display: flex;
-    gap: 0.4rem;
-    margin-top: 0.6rem;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
 }
 
 @keyframes dict-row-in {
@@ -771,14 +771,14 @@
 .dict-parents {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.3rem;
-    margin-top: 0.4rem;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
 }
 
 .dict-parent {
     color: var(--ink-text-muted, var(--text-muted));
     font-size: 0.7rem;
-    padding: 0.05rem 0.4rem;
+    padding: 0.05rem var(--space-2);
     border: 1px solid var(--border-muted);
     border-radius: 0.4rem;
 }
@@ -786,7 +786,7 @@
 .dict-empty {
     color: var(--ink-text-muted, var(--text-muted));
     text-align: center;
-    padding: 1.5rem 1rem;
+    padding: var(--space-5) var(--space-4);
     font-size: 0.9rem;
 }
 
@@ -818,7 +818,7 @@
 .dict-skeleton-desc {
     height: 0.85rem;
     width: 85%;
-    margin-top: 0.4rem;
+    margin-top: var(--space-2);
 }
 
 /* ==================
@@ -831,14 +831,14 @@
     gap: var(--panel-gap);
     width: calc(100% - 2rem);
     max-width: 40rem;
-    padding-bottom: 1rem;
+    padding-bottom: var(--space-4);
     text-align: left;
     color: var(--text-primary);
     line-height: 1.6;
 }
 
 .privacy-section {
-    padding: 1.25rem 1.5rem;
+    padding: var(--space-5) var(--space-5);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
@@ -859,7 +859,7 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .privacy-head h2 {
@@ -875,21 +875,21 @@
 .privacy-section hr {
     border: none;
     border-top: 1px solid var(--border-secondary);
-    margin: 0.85rem -1.5rem 1rem;
+    margin: var(--space-3) calc(-1 * var(--space-5)) var(--space-4);
 }
 
 .privacy-content p,
 .privacy-content ul {
     font-size: 0.85rem;
-    margin-top: 0.6rem;
+    margin-top: var(--space-2);
 }
 
 .privacy-content ul {
-    padding-left: 1.25rem;
+    padding-left: var(--space-5);
 }
 
 .privacy-content li {
-    margin-bottom: 0.4rem;
+    margin-bottom: var(--space-2);
 }
 
 /* Links in body text: the privacy policy's and About's credits. The accent
@@ -930,7 +930,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     /* Breathing room before the group-by controls below. */
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-4);
 }
 
 /* One or two cards sit centered; past two the row scrolls sideways within
@@ -941,7 +941,7 @@
     flex-wrap: nowrap;
     justify-content: flex-start;
     justify-content: safe center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     min-width: 0;
     overflow-x: auto;
     overflow-y: hidden;
@@ -950,8 +950,8 @@
     scrollbar-width: none;
     /* Room inside the row's clip for each card's shadow, given back by the
        margins so the row sits and sizes where it did. */
-    padding: 0.5rem 0.75rem 0;
-    margin: -0.5rem -0.75rem 0;
+    padding: var(--space-2) var(--space-3) 0;
+    margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-3)) 0;
     scroll-padding-inline: 0.75rem;
 }
 
@@ -1049,8 +1049,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
-    margin-top: 0.4rem;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
     min-width: 0;
     /* The name on one line and the role under it on every card, so the
        strip keeps its height when a card comes or goes. */
@@ -1058,7 +1058,7 @@
 }
 
 .deck-featured-chips > .stat-chip {
-    padding: 0.1rem 0.45rem;
+    padding: 0.1rem var(--space-2);
     font-size: 0.62rem;
     border-radius: 0.5rem;
 }
@@ -1084,8 +1084,8 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.3rem;
-    margin-bottom: 0.75rem;
+    gap: var(--space-1);
+    margin-bottom: var(--space-3);
 }
 
 .deck-cards-header-name {
@@ -1093,7 +1093,7 @@
     font-weight: 700;
     line-height: 1.3;
     overflow-wrap: anywhere;
-    margin-right: 0.2rem;
+    margin-right: var(--space-1);
 }
 
 /* Compound selectors so the role colors outrank the chip's own tone. */
@@ -1180,7 +1180,7 @@
    while the weeks scroll under them; the left fade starts past them. */
 .activity-scroll {
     --heat-gutter: calc(0.75rem + 24px);
-    padding: 0.25rem 0.75rem 0;
+    padding: var(--space-1) var(--space-3) 0;
     scrollbar-color: var(--border-secondary) transparent;
     -webkit-mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
     mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
@@ -1214,11 +1214,11 @@
 .activity-rates {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-3);
 }
 
 .activity-rate-chips {
-    padding: 0 0.75rem;
+    padding: 0 var(--space-3);
 }
 
 /* The Activity section's body while the screen loads, in its loaded
@@ -1227,8 +1227,8 @@
 .activity-ghost-body {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    padding: 0.6rem 0 0.75rem;
+    gap: var(--space-3);
+    padding: var(--space-2) 0 var(--space-3);
 }
 
 /* A tag's size, so the row sits where the loaded tags do. */
@@ -1241,8 +1241,8 @@
 .activity-ghost-chart {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    padding: 0 0.75rem;
+    gap: var(--space-1);
+    padding: 0 var(--space-3);
 }
 
 /* The title chip, a plain ghost chip like the tags'. */
@@ -1255,7 +1255,7 @@
 .activity-ghost-bars {
     display: flex;
     align-items: flex-end;
-    gap: 0.25rem;
+    gap: var(--space-1);
     height: 6rem;
 }
 
@@ -1273,28 +1273,28 @@
 
 .activity-ghost-labels {
     display: flex;
-    gap: 0.25rem;
+    gap: var(--space-1);
 }
 
 .activity-ghost-label {
     flex: 1;
     height: 0.65rem;
-    margin: 0 0.75rem;
+    margin: 0 var(--space-3);
 }
 
 /* The full-bleed rule between the heatmap's tags and Totals. */
 .activity-rule {
-    margin-top: 0.75rem;
+    margin-top: var(--space-3);
 }
 
 /* The Totals columns under that rule. */
 .activity-outcomes {
-    margin-top: 0.75rem;
+    margin-top: var(--space-3);
 }
 
 /* A section's one-line note, such as a rate with nothing to show. */
 .activity-total {
-    padding: 0.5rem 0.75rem 0;
+    padding: var(--space-2) var(--space-3) 0;
     font-size: 0.7rem;
     color: var(--ink-text-muted, var(--text-muted));
     text-align: center;
@@ -1302,7 +1302,7 @@
 
 /* The same note alone under a card group's header, spaced off the frame. */
 .activity-total-group {
-    padding-bottom: 0.75rem;
+    padding-bottom: var(--space-3);
 }
 
 /* =========================
@@ -1315,7 +1315,7 @@
 .deck-warning-row {
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .deck-warning-row > .text-muted {
@@ -1329,7 +1329,7 @@
 
 .deck-warning-fixes {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .deck-warning-row button {
@@ -1354,7 +1354,7 @@
 
 .chip-note.swipe-confirm-chip {
     display: inline-block;
-    padding: 0.3rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
     font-size: 0.75rem;
     line-height: 1.4;
     animation: swipe-confirm-in 0.2s ease-out both;

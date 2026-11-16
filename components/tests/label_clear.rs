@@ -16,9 +16,9 @@ fn rule<'a>(selector: &str) -> Option<&'a str> {
 #[test]
 fn a_label_row_s_clear_takes_no_room() {
     let row = rule(".label-row").expect("the label row rule");
-    assert!(row.contains("gap: 0.25rem"), "{row}");
+    assert!(row.contains("gap: var(--space-1)"), "{row}");
     let clear = rule(".clear-btn").expect("the clear rule");
-    assert!(clear.contains("margin-left: 0.25rem"), "{clear}");
+    assert!(clear.contains("margin-left: var(--space-1)"), "{clear}");
     let held = rule(".label-row > .clear-btn").expect("a label row's clear");
     assert!(held.contains("box-sizing: border-box"), "{held}");
     assert!(held.contains("width: var(--label-clear-w)"), "{held}");
@@ -41,7 +41,7 @@ fn a_chip_that_comes_with_a_pick_eases_in_on_the_enter_settle() {
         "max-width: 0",
         "padding-inline: 0",
         "border-inline-width: 0",
-        "margin-left: -0.25rem",
+        "margin-left: calc(-1 * var(--space-1))",
     ] {
         assert!(folded.contains(line), "{line} in {folded}");
     }

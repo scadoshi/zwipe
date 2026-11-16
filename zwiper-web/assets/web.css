@@ -162,7 +162,7 @@ body {
     order: 1;
     flex: 1 0 auto;
     overflow: visible;
-    padding-bottom: 1.5rem;
+    padding-bottom: var(--space-5);
 }
 
 .web-scroll-screen:has(> .action-dock, > .swipe-bottom-row) > .screen-content {
@@ -203,7 +203,7 @@ body {
 }
 
 .web-scroll-screen:has(> .web-site-footer) > .screen-content {
-    padding-bottom: 1rem;
+    padding-bottom: var(--space-4);
 }
 
 .web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock, .web-screen-chips) {
@@ -301,7 +301,7 @@ body {
     gap: var(--panel-gap);
     width: 100%;
     margin: 0 auto auto;
-    padding: 0 1rem 1rem;
+    padding: 0 var(--space-4) var(--space-4);
     box-sizing: border-box;
 }
 
@@ -312,12 +312,12 @@ body {
 
 @media (min-width: 900px) {
     .web-auth {
-        padding: 0 1.5rem 1.5rem;
+        padding: 0 var(--space-5) var(--space-5);
     }
 
     .web-form-panel {
         width: 100%;
-        padding: 1.5rem;
+        padding: var(--space-5);
         background-color: var(--bg-primary);
         border: 1px solid var(--border-secondary);
         border-radius: 1rem;
@@ -329,7 +329,7 @@ body {
     .web-form-panel > .web-form-head {
         display: flex;
         justify-content: center;
-        margin: -1.5rem -1.5rem 1.5rem;
+        margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-5)) var(--space-5);
         border-radius: 1rem 1rem 0 0;
     }
 
@@ -343,7 +343,7 @@ body {
        edges, as the header's does, instead of spanning the window as the
        app's does. */
     .web-form-panel > .form-links {
-        margin: 1.5rem -1.5rem -1.5rem;
+        margin: var(--space-5) calc(-1 * var(--space-5)) calc(-1 * var(--space-5));
     }
 
     /* A public screen: the hero at the page's width, then the form in the
@@ -385,7 +385,7 @@ body {
         width: 100%;
         max-width: var(--web-page-max);
         margin: 0 auto auto;
-        padding: 0 1.5rem 1.5rem;
+        padding: 0 var(--space-5) var(--space-5);
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
@@ -414,7 +414,7 @@ body {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr);
         grid-template-rows: 1fr auto auto 1fr;
-        column-gap: 2.5rem;
+        column-gap: var(--space-6);
         row-gap: 0;
         align-items: center;
         justify-content: center;
@@ -428,7 +428,7 @@ body {
     .web-hero .home-hero .stats-source {
         grid-column: 2;
         grid-row: 3;
-        margin-top: 1rem;
+        margin-top: var(--space-4);
     }
 
     /* The mark and the counters at zite's sizes, as the hero has them
@@ -439,7 +439,7 @@ body {
     }
 
     .web-hero .home-hero .stat {
-        padding: 0.7rem 0.35rem 0.6rem;
+        padding: var(--space-3) var(--space-1) var(--space-2);
     }
 
     .web-hero .home-hero .stat-num {
@@ -594,14 +594,14 @@ body {
     /* The menu footer sits in the bar after the pills, one row of icons
        and Log out, with no band of its own. */
     .web-shell .nav-panel .nav-trailing {
-        margin-left: 0.75rem;
+        margin-left: var(--space-3);
     }
 
     /* One gap across the row: the icon group's own between its icons, and
        the same between the group and Log out. */
     .web-shell .nav-trailing-row {
         padding-bottom: 0;
-        gap: 0.4rem;
+        gap: var(--space-2);
     }
 
     /* The screen's `?` in the icons' box, its glyph bold to match the
@@ -752,7 +752,7 @@ body {
     .web-app-nav .nav-wrapper nav {
         grid-template-columns: 2.6rem minmax(0, 1fr) 2.6rem;
         grid-template-rows: 1.7rem;
-        padding: 0.5rem 0.75rem;
+        padding: var(--space-2) var(--space-3);
     }
 
     .web-app-nav .nav-persistent {
@@ -792,7 +792,7 @@ body {
        Log out do not fit one line, Log out takes the next, at the right. */
     .web-app-nav .nav-trailing-row {
         flex-wrap: wrap;
-        row-gap: 0.5rem;
+        row-gap: var(--space-2);
     }
 
     .web-app-nav .nav-trailing-row > .app-nav-logout {
@@ -874,7 +874,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         width: 100%;
         max-width: var(--web-page-max);
         margin: 0 auto;
-        padding: 0 1.5rem 1.5rem;
+        padding: 0 var(--space-5) var(--space-5);
         box-sizing: border-box;
     }
 
@@ -897,7 +897,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     .web-privacy .privacy-content {
         width: 100%;
         max-width: var(--web-page-max);
-        padding: 0 1.5rem 1rem;
+        padding: 0 var(--space-5) var(--space-4);
         box-sizing: border-box;
     }
 }
@@ -927,7 +927,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         width: 100%;
         max-width: var(--web-page-max);
         margin: 0 auto;
-        padding: 0 1.5rem 1rem;
+        padding: 0 var(--space-5) var(--space-4);
         box-sizing: border-box;
     }
 
@@ -984,7 +984,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 .web-dead-end {
     width: calc(100% - 2rem);
     max-width: 25rem;
-    margin: 1rem auto auto;
+    margin: var(--space-4) auto auto;
 }
 
 .web-dead-end .panel-title {
@@ -1035,7 +1035,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-secondary);
     border-radius: 0.5rem;
-    padding: 0.75rem 0;
+    padding: var(--space-3) 0;
     display: flex;
     flex-direction: column;
     cursor: pointer;
@@ -1052,14 +1052,14 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 .web-section-head {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0 1rem;
+    gap: var(--space-2);
+    padding: 0 var(--space-4);
 }
 
 .web-section-title {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     flex: 1;
     min-width: 0;
 }
@@ -1095,18 +1095,18 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 .web-section-rule {
     border: none;
     border-top: 1px solid var(--border-secondary);
-    margin: 0.5rem 0 0.6rem;
+    margin: var(--space-2) 0 var(--space-2);
 }
 
 .web-section-body {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-3);
 }
 
 /* The section's own padding is most of a stat body's foot here. */
 .web-section-body > .deck-stat-body {
-    padding-bottom: 0.5rem;
+    padding-bottom: var(--space-2);
 }
 
 /* A wide window shows every section open, with no arrow to toggle. */
@@ -1180,7 +1180,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
 .web-printing-body > .cover-flow {
     --flow-step-inset: 1rem;
-    margin: 0 -1.5rem 0.75rem;
+    margin: 0 calc(-1 * var(--space-5)) var(--space-3);
 }
 
 /* The flow's frame is filled with the sheet body's own color, so nothing
@@ -1200,14 +1200,14 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 .web-printing-foot {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .web-printing-foot-row {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.75rem;
+    gap: var(--space-3);
 }
 
 .action-dock.web-printing-save {
@@ -1221,7 +1221,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     display: block;
     width: 2.4rem;
     height: 2.4rem;
-    margin: 0.3rem 0;
+    margin: var(--space-1) 0;
     border-radius: 0.6rem;
 }
 
@@ -1252,7 +1252,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        padding: 1rem 1.5rem 1.25rem;
+        padding: var(--space-4) var(--space-5) var(--space-5);
     }
 
     .web-flow-body:focus {
@@ -1266,7 +1266,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         --flow-step-inset: 1.5rem;
         flex: 1 1 auto;
         min-height: 0;
-        margin-inline: -1.5rem;
+        margin-inline: calc(-1 * var(--space-5));
     }
 
     /* The frame under the step buttons stretches to the flow's height and
@@ -1288,8 +1288,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         flex-wrap: wrap;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
-        padding-top: 1rem;
+        gap: var(--space-2);
+        padding-top: var(--space-4);
     }
 
     /* The printing's chips share the row with Select, wrapping as one. */
@@ -1380,7 +1380,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     z-index: 50;
     display: flex;
     align-items: stretch;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .swipe-bottom-row > .web-dock-pair {
@@ -1394,8 +1394,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
 .web-swipe-dock-btn {
     width: auto;
-    gap: 0.35rem;
-    padding: 0 0.7rem;
+    gap: var(--space-1);
+    padding: 0 var(--space-3);
     font-size: 0.8rem;
     white-space: nowrap;
 }
@@ -1515,9 +1515,9 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         align-items: start;
-        gap: 1.5rem;
+        gap: var(--space-5);
         max-width: none;
-        padding: 1rem 1.5rem;
+        padding: var(--space-4) var(--space-5);
     }
 
     .web-examples-details {
@@ -1676,7 +1676,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     .web-activity {
         max-width: 40rem;
         width: 100%;
-        padding: 0 1rem;
+        padding: 0 var(--space-4);
         gap: var(--panel-gap);
         box-sizing: border-box;
     }
@@ -1726,7 +1726,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     .web-playstyle {
         width: 100%;
         max-width: 40rem;
-        padding: 0 1rem;
+        padding: 0 var(--space-4);
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
@@ -1747,8 +1747,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 .web-card-group-filters {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem 0.25rem;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4) var(--space-1);
 }
 
 /* A wide window draws Summary in the page's first row, so the profile
@@ -1790,8 +1790,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     .web-playstyle-fold-body {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
-        padding: 0.75rem 0;
+        gap: var(--space-3);
+        padding: var(--space-3) 0;
     }
 
     /* A fold of info rows (Summary) is spaced by the rows' own padding, as a
@@ -1939,11 +1939,11 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         align-items: start;
-        gap: 1.5rem;
+        gap: var(--space-5);
         max-width: var(--web-content-max);
         margin: 0 auto;
         width: 100%;
-        padding: 1rem 1.5rem;
+        padding: var(--space-4) var(--space-5);
         box-sizing: border-box;
     }
 
@@ -1993,7 +1993,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 /* In the Cards layer the featured cards end the head; the same breathing
    room as the app's strip keeps their chips off Quick add below. */
 .web-cards-layer .deck-head {
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-4);
 }
 
 /* The overlay scrolls as a screen under the nav does, down to the site's
@@ -2128,7 +2128,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     z-index: 1;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     pointer-events: none;
 }
 
@@ -2137,7 +2137,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 }
 
 .chip-note.web-swipe-confirm {
-    padding: 0.3rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
     font-size: 0.75rem;
     line-height: 1.4;
     animation: web-swipe-confirm-in 0.2s ease-out both;
@@ -2223,14 +2223,14 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 .web-maybeboard {
     max-width: 40rem;
     width: 100%;
-    padding: 0 1rem;
+    padding: 0 var(--space-4);
     box-sizing: border-box;
 }
 
 @media (min-width: 900px) {
     .web-maybeboard {
         max-width: var(--web-page-max);
-        padding: 1rem 1.5rem 2rem;
+        padding: var(--space-4) var(--space-5) var(--space-6);
     }
 
     .web-maybeboard > .settings-list,
@@ -2295,7 +2295,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
 /* Quick add's results under its bar keep a row's gap from the row below. */
 .quick-add-results {
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-2);
 }
 
 /* The floating result the arrow keys point at, in the maybeboard's and the
@@ -2356,13 +2356,13 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         width: 100%;
         max-width: var(--web-page-max);
         margin: 0 auto;
-        padding: 0 1.5rem;
+        padding: 0 var(--space-5);
         box-sizing: border-box;
     }
 
     .web-dict-browse .dict-controls {
         max-width: none;
-        padding: 0.75rem 0;
+        padding: var(--space-3) 0;
     }
 
     .web-dict-browse .dict-skeleton-search {
@@ -2420,7 +2420,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 .web-deck-list {
     max-width: 40rem;
     width: 100%;
-    padding: 0 1rem;
+    padding: 0 var(--space-4);
     box-sizing: border-box;
 }
 
@@ -2431,7 +2431,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 @media (min-width: 900px) {
     .web-deck-list {
         max-width: var(--web-page-max);
-        padding: 1rem 1.5rem 2rem;
+        padding: var(--space-4) var(--space-5) var(--space-6);
     }
 }
 
@@ -2493,7 +2493,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         column-gap: var(--panel-gap);
         width: 100%;
         max-width: var(--web-page-max);
-        padding: 0 1.5rem 2rem;
+        padding: 0 var(--space-5) var(--space-6);
         box-sizing: border-box;
     }
 }
@@ -2560,7 +2560,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
        moves inside it, so its last entry still scrolls clear. */
     .web-dict-sheet .bottom-sheet > .sheet-content:last-child {
         overflow: hidden;
-        padding: 0 1.5rem;
+        padding: 0 var(--space-5);
     }
 
     .web-dict-sheet .web-dict-browse {
@@ -2569,7 +2569,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 
     .web-dict-sheet .dict-list {
-        padding-bottom: 1.5rem;
+        padding-bottom: var(--space-5);
     }
 }
 
@@ -2588,7 +2588,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         width: 100%;
         max-width: 72rem;
         margin: 0 auto;
-        padding: 1rem 1.5rem 2rem;
+        padding: var(--space-4) var(--space-5) var(--space-6);
         box-sizing: border-box;
     }
 
@@ -2601,7 +2601,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     .web-import > .import-controls,
     .web-export > .import-controls {
         max-width: none;
-        padding: 0 0 0.75rem;
+        padding: 0 0 var(--space-3);
     }
 
     .web-import > .import-scroll,
@@ -2678,8 +2678,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 @media (min-width: 900px) {
     .web-form-panel > .import-output {
         box-sizing: border-box;
-        margin: -1.5rem -1.5rem -1.5rem;
-        padding: 1.5rem;
+        margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-5)) calc(-1 * var(--space-5));
+        padding: var(--space-5);
         border-radius: 0 0 1rem 1rem;
     }
 }
@@ -2716,7 +2716,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         display: flex;
         flex-direction: column;
         gap: var(--panel-gap);
-        padding: 1rem 0 6rem;
+        padding: var(--space-4) 0 6rem;
     }
 }
 
@@ -2733,7 +2733,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 @media (max-width: 899px) {
     .web-page.deck-page-wide,
     .web-page.shared-deck-note {
-        padding: 0 1rem 1rem;
+        padding: 0 var(--space-4) var(--space-4);
         box-sizing: border-box;
     }
 }
@@ -2774,11 +2774,11 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         display: grid;
         align-items: start;
         align-content: start;
-        gap: 1.5rem;
+        gap: var(--space-5);
         width: 100%;
         max-width: 96rem;
         margin: 0 auto;
-        padding: 1rem 1.5rem;
+        padding: var(--space-4) var(--space-5);
         box-sizing: border-box;
         overflow-y: auto;
     }
@@ -2797,7 +2797,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.5rem;
+        gap: var(--space-2);
         min-width: 0;
     }
 
@@ -2815,7 +2815,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 .web-deck-cards-list {
     max-width: 40rem;
     width: 100%;
-    padding: 0 1rem;
+    padding: 0 var(--space-4);
     box-sizing: border-box;
 }
 
@@ -2831,8 +2831,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         min-width: 20rem;
         max-width: min(var(--web-dialog-max), calc(100% - 3rem));
         max-height: calc(100dvh - 8rem);
-        padding-top: 1.25rem;
-        padding-bottom: 1.25rem;
+        padding-top: var(--space-5);
+        padding-bottom: var(--space-5);
     }
 
     .alert-dialog-description {
@@ -2854,7 +2854,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 @media (max-width: 899px) {
     .web-form-panel {
         width: calc(100% - 2rem);
-        margin: 0 1rem;
+        margin: 0 var(--space-4);
         padding: 0;
         background-color: var(--bg-primary);
         border: 1px solid var(--border-secondary);
@@ -2871,7 +2871,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
     .web-form-panel > form,
     .web-form-panel > .web-form-fields {
-        padding: 1rem;
+        padding: var(--space-4);
     }
 
     /* The deck form's column gives way to its panels, which take the
@@ -2884,7 +2884,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
     .web-form-panel > .form-links {
         margin: 0;
-        padding: 0.75rem 1rem;
+        padding: var(--space-3) var(--space-4);
         border-top: 1px solid var(--border-secondary);
     }
 }
@@ -2905,8 +2905,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     .web-deck-cards-controls,
     .web-deck-cards-list {
         max-width: none;
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
+        padding-left: var(--space-5);
+        padding-right: var(--space-5);
     }
 
     .web-deck-view,
@@ -2919,8 +2919,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
     .import-controls {
         max-width: none;
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
+        padding-left: var(--space-5);
+        padding-right: var(--space-5);
     }
 
     /* The kit's lists keep to 40rem; on the page they run the column. */
@@ -2936,15 +2936,15 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
     .web-form-panel {
         width: calc(100% - 3rem);
-        margin-left: 1.5rem;
-        margin-right: 1.5rem;
+        margin-left: var(--space-5);
+        margin-right: var(--space-5);
     }
 
     /* Home and the sign-in screens: the hero and the cards beside it at
        the window's width, the mark and the counters at zite's sizes. */
     .home-hero {
         max-width: none;
-        padding: 0 1.5rem;
+        padding: 0 var(--space-5);
         box-sizing: border-box;
     }
 
@@ -2960,7 +2960,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 
     .home-hero .stat {
-        padding: 0.7rem 0.35rem 0.6rem;
+        padding: var(--space-3) var(--space-1) var(--space-2);
     }
 
     .home-hero .stat-num {
@@ -2979,7 +2979,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     width: 100%;
     max-width: var(--web-page-max);
     margin: 0 auto;
-    padding: 0 1.5rem 1rem;
+    padding: 0 var(--space-5) var(--space-4);
     box-sizing: border-box;
     text-align: left;
 }
@@ -2992,7 +2992,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
 @media (max-width: 899px) {
     .web-guides {
-        padding: 0 1rem 1rem;
+        padding: 0 var(--space-4) var(--space-4);
     }
 }
 
@@ -3003,7 +3003,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 }
 
 .new-build-notice .new-build-reload {
-    margin-left: 0.75rem;
+    margin-left: var(--space-3);
 }
 
 /* ---- Reduced motion ----

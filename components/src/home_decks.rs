@@ -198,7 +198,10 @@ mod tests {
             .get(at..)
             .and_then(|rest| rest.split_once('}'))
             .map_or("", |(body, _)| body);
-        assert!(rule.contains("padding-inline: 0.4rem;"), "{rule}");
+        assert!(
+            rule.contains("padding-inline: var(--space-1);"),
+            "tighter than a chip's --space-2 sides: {rule}"
+        );
         assert!(rule.contains("text-overflow: ellipsis;"), "{rule}");
     }
 }

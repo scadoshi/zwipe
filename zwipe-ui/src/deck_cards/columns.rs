@@ -145,8 +145,9 @@ pub fn drawer_side(card: Span, right: Span, width: f64, now: Side) -> Side {
 /// stacks' grid fit as many of as it could.
 pub const STACK_MIN_CENTIREM: u32 = 1250;
 
-/// The room between two stack columns, in hundredths of a rem.
-pub const STACK_GAP_CENTIREM: u32 = 125;
+/// The room between two stack columns, in hundredths of a rem: the stacks' `--space-4` column gap
+/// in components' `deck_page.css`.
+pub const STACK_GAP_CENTIREM: u32 = 100;
 
 /// How many stack columns a page `width` hundredths of a rem across holds: as many
 /// [`STACK_MIN_CENTIREM`]-wide columns as fit with [`STACK_GAP_CENTIREM`] between them, as the
@@ -355,11 +356,11 @@ mod tests {
 
     #[test]
     fn the_column_count_follows_the_grid_it_replaces() {
-        // 12.5rem columns with 1.25rem between them, in hundredths of a rem.
+        // 12.5rem columns with 1rem (--space-4) between them, in hundredths of a rem.
         assert_eq!(column_count(1250), 1, "one column's width");
-        assert_eq!(column_count(1250 + 125 + 1249), 1, "a hair short of two");
-        assert_eq!(column_count(1250 + 125 + 1250), 2, "exactly two");
-        assert_eq!(column_count(8000), 5, "80rem: (80 + 1.25) / 13.75");
+        assert_eq!(column_count(1250 + 100 + 1249), 1, "a hair short of two");
+        assert_eq!(column_count(1250 + 100 + 1250), 2, "exactly two");
+        assert_eq!(column_count(8000), 6, "80rem: (80 + 1) / 13.5");
         assert_eq!(column_count(0), 1, "never fewer than one");
     }
 }

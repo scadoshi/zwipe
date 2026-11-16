@@ -100,15 +100,15 @@
 }
 
 .gap-1 {
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .mb-1 {
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-2);
 }
 
 .mt-2 {
-    margin-top: 1rem;
+    margin-top: var(--space-4);
 }
 
 .text-muted {
@@ -117,7 +117,7 @@
 
 .chip-xs {
     display: inline-block;
-    padding: 0.15rem 0.5rem;
+    padding: 0.15rem var(--space-2);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     /* A button element, so the host's face has to be named. */
@@ -132,7 +132,7 @@
 
 .chip-unselected {
     display: inline-block;
-    padding: 0.3rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-muted);
     border-radius: 0.6rem;
@@ -155,7 +155,7 @@
     cursor: pointer;
     font-size: 1rem;
     line-height: 1;
-    margin-left: 0.3rem;
+    margin-left: var(--space-1);
 }
 
 /* `all: unset` takes the browser's ring away, so the keyboard gets the
@@ -167,8 +167,8 @@
 }
 
 .input-compact {
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
+    padding: var(--space-2);
+    margin-bottom: var(--space-2);
     font-size: 0.875rem;
     border-radius: 0.5rem;
 }
@@ -184,7 +184,7 @@
 /* A compact field in the kit's clear wrap keeps the compact spacing under
    it. */
 .input-clear-wrap:has(> .input-compact) {
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-2);
 }
 
 /* One in a chip row sits on the row's center line beside its label chip, as
@@ -195,12 +195,12 @@
 }
 
 .quick-add-results {
-    margin-top: 0.5rem;
+    margin-top: var(--space-2);
 }
 
 .label-xs {
     font-size: 0.875rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: var(--space-1);
     color: var(--ink-accent-tertiary, var(--accent-tertiary));
     font-weight: 400;
     letter-spacing: 0.1em;
@@ -211,7 +211,7 @@
 }
 
 .gap-half {
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .label-row {
@@ -219,18 +219,18 @@
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 0.25rem;
+    gap: var(--space-1);
     width: 100%;
     /* Breathing room so chips that wrap below a long label (e.g. "Signature
        spell") don't sit flush against the input beneath them. */
-    margin-bottom: 0.4rem;
+    margin-bottom: var(--space-2);
 }
 
 /* Filter sheet labels: each group already sits a flex gap plus its chips'
    bottom margin below the last, so a small lead keeps the groups snug. */
 .label-row.mt-2 {
-    margin-top: 0.25rem;
-    margin-bottom: 0.25rem;
+    margin-top: var(--space-1);
+    margin-bottom: var(--space-1);
 }
 
 /* The kit's × beside a field in the app's clear red, as its label-row clears are. */
@@ -248,8 +248,8 @@
     font-size: 0.85rem;
     line-height: 1;
     color: var(--ink-color-error, var(--color-error));
-    padding: 0.2rem 0.45rem;
-    margin-left: 0.25rem;
+    padding: var(--space-1) var(--space-2);
+    margin-left: var(--space-1);
     border: 1px solid var(--color-error);
     border-radius: 0.4rem;
     /* Opaque fill so the page grid doesn't show through the button. */
@@ -293,7 +293,7 @@
     max-width: 0;
     padding-inline: 0;
     border-inline-width: 0;
-    margin-left: -0.25rem;
+    margin-left: calc(-1 * var(--space-1));
     opacity: 0;
     pointer-events: none;
 }
@@ -330,11 +330,11 @@
     bottom: 0;
     left: 0;
     right: 0;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-2);
     z-index: 150;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem;
+    gap: var(--space-1);
     justify-content: center;
 }
 
@@ -358,7 +358,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.3rem;
+    gap: var(--space-1);
 }
 
 .stepper-value {
@@ -433,8 +433,8 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--border-primary);
   background-color: var(--bg-primary);
   box-shadow: var(--shadow-sm);
@@ -474,7 +474,7 @@
      animation's 180ms (both endpoints hold the same discrete value), and the
      closed base rule clips the collapse transition. */
   overflow: visible;
-  padding-bottom: 0.5rem;
+  padding-bottom: var(--space-2);
   animation: accordion-open 180ms ease;
 }
 
@@ -521,7 +521,7 @@
    header sits under the section. Inside the clipped wrapper, so it eases in
    with the section. */
 .accordion-content > * > :first-child {
-  margin-top: 1rem;
+  margin-top: var(--space-4);
 }
 
 /* Keeps the inner wrapper clipped while the open animation runs, then hands
@@ -546,7 +546,7 @@
   /* overflow: hidden; */
   box-sizing: border-box;
   /* border-bottom: 1px solid #333; */
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
   width: 100%;
 }
 
@@ -639,7 +639,7 @@
     top: 50%;
     transform: translateY(-50%);
     opacity: 0.55;
-    padding: 0.2rem 0.6rem;
+    padding: var(--space-1) var(--space-2);
 }
 
 /* The chip's hover title rides on a wrapper that adds no box. */
@@ -648,7 +648,7 @@
 }
 
 .card-filter-chips-center {
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-2);
     justify-content: center;
 }
 
@@ -664,7 +664,7 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.25rem;
+    gap: var(--space-1);
 }
 
 .card-filter-result {

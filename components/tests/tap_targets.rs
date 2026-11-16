@@ -23,11 +23,11 @@ fn a_phone_s_card_actions_reach_a_touch_size_and_keep_their_spacing() {
     }
     let row = rule(MAGIC, media, ".card-action-row {").expect("the row rule");
     assert!(
-        row.contains("gap: 0.75rem;"),
-        "reaches don't overlap: {row}"
+        row.contains("gap: var(--space-3);"),
+        "reaches don't overlap: 0.75rem is two 0.375rem reaches: {row}"
     );
     assert!(
-        row.contains("margin-top: 0.75rem;"),
+        row.contains("margin-top: var(--space-3);"),
         "a stacked row stands clear of the one above: {row}"
     );
     let last = rule(MAGIC, media, ".card-action-row:last-child {").expect("the last row's rule");
