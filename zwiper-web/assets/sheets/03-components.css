@@ -2383,7 +2383,7 @@ html:has(.bottom-sheet.show) body,
 .diagram-title {
     fill: var(--text-primary);
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .diagram-sub,
@@ -2966,7 +2966,7 @@ html[data-wipe="left"]::view-transition-new(root) {
 }
 
 .stats-strip .stat-num {
-    font-weight: 600;
+    font-weight: 700;
     color: var(--ink-palette-5, var(--palette-5));
     line-height: 1.1;
     font-variant-numeric: tabular-nums;

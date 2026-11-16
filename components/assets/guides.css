@@ -180,22 +180,22 @@
    swipe_class), on a guide's swipe legend and zwipe.net's home hero alike. */
 .swipe-add {
     color: var(--ink-color-success, var(--color-success));
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .swipe-skip {
     color: var(--ink-color-error, var(--color-error));
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .swipe-maybe {
     color: var(--ink-color-warning, var(--color-warning));
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .swipe-undo {
     color: var(--ink-accent-tertiary, var(--accent-tertiary));
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* The search box fills the row's middle inside the kit's clear wrap, whose
@@ -235,7 +235,7 @@
 /* The label chip, as the app's chip rows draw it, with the weight restated
    for a page without the app's screen sheet. */
 .guide-filter > .chip-row-label {
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
 }
 

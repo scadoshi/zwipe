@@ -2355,7 +2355,7 @@ body .toast-container [role="alertdialog"] {
    plainly not a control), so the row is one console and no bare text sits on
    the backdrop. No colon. */
 .chip-row-label {
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
 }
 
@@ -2805,7 +2805,7 @@ body .toast-container [role="alertdialog"] {
 
 .tag-def-name {
     color: var(--ink-palette-3, var(--palette-3));
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 0.15rem;
 }
 
@@ -2942,7 +2942,7 @@ body .toast-container [role="alertdialog"] {
 
 .dict-slug {
     color: var(--ink-palette-3, var(--palette-3));
-    font-weight: 600;
+    font-weight: 700;
     word-break: break-word;
 }
 

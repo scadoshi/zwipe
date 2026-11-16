@@ -142,7 +142,7 @@ pub fn KeyGlyph(icon: KeyIcon) -> Element {
 pub fn HintColored(color: String, children: Element) -> Element {
     let ink = orangui::ink_color(&color);
     rsx! {
-        span { style: "color: {ink}; font-weight: 600;", {children} }
+        span { style: "color: {ink}; font-weight: 700;", {children} }
     }
 }
 

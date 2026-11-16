@@ -41,7 +41,7 @@
    row label chip at the row's head; the tags after it are the kit's chips,
    selected while open, and a tag with nothing to open is a stat chip. */
 .keyword-chips > .chip-row-label {
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
 }
 
@@ -2873,7 +2873,7 @@ html.keyboard-up .web-dock-pair {
 }
 
 .deck-controls .chip-row-label {
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
 }
 
