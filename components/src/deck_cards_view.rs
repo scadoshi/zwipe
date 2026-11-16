@@ -716,10 +716,19 @@ pub fn DeckStacks(
             set.insert(key);
         }
     }));
-    let on_hover =
-        (!touch).then(|| EventHandler::new(move |id| reveal.write().apply(Gesture::Hover(id))));
-    let on_leave =
-        (!touch).then(|| EventHandler::new(move |id| reveal.write().apply(Gesture::Leave(id))));
+    // The stacks' handlers keep one identity across renders, so a stack whose own cards and
+    // reveal are unchanged skips its render when another stack's card rises or flips.
+    let hover = use_callback(move |id| reveal.write().apply(Gesture::Hover(id)));
+    let leave = use_callback(move |id| reveal.write().apply(Gesture::Leave(id)));
+    let on_hover = (!touch).then_some(hover);
+    let on_leave = (!touch).then_some(leave);
+    let on_select = use_callback(move |id: Uuid| {
+        if touch {
+            details.tap(id);
+        } else {
+            details.click(id);
+        }
+    });
     let shown = reveal();
     let shown_faces = faces();
     let folded = collapsed();
@@ -740,14 +749,30 @@ pub fn DeckStacks(
         .into_iter()
         .zip(heights)
         .map(|((section, rows), height)| {
-            let trailing =
-                group_tail(TailPlace::Stack, section.title.clone(), rows.clone(), currency, group_buy);
+            let trailing = group_tail(
+                TailPlace::Stack,
+                section.title.clone(),
+                rows.clone(),
+                currency,
+                group_buy,
+            );
             let ids: Vec<Uuid> = rows.iter().map(|r| r.card.scryfall_data.id).collect();
             let cards: Vec<StackCard> = rows
                 .into_iter()
                 .map(|row| {
-                    let face = shown_faces.get(&row.card.scryfall_data.id).copied().unwrap_or(0);
-                    StackCard { board: match row.kind { RowKind::Board(board) => Some(board), RowKind::Main { .. } | RowKind::Zone(_) | RowKind::Token => None }, card: row.card, qty: row.qty, face }
+                    let face = shown_faces
+                        .get(&row.card.scryfall_data.id)
+                        .copied()
+                        .unwrap_or(0);
+                    StackCard {
+                        board: match row.kind {
+                            RowKind::Board(board) => Some(board),
+                            RowKind::Main { .. } | RowKind::Zone(_) | RowKind::Token => None,
+                        },
+                        card: row.card,
+                        qty: row.qty,
+                        face,
+                    }
                 })
                 .collect();
             let stack = rsx! {
@@ -766,7 +791,7 @@ pub fn DeckStacks(
                             revealed: shown.revealed_in(&ids),
                             on_hover,
                             on_leave,
-                            on_select: move |id| if touch { details.tap(id) } else { details.click(id) },
+                            on_select,
                         }
                     }
                 }

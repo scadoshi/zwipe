@@ -97,6 +97,7 @@ mod picker_search;
 mod pressable;
 mod printing_face;
 mod printing_sheet;
+pub mod render_count;
 mod role_tags;
 pub mod screen_return;
 pub mod settle;
