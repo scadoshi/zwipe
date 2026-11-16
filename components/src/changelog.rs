@@ -7,11 +7,12 @@
 //! own chrome (a page with nav/footer on the web, the About screen in the app).
 //! Styling is in `assets/magic.css`.
 //!
-//! The component takes the changelog as a prop, defaulting to the copy compiled
-//! into the binary ([`HttpChangelog::current`]). `zite` renders that default;
-//! `zwiper` fetches `/api/changelog` and feeds the fresh copy in, so new
-//! entries appear without an app resubmit. Passing the same wire type either
-//! way keeps one rendering path.
+//! Every client draws [`Changelog`], which takes the changelog as a prop. Each
+//! starts it at the copy compiled into the binary ([`HttpChangelog::current`]),
+//! so zite's prerender holds the whole history, then fetches `/api/changelog`
+//! once and passes the server's copy in when it differs
+//! (`zwipe_ui::changelog::ChangelogCache`), so new entries appear without a
+//! redeploy or an app resubmit. A failed fetch leaves the compiled copy.
 //!
 //! The filing (where each release goes, which chips each row holds, what a
 //! filter shows) is zwipe-ui's `changelog`, which every client shares; this
@@ -45,7 +46,9 @@
 use std::ptr;
 
 use dioxus::prelude::*;
-use orangui::{BannerStatus, CollapseAll, CollapseSet, ReleaseCard, ReleaseTag};
+use orangui::{
+    BannerStatus, CollapseAll, CollapseSet, Panel, ReleaseCard, ReleaseTag, use_collapse_set,
+};
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 pub use zwipe_ui::changelog::Filter;
 use zwipe_ui::changelog::{Listed, Tag, listed, minors, months, visible, years};
@@ -153,6 +156,65 @@ fn anchor_selection(fragment: &str, listed: &[Listed<'_>]) -> Option<Filter> {
         .iter()
         .find(|item| anchor_id(&item.release.version) == fragment)
         .map(Listed::minor_filter)
+}
+
+/// The changelog's title, over the chips in either look.
+const TITLE: &str = "Changelog";
+
+/// The line under the title on zite's page.
+const TAGLINE: &str = "Every release, newest first.";
+
+/// The whole changelog every client draws: the titled panel holding Collapse all and the
+/// chip rows, then the releases under it, in `look`'s chrome. Draws `data`, which a client
+/// starts at the compiled copy and swaps for the server's when its fetch brings a different
+/// one (`zwipe_ui::changelog::ChangelogCache`); the chips' pick and the open releases live
+/// here, so a swap redraws the list in place.
+#[component]
+pub fn Changelog(
+    data: HttpChangelog,
+    #[props(default)] look: ChangelogLook,
+    /// The release the page's URL fragment names, selected once read.
+    #[props(default)]
+    anchor: Option<String>,
+    /// Whether each release's version links to its anchor.
+    #[props(default)]
+    link_versions: bool,
+    /// How many releases show before "Show more", all when `None`.
+    #[props(default)]
+    page_size: Option<usize>,
+) -> Element {
+    let selection = use_signal(|| Filter::Latest);
+    // Every release starts open; a header or Collapse all shuts them.
+    let collapse = use_collapse_set();
+    let releases = rsx! {
+        ChangelogReleases { data: data.clone(), selection, collapse, link_versions, look, page_size }
+    };
+    match look {
+        ChangelogLook::Site => rsx! {
+            div { class: "page-header",
+                Panel {
+                    title: TITLE,
+                    title_h1: true,
+                    title_end: rsx! {
+                        ChangelogCollapseAll { data: data.clone(), selection, set: collapse }
+                    },
+                    p { class: "tagline", {TAGLINE} }
+                    ChangelogFilters { data, selection, anchor, look }
+                }
+            }
+            {releases}
+        },
+        ChangelogLook::App => rsx! {
+            div { class: "settings-list about-panel",
+                div { class: "settings-list-header",
+                    span { class: "settings-list-title", {TITLE} }
+                    ChangelogCollapseAll { data: data.clone(), selection, set: collapse }
+                }
+                ChangelogFilters { data, selection, anchor, look }
+            }
+            {releases}
+        },
+    }
 }
 
 /// Which chrome the changelog's two halves take.

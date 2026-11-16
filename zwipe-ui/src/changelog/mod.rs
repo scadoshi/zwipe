@@ -1,21 +1,48 @@
-//! The changelog: the copy fetched once at launch, and how the Changelog screen files its releases under years, months and minor versions, as the app's `components::changelog` does.
+//! The changelog: the compiled copy and the one fetched once at launch, and how the Changelog screen files its releases under years, months and minor versions, as the app's `components::changelog` does.
 //!
 //! Releases list upcoming first, then shipped newest first. Each takes the year and month of its day; an upcoming one with no day takes the newest shipped release's that has one, and one with no readable day files under `Earlier`. The newest shipped release is tagged Web while it is newer than [`MOBILE_STORE_VERSION`], the release the stores serve is tagged Mobile, and older ones carry no tag. The filter narrows from `Latest`, which shows every tagged release, to a year, a month, then a minor version.
+
+use std::sync::LazyLock;
 
 use chrono::NaiveDate;
 use zwipe_core::content::changelog::MOBILE_STORE_VERSION;
 use zwipe_core::http::contracts::changelog::{HttpChangelog, HttpRelease};
 
-/// The changelog as fetched at launch, logged in or not. Fetched once per launch, with no retry.
+/// The changelog a client shows: the copy compiled into the build from the first render, until the launch's fetch of `/api/changelog` brings a different one. Fetched once per launch, logged in or not, with no retry; a failed fetch leaves the compiled copy.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum ChangelogCache {
-    /// The launch fetch is still out.
+    /// The copy compiled into the build.
     #[default]
-    Loading,
-    /// The fetched changelog.
-    Loaded(HttpChangelog),
-    /// The fetch failed.
-    Failed,
+    Compiled,
+    /// The server's copy, which differs from the compiled one.
+    Fetched(HttpChangelog),
+}
+
+/// The copy compiled into the build, built once.
+static COMPILED: LazyLock<HttpChangelog> = LazyLock::new(HttpChangelog::current);
+
+impl ChangelogCache {
+    /// The changelog to draw.
+    #[must_use]
+    pub fn shown(&self) -> &HttpChangelog {
+        match self {
+            Self::Compiled => &COMPILED,
+            Self::Fetched(fetched) => fetched,
+        }
+    }
+
+    /// The cache once the launch's fetch answers with `fetched` (`None` when it failed), or `None` when what shows stays as it is: the fetch failed or brought the copy already showing. A client sets its cache only on `Some`, so a matching answer draws nothing again.
+    #[must_use]
+    pub fn after_fetch(&self, fetched: Option<HttpChangelog>) -> Option<Self> {
+        let fetched = fetched?;
+        if &fetched == self.shown() {
+            return None;
+        }
+        if fetched == *COMPILED {
+            return Some(Self::Compiled);
+        }
+        Some(Self::Fetched(fetched))
+    }
 }
 
 /// The year and month key a release with no readable day files under.
@@ -276,6 +303,32 @@ pub fn visible<'log>(listed: &[Listed<'log>], filter: &Filter) -> Vec<Listed<'lo
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_new_cache_shows_the_compiled_copy() {
+        assert_eq!(ChangelogCache::default().shown(), &HttpChangelog::current());
+    }
+
+    #[test]
+    fn a_fetched_copy_that_differs_replaces_the_compiled_one() {
+        let server = changelog();
+        let next = ChangelogCache::default().after_fetch(Some(server.clone()));
+        assert_eq!(next, Some(ChangelogCache::Fetched(server.clone())));
+        assert_eq!(next.as_ref().map(ChangelogCache::shown), Some(&server));
+    }
+
+    #[test]
+    fn a_failed_fetch_keeps_the_compiled_copy() {
+        assert_eq!(ChangelogCache::default().after_fetch(None), None);
+    }
+
+    #[test]
+    fn a_fetched_copy_that_matches_what_shows_changes_nothing() {
+        let compiled = HttpChangelog::current();
+        assert_eq!(ChangelogCache::default().after_fetch(Some(compiled)), None);
+        let fetched = ChangelogCache::Fetched(changelog());
+        assert_eq!(fetched.after_fetch(Some(changelog())), None);
+    }
 
     fn release(version: &str, day: Option<&str>) -> HttpRelease {
         HttpRelease {

@@ -124,8 +124,8 @@ pub struct CachedDecks {
 ///
 /// - `Signal<Option<CachedCounts>>`: everybody's counters for the heroes,
 ///   starting from the copy an earlier visit stored.
-/// - `Signal<ChangelogCache>`, fetched once at the start of a visit, logged
-///   in or not, with no retry; and [`UbFranchises`] in the root scope its
+/// - `Signal<ChangelogCache>`, the compiled copy until the visit's one fetch,
+///   logged in or not and with no retry, brings a different one; and [`UbFranchises`] in the root scope its
 ///   fetches run in.
 /// - [`CreateDeckSeed`], empty.
 /// - `Signal<Option<CachedMyCounts>>`, `Signal<Option<CachedPlayStyle>>`,
@@ -144,12 +144,14 @@ pub fn use_root_caches() {
         let mut cell = changelog;
         spawn(async move {
             let http = client.peek().clone();
-            match http.fetch_changelog().await {
-                Ok(fetched) => cell.set(ChangelogCache::Loaded(fetched)),
-                Err(e) => {
-                    tracing::debug!("changelog not fetched: {e}");
-                    cell.set(ChangelogCache::Failed);
-                }
+            let fetched = http
+                .fetch_changelog()
+                .await
+                .inspect_err(|e| tracing::debug!("changelog not fetched: {e}"))
+                .ok();
+            let next = cell.peek().after_fetch(fetched);
+            if let Some(next) = next {
+                cell.set(next);
             }
         });
     });

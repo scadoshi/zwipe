@@ -1,6 +1,6 @@
 //! About: the client's version, the links to the website and the privacy policy, the credits, and the release history from the launch's fetch under chip rows that narrow it from `Latest` to a year, a month and a minor version.
 //!
-//! Where each release files is [`crate::changelog`]; this model adds what the screen does with it: which branch draws while the launch fetch is out or after it failed, the chip rows a filter opens and what each chip selects, the rows over the history and where each one leads, and Back. The history comes in on [`Action::Load`] from the client's [`ChangelogCache`], with no retry and no compiled fallback. The client's version, the web's anchors and every scroll stay in the client.
+//! Where each release files is [`crate::changelog`]; this model adds what the screen does with it: the chip rows a filter opens and what each chip selects, the rows over the history and where each one leads, and Back. The history is the compiled copy from the first draw, and the server's comes in on [`Action::Load`] from the client's [`ChangelogCache`] when the launch's fetch brings a different one. The client's version, the web's anchors and every scroll stay in the client.
 
 #[cfg(test)]
 mod tests;
@@ -24,9 +24,6 @@ pub const CREDITS: &str = "Credits";
 
 /// The panel title over the history.
 pub const CHANGELOG: &str = "Changelog";
-
-/// The note in place of the history when the launch fetch failed.
-pub const FAILED: &str = "Couldn't load the changelog";
 
 /// The first chip, which goes back to [`Filter::Latest`].
 pub const LATEST: &str = "Latest";
@@ -75,17 +72,6 @@ impl Row {
     }
 }
 
-/// Which branch the screen draws.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Status {
-    /// The launch fetch is still out: the skeleton.
-    Loading,
-    /// The launch fetch failed: [`FAILED`].
-    Failed,
-    /// The history: the chip rows over the release cards.
-    Loaded,
-}
-
 /// One chip: its label, whether it is lit, and the filter pressing it picks. Pressing the deepest lit chip goes up a level; pressing any other selects it, which clears the levels below.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Chip {
@@ -100,7 +86,7 @@ pub struct Chip {
 /// What a user does on About, and each change to the client's cache.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
-    /// Opens the screen on `Latest` with the cache as it stands. Send it again when the launch fetch lands while the screen is up.
+    /// Shows the cache as it stands. Send it again when the launch fetch lands while the screen is up: the pick stays unless the new copy shows nothing under it, which goes back to `Latest`.
     Load(ChangelogCache),
     /// Narrows the list to this filter, a chip's [`Chip::target`].
     Pick(Filter),
@@ -121,7 +107,7 @@ pub enum Effect {
     Navigate(Destination),
 }
 
-/// About for one visit. Starts loading on `Latest`; send [`Action::Load`] with the client's cache.
+/// About for one visit. Starts on the compiled copy on `Latest`; send [`Action::Load`] with the client's cache.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct State {
     cache: ChangelogCache,
@@ -129,7 +115,7 @@ pub struct State {
 }
 
 impl State {
-    /// The screen as it first draws: loading, on `Latest`.
+    /// The screen as it first draws: the compiled copy, on `Latest`.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
@@ -141,13 +127,11 @@ impl State {
         match action {
             Action::Load(cache) => {
                 self.cache = cache;
-                self.filter = Filter::Latest;
-            }
-            Action::Pick(filter) => {
-                if self.status() == Status::Loaded {
-                    self.filter = filter;
+                if self.shown().is_empty() {
+                    self.filter = Filter::Latest;
                 }
             }
+            Action::Pick(filter) => self.filter = filter,
             Action::Website => return vec![Effect::OpenUrl(WEB_BASE.to_owned())],
             Action::PrivacyPolicy => return vec![Effect::Navigate(Destination::PrivacyPolicy)],
             Action::Back => return vec![Effect::Navigate(Destination::Previous)],
@@ -155,23 +139,10 @@ impl State {
         Vec::new()
     }
 
-    /// Which branch draws.
+    /// The history: the compiled copy until the server's differs.
     #[must_use]
-    pub fn status(&self) -> Status {
-        match self.cache {
-            ChangelogCache::Loading => Status::Loading,
-            ChangelogCache::Failed => Status::Failed,
-            ChangelogCache::Loaded(_) => Status::Loaded,
-        }
-    }
-
-    /// The history, once loaded.
-    #[must_use]
-    pub fn changelog(&self) -> Option<&HttpChangelog> {
-        match &self.cache {
-            ChangelogCache::Loaded(found) => Some(found),
-            ChangelogCache::Loading | ChangelogCache::Failed => None,
-        }
+    pub fn changelog(&self) -> &HttpChangelog {
+        self.cache.shown()
     }
 
     /// What the chips have narrowed the list to.
@@ -180,20 +151,16 @@ impl State {
         &self.filter
     }
 
-    /// The chip rows: `Latest` and the years (`Earlier` last, when a release landed there), then the selected year's months, then the selected month's minor versions. Empty until loaded.
+    /// The chip rows: `Latest` and the years (`Earlier` last, when a release landed there), then the selected year's months, then the selected month's minor versions.
     #[must_use]
     pub fn chip_rows(&self) -> Vec<Vec<Chip>> {
-        self.changelog().map_or_else(Vec::new, |found| {
-            chip_rows(&changelog::listed(found), &self.filter)
-        })
+        chip_rows(&changelog::listed(self.changelog()), &self.filter)
     }
 
-    /// The releases the filter shows, in listing order. Empty until loaded.
+    /// The releases the filter shows, in listing order.
     #[must_use]
     pub fn shown(&self) -> Vec<Listed<'_>> {
-        self.changelog().map_or_else(Vec::new, |found| {
-            changelog::visible(&changelog::listed(found), &self.filter)
-        })
+        changelog::visible(&changelog::listed(self.changelog()), &self.filter)
     }
 }
 
