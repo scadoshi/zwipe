@@ -21,6 +21,16 @@ Scotty wound the factory down on 2026-11-16 (weekly context limit). Every agent 
 - Square deck art, deck loading ghosts that match the loaded page, card count with the command zone, Try a filter on Add's ghost.
 - heron audit (quinn bumps), zynergy repinned and its stale rsa audit ignore removed.
 
+## Wednesday's plan (Scotty, 2026-11-16)
+
+Keep it to these three, in order:
+
+1. Warm-up: **Send to**. From any card, 'Send to' -> a deck -> Mainboard, Maybeboard or Sideboard, added without leaving the screen. Tap only, web and app.
+2. Warm-up: **Unpriced warning**. A Warnings entry counts unpriced cards, collapsed by default; expanding shows them as chips; a chip opens the card's details drawer to pick a priced printing. '(N unpriced)' leaves the Budget rows.
+3. The big one: **collection import** from ManaBox and Archidekt CSV, per `context/plans/collection.md`. Real exports are in zwipe-context `research/collection-samples/` (private; trim rows for tests here).
+
+AI quick actions is parked on zwipe-context's idea list.
+
 ## Open for next week
 
 - Android undo: one unreproduced maybeboard save that stayed saved after a burst (before 289331eae); watch for it.
