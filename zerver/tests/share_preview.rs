@@ -323,8 +323,8 @@ async fn assert_golden(name: &str, deck: &HttpSharedDeck) {
 /// must move with it: bump `SHARE_PREVIEW_LAYOUT` in zwipe-core and
 /// `PREVIEW_LAYOUT` in the Pages Function, then record both here.
 const GOLDEN_LAYOUT: (u32, &str) = (
-    3,
-    "adf47be332511bd43818b03536f29d980f99f7b4eede2715167d90ddd6ec9dca",
+    4,
+    "91018885f5c8442906c8e5e650d87ef695557cc7c98162a8b400e63b7d3ef456",
 );
 
 #[test]
