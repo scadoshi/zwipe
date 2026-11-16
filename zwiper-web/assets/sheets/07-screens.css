@@ -1443,8 +1443,9 @@ body .toast-container [role="alertdialog"] {
 }
 
 /* A ghost that says why the pile has no card: the words over the card's
-   box, held still, large bold body ink, which clears 3:1 on the ghost's
-   fill in every theme (the lowest is One Dark, 3.97:1). */
+   box, held still, in the empty-state chips' subtle ink at normal weight,
+   which clears 3:1 on the ghost's fill in every theme (the lowest is GitHub
+   high contrast light, 3.12:1). */
 .swipe-stack-ghost-card:has(.card-ghost-note) img.card-ghost {
     animation: none;
 }
@@ -1460,9 +1461,9 @@ body .toast-container [role="alertdialog"] {
     padding: 1rem;
     box-sizing: border-box;
     text-align: center;
-    color: var(--text-primary);
+    color: var(--text-subtle);
     font-size: 1.2rem;
-    font-weight: 700;
+    font-weight: 400;
     /* The body's, over the image wrapper's line-height: 0, so a wrapped note keeps its lines
        apart. */
     line-height: 1.6;

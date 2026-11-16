@@ -25,10 +25,7 @@ fn rule<'css>(css: &'css str, selector: &str) -> &'css str {
 
 /// The `line-height` declared in `declarations`.
 fn line_height(declarations: &str) -> Option<&str> {
-    declarations
-        .lines()
-        .find_map(|line| line.trim().strip_prefix("line-height:"))
-        .map(|value| value.trim().trim_end_matches(';'))
+    declared(declarations, "line-height")
 }
 
 /// The `line-height` the `body` rules of `css` declare.
@@ -45,4 +42,24 @@ fn a_ghost_note_keeps_the_body_s_line_height_on_the_web_and_in_the_app() {
     assert!(note.is_some(), "the note sets its own line height");
     assert_eq!(note, body_line_height(APP_BODY), "the app's body");
     assert_eq!(note, body_line_height(WEB_BODY), "the web's body");
+}
+
+/// The value `property` takes in `declarations`.
+fn declared<'css>(declarations: &'css str, property: &str) -> Option<&'css str> {
+    let prefix = format!("{property}:");
+    declarations
+        .lines()
+        .find_map(|line| line.trim().strip_prefix(prefix.as_str()))
+        .map(|value| value.trim().trim_end_matches(';'))
+}
+
+#[test]
+fn a_ghost_note_is_subtle_ink_at_normal_weight() {
+    let note = rule(SCREENS, ".card-ghost-note");
+    assert_eq!(
+        declared(note, "color"),
+        Some("var(--text-subtle)"),
+        "the empty-state chips' ink, which clears 3:1 on the ghost in every theme"
+    );
+    assert_eq!(declared(note, "font-weight"), Some("400"));
 }
