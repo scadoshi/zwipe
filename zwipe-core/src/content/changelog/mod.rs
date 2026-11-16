@@ -57,6 +57,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Every flip control turns a card's image and its details together and eases between faces, on the swipe screens and the deck page, and a card with no image flips at once and takes a tap on its Flip, on the web and in the app",
         "On every swipe screen a card's Flip button waits for its image, and the card's ghost while it loads is the card's own size, on the commander swipes too, on the web and in the app",
         "On the commander swipes, undoing a swipe up brings the card back down from the top, and an empty pile says why inside a card-shaped ghost, on the web and in the app",
+        "Deck art and dock buttons follow the corner of what holds them, so the gap around them stays even, on the web and in the app",
     ],
 }];
 

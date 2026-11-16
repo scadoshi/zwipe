@@ -220,7 +220,8 @@ body .toast-container [role="alertdialog"] {
    action): the bar is its chrome. */
 .action-dock > .btn-action {
     min-height: 2.4rem;
-    margin: 0.3rem 0;
+    margin: var(--dock-inset) 0;
+    border-radius: max(0.15rem, calc(var(--dock-radius) - 1px - var(--dock-inset)));
     border: none;
     box-shadow: none;
     background: transparent;

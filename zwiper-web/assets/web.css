@@ -528,7 +528,7 @@ body {
     }
 
     .card-row.deck-row:not(.expanded):hover {
-        border-radius: 1rem;
+        border-radius: var(--deck-row-radius);
         transform: none;
         box-shadow: var(--shadow-md);
     }

@@ -118,11 +118,16 @@
     padding: var(--deck-list-gap) 0 0;
 }
 
+/* The row's corner and its inset from the top: the art, top-aligned at that
+   inset, takes the corner less the border and the inset, so it nests in the
+   row's curve. */
 .deck-row {
-    padding: 0.75rem 1rem;
+    --deck-row-radius: 1rem;
+    --deck-row-inset: 0.75rem;
+    padding: var(--deck-row-inset) 1rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: var(--deck-row-radius);
     box-shadow: var(--shadow-sm);
     cursor: pointer;
 }
@@ -135,13 +140,13 @@
 
 /* The command zone's art crops lead the row, top-aligned beside the text
    column. Two crops (partners, or oathbreaker and signature spell) follow
-   one another. The corners are the panel's at this size. */
+   one another. Their corners nest in the row's (see .deck-row). */
 .deck-row-art-img {
     flex: 0 0 auto;
     width: 3.6rem;
     height: 3.2rem;
     object-fit: cover;
-    border-radius: 0.6rem;
+    border-radius: max(0.15rem, calc(var(--deck-row-radius) - 1px - var(--deck-row-inset)));
     border: 1px solid var(--border-secondary);
     box-shadow: var(--shadow-sm);
 }
@@ -613,7 +618,7 @@
     flex: 0 0 auto;
     width: 3.6rem;
     height: 3.2rem;
-    border-radius: 0.6rem;
+    border-radius: max(0.15rem, calc(var(--deck-row-radius) - 1px - var(--deck-row-inset)));
 }
 
 .skeleton-deck-list-title {
