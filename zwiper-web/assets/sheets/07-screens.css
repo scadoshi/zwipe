@@ -1457,6 +1457,9 @@ body .toast-container [role="alertdialog"] {
     color: var(--text-primary);
     font-size: 1.2rem;
     font-weight: 700;
+    /* The body's, over the image wrapper's line-height: 0, so a wrapped note keeps its lines
+       apart. */
+    line-height: 1.6;
 }
 
 /* The ghost while a pile is on its way, where a screen still draws it as a
