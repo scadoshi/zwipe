@@ -49,7 +49,10 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 9);
 pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 21, 10),
     date: None,
-    entries: &["Undoing several swipes quickly no longer flickers through each card"],
+    entries: &[
+        "Undoing several swipes quickly no longer flickers through each card",
+        "The changelog opens at once and still shows offline, on the web and in the app",
+    ],
 }];
 
 /// Shipped releases, newest first.
