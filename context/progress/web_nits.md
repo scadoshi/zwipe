@@ -29,7 +29,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | 122, unsaved changes guard on the deck form | scotland | `nits/scotland-122` |
 | 123, skeleton audit | thinker | `nits/thinker-123` |
 
-The loop is in [`../development/factory.md`](../development/factory.md).
+The loop is in zwipe-context `factory/factory.md` (private).
 
 ## Open
 
