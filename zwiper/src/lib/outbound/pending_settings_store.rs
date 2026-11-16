@@ -10,6 +10,7 @@
 
 use serde_json::{Value, json};
 use uuid::Uuid;
+use zwipe_core::domain::user::settings::PipStyle;
 use zwipe_core::http::contracts::user::HttpUpdateSettings;
 use zwipe_ui::pending_settings::PendingSettings;
 
@@ -24,7 +25,16 @@ fn from_stored(bytes: &[u8]) -> anyhow::Result<Option<PendingSettings>> {
     let mut stored: Value = serde_json::from_slice(bytes)?;
     let mut field = |name: &str| stored.get_mut(name).map_or_default(Value::take);
     let user_id: Uuid = serde_json::from_value(field("user_id"))?;
-    let update: HttpUpdateSettings = serde_json::from_value(field("update"))?;
+    let mut update = field("update");
+    // A change stored by an earlier build may name its pip color the earlier
+    // way. PipStyle's own serde still reads that name; the request takes only
+    // the current one, so the color is written back under it first.
+    if let Some(pip_style) = update.get_mut("pip_style")
+        && let Ok(style) = serde_json::from_value::<PipStyle>(pip_style.clone())
+    {
+        *pip_style = Value::from(style.as_str());
+    }
+    let update: HttpUpdateSettings = serde_json::from_value(update)?;
     Ok(PendingSettings::from_update(user_id, update))
 }
 
@@ -135,5 +145,18 @@ mod tests {
         );
         let back = from_stored(&to_stored(&pending).unwrap()).unwrap();
         assert_eq!(back, Some(pending));
+    }
+    #[test]
+    fn a_pip_color_stored_under_its_earlier_name_still_reads() {
+        let user = Uuid::new_v4();
+        for (stored, current) in [("natural", PipStyle::Classic), ("theme", PipStyle::Themed)] {
+            let bytes = serde_json::to_vec(&json!({
+                "user_id": user,
+                "update": { "pip_style": stored },
+            }))
+            .unwrap();
+            let back = from_stored(&bytes).unwrap().expect("a change to send");
+            assert_eq!(back.update().pip_style, Some(current), "stored {stored}");
+        }
     }
 }

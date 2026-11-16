@@ -1,12 +1,14 @@
 //! User account HTTP request contracts.
 
 use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::domain::user::settings::{PipStyle, SwipeConfirmations};
 
 /// HTTP request body for updating settings.
 ///
 /// Uses `Option<T>` for partial update semantics: absent fields are unchanged.
+#[serde_as]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpUpdateSettings {
     /// Theme identifier, or absent to leave unchanged.
@@ -22,8 +24,11 @@ pub struct HttpUpdateSettings {
     #[serde(default)]
     pub universes_beyond_exceptions: Option<Vec<String>>,
     /// Pip style, or absent to leave unchanged. serde defaults keep payloads
-    /// from clients that predate the field. The earlier `theme` and `natural`
-    /// are taken too: every build through 1.18.16 sends them.
+    /// from clients that predate the field. Read by [`PipStyle`]'s `FromStr`,
+    /// so only the current names, `themed` and `classic`, are taken: the earlier
+    /// `theme` and `natural` are refused, though a client's stored copy still
+    /// reads them through `PipStyle`'s own aliases.
+    #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(default)]
     pub pip_style: Option<PipStyle>,
     /// Swipe confirmations, or absent to leave unchanged. serde defaults keep
@@ -59,11 +64,8 @@ mod tests {
     }
 
     #[test]
-    fn the_request_takes_natural_as_shipped_clients_send_it() {
-        assert_eq!(
-            pip_style(r#"{"pip_style":"natural"}"#).unwrap(),
-            Some(PipStyle::Classic)
-        );
+    fn the_request_refuses_the_earlier_natural() {
+        assert!(pip_style(r#"{"pip_style":"natural"}"#).is_err());
     }
 
     #[test]
@@ -75,11 +77,22 @@ mod tests {
     }
 
     #[test]
-    fn the_request_takes_theme_as_shipped_clients_send_it() {
-        assert_eq!(
-            pip_style(r#"{"pip_style":"theme"}"#).unwrap(),
-            Some(PipStyle::Themed)
-        );
+    fn the_request_refuses_the_earlier_theme() {
+        assert!(pip_style(r#"{"pip_style":"theme"}"#).is_err());
+    }
+
+    #[test]
+    fn the_request_writes_the_current_names() {
+        let request = HttpUpdateSettings {
+            theme: None,
+            dark_mode: None,
+            exclude_universes_beyond: None,
+            universes_beyond_exceptions: None,
+            pip_style: Some(PipStyle::Classic),
+            swipe_confirmations: None,
+        };
+        let body = serde_json::to_value(&request).unwrap();
+        assert_eq!(body["pip_style"], "classic");
     }
 
     #[test]

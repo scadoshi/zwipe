@@ -663,7 +663,7 @@ async fn universes_beyond_setting_round_trips(pool: sqlx::PgPool) {
     );
 }
 
-/// Whether `pip_style` is a value the client floor, 1.18.1, parses: its enum
+/// Whether `pip_style` is a value the client floor, 1.18.16, parses: its enum
 /// reads each value under either name.
 fn floor_clients_parse(pip_style: &serde_json::Value) -> bool {
     matches!(
@@ -676,7 +676,7 @@ fn floor_clients_parse(pip_style: &serde_json::Value) -> bool {
 async fn settings_responses_parse_as_the_floor_client_reads_them(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (token, user_id) = app.register("shippeduser").await;
-    for sent in ["themed", "classic", "theme", "natural"] {
+    for sent in ["themed", "classic"] {
         let (status, updated) = app
             .patch(SETTINGS_ROUTE, json!({ "pip_style": sent }), Some(&token))
             .await;
@@ -836,19 +836,21 @@ async fn pip_style_setting_round_trips(pool: sqlx::PgPool) {
         .unwrap();
     assert_eq!(stored, "themed");
 
-    // Builds through 1.18.16 send the earlier names. They land and answer
-    // with the current ones, which those builds also read.
-    for (sent, current) in [("natural", "classic"), ("theme", "themed")] {
-        let (status, updated) = app
+    // The earlier names are refused, and the stored choice stands.
+    for sent in ["natural", "theme"] {
+        let (status, body) = app
             .patch(SETTINGS_ROUTE, json!({ "pip_style": sent }), Some(&token))
             .await;
-        assert_eq!(status, StatusCode::OK, "earlier {sent}: {updated}");
-        assert_eq!(updated["pip_style"], current, "earlier {sent}");
+        assert_eq!(
+            status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "earlier {sent}: {body}"
+        );
         let stored: String = sqlx::query_scalar("SELECT pip_style FROM user_settings")
             .fetch_one(&pool)
             .await
             .unwrap();
-        assert_eq!(stored, current, "earlier {sent} stores the current name");
+        assert_eq!(stored, "themed", "earlier {sent} changes nothing");
     }
 
     // A color that does not exist is rejected.
