@@ -7,6 +7,7 @@ mod tests;
 
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ImageSize;
 
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
@@ -129,6 +130,9 @@ pub enum Effect {
 pub struct State {
     mode: Mode,
     saved_message: &'static str,
+    /// Every printing the fetch returned, in the server's order.
+    fetched: Vec<Card>,
+    /// The printings listed: [`shown_printings`] of `fetched` for the printing the sheet opened on.
     printings: Vec<Card>,
     /// The oracle id `printings` belong to, once a fetch for it landed.
     cached_for: Option<Uuid>,
@@ -155,6 +159,7 @@ impl State {
         Self {
             mode,
             saved_message,
+            fetched: Vec::new(),
             printings: Vec::new(),
             cached_for: None,
             pending: None,
@@ -210,6 +215,7 @@ impl State {
             return Vec::new();
         };
         if self.cached_for == Some(oracle_id) {
+            self.printings = shown_printings(&self.fetched, printing_id);
             self.initial = position(&self.printings, printing_id);
             return vec![Effect::Rewind(self.initial)];
         }
@@ -234,8 +240,9 @@ impl State {
         let Some((oracle_id, printing_id)) = self.pending.take() else {
             return Vec::new();
         };
-        self.initial = position(&printings, printing_id);
-        self.printings = printings;
+        self.printings = shown_printings(&printings, printing_id);
+        self.initial = position(&self.printings, printing_id);
+        self.fetched = printings;
         self.cached_for = Some(oracle_id);
         self.loading = false;
         vec![Effect::Show(self.initial)]
@@ -267,7 +274,7 @@ impl State {
         }
     }
 
-    /// Every printing listed, in the server's order.
+    /// The printings listed, in the server's order: [`shown_printings`] of the fetch.
     #[must_use]
     pub fn printings(&self) -> &[Card] {
         &self.printings
@@ -302,6 +309,25 @@ impl State {
     pub fn can_save(&self, at: usize) -> bool {
         self.shows_save() && self.has_changed(at) && self.visible(at).is_some()
     }
+}
+
+/// The printings of `all` a sheet lists, in their order: those with an image URL, plus `keep`
+/// (the printing a deck has, which shows as its stock card when it has none). A card with no
+/// image on any printing keeps them all.
+#[must_use]
+pub fn shown_printings(all: &[Card], keep: Uuid) -> Vec<Card> {
+    let has_image = |p: &Card| {
+        p.scryfall_data
+            .primary_image_url(ImageSize::Large)
+            .is_some()
+    };
+    if !all.iter().any(has_image) {
+        return all.to_vec();
+    }
+    all.iter()
+        .filter(|p| has_image(p) || p.scryfall_data.id == keep)
+        .cloned()
+        .collect()
 }
 
 /// Where `printing_id` sits in `printings`, or the first slot when it is missing.

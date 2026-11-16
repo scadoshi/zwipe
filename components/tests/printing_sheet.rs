@@ -485,3 +485,52 @@ fn a_melded_printing_marks_its_melded_card() {
         "the melded card: {html}"
     );
 }
+
+/// Another printing of the card, under its own id, with no image URL.
+fn imageless_printing() -> Card {
+    let mut printing = card();
+    printing.scryfall_data.id = Uuid::from_u128(7);
+    printing.card_profile.scryfall_data_id = Uuid::from_u128(7);
+    printing.scryfall_data.image_uris = None;
+    printing.scryfall_data.card_faces = None;
+    printing
+}
+
+#[test]
+fn a_printing_with_no_image_is_left_out_of_the_sheet() {
+    let html = render(|| {
+        let asked = use_signal(Vec::new);
+        use_context_provider(|| {
+            source(
+                PrintingsFetch::Ready(vec![card(), imageless_printing()]),
+                asked,
+            )
+        });
+        let open = use_signal(|| true);
+        rsx! {
+            PrintingSheet { card: card(), open }
+        }
+    });
+    assert!(html.contains(">1 of 1<"), "{html}");
+}
+
+#[test]
+fn the_deck_s_own_imageless_printing_stays_in_the_sheet() {
+    let html = render(|| {
+        let asked = use_signal(Vec::new);
+        use_context_provider(|| {
+            source(
+                PrintingsFetch::Ready(vec![card(), imageless_printing()]),
+                asked,
+            )
+        });
+        let open = use_signal(|| true);
+        rsx! {
+            PrintingSheet { card: imageless_printing(), open }
+        }
+    });
+    assert!(
+        html.contains(">2 of 2<"),
+        "it opens on its stock card: {html}"
+    );
+}

@@ -362,3 +362,55 @@ fn save_does_nothing_on_the_opening_printing_or_past_the_list() {
 fn a_screen_reader_hears_whose_printings_these_are() {
     assert_eq!(label("Sol Ring"), "Printings of Sol Ring");
 }
+
+/// `card` with no image URL anywhere: a printing whose image is gone, which shows as its stock
+/// card.
+fn imageless(mut card: Card) -> Card {
+    card.scryfall_data.image_uris = None;
+    card.scryfall_data.card_faces = None;
+    card
+}
+
+#[test]
+fn printings_with_no_image_drop_out_of_the_choice() {
+    let mut all = printings();
+    all[1] = imageless(all[1].clone());
+    let shown = shown_printings(&all, all[0].scryfall_data.id);
+    let ids: Vec<Uuid> = shown.iter().map(|c| c.scryfall_data.id).collect();
+    assert_eq!(
+        ids,
+        [all[0].scryfall_data.id, all[2].scryfall_data.id],
+        "in their order, the imageless one gone"
+    );
+}
+
+#[test]
+fn the_printing_a_deck_has_stays_even_with_no_image() {
+    let mut all = printings();
+    all[1] = imageless(all[1].clone());
+    let shown = shown_printings(&all, all[1].scryfall_data.id);
+    assert_eq!(shown.len(), 3, "the selected stock card stays where it was");
+    assert_eq!(shown[1].scryfall_data.id, all[1].scryfall_data.id);
+}
+
+#[test]
+fn a_card_with_no_image_on_any_printing_keeps_them_all() {
+    let all: Vec<Card> = printings().into_iter().map(imageless).collect();
+    assert_eq!(shown_printings(&all, all[0].scryfall_data.id).len(), 3);
+}
+
+#[test]
+fn the_sheet_hides_imageless_printings_but_the_one_it_opened_on_even_from_its_cache() {
+    let mut all = printings();
+    all[2] = imageless(all[2].clone());
+    let mut state = loaded_on(Mode::Pick, &all, 0);
+    assert_eq!(state.printings().len(), 2, "the stock card hidden");
+    // Reopened on the stock card itself (the deck's printing), from the cache.
+    let effects = open(&mut state, &all[2]);
+    assert_eq!(
+        effects,
+        vec![Effect::Rewind(2)],
+        "it opens on the stock card"
+    );
+    assert_eq!(state.printings().len(), 3, "which shows, being the deck's");
+}

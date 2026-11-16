@@ -162,13 +162,13 @@ pub fn PrintingSheet(
             return;
         };
         let results = source.results.read();
-        let Some(PrintingsFetch::Ready(cards)) = results.get(&oracle_id) else {
+        let Some(PrintingsFetch::Ready(fetched)) = results.get(&oracle_id) else {
             return;
         };
         if *seeded.peek() {
             return;
         }
-        let at = cards
+        let at = model::shown_printings(fetched, shown_id)
             .iter()
             .position(|p| p.scryfall_data.id == shown_id)
             .unwrap_or(0);
@@ -186,7 +186,7 @@ pub fn PrintingSheet(
         && matches!(fetch, None | Some(PrintingsFetch::Loading));
     let failed = matches!(fetch, Some(PrintingsFetch::Failed));
     let all = match fetch {
-        Some(PrintingsFetch::Ready(cards)) => cards,
+        Some(PrintingsFetch::Ready(fetched)) => model::shown_printings(&fetched, shown_id),
         _ => Vec::new(),
     };
     let count = all.len();
