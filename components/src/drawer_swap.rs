@@ -70,11 +70,83 @@ const SWAP_JS: &str = r"
     }
     return getComputedStyle(document.body).backgroundColor;
   };
+  // A face's own parts in the card details: what a flip or meld turns. A flip copies these and
+  // everything after them in the same parent, which moves when a part's height changes, and
+  // leaves the rest of the drawer (its title bar and foot) as it is. Each copy lies in its own
+  // parent over the part as it shows, scrolled or not; a part inside another rides in that
+  // one's copy.
+  const FACE_PARTS = '.card-details-cost, .card-details-keys, .card-details-meld, .card-details-oracle, .card-details-facts';
+  const faceSpan = (sheet) => {
+    const span = new Set();
+    const firsts = [...sheet.querySelectorAll(FACE_PARTS)].filter((part) => !part.parentElement.closest(FACE_PARTS) && !part.closest('[data-drawer-ghost]'));
+    for (const first of firsts) {
+      for (let at = first; at; at = at.nextElementSibling) if (!at.hasAttribute('data-drawer-ghost')) span.add(at);
+    }
+    return [...span];
+  };
+  // One copy per parent: a box over the parent's span, gaps and all, holding each part's copy
+  // where the part shows. The box wears the parent's classes, so the copies keep their look.
+  const facePartsOf = (sheet) => {
+    const byParent = new Map();
+    for (const live of faceSpan(sheet)) {
+      if (live.getClientRects().length === 0) continue;
+      const parent = live.parentElement;
+      if (!byParent.has(parent)) byParent.set(parent, []);
+      byParent.get(parent).push(live);
+    }
+    return [...byParent].map(([parent, lives]) => {
+      const pr = parent.getBoundingClientRect();
+      const rects = lives.map((live) => live.getBoundingClientRect());
+      const top = Math.min(...rects.map((r) => r.top)), bottom = Math.max(...rects.map((r) => r.bottom));
+      const left = Math.min(...rects.map((r) => r.left)), right = Math.max(...rects.map((r) => r.right));
+      const copy = document.createElement('div');
+      copy.className = parent.className;
+      Object.assign(copy.style, { padding: '0', border: '0' });
+      lives.forEach((live, i) => {
+        const part = live.cloneNode(true);
+        const r = rects[i];
+        Object.assign(part.style, { position: 'absolute', left: (r.left - left) + 'px', top: (r.top - top) + 'px', width: r.width + 'px', height: r.height + 'px', margin: '0', boxSizing: 'border-box' });
+        copy.appendChild(part);
+      });
+      return {
+        live: lives[0], parent, copy, fill: solidBehind(parent),
+        at: { left: left - pr.left - parent.clientLeft + parent.scrollLeft, top: top - pr.top - parent.clientTop + parent.scrollTop, width: right - left, height: bottom - top },
+      };
+    });
+  };
   let pending = null, observer = null, expire = null;
   const shotsOf = (box, parts, local) => [...box.querySelectorAll(parts)].map((live) => ({
     live, copy: live.cloneNode(true), rect: live.getBoundingClientRect(), scroll: live.scrollTop,
     at: local ? { left: live.offsetLeft, top: live.offsetTop, width: live.offsetWidth, height: live.offsetHeight } : null,
   }));
+  // A face's parts: each copy lies in its part's parent and fades out while the parts as they
+  // now stand fade in. Every style is read before the first copy lands.
+  const playFace = (surface, timing) => {
+    const holds = new Map();
+    for (const shot of surface.shots) {
+      if (!holds.has(shot.parent)) holds.set(shot.parent, getComputedStyle(shot.parent).position === 'static');
+    }
+    const fresh = surface.fadeIn();
+    let left = surface.shots.length;
+    const done = () => {
+      left -= 1;
+      if (left === 0) for (const [parent, hold] of holds) if (hold) parent.style.position = '';
+    };
+    for (const [parent, hold] of holds) if (hold) parent.style.position = 'relative';
+    for (const shot of surface.shots) {
+      const ghost = shot.copy;
+      ghost.setAttribute('data-drawer-ghost', '');
+      ghost.setAttribute('aria-hidden', 'true');
+      Object.assign(ghost.style, {
+        position: 'absolute', left: shot.at.left + 'px', top: shot.at.top + 'px',
+        width: shot.at.width + 'px', height: shot.at.height + 'px', margin: '0', boxSizing: 'border-box',
+        overflow: 'hidden', pointerEvents: 'none', zIndex: '3', backgroundColor: shot.fill,
+      });
+      (shot.parent.isConnected ? shot.parent : surface.box).appendChild(ghost);
+      ghost.animate([{ opacity: 1 }, { opacity: 0 }], timing).finished.then(() => { ghost.remove(); done(); }, () => { ghost.remove(); done(); });
+    }
+    for (const part of fresh) part.animate([{ opacity: 0 }, { opacity: 1 }], timing);
+  };
   const play = () => {
     const was = pending;
     pending = null;
@@ -82,6 +154,7 @@ const SWAP_JS: &str = r"
     const timing = { duration: MS, easing: 'ease' };
     for (const surface of was.surfaces) {
       if (!surface.changed()) continue;
+      if (surface.fadeIn) { playFace(surface, timing); continue; }
       const box = surface.box.getBoundingClientRect();
       const fill = surface.fill();
       // A row or a pane lays its copies over itself, so it holds them while they fade.
@@ -117,11 +190,23 @@ const SWAP_JS: &str = r"
       }
     }
   };
-  const capture = () => {
+  // `kind` is 'face' for a flip or meld, which turns the shown card, and 'card' for what may
+  // show another card.
+  const capture = (kind) => {
     if (reduce()) return;
     const surfaces = [];
     const sheet = openDrawer();
-    if (sheet) {
+    if (sheet && kind === 'face') {
+      const surface = {
+        box: sheet,
+        title: titleOf(sheet),
+        face: faceOf(sheet),
+        shots: facePartsOf(sheet),
+        fadeIn: () => faceSpan(sheet),
+      };
+      surface.changed = () => sheet.classList.contains('show') && (titleOf(surface.box) !== surface.title || faceOf(surface.box) !== surface.face);
+      surfaces.push(surface);
+    } else if (sheet) {
       const surface = {
         box: sheet,
         title: titleOf(sheet),
@@ -198,7 +283,10 @@ const SWAP_JS: &str = r"
     expire = setTimeout(() => { if (observer) observer.disconnect(); observer = null; pending = null; }, 600);
   };
   document.addEventListener('click', (e) => {
-    if (e.target instanceof Element && e.target.closest('.card-stack-card, [data-action=flip], [data-action=meld]')) capture();
+    const t = e.target instanceof Element ? e.target : null;
+    if (!t) return;
+    if (t.closest('[data-action=flip], [data-action=meld]')) capture('face');
+    else if (t.closest('.card-stack-card')) capture('card');
   }, true);
   // A held key swaps the card at once: its repeats capture nothing and drop what still fades.
   const drop = () => {
@@ -208,7 +296,7 @@ const SWAP_JS: &str = r"
     clearTimeout(expire);
     for (const ghost of document.querySelectorAll('[data-drawer-ghost]')) ghost.remove();
     const sheet = openDrawer();
-    if (sheet) for (const part of sheet.querySelectorAll(DRAWER_PARTS)) for (const run of part.getAnimations()) run.cancel();
+    if (sheet) for (const part of sheet.querySelectorAll(DRAWER_PARTS + ', ' + FACE_PARTS)) for (const run of part.getAnimations()) run.cancel();
     for (const row of openRows()) {
       row.style.position = '';
       for (const part of row.querySelectorAll(ROW_PARTS)) for (const run of part.getAnimations()) run.cancel();
@@ -226,7 +314,7 @@ const SWAP_JS: &str = r"
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.repeat) { drop(); return; }
-    capture();
+    capture(e.key === 'v' || e.key === 'V' ? 'face' : 'card');
   }, true);
 })();
 ";
@@ -295,6 +383,58 @@ mod tests {
                 "{action}: {SWAP_JS}"
             );
         }
+    }
+
+    #[test]
+    fn a_flip_or_meld_copies_only_the_drawer_s_face() {
+        assert!(
+            SWAP_JS.contains("const FACE_PARTS = '.card-details-cost, .card-details-keys, .card-details-meld, .card-details-oracle, .card-details-facts';"),
+            "a face's own parts: its cost, kind, meld line, oracle text and stats"
+        );
+        assert!(
+            SWAP_JS.contains(
+                "if (t.closest('[data-action=flip], [data-action=meld]')) capture('face');"
+            ) && SWAP_JS.contains("else if (t.closest('.card-stack-card')) capture('card');"),
+            "a flip or meld turns the face; a stack card shows another card"
+        );
+        assert!(
+            SWAP_JS.contains("if (sheet && kind === 'face')")
+                && SWAP_JS.contains("shots: facePartsOf(sheet)"),
+            "the drawer copies its face's parts on a flip, its whole title bar and content otherwise"
+        );
+    }
+
+    #[test]
+    fn a_face_copy_lies_in_its_part_s_parent_where_the_part_shows() {
+        assert!(
+            SWAP_JS.contains("!part.parentElement.closest(FACE_PARTS)"),
+            "a part inside another part rides in its copy"
+        );
+        assert!(
+            SWAP_JS.contains("for (let at = first; at; at = at.nextElementSibling)"),
+            "what follows a part in its parent moves with its height, so it crossfades too"
+        );
+        assert!(
+            SWAP_JS.contains("top: top - pr.top - parent.clientTop + parent.scrollTop"),
+            "a copy in a scrolled parent lies over its parts"
+        );
+        assert!(
+            SWAP_JS.contains("copy.className = parent.className;"),
+            "the copy's box wears its parent's classes, so the parts' copies keep their look"
+        );
+    }
+
+    #[test]
+    fn a_face_swap_reads_every_style_before_it_lays_a_copy() {
+        let body = SWAP_JS
+            .split_once("const playFace = (surface, timing) => {")
+            .map_or("", |(_, rest)| rest);
+        let read = body.find("getComputedStyle(shot.parent)");
+        let write = body.find("appendChild(ghost)");
+        assert!(
+            read.is_some() && write.is_some() && read < write,
+            "a style read after a copy lands restyles the page once per copy: {body}"
+        );
     }
 
     #[test]
