@@ -722,9 +722,16 @@ h2.panel-title {
     font-size: 0.9rem;
 }
 
-/* The changelog content (chip filter + release list) is the shared
-   components::Changelog; its styles live in magic.css. Only the
-   page header above is zite-specific. */
+/* The changelog (its panel and release cards) is the shared
+   components::Changelog, styled in magic.css and drawn the same as in the
+   web app and the app. On a phone its page keeps the web app's 1rem gutter,
+   so the cards are as wide there and a release's tags fit beside its date. */
+@media (max-width: 30rem) {
+    .page:has(> .changelog-panel) {
+        padding-left: var(--space-4);
+        padding-right: var(--space-4);
+    }
+}
 
 /* StatsStrip's source row: the chips under the hero figures. */
 .stats-source {

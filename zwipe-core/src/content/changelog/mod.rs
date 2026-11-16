@@ -55,6 +55,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Stacks are faster on phones, and a raised card holds still",
         "Creating or changing a password shows which rule is missing as you type",
         "Add says Try a filter on its empty card when a deck with no format has no filter",
+        "About shows your version beside Changelog, and a release live on the web and in the stores reads Web and Mobile",
     ],
 }];
 

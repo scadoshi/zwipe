@@ -1977,6 +1977,7 @@ html:has(.bottom-sheet.show) body,
     line-height: 1.6;
     color: var(--ink-accent-primary, var(--accent-primary));
     font-weight: 700;
+    letter-spacing: normal;
     margin: 0;
 }
 
@@ -1990,7 +1991,9 @@ html:has(.bottom-sheet.show) body,
     font-size: 0.8rem;
 }
 
-.release-card-tag {
+.release-card-tags {
+    display: flex;
+    gap: var(--space-2);
     margin-left: auto;
 }
 

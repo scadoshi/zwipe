@@ -1,6 +1,6 @@
 //! The changelog: the compiled copy and the one fetched once at launch, and how the Changelog screen files its releases under years, months and minor versions, as the app's `components::changelog` does.
 //!
-//! Releases list upcoming first, then shipped newest first. Each takes the year and month of its day; an upcoming one with no day takes the newest shipped release's that has one, and one with no readable day files under `Earlier`. The newest shipped release is tagged Web while it is newer than [`MOBILE_STORE_VERSION`], the release the stores serve is tagged Mobile, and older ones carry no tag. The filter narrows from `Latest`, which shows every tagged release, to a year, a month, then a minor version.
+//! Releases list upcoming first, then shipped newest first. Each takes the year and month of its day; an upcoming one with no day takes the newest shipped release's that has one, and one with no readable day files under `Earlier`. The newest shipped release is tagged Web, the release the stores serve ([`MOBILE_STORE_VERSION`]) is tagged Mobile, one release can carry both, and older ones carry no tag. The filter narrows from `Latest`, which shows every tagged release, to a year, a month, then a minor version.
 
 use std::sync::LazyLock;
 
@@ -81,8 +81,7 @@ impl Place {
 pub enum Tag {
     /// A release not shipped yet.
     Upcoming,
-    /// The newest shipped release, while it is newer than what the stores
-    /// serve: live on the web only.
+    /// The newest shipped release, the one the web serves.
     Web,
     /// The release the App Store and Play serve
     /// ([`MOBILE_STORE_VERSION`]).
@@ -174,8 +173,9 @@ impl Filter {
 pub struct Listed<'log> {
     /// The release.
     pub release: &'log HttpRelease,
-    /// Its tag, if any.
-    pub tag: Option<Tag>,
+    /// Its tags in reading order, none for an older release: [`Tag::Web`] and [`Tag::Mobile`]
+    /// together on a release both the web and the stores serve.
+    pub tags: Vec<Tag>,
     place: Place,
 }
 
@@ -215,7 +215,7 @@ pub fn listed_on<'log>(changelog: &'log HttpChangelog, mobile: &str) -> Vec<List
     let newest_shipped = changelog.releases.iter().find_map(HttpRelease::released_on);
     let upcoming = changelog.upcoming.iter().map(|release| Listed {
         release,
-        tag: Some(Tag::Upcoming),
+        tags: vec![Tag::Upcoming],
         place: Place::of(release.released_on().or(newest_shipped)),
     });
     let shipped = changelog
@@ -224,11 +224,13 @@ pub fn listed_on<'log>(changelog: &'log HttpChangelog, mobile: &str) -> Vec<List
         .enumerate()
         .map(|(i, release)| Listed {
             release,
-            tag: if release.version == mobile {
-                Some(Tag::Mobile)
-            } else {
-                (i == 0).then_some(Tag::Web)
-            },
+            tags: [
+                (i == 0).then_some(Tag::Web),
+                (release.version == mobile).then_some(Tag::Mobile),
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
             place: Place::of(release.released_on()),
         });
     upcoming.chain(shipped).collect()
@@ -289,7 +291,7 @@ pub fn visible<'log>(listed: &[Listed<'log>], filter: &Filter) -> Vec<Listed<'lo
     listed
         .iter()
         .filter(|l| match filter {
-            Filter::Latest => l.tag.is_some(),
+            Filter::Latest => !l.tags.is_empty(),
             Filter::Year(year) => l.place.year == *year,
             Filter::Month { month, .. } => l.place.month == *month,
             Filter::Minor { month, minor, .. } => {
@@ -355,11 +357,16 @@ mod tests {
         }
     }
 
-    /// Each release's version and tag label, in listed order.
-    fn tags<'log>(listed: &[Listed<'log>]) -> Vec<(&'log str, Option<&'static str>)> {
+    /// Each release's version and tag labels, in listed order.
+    fn tags<'log>(listed: &[Listed<'log>]) -> Vec<(&'log str, Vec<&'static str>)> {
         listed
             .iter()
-            .map(|l| (l.release.version.as_str(), l.tag.map(Tag::label)))
+            .map(|l| {
+                (
+                    l.release.version.as_str(),
+                    l.tags.iter().copied().map(Tag::label).collect(),
+                )
+            })
             .collect()
     }
 
@@ -369,26 +376,26 @@ mod tests {
         assert_eq!(
             tags(&listed_on(&log, "1.15.0"))[..4],
             [
-                ("1.16.0", Some("Upcoming")),
-                ("1.15.1", Some("Web")),
-                ("1.15.0", Some("Mobile")),
-                ("1.14.0", None),
+                ("1.16.0", vec!["Upcoming"]),
+                ("1.15.1", vec!["Web"]),
+                ("1.15.0", vec!["Mobile"]),
+                ("1.14.0", vec![]),
             ]
         );
     }
 
     #[test]
-    fn the_newest_release_in_the_stores_is_mobile_alone() {
+    fn a_release_live_on_the_web_and_in_the_stores_carries_both_tags() {
         let log = changelog();
         let listed = listed_on(&log, "1.15.1");
         assert_eq!(
             tags(&listed)[..3],
             [
-                ("1.16.0", Some("Upcoming")),
-                ("1.15.1", Some("Mobile")),
-                ("1.15.0", None)
+                ("1.16.0", vec!["Upcoming"]),
+                ("1.15.1", vec!["Web", "Mobile"]),
+                ("1.15.0", vec![])
             ],
-            "no Web badge when the web is not ahead"
+            "the newest shipped release is the web's and the stores'"
         );
     }
 
@@ -401,9 +408,9 @@ mod tests {
         assert_eq!(
             tags(&listed_on(&log, "1.14.0"))[..3],
             [
-                ("1.15.1", Some("Web")),
-                ("1.15.0", None),
-                ("1.14.0", Some("Mobile"))
+                ("1.15.1", vec!["Web"]),
+                ("1.15.0", vec![]),
+                ("1.14.0", vec!["Mobile"])
             ]
         );
     }

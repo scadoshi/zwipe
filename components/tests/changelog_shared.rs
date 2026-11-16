@@ -7,7 +7,7 @@
     reason = "test helpers: a failed read or render fails the test"
 )]
 
-use components::{Changelog, ChangelogLook};
+use components::Changelog;
 use dioxus::core::NoOpMutations;
 use dioxus::prelude::*;
 use zwipe_core::http::contracts::changelog::{HttpChangelog, HttpRelease};
@@ -45,15 +45,15 @@ fn compiled_line() -> String {
 
 #[derive(Clone, PartialEq, Props)]
 struct ClientProps {
-    look: ChangelogLook,
     fetched: Option<HttpChangelog>,
+    version: Option<String>,
 }
 
-/// A client's changelog under `look`, whose fetch answers `fetched` once the first render
-/// has drawn.
+/// A client's changelog with its `version`, whose fetch answers `fetched` once the first
+/// render has drawn.
 #[expect(non_snake_case, reason = "a Dioxus component")]
 fn Client(props: ClientProps) -> Element {
-    let ClientProps { look, fetched } = props;
+    let ClientProps { fetched, version } = props;
     let mut cache = use_signal(ChangelogCache::default);
     use_effect(move || {
         let next = cache.peek().after_fetch(fetched.clone());
@@ -62,12 +62,13 @@ fn Client(props: ClientProps) -> Element {
         }
     });
     let data = cache.read().shown().clone();
-    rsx! { Changelog { data, look } }
+    rsx! { Changelog { data, version } }
 }
 
 /// The first render, and the render once the fetch's answer has been applied.
-fn renders(look: ChangelogLook, fetched: Option<HttpChangelog>) -> (String, String) {
-    let mut dom = VirtualDom::new_with_props(Client, ClientProps { look, fetched });
+fn renders(fetched: Option<HttpChangelog>, version: Option<&str>) -> (String, String) {
+    let version = version.map(str::to_owned);
+    let mut dom = VirtualDom::new_with_props(Client, ClientProps { fetched, version });
     dom.rebuild_in_place();
     let first = dioxus_ssr::render(&dom);
     for _ in 0..8 {
@@ -78,46 +79,53 @@ fn renders(look: ChangelogLook, fetched: Option<HttpChangelog>) -> (String, Stri
 }
 
 #[test]
-fn every_look_renders_the_compiled_copy_first() {
-    for look in [ChangelogLook::Site, ChangelogLook::App] {
-        let (first, _) = renders(look, Some(server()));
-        assert!(first.contains(&compiled_line()), "{look:?}: {first}");
-        assert!(!first.contains(SERVER_ONLY), "{look:?}: {first}");
-    }
+fn the_compiled_copy_renders_first() {
+    let (first, _) = renders(Some(server()), None);
+    assert!(first.contains(&compiled_line()), "{first}");
+    assert!(!first.contains(SERVER_ONLY), "{first}");
 }
 
 #[test]
 fn the_servers_copy_replaces_the_compiled_one_when_it_lands() {
-    for look in [ChangelogLook::Site, ChangelogLook::App] {
-        let (_, landed) = renders(look, Some(server()));
-        assert!(landed.contains(SERVER_ONLY), "{look:?}: {landed}");
-        assert!(landed.contains(&compiled_line()), "{look:?}: {landed}");
-    }
+    let (_, landed) = renders(Some(server()), None);
+    assert!(landed.contains(SERVER_ONLY), "{landed}");
+    assert!(landed.contains(&compiled_line()), "{landed}");
 }
 
 #[test]
 fn a_failed_fetch_keeps_the_compiled_copy() {
-    for look in [ChangelogLook::Site, ChangelogLook::App] {
-        let (first, after) = renders(look, None);
-        assert_eq!(first, after, "{look:?}");
-        assert!(after.contains(&compiled_line()), "{look:?}: {after}");
-    }
+    let (first, after) = renders(None, None);
+    assert_eq!(first, after);
+    assert!(after.contains(&compiled_line()), "{after}");
 }
 
 #[test]
 fn a_server_copy_that_matches_the_compiled_one_draws_the_same_page() {
-    let (first, after) = renders(ChangelogLook::Site, Some(HttpChangelog::current()));
+    let (first, after) = renders(Some(HttpChangelog::current()), None);
     assert_eq!(first, after);
 }
 
 #[test]
-fn the_site_look_keeps_the_pages_hero_and_the_app_look_its_panel() {
-    let (site, _) = renders(ChangelogLook::Site, None);
-    assert!(site.contains("page-header"), "{site}");
-    assert!(site.contains("<h1"), "{site}");
-    assert!(site.contains("Every release, newest first."), "{site}");
-    let (app, _) = renders(ChangelogLook::App, None);
-    assert!(app.contains("settings-list about-panel"), "{app}");
-    assert!(app.contains("settings-list-header"), "{app}");
-    assert!(!app.contains("<h1"), "{app}");
+fn every_client_draws_one_titled_panel_with_no_hero_or_tagline() {
+    let (page, _) = renders(None, None);
+    assert!(
+        page.contains("settings-list about-panel changelog-panel"),
+        "{page}"
+    );
+    assert!(page.contains("settings-list-header"), "{page}");
+    assert!(page.contains("changelog-panels"), "{page}");
+    assert!(!page.contains("page-header"), "{page}");
+    assert!(!page.contains("<h1"), "{page}");
+    assert!(!page.contains("tagline"), "{page}");
+}
+
+#[test]
+fn a_clients_version_is_a_chip_beside_the_title_and_zite_has_none() {
+    let (app, _) = renders(None, Some("v1.21.9"));
+    assert!(
+        app.contains(r#"<span class="stat-chip">v1.21.9</span>"#),
+        "{app}"
+    );
+    let (site, _) = renders(None, None);
+    assert!(!site.contains("stat-chip"), "{site}");
 }

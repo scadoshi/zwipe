@@ -100,7 +100,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(VIEW, "View");
     assert_eq!(version_label("1.15.0"), "v1.15.0");
     let labels: Vec<&str> = ROWS.into_iter().map(Row::label).collect();
-    assert_eq!(labels, ["Version", "Website", "Privacy policy"]);
+    assert_eq!(labels, ["Website", "Privacy policy"]);
     assert_eq!(CREDITS, "Credits");
     assert_eq!(CHANGELOG, "Changelog");
     assert_eq!(LATEST, "Latest");

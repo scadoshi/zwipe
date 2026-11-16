@@ -1,7 +1,8 @@
-//! About screen: the app's version, its links and credits, then the full
-//! release history.
+//! About screen: the app's links and credits, then the full release history
+//! with the app's version beside its title.
 //!
-//! The top panel holds the Version, Website and Privacy policy rows. Under it
+//! The top panel holds the Website and Privacy policy rows; the header's `?`
+//! explains the version. Under it
 //! a Credits panel holds the Scryfall credit and the Fan Content notice from
 //! `zwipe_core::legal`, then the shared [`components::Changelog`] that
 //! zwipe.net and the web app draw too: its panel with the chips, then a
@@ -16,7 +17,7 @@
 //! What the screen knows and does is `zwipe_ui::screens::about`; this file
 //! draws its state and performs its effects.
 
-use components::{Button, ButtonVariant, Changelog as ChangelogView, ChangelogLook};
+use components::{Button, ButtonVariant, Changelog as ChangelogView};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_core::legal::{FAN_CONTENT_HTML, SCRYFALL_CREDIT_HTML};
@@ -80,23 +81,23 @@ pub fn About() -> Element {
     use_effect(move || driver.dispatch(Action::Load(cache())));
 
     let data = model.read().changelog().clone();
+    // The header's `?` opens the Version hint the dialog host draws.
+    let mut hint_open = use_signal(|| false);
+    let mut hint: Signal<Option<HintTopic>> = use_context();
+    use_effect(move || {
+        if hint_open() {
+            hint_open.set(false);
+            hint.set(Some(HintTopic::Version));
+        }
+    });
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: about::TITLE, back: move |()| driver.dispatch(Action::Back) }
+            ScreenHeader { title: about::TITLE, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
             div { class: "screen-content content-enter",
                 div { class: "changelog-screen",
                     div { class: "settings-list",
-                        div { class: "settings-row",
-                            span { style: "display:flex;align-items:center;",
-                                span { class: "settings-row-label", {Row::Version.label()} }
-                                InfoButton { topic: HintTopic::Version }
-                            }
-                            div { class: "settings-row-value",
-                                span { {about::version_label(APP_VERSION)} }
-                            }
-                        }
                         div { class: "settings-row",
                             span { style: "display:flex;align-items:center;",
                                 span { class: "settings-row-label", {Row::Website.label()} }
@@ -132,7 +133,11 @@ pub fn About() -> Element {
                         }
                     }
 
-                    ChangelogView { data, look: ChangelogLook::App, page_size: CHANGELOG_PAGE_SIZE }
+                    ChangelogView {
+                        data,
+                        page_size: CHANGELOG_PAGE_SIZE,
+                        version: about::version_label(APP_VERSION),
+                    }
                 }
             }
         }

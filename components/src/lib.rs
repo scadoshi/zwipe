@@ -131,8 +131,7 @@ pub use card_row::CardRow;
 pub use card_skeleton::CardSkeleton;
 pub use card_stack::{CardStack, StackCard};
 pub use changelog::{
-    Changelog, ChangelogCollapseAll, ChangelogFilters, ChangelogLook, ChangelogReleases,
-    Filter as ChangelogFilter,
+    Changelog, ChangelogCollapseAll, ChangelogFilters, ChangelogReleases, Filter as ChangelogFilter,
 };
 pub use charts::{
     Bar, BarChart, BarOrientation, ChartLabel, ColorChart, DeckCharts, DrawOdds, LabelCase,

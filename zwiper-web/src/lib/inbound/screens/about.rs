@@ -1,10 +1,10 @@
-//! About: the web build's version, its links and credits, then the full
-//! release history, at the app's shape. On a wide window the rows and
+//! About: the web build's links and credits, then the full release history
+//! with the build's version beside its title, at the app's shape. On a wide window the rows and
 //! Credits sit side by side under the page head, and the Changelog panel
 //! and the release panels run the page's width under them.
 //!
-//! The top panel holds the Version and Privacy policy rows; the app's
-//! Website row has no place on the website itself. Under it
+//! The top panel holds the Privacy policy row; the app's Website row has no
+//! place on the website itself. The nav's `?` explains the version. Under it
 //! a Credits panel holds the Scryfall credit and the Fan Content notice from
 //! `zwipe_core::legal`, then the shared [`components::Changelog`] that
 //! zwipe.net and the app draw too: its panel with the chips, each release a
@@ -15,7 +15,7 @@
 //! What the screen knows and does is `zwipe_ui::screens::about`; this file
 //! draws its state and performs its effects.
 
-use components::{Button, ButtonVariant, Changelog as ChangelogView, ChangelogLook};
+use components::{Button, ButtonVariant, Changelog as ChangelogView};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_core::legal::{FAN_CONTENT_HTML, SCRYFALL_CREDIT_HTML};
@@ -24,7 +24,7 @@ use zwipe_ui::screens::about::{self, Action, Destination, Effect, Row, State};
 use zwipe_ui::telemetry::vocabulary::Screen;
 
 use crate::config::APP_VERSION;
-use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
+use crate::inbound::chrome::hint_topic::HintTopic;
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
@@ -84,20 +84,15 @@ pub fn About() -> Element {
     use_effect(move || driver.dispatch(Action::Load(cache())));
 
     let data = model.read().changelog().clone();
+    let mut hint: Signal<Option<HintTopic>> = use_context();
 
     rsx! {
-        ScreenFrame { title: about::TITLE,
+        ScreenFrame { title: about::TITLE, on_hint: move |()| hint.set(Some(HintTopic::Version)),
             div { class: "screen-content content-enter",
                 div { class: "changelog-screen web-about",
                     div { class: "web-columns",
                     div { class: "web-column",
                     div { class: "settings-list",
-                        div { class: "settings-row",
-                            RowLabel { label: Row::Version.label(), topic: HintTopic::Version }
-                            div { class: "settings-row-value",
-                                span { {about::version_label(APP_VERSION)} }
-                            }
-                        }
                         div { class: "settings-row web-about-privacy",
                             span { class: "settings-row-label", {Row::PrivacyPolicy.label()} }
                             div { class: "settings-row-value",
@@ -122,20 +117,13 @@ pub fn About() -> Element {
                     }
                     }
                     }
-                    ChangelogView { data, look: ChangelogLook::App, page_size: CHANGELOG_PAGE_SIZE }
+                    ChangelogView {
+                        data,
+                        page_size: CHANGELOG_PAGE_SIZE,
+                        version: about::version_label(APP_VERSION),
+                    }
                 }
             }
-        }
-    }
-}
-
-/// A row label with its `?`.
-#[component]
-fn RowLabel(label: &'static str, topic: HintTopic) -> Element {
-    rsx! {
-        span { style: "display:flex;align-items:center;",
-            span { class: "settings-row-label", {label} }
-            InfoButton { topic }
         }
     }
 }

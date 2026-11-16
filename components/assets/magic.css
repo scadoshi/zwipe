@@ -1675,14 +1675,8 @@ i.ms.ms-cost.ms-gp {
 /* Self-contained so it renders identically on the site and in the app: does
    not lean on any host stylesheet's card/bullet rules. */
 
-/* The chip rows: years, then the picked year's months, then the picked
-   month's versions. On zite they close the page's Changelog panel. */
-.changelog-filters {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-}
-
+/* One chip row: years, then the picked year's months, then the picked
+   month's versions. */
 .changelog-filter {
     display: flex;
     flex-wrap: wrap;
@@ -1693,22 +1687,15 @@ i.ms.ms-cost.ms-gp {
     font-family: inherit;
 }
 
-.changelog-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--panel-gap);
-}
-
 /* The button under a capped list that reveals the next page. */
 .changelog-more {
     align-self: center;
     font-family: inherit;
 }
 
-/* The panels look (ChangelogLook::App): the chip rows are a settings-row of
-   the Changelog panel the caller wraps them in, and the release cards stack
-   under it. A compound selector, since the kit's .settings-row loads after
-   this sheet. */
+/* The chip rows are a settings-row of the Changelog panel, and the release
+   cards stack under it. A compound selector, since the kit's .settings-row
+   loads after this sheet. */
 .settings-row.changelog-filters-row {
     flex-direction: column;
     align-items: stretch;
@@ -1720,6 +1707,39 @@ i.ms.ms-cost.ms-gp {
 /* The failure note keeps a chip's own width instead of the row's. */
 .changelog-filters-row > .chip-note {
     align-self: flex-start;
+}
+
+/* The Changelog title panel: one look on zite, the web app and the app. It
+   carries the kit's settings-list box itself, since zite loads no app sheet;
+   the values match the kit's .settings-list rules. */
+.changelog-panel {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    overflow: hidden;
+    width: 100%;
+    box-shadow: var(--shadow-sm);
+}
+
+.changelog-panel > .settings-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.changelog-panel .settings-list-title {
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+.changelog-panel > .settings-row.changelog-filters-row {
+    display: flex;
+    border-bottom: none;
 }
 
 .changelog-panels {

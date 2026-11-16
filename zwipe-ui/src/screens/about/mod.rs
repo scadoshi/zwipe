@@ -31,7 +31,7 @@ pub const LATEST: &str = "Latest";
 /// The Back button, to the screen before.
 pub const BACK: &str = "Back";
 
-/// The Version row's value: `v` and the client's version.
+/// The version chip beside the Changelog title: `v` and the client's version.
 #[must_use]
 pub fn version_label(version: &str) -> String {
     format!("v{version}")
@@ -49,8 +49,6 @@ pub enum Destination {
 /// A row in the top panel, in the order [`ROWS`] lists them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Row {
-    /// The client's version.
-    Version,
     /// The link to the website.
     Website,
     /// The link to the privacy policy.
@@ -58,14 +56,13 @@ pub enum Row {
 }
 
 /// The top panel's rows, top to bottom.
-pub const ROWS: [Row; 3] = [Row::Version, Row::Website, Row::PrivacyPolicy];
+pub const ROWS: [Row; 2] = [Row::Website, Row::PrivacyPolicy];
 
 impl Row {
     /// The row's label.
     #[must_use]
     pub fn label(self) -> &'static str {
         match self {
-            Self::Version => "Version",
             Self::Website => "Website",
             Self::PrivacyPolicy => "Privacy policy",
         }

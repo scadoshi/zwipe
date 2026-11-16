@@ -16,9 +16,9 @@ use std::path::PathBuf;
 
 use components::{
     Bar, BarChart, BarOrientation, CardBoardMoves, CardEditButtons, CardStack,
-    ChangelogCollapseAll, ChangelogFilter, ChangelogFilters, ChangelogLook, ChangelogReleases,
-    ColorBars, ColorChart, DeckCharts, DeckFacts, DeckHead, DrawOdds, FlippableCardImage,
-    IdentityPips, LabelCase, Pressable, StackCard, use_collapse_set,
+    ChangelogCollapseAll, ChangelogFilter, ChangelogFilters, ChangelogReleases, ColorBars,
+    ColorChart, DeckCharts, DeckFacts, DeckHead, DrawOdds, FlippableCardImage, IdentityPips,
+    LabelCase, Pressable, StackCard, use_collapse_set,
 };
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
@@ -168,21 +168,6 @@ fn changelog_anchored_with_links() {
             rsx! {
                 ChangelogFilters { data: two_years(), selection, anchor: "#v1-14-1" }
                 ChangelogReleases { data: two_years(), selection, collapse, link_versions: true }
-            }
-        }),
-    );
-}
-
-#[test]
-fn changelog_app_panels() {
-    golden(
-        "changelog_app_panels",
-        &render(|| {
-            let selection = use_signal(|| ChangelogFilter::Latest);
-            let collapse = use_collapse_set();
-            rsx! {
-                ChangelogFilters { data: two_years(), selection, look: ChangelogLook::App }
-                ChangelogReleases { data: two_years(), selection, collapse, look: ChangelogLook::App }
             }
         }),
     );

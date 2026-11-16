@@ -22,8 +22,8 @@
 //! the row stays short however many patches ship. Picking a minor shows its
 //! releases in that month. Latest, the default, shows the upcoming
 //! release, the newest shipped one, and the one the stores serve when the web
-//! is ahead of it; each carries its tag (Upcoming, Web, Mobile; see
-//! [`Tag`]). The upcoming release counts in the
+//! is ahead of it; each carries its tags (Upcoming, Web, Mobile, Web and Mobile
+//! on a release both serve; see [`Tag`]). The upcoming release counts in the
 //! newest shipped month. The day comes from [`HttpRelease::released_on`], which
 //! also reads the display string an older server sends; a release whose day
 //! cannot be read goes under a last "Earlier" chip rather than vanishing.
@@ -37,8 +37,8 @@
 //! [`ChangelogReleases`], sharing a `Signal<Filter>` the caller owns, so the
 //! chips can sit in the caller's titled panel while the releases stack under
 //! it on their own. Every release is orangui's `ReleaseCard`, the card the
-//! portfolio's changelog draws too; the two [`ChangelogLook`]s differ only in
-//! where the chips sit. A click anywhere on a
+//! portfolio's changelog draws too. zite, the web app and the app draw the
+//! same panel and cards; only the page around them differs. A click anywhere on a
 //! version's header shuts its notes, and [`ChangelogCollapseAll`], which the
 //! caller puts at the right end of its Changelog title, shuts or opens them
 //! all; the caller owns the [`CollapseSet`] the two share.
@@ -46,9 +46,7 @@
 use std::ptr;
 
 use dioxus::prelude::*;
-use orangui::{
-    BannerStatus, CollapseAll, CollapseSet, Panel, ReleaseCard, ReleaseTag, use_collapse_set,
-};
+use orangui::{BannerStatus, CollapseAll, CollapseSet, ReleaseCard, ReleaseTag, use_collapse_set};
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 pub use zwipe_ui::changelog::Filter;
 use zwipe_ui::changelog::{Listed, Tag, listed, minors, months, visible, years};
@@ -158,21 +156,17 @@ fn anchor_selection(fragment: &str, listed: &[Listed<'_>]) -> Option<Filter> {
         .map(Listed::minor_filter)
 }
 
-/// The changelog's title, over the chips in either look.
+/// The changelog's title, over the chips.
 const TITLE: &str = "Changelog";
 
-/// The line under the title on zite's page.
-const TAGLINE: &str = "Every release, newest first.";
-
-/// The whole changelog every client draws: the titled panel holding Collapse all and the
-/// chip rows, then the releases under it, in `look`'s chrome. Draws `data`, which a client
+/// The whole changelog every client draws: the titled panel holding the client's version,
+/// Collapse all and the chip rows, then the releases under it. Draws `data`, which a client
 /// starts at the compiled copy and swaps for the server's when its fetch brings a different
 /// one (`zwipe_ui::changelog::ChangelogCache`); the chips' pick and the open releases live
 /// here, so a swap redraws the list in place.
 #[component]
 pub fn Changelog(
     data: HttpChangelog,
-    #[props(default)] look: ChangelogLook,
     /// The release the page's URL fragment names, selected once read.
     #[props(default)]
     anchor: Option<String>,
@@ -182,55 +176,32 @@ pub fn Changelog(
     /// How many releases show before "Show more", all when `None`.
     #[props(default)]
     page_size: Option<usize>,
+    /// The client's own version, a chip beside the title; none on zite.
+    #[props(default)]
+    version: Option<String>,
 ) -> Element {
     let selection = use_signal(|| Filter::Latest);
     // Every release starts open; a header or Collapse all shuts them.
     let collapse = use_collapse_set();
-    let releases = rsx! {
-        ChangelogReleases { data: data.clone(), selection, collapse, link_versions, look, page_size }
-    };
-    match look {
-        ChangelogLook::Site => rsx! {
-            div { class: "page-header",
-                Panel {
-                    title: TITLE,
-                    title_h1: true,
-                    title_end: rsx! {
-                        ChangelogCollapseAll { data: data.clone(), selection, set: collapse }
-                    },
-                    p { class: "tagline", {TAGLINE} }
-                    ChangelogFilters { data, selection, anchor, look }
-                }
-            }
-            {releases}
-        },
-        ChangelogLook::App => rsx! {
-            div { class: "settings-list about-panel",
-                div { class: "settings-list-header",
+    rsx! {
+        div { class: "settings-list about-panel changelog-panel",
+            div { class: "settings-list-header",
+                div { class: "home-panel-header-title",
                     span { class: "settings-list-title", {TITLE} }
-                    ChangelogCollapseAll { data: data.clone(), selection, set: collapse }
+                    if let Some(version) = version {
+                        span { class: "stat-chip", "{version}" }
+                    }
                 }
-                ChangelogFilters { data, selection, anchor, look }
+                ChangelogCollapseAll { data: data.clone(), selection, set: collapse }
             }
-            {releases}
-        },
+            ChangelogFilters { data: data.clone(), selection, anchor }
+        }
+        ChangelogReleases { data, selection, collapse, link_versions, page_size }
     }
 }
 
-/// Which chrome the changelog's two halves take.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum ChangelogLook {
-    /// zite's: the chip rows sit in the page's own hero panel and the
-    /// releases stack under it.
-    #[default]
-    Site,
-    /// The app's: the chip rows are a `settings-row` of the Changelog panel
-    /// the caller wraps them in, and the releases stack under it.
-    App,
-}
-
-/// The chip rows that narrow the release list, drawn for the [`Filter`] in
-/// `selection`, which [`ChangelogReleases`] reads. Starts wherever the caller
+/// The chip rows that narrow the release list, a `settings-row` of the Changelog panel,
+/// drawn for the [`Filter`] in `selection`, which [`ChangelogReleases`] reads. Starts wherever the caller
 /// started the signal, [`Filter::Latest`] as a rule.
 ///
 /// `data` defaults to the compiled-in changelog; pass a fetched
@@ -242,7 +213,6 @@ pub fn ChangelogFilters(
     #[props(default = HttpChangelog::current())] data: HttpChangelog,
     mut selection: Signal<Filter>,
     #[props(default)] anchor: Option<String>,
-    #[props(default)] look: ChangelogLook,
 ) -> Element {
     let listed = listed(&data);
     let target = anchor
@@ -255,13 +225,9 @@ pub fn ChangelogFilters(
     }));
 
     let chip_rows = chip_rows(&listed, &selection());
-    let class = match look {
-        ChangelogLook::Site => "changelog-filters",
-        ChangelogLook::App => "settings-row changelog-filters-row",
-    };
 
     rsx! {
-        div { class,
+        div { class: "settings-row changelog-filters-row",
             for (r , row) in chip_rows.into_iter().enumerate() {
                 div { key: "{r}", class: "changelog-filter",
                     for chip in row {
@@ -324,7 +290,6 @@ pub fn ChangelogReleases(
     selection: Signal<Filter>,
     collapse: CollapseSet,
     #[props(default)] link_versions: bool,
-    #[props(default)] look: ChangelogLook,
     #[props(default)] page_size: Option<usize>,
 ) -> Element {
     // The selection the reveal was made under, and how many it reveals.
@@ -346,13 +311,9 @@ pub fn ChangelogReleases(
     // Included in each card's key so switching filters remounts the visible
     // cards, replaying their ease-in animation.
     let filter_key = format!("{current:?}");
-    let list_class = match look {
-        ChangelogLook::Site => "changelog-list",
-        ChangelogLook::App => "changelog-panels",
-    };
 
     rsx! {
-        div { class: list_class,
+        div { class: "changelog-panels",
             for (item , release) in listed.iter().map(|item| (item, item.release)) {
                 if show(item) {
                     ReleaseCard {
@@ -360,7 +321,7 @@ pub fn ChangelogReleases(
                         set: collapse,
                         version: release.version.clone(),
                         date: (!release.date.is_empty()).then(|| release.date.clone()),
-                        tag: item.tag.map(release_tag),
+                        tags: item.tags.iter().copied().map(release_tag).collect::<Vec<_>>(),
                         entries: release.entries.clone(),
                         id: anchor_id(&release.version),
                         href: link_versions.then(|| format!("#{}", anchor_id(&release.version))),
