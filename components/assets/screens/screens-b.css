@@ -1388,3 +1388,27 @@
 :is(.content-enter, .content-enter-delayed, .chip-in, .row-enter):has(.image-preview-container, .sheet-backdrop.show, .alert-dialog-overlay) {
     animation-fill-mode: backwards;
 }
+
+/* ---- Reduced motion ----
+   Under prefers-reduced-motion: reduce, this sheet's folds open and shut at
+   once and nothing pulses, slides or drops in. An animation the code waits
+   on to end runs for 1ms, so its animationend still comes. */
+@media (prefers-reduced-motion: reduce) {
+    .chip-fold-arrow {
+        transition: none;
+    }
+
+    .flavor-quote,
+    .flavor-name,
+    .flavor-price,
+    .row-enter,
+    .dict-row,
+    .maybeboard-list .card-row {
+        animation: none;
+    }
+
+    .deck-featured.dealing .deck-featured-card {
+        animation-duration: 1ms;
+        animation-delay: 0s;
+    }
+}

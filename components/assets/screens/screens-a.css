@@ -760,3 +760,34 @@
 .collapsible-section-body > .deck-stat-body {
     padding-bottom: 0.5rem;
 }
+
+/* ---- Reduced motion ----
+   Under prefers-reduced-motion: reduce, this sheet's folds open and shut at
+   once and nothing pulses, slides or drops in. An animation the code waits
+   on to end runs for 1ms, so its animationend still comes. */
+@media (prefers-reduced-motion: reduce) {
+    .collapsible,
+    .swipe-stack-card {
+        transition: none;
+    }
+
+    .swipe-stack-ghost-card img.card-ghost,
+    .dropdown,
+    .image-preview-container.show .card-image {
+        animation: none;
+    }
+
+    .image-preview-container.dismissing .card-image {
+        animation: none;
+        opacity: 0;
+    }
+
+    .swipe-stack-card.top.card-stack-enter-left,
+    .swipe-stack-card.top.card-stack-enter-right,
+    .swipe-stack-card.top.card-stack-enter-up,
+    .swipe-stack-card.swipe-stack-exiting.card-stack-exit-left,
+    .swipe-stack-card.swipe-stack-exiting.card-stack-exit-right,
+    .swipe-stack-card.swipe-stack-exiting.card-stack-exit-up {
+        animation-duration: 1ms;
+    }
+}

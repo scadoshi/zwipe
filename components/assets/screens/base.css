@@ -679,3 +679,17 @@ body .toast-container [role="alertdialog"] {
 .transition-slow {
     transition: all 0.3s ease;
 }
+
+/* ---- Reduced motion ----
+   Under prefers-reduced-motion: reduce, this sheet's folds open and shut at
+   once and nothing pulses, slides or drops in. An animation the code waits
+   on to end runs for 1ms, so its animationend still comes. */
+@media (prefers-reduced-motion: reduce) {
+    .swipe-bottom-row {
+        transition: none;
+    }
+
+    .settings-list-title.update-required-title {
+        animation: none;
+    }
+}

@@ -3650,3 +3650,44 @@ footer.site-footer .site-footer-note {
 .screen.profile-covered > :not(.app-cards-layer) {
     visibility: hidden !important;
 }
+
+/* ---- Reduced motion ----
+   Under prefers-reduced-motion: reduce, this sheet's folds open and shut at
+   once and nothing pulses, slides or drops in. An animation the code waits
+   on to end runs for 1ms, so its animationend still comes. */
+@media (prefers-reduced-motion: reduce) {
+    .keyword-reveal,
+    .chart-fold,
+    .card-row-collapse,
+    .deck-fold-body,
+    .deck-group > .collapsible > .collapsible-inner {
+        transition: none;
+    }
+
+    .card-row-art,
+    .card-row-arrow,
+    .hover-stack,
+    .card-flip-button,
+    .home-flavor,
+    .card-stack.tap .card-stack-slot {
+        transition: none;
+    }
+
+    .action-dock:not(.sheet-dock),
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *) {
+        transition: none;
+    }
+
+    .hover-stack-card,
+    .cover-flow-ghost,
+    .skeleton-bar,
+    .skeleton-chip,
+    .home-deck-tile-chips:has(> .home-deck-skeleton-chip)::after {
+        animation: none;
+    }
+
+    .hover-stack-card.leaving {
+        animation: none;
+        opacity: 0;
+    }
+}

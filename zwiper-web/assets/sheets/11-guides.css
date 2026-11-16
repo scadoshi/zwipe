@@ -592,3 +592,15 @@
     /* The panel-rule below owns the bottom spacing. */
     margin: 0.5rem 0 0;
 }
+
+/* ---- Reduced motion ----
+   Under prefers-reduced-motion: reduce, this sheet's folds open and shut at
+   once and nothing pulses, slides or drops in. An animation the code waits
+   on to end runs for 1ms, so its animationend still comes. */
+@media (prefers-reduced-motion: reduce) {
+    .media-frame > img,
+    .media-frame > video,
+    .gallery-caption {
+        animation: none;
+    }
+}

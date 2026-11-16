@@ -3005,3 +3005,16 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 .new-build-notice .new-build-reload {
     margin-left: 0.75rem;
 }
+
+/* ---- Reduced motion ----
+   Under prefers-reduced-motion: reduce, this sheet's folds open and shut at
+   once and nothing pulses, slides or drops in. An animation the code waits
+   on to end runs for 1ms, so its animationend still comes. */
+@media (prefers-reduced-motion: reduce) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold),
+    .card-row.deck-row,
+    .home-deck-tile-art > img,
+    :is(.web-cards-swipe, .web-swipe-select-body, .web-examples-body) .web-swipe-stack {
+        transition: none;
+    }
+}

@@ -679,3 +679,20 @@
     border-color: var(--accent-primary);
     color: var(--ink-accent-primary, var(--accent-primary));
 }
+
+/* ---- Reduced motion ----
+   Under prefers-reduced-motion: reduce, this sheet's folds open and shut at
+   once and nothing pulses, slides or drops in. An animation the code waits
+   on to end runs for 1ms, so its animationend still comes. */
+@media (prefers-reduced-motion: reduce) {
+    .search-float-anchor,
+    .accordion-content,
+    .accordion-expand-icon {
+        transition: none;
+    }
+
+    .search-float-chip,
+    .card-filter-result {
+        animation: none;
+    }
+}

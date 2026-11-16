@@ -679,6 +679,20 @@ body .toast-container [role="alertdialog"] {
 .transition-slow {
     transition: all 0.3s ease;
 }
+
+/* ---- Reduced motion ----
+   Under prefers-reduced-motion: reduce, this sheet's folds open and shut at
+   once and nothing pulses, slides or drops in. An animation the code waits
+   on to end runs for 1ms, so its animationend still comes. */
+@media (prefers-reduced-motion: reduce) {
+    .swipe-bottom-row {
+        transition: none;
+    }
+
+    .settings-list-title.update-required-title {
+        animation: none;
+    }
+}
 /* main.css lines 964 to 1768: buttons, inputs, labels, cards and containers, skeleton. */
 
 /* ===========================
@@ -1365,6 +1379,20 @@ body .toast-container [role="alertdialog"] {
     .alert-dialog:has(.hint-line, .hint-bullets) {
         width: calc(100% - 2rem);
         max-width: 28rem;
+    }
+}
+
+/* ---- Reduced motion ----
+   Under prefers-reduced-motion: reduce, this sheet's folds open and shut at
+   once and nothing pulses, slides or drops in. An animation the code waits
+   on to end runs for 1ms, so its animationend still comes. */
+@media (prefers-reduced-motion: reduce) {
+    .ghost-box,
+    .skeleton-image,
+    .skeleton-tinted,
+    .skeleton-input-compact,
+    .skeleton-export-textarea {
+        animation: none;
     }
 }
 /* main.css lines 1769 to 2860: swipe stack through the collapsible field. */
@@ -2128,6 +2156,37 @@ body .toast-container [role="alertdialog"] {
 
 .collapsible-section-body > .deck-stat-body {
     padding-bottom: 0.5rem;
+}
+
+/* ---- Reduced motion ----
+   Under prefers-reduced-motion: reduce, this sheet's folds open and shut at
+   once and nothing pulses, slides or drops in. An animation the code waits
+   on to end runs for 1ms, so its animationend still comes. */
+@media (prefers-reduced-motion: reduce) {
+    .collapsible,
+    .swipe-stack-card {
+        transition: none;
+    }
+
+    .swipe-stack-ghost-card img.card-ghost,
+    .dropdown,
+    .image-preview-container.show .card-image {
+        animation: none;
+    }
+
+    .image-preview-container.dismissing .card-image {
+        animation: none;
+        opacity: 0;
+    }
+
+    .swipe-stack-card.top.card-stack-enter-left,
+    .swipe-stack-card.top.card-stack-enter-right,
+    .swipe-stack-card.top.card-stack-enter-up,
+    .swipe-stack-card.swipe-stack-exiting.card-stack-exit-left,
+    .swipe-stack-card.swipe-stack-exiting.card-stack-exit-right,
+    .swipe-stack-card.swipe-stack-exiting.card-stack-exit-up {
+        animation-duration: 1ms;
+    }
 }
 /* The screen rules the app and the web share, from main.css's label row section through the Playstyle heatmap. */
 
@@ -3518,4 +3577,28 @@ body .toast-container [role="alertdialog"] {
    own), so the overlay's backdrop covers the whole window. */
 :is(.content-enter, .content-enter-delayed, .chip-in, .row-enter):has(.image-preview-container, .sheet-backdrop.show, .alert-dialog-overlay) {
     animation-fill-mode: backwards;
+}
+
+/* ---- Reduced motion ----
+   Under prefers-reduced-motion: reduce, this sheet's folds open and shut at
+   once and nothing pulses, slides or drops in. An animation the code waits
+   on to end runs for 1ms, so its animationend still comes. */
+@media (prefers-reduced-motion: reduce) {
+    .chip-fold-arrow {
+        transition: none;
+    }
+
+    .flavor-quote,
+    .flavor-name,
+    .flavor-price,
+    .row-enter,
+    .dict-row,
+    .maybeboard-list .card-row {
+        animation: none;
+    }
+
+    .deck-featured.dealing .deck-featured-card {
+        animation-duration: 1ms;
+        animation-delay: 0s;
+    }
 }
