@@ -75,17 +75,33 @@ fn a_field_shows_its_line_while_it_holds_text() {
 }
 
 #[test]
-fn a_showing_error_holds_submit_but_the_password_s_never_does() {
+fn a_showing_error_holds_submit_the_password_s_too() {
     let mut state = State::new();
     assert!(!state.submit_held());
     type_in(&mut state, Field::Email, "me.zwipe.net");
     assert!(state.submit_held());
     type_in(&mut state, Field::Email, "me@zwipe.net");
     assert!(!state.submit_held());
-    type_in(&mut state, Field::Password, "one");
-    type_in(&mut state, Field::ConfirmPassword, "two");
-    assert!(state.error(Field::Password).is_some());
+    type_in(&mut state, Field::Password, "abcdef1!");
+    assert_eq!(
+        state.error(Field::Password).as_deref(),
+        Some("Must have at least one uppercase letter"),
+        "the missing rule shows while typing"
+    );
+    assert!(state.submit_held());
+    type_in(&mut state, Field::Password, GOOD);
+    type_in(&mut state, Field::ConfirmPassword, GOOD);
+    assert_eq!(state.error(Field::Password), None);
     assert!(!state.submit_held());
+}
+
+#[test]
+fn a_submit_with_a_password_that_breaks_a_rule_sends_nothing() {
+    let mut state = filled();
+    type_in(&mut state, Field::Password, "Abcdefg1");
+    type_in(&mut state, Field::ConfirmPassword, "Abcdefg1");
+    assert_eq!(state.update(Action::Submit), []);
+    assert!(!state.is_loading());
 }
 
 #[test]

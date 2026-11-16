@@ -32,3 +32,12 @@ A floor only allows dropping an old value when a store build at or above it *wri
 - New response fields are fine for the same reason (old clients ignore them), but never remove or re-type an existing response field while old clients read it.
 - New endpoints are always safe (old clients never call them).
 - `0.0.0`-style sentinel defaults beat `Option` when "unset" has a concrete meaning the server can act on.
+
+## Rules the clients enforce: the password policy
+
+The clients check a new password against zwipe-core's policy (`domain::auth::password::validate`) as it is typed, on Register, Change password and zwipe.net's reset form, and hold the submit until it passes. The server checks the same policy on its own. Login and an account's current password are never judged, so an old password always still signs in.
+
+Because a store build carries its copy of the policy for weeks, changing the policy needs a migration plan before any code moves:
+
+- **Stricter** (a new rule, a longer minimum): ship the new policy in the apps first and let it reach the stores, then have the server enforce it. Enforcing first turns down passwords the old apps let through, with only the server's message to explain it.
+- **Looser** (dropping a rule): update the apps first, since old builds keep blocking passwords the server would now accept until they update. Raise the min-version floor only if the old builds' blocking matters.

@@ -340,7 +340,7 @@ fn a_stray_tick_changes_nothing() {
 }
 
 #[test]
-fn a_showing_error_holds_save_but_a_password_s_never_does() {
+fn a_showing_error_holds_save_and_only_the_new_password_s_does() {
     let mut state = opened();
     let _ = state.update(Action::OpenSheet(Sheet::Username));
     assert!(!state.submit_held(Sheet::Username), "nothing showing yet");
@@ -360,13 +360,31 @@ fn a_showing_error_holds_save_but_a_password_s_never_does() {
     );
     assert!(
         !state.submit_held(Sheet::Username),
-        "a password line never holds Save"
+        "the account password's line never holds Save"
     );
     let _ = state.update(Action::OpenSheet(Sheet::Password));
-    edit(&mut state, Sheet::Password, Field::NewPassword, "one");
-    edit(&mut state, Sheet::Password, Field::ConfirmPassword, "two");
-    assert!(state.error(Sheet::Password, Field::NewPassword).is_some());
-    assert!(!state.submit_held(Sheet::Password));
+    edit(&mut state, Sheet::Password, Field::CurrentPassword, "old");
+    edit(&mut state, Sheet::Password, Field::NewPassword, "Abcdefg!");
+    assert_eq!(
+        state.error(Sheet::Password, Field::NewPassword).as_deref(),
+        Some("Must have at least one number")
+    );
+    assert!(
+        state.submit_held(Sheet::Password),
+        "a broken rule holds Save"
+    );
+    edit(&mut state, Sheet::Password, Field::NewPassword, "Abcdef1!");
+    edit(
+        &mut state,
+        Sheet::Password,
+        Field::ConfirmPassword,
+        "Abcdef1!",
+    );
+    assert_eq!(state.error(Sheet::Password, Field::NewPassword), None);
+    assert!(
+        !state.submit_held(Sheet::Password),
+        "a current password that predates the rules is never judged"
+    );
 }
 
 #[test]

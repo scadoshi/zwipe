@@ -2,6 +2,7 @@ use components::{HintKey, InfoButton, Panel, PasswordInput};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::secret::Secret;
+use zwipe_ui::account;
 use zwipe_ui::text::sentence_case;
 
 use crate::components::PageMeta;
@@ -28,18 +29,22 @@ enum SubmitCheck {
     Send,
 }
 
+/// The line under the fields while typing: the first password rule the new
+/// password breaks, or a confirmation as long as it that doesn't match. The
+/// app's check, from zwipe-ui, so the website and the app judge alike.
+fn live_error(pw: &str, cf: &str) -> Option<String> {
+    account::password_error(pw, cf, false)
+}
+
 /// Decides a submit from the page state, the two fields and the link's token.
-/// The password policy is the server's alone, so a rule it changes later can
-/// never stop the page from sending; only an empty or mismatched pair is held.
+/// An empty password, one that breaks a rule of the policy, or a confirmation
+/// that doesn't match is held with its line.
 fn check_submit(state: &ResetState, pw: &str, cf: &str, token: &str) -> SubmitCheck {
     if *state == ResetState::Loading {
         return SubmitCheck::Ignore;
     }
-    if pw.is_empty() {
-        return SubmitCheck::Reject("Password is required".to_string());
-    }
-    if pw != cf {
-        return SubmitCheck::Reject("Passwords do not match".to_string());
+    if let Some(line) = account::password_error(pw, cf, true) {
+        return SubmitCheck::Reject(line);
     }
     if token.is_empty() {
         return SubmitCheck::Reject(
@@ -138,13 +143,7 @@ pub fn Reset(token: String) -> Element {
 
     let current_state = state.read().clone();
 
-    // Same rule as the app: mid-typing the confirmation can't match yet, so
-    // it is judged once it is as long as the password (submit checks too).
-    let mismatch = {
-        let pw = password.read();
-        let cf = confirm.read();
-        !cf.is_empty() && cf.chars().count() >= pw.chars().count() && *pw != *cf
-    };
+    let live = live_error(&password.read(), &confirm.read());
 
     rsx! {
         PageMeta {
@@ -202,7 +201,7 @@ pub fn Reset(token: String) -> Element {
                                 r#type: "submit",
                                 form: "reset-form",
                                 class: "panel-action",
-                                disabled: current_state == ResetState::Loading,
+                                disabled: current_state == ResetState::Loading || live.is_some(),
                                 if current_state == ResetState::Loading { "Updating…" } else { "Set new password" }
                             }
                         },
@@ -239,8 +238,8 @@ pub fn Reset(token: String) -> Element {
 
                     if let ResetState::Error(msg) = &*state.read() {
                         div { class: "status-message error", {sentence_case(msg)} }
-                    } else if mismatch {
-                        div { class: "status-message error", "Passwords do not match" }
+                    } else if let Some(line) = &live {
+                        div { class: "status-message error", {line.clone()} }
                     }
                     }
                 },
@@ -299,14 +298,28 @@ mod tests {
     }
 
     #[test]
-    fn the_password_policy_is_left_to_the_server() {
-        for weak in ["short", "alllowercase", "a"] {
+    fn a_password_that_breaks_a_rule_is_held_with_the_rule() {
+        for (weak, rule) in [
+            ("short", "Must be at least 8 characters long"),
+            ("alllowercase1!", "Must have at least one uppercase letter"),
+        ] {
             assert_eq!(
                 check_submit(&ResetState::Form, weak, weak, "token"),
-                SubmitCheck::Send,
+                SubmitCheck::Reject(rule.to_string()),
                 "{weak:?}"
             );
+            assert_eq!(
+                live_error(weak, "").as_deref(),
+                Some(rule),
+                "{weak:?} while typing"
+            );
         }
+        assert_eq!(
+            live_error(GOOD, ""),
+            None,
+            "a good password waits for its confirmation"
+        );
+        assert_eq!(live_error(GOOD, GOOD), None);
     }
 
     #[test]

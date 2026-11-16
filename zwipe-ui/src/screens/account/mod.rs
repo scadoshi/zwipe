@@ -1090,13 +1090,13 @@ impl State {
             .error(sheet, field, self.user.as_ref())
     }
 
-    /// Whether an error line other than a password's is showing on `sheet`, which holds its Save.
+    /// Whether a line that holds Save ([`Field::holds_save`]) is showing on `sheet`.
     #[must_use]
     pub fn submit_held(&self, sheet: Sheet) -> bool {
         sheet
             .fields()
             .iter()
-            .any(|&field| !field.is_password() && self.error(sheet, field).is_some())
+            .any(|&field| field.holds_save() && self.error(sheet, field).is_some())
     }
 
     /// Whether `sheet`'s change is out. Its Back and Save are off meanwhile.

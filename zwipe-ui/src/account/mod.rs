@@ -3,6 +3,7 @@
 use std::fmt::{self, Debug, Formatter};
 
 use chrono::{DateTime, Utc};
+use zwipe_core::domain::auth::password;
 use zwipe_core::domain::user::{Email, InvalidUsername, Username};
 use zwipe_core::text::sentence_case;
 
@@ -103,11 +104,18 @@ pub fn reset_email_error(raw: &str) -> Option<String> {
     raw.trim().is_empty().then(|| EMAIL_REQUIRED.to_owned())
 }
 
-/// Register's check of a new password and its confirmation: [`PASSWORD_REQUIRED`] once a submit was tried with both empty, else [`PASSWORDS_DIFFER`]. The password policy is the server's alone, so no rule a later policy changes can stop a client from sending. A confirmation still shorter than the password is not judged until a submit was tried, since mid-typing it cannot match yet.
+/// The check of a new password and its confirmation, on Register, Change password and the website's reset form: [`PASSWORD_REQUIRED`] once a submit was tried with both empty, then the first rule of zwipe-core's password policy the password breaks (the check the server makes, judged as it is typed), then [`PASSWORDS_DIFFER`]. A confirmation still shorter than the password is not judged until a submit was tried, since mid-typing it cannot match yet.
+///
+/// The clients hold a password the policy turns down, so changing the policy needs a migration plan first (see `context/development/api_evolution.md`). Login and an account's current password are never judged here.
 #[must_use]
 pub fn password_error(password: &str, confirm: &str, attempted: bool) -> Option<String> {
     if password.is_empty() && confirm.is_empty() {
         return attempted.then(|| PASSWORD_REQUIRED.to_owned());
+    }
+    if !password.is_empty()
+        && let Err(rule) = password::validate(password)
+    {
+        return Some(sentence_case(&rule.to_string()));
     }
     let judged = attempted || confirm.chars().count() >= password.chars().count();
     (password != confirm && judged).then(|| PASSWORDS_DIFFER.to_owned())
@@ -407,11 +415,51 @@ mod tests {
     }
 
     #[test]
-    fn no_password_policy_is_checked_in_the_client() {
-        assert_eq!(password_error("short", "short", true), None);
-        assert_eq!(password_error("a", "a", false), None);
+    fn each_password_rule_shows_what_is_missing() {
+        let long: String = GOOD.chars().cycle().take(129).collect();
+        let symbol = format!("Must have at least one symbol from {}", password::SYMBOLS);
+        let cases = [
+            ("Ab1!", "Must be at least 8 characters long"),
+            (long.as_str(), "Must not exceed 128 characters"),
+            ("abcdef1!", "Must have at least one uppercase letter"),
+            ("ABCDEF1!", "Must have at least one lowercase letter"),
+            ("Abcdefg!", "Must have at least one number"),
+            ("Abcdefg1", symbol.as_str()),
+            ("Abc def1!", "Must not contain whitespace characters"),
+            ("Aa1!Aa1!", "Must contain at least 6 unique characters"),
+            (
+                "Abcdddde1!",
+                "Must not contain more than 3 repeated characters",
+            ),
+        ];
+        for (password, want) in cases {
+            assert_eq!(
+                password_error(password, password, false).as_deref(),
+                Some(want),
+                "{password:?}"
+            );
+            assert_eq!(
+                change_password_error("Old!pass1", password, password, false).as_deref(),
+                Some(want),
+                "{password:?} on Change password"
+            );
+        }
+    }
+
+    #[test]
+    fn a_password_that_meets_every_rule_passes() {
+        assert_eq!(password_error(GOOD, GOOD, true), None);
+        assert_eq!(change_password_error("Old!pass1", GOOD, GOOD, true), None);
+    }
+
+    #[test]
+    fn the_rule_shows_before_the_confirmation_is_judged() {
         assert_eq!(
             password_error("short", "other", true).as_deref(),
+            Some("Must be at least 8 characters long")
+        );
+        assert_eq!(
+            password_error(GOOD, "Abcdef1?", false).as_deref(),
             Some(PASSWORDS_DIFFER)
         );
         assert_eq!(password_error("", "", false), None, "nothing tried yet");
@@ -420,7 +468,18 @@ mod tests {
             Some(PASSWORD_REQUIRED),
             "an empty submit asks for one"
         );
-        assert_eq!(change_password_error(GOOD, "short", "short", true), None);
+    }
+
+    #[test]
+    fn login_and_an_account_password_apply_no_rule() {
+        for weak in ["a", "short", "alllowercase"] {
+            assert_eq!(
+                login_gate(false, "alice", weak),
+                LoginGate::Send,
+                "{weak:?}"
+            );
+            assert_eq!(password_required(weak), None, "{weak:?}");
+        }
     }
 
     #[test]

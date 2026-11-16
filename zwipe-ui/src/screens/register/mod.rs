@@ -208,12 +208,10 @@ impl State {
         }
     }
 
-    /// Whether an error line other than the password's is showing, which holds the submit button. The password policy is the server's, so its line never holds it.
+    /// Whether any field's error line is showing, which holds the submit button. The password's line names the first rule of zwipe-core's policy it breaks, so the button waits until the password meets them all.
     #[must_use]
     pub fn submit_held(&self) -> bool {
-        [Field::Username, Field::Email]
-            .into_iter()
-            .any(|field| self.error(field).is_some())
+        Field::ALL.iter().any(|field| self.error(*field).is_some())
     }
 
     /// Whether a registration is out. Both buttons are held meanwhile.

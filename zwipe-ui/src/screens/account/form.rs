@@ -71,13 +71,13 @@ pub enum Field {
 }
 
 impl Field {
-    /// Whether this field holds a password. The password policy is the server's, so a password field's error line never holds Save.
+    /// Whether this field's error line holds Save: the new username, email or password, whose line names what the change breaks (for a password, the first rule of zwipe-core's policy). The account's own password is only checked for presence and never holds it, so a password that predates the policy still works.
     #[must_use]
-    pub fn is_password(self) -> bool {
-        matches!(
-            self,
-            Self::Password | Self::CurrentPassword | Self::NewPassword | Self::ConfirmPassword
-        )
+    pub fn holds_save(self) -> bool {
+        match self {
+            Self::NewUsername | Self::NewEmail | Self::NewPassword => true,
+            Self::Password | Self::CurrentPassword | Self::ConfirmPassword => false,
+        }
     }
 
     /// The label above the field.
