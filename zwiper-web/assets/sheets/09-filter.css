@@ -158,6 +158,14 @@
     margin-left: 0.3rem;
 }
 
+/* `all: unset` takes the browser's ring away, so the keyboard gets the
+   kit's: an accent outline 2px out, on keyboard focus only. */
+.chip-remove:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    border-radius: 0.2em;
+}
+
 .input-compact {
     padding: 0.5rem;
     margin-bottom: 0.5rem;
@@ -247,6 +255,13 @@
     /* Opaque fill so the page grid doesn't show through the button. */
     background-color: var(--bg-primary);
     transition: all 0.2s ease;
+}
+
+/* The kit's keyboard ring, as on the chips' ×: `all: unset` dropped the
+   browser's. */
+.clear-btn:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
 }
 
 /* In a label row the × takes no room: a fixed width, and a right margin
@@ -637,7 +652,9 @@
     justify-content: center;
 }
 
-.card-filter-accordion .accordion-trigger:focus-visible {
+/* Every accordion's triggers, the web's filter and the app's alike: the
+   trigger takes the browser's outline away, so the keyboard gets this. */
+.accordion-trigger:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
 }
