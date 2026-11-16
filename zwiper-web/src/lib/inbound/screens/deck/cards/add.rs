@@ -20,7 +20,7 @@ use components::swipe_stack::{
 use components::{
     CardGhost, Chip, DockEye, DockFilter, LoadFailed, PrintingsFace, SheetFrame, SheetWide,
     Surface, TOAST_NORMAL, TOAST_QUICK, next_card_face, open_on_shown_face, reset_image_ease,
-    use_back_online, use_details_eye,
+    use_back_online, use_details_eye, use_undo_burst,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -553,7 +553,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         signals
     };
 
-    let undo_search = use_callback(move |()| {
+    let undo_search_now = use_callback(move |()| {
         revealing.set(None);
         let popped = stack.write().pop_action();
         let Some(action) = popped else {
@@ -646,7 +646,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         });
     });
 
-    let undo_maybeboard = use_callback(move |()| {
+    let undo_maybeboard_now = use_callback(move |()| {
         let popped = mb_stack.write().pop_action();
         let Some(action) = popped else {
             toast.info("Nothing to undo".to_string(), ToastOptions::default());
@@ -713,6 +713,11 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             }
         });
     });
+    // A quick run of Undos waits for the card coming back, then runs together.
+    let search_entering = use_memo(move || stack.read().entering().is_some());
+    let undo_search = use_undo_burst(search_entering, undo_search_now);
+    let maybeboard_entering = use_memo(move || mb_stack.read().entering().is_some());
+    let undo_maybeboard = use_undo_burst(maybeboard_entering, undo_maybeboard_now);
 
     let undo_now = use_callback(move |()| match *source.peek() {
         AddSource::Search => undo_search.call(()),

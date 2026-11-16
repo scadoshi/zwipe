@@ -46,7 +46,11 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 9);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: Version::new(1, 21, 10),
+    date: None,
+    entries: &["Undoing several swipes quickly no longer flickers through each card"],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
