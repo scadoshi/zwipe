@@ -6,16 +6,23 @@
 //! an add's answer lands after Add is gone and still records its undo entry.
 //! Nothing here is saved; a reload forgets it, as an app restart does.
 
+use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::deck::Board;
 use zwipe_ui::stack::{AddAction, CardStack};
 use zwipe_ui::stores::filters::FilterStore;
 use zwipe_ui::stores::in_flight::InFlightAdds;
+use zwipe_ui::stores::in_flight_removes::InFlightRemoves;
 use zwipe_ui::stores::parked::AddStackCache;
 use zwipe_ui::stores::undo::UndoStore;
 
 use crate::inbound::root_signal::use_root_signal;
+
+/// A removed card to put back: the card, its board, its copies and its star time.
+pub type Restore = (Card, Board, i32, Option<DateTime<Utc>>);
 
 /// The shared card stores. `Copy`; read with `stores.undo.read()`.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -28,6 +35,9 @@ pub struct CardStores {
     pub undo: Signal<UndoStore>,
     /// Adds whose create call has not answered.
     pub in_flight: Signal<InFlightAdds>,
+    /// Remove's deletes that have not answered, and the restores undos parked on
+    /// them, which go out once the delete lands even after Remove is gone.
+    pub removes: Signal<InFlightRemoves<Restore>>,
     /// Add's search stack, kept across visits so coming back to the same
     /// deck resumes mid-stack. Only ever the stack of `add_stack_deck`: a
     /// screen takes it through [`CardStores::claim_add_stack`].
@@ -47,6 +57,7 @@ pub fn use_card_stores() {
         stacks: use_root_signal(AddStackCache::default),
         undo: use_root_signal(UndoStore::default),
         in_flight: use_root_signal(InFlightAdds::default),
+        removes: use_root_signal(InFlightRemoves::default),
         add_stack: use_root_signal(CardStack::default),
         add_stack_deck: use_root_signal(|| None),
         last_search: use_root_signal(|| None),

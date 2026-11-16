@@ -20,7 +20,7 @@ use components::swipe_stack::{
 use components::{
     CardGhost, Chip, DockEye, DockFilter, LoadFailed, PrintingsFace, SheetFrame, SheetWide,
     Surface, TOAST_NORMAL, TOAST_QUICK, next_card_face, open_on_shown_face, reset_image_ease,
-    use_back_online, use_details_eye,
+    spawn_write, use_back_online, use_details_eye, use_mounted,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -119,6 +119,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::CardAdd));
     let toast = use_toast();
     let confirm = use_swipe_confirm();
+    // An undo's write runs in the root and lands even after the screen goes;
+    // what it then shows on the screen waits on this.
+    let mounted = use_mounted();
     let authed = use_authed();
     let usage = telemetry::use_usage();
     let session: Signal<Option<Session>> = use_context();
@@ -590,7 +593,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         let card_id = card.scryfall_data.id;
         if action == AddAction::Skip {
             if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                spawn(async move {
+                spawn_write(async move {
                     authed
                         .run("undo_skip", |c, s| async move {
                             c.unskip_deck_card(deck_id, oracle_id, &s).await
@@ -622,7 +625,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             confirm.success(message);
             return;
         }
-        spawn(async move {
+        spawn_write(async move {
             let fresh = match ensure_fresh(session, client).await {
                 Ok(fresh) => fresh,
                 Err(e) => {
@@ -636,6 +639,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             };
             let http = client.peek().clone();
             match http.delete_undone_deck_card(deck_id, card_id, &fresh).await {
+                Ok(()) if !mounted.get() => {}
                 Ok(()) => {
                     if let Some(d) = deck.write().as_mut() {
                         if let Some(oracle_id) = card.scryfall_data.oracle_id {
@@ -694,12 +698,14 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             return;
         }
         mb_stack.write().insert_current(card.clone());
-        spawn(async move {
+        spawn_write(async move {
             let fresh = match ensure_fresh(session, client).await {
                 Ok(fresh) => fresh,
                 Err(e) => {
                     toast.error(e.to_user_message(), ToastOptions::default());
-                    mb_stack.write().cancel_entering();
+                    if mounted.get() {
+                        mb_stack.write().cancel_entering();
+                    }
                     if let Some(entry) = taken {
                         undo.write().push(deck_id, entry);
                     }
@@ -710,6 +716,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             let back =
                 HttpPatchDeckCard::new(None, Some(Board::Maybeboard.display_name().to_owned()));
             match http.update_deck_card(deck_id, card_id, &back, &fresh).await {
+                Ok(_) if !mounted.get() => {}
                 Ok(deck_card) => {
                     if let Some(d) = deck.write().as_mut() {
                         if let Some(oracle_id) = card.scryfall_data.oracle_id {

@@ -100,6 +100,7 @@ mod printing_sheet;
 pub mod render_count;
 mod role_tags;
 pub mod screen_return;
+mod screen_task;
 pub mod settle;
 mod share_url;
 mod site_footer;
@@ -213,6 +214,7 @@ pub use printing_sheet::{
     ArtistChip, PrintingChips, PrintingChipsGhost, PrintingSheet, PrintingsFetch, PrintingsSource,
 };
 pub use role_tags::{OtagDef, RoleTags};
+pub use screen_task::{Mounted, spawn_write, use_mounted};
 pub use settle::use_settle;
 pub use share_url::{ShareUrl, shared_link_actions};
 pub use site_footer::SiteFooter;
