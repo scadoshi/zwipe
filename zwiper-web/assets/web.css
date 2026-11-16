@@ -2438,10 +2438,11 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 /* Each deck keeps the phone's row on a wide window, its art at the left
    and the name, pips and chips flowing beside it, one row under another.
    From 1400px a group's rows pair up in two columns; its header stays
-   across the page over them. */
+   across the page over them, and each row keeps its own height. */
 @media (min-width: 1400px) {
     .deck-group > .collapsible > .collapsible-inner {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
     }
 }
 

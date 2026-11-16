@@ -72,26 +72,31 @@ fn a_docks_text_buttons_follow_the_docks_corner() {
 }
 
 #[test]
-fn a_deck_rows_art_reaches_out_to_its_own_inset() {
-    // Out past the text's padding to the art's inset at the top and bottom, and the first crop
-    // at the left, filling the row's height, so the text and chips stay where they were.
+fn a_deck_rows_art_is_a_square_tucked_into_the_rows_corner() {
+    // A fixed square at the art's inset from the top and the left, cropped from its center,
+    // that never stretches to the row's height or drives it: the reach above and below
+    // takes the inset back out of the room it asks the row for.
     let reach = "calc(var(--deck-row-art-inset) - var(--deck-row-inset))";
     for art in [".deck-row-art-img", ".skeleton-deck-list-art"] {
         let body = rule(SCREENS_COMPONENTS, art);
-        assert!(body.contains("align-self: stretch;"), "{art}: {body:?}");
-        // The art fills the height the text and chips set and never drives it: no size of its
-        // own (size containment) and no minimum.
-        assert!(body.contains("contain: size;"), "{art}: {body:?}");
-        assert!(!body.contains("min-height"), "{art}: {body:?}");
-        assert!(
-            body.contains(&format!("margin-top: {reach};")),
-            "{art}: {body:?}"
-        );
-        assert!(
-            body.contains(&format!("margin-bottom: {reach};")),
-            "{art}: {body:?}"
-        );
+        for want in [
+            "width: var(--deck-row-art-size);",
+            "height: var(--deck-row-art-size);",
+            "align-self: flex-start;",
+            &format!("margin-top: {reach};"),
+            &format!("margin-bottom: {reach};"),
+        ] {
+            assert!(body.contains(want), "{art}: {want} in {body:?}");
+        }
+        for gone in ["stretch", "contain:", "min-height"] {
+            assert!(!body.contains(gone), "{art}: no {gone} in {body:?}");
+        }
     }
+    let img = rule(SCREENS_COMPONENTS, ".deck-row-art-img");
+    assert!(img.contains("object-fit: cover;"), "{img:?}");
+    assert!(img.contains("object-position: center;"), "{img:?}");
+    let row = rule(SCREENS_COMPONENTS, ".deck-row");
+    assert!(row.contains("--deck-row-art-size: 4.5rem;"), "{row:?}");
     let first = rule(
         SCREENS_COMPONENTS,
         ".deck-list-row > :is(.deck-row-art-img, .skeleton-deck-list-art):first-child",

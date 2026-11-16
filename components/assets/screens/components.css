@@ -126,6 +126,7 @@
     --deck-row-radius: 1rem;
     --deck-row-inset: var(--space-3);
     --deck-row-art-inset: var(--space-1);
+    --deck-row-art-size: 4.5rem;
     padding: var(--deck-row-inset) var(--space-4);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
@@ -142,20 +143,20 @@
 
 /* The command zone's art crops lead the row beside the text column. Two
    crops (partners, or oathbreaker and signature spell) follow one another.
-   Each reaches out past the text's padding to the art's own inset at the top
-   and bottom and fills the height the text and chips set, never driving it:
-   size containment gives the image no height of its own, so a short row
-   keeps its height and a tall one gets a tall crop. It grows by what it
-   gains, so the text and chips stay where they were; its corners nest in the
-   row's at that inset (see .deck-row). */
+   Each is a fixed square tucked into the row's top-left corner at the art's
+   own inset, cropped from its center, its corners nesting in the row's at
+   that inset (see .deck-row). The reach above and below takes the inset back
+   out of the room it asks for, so the square sits within the name and chips'
+   height rather than setting it; a taller row keeps it at the top. */
 .deck-row-art-img {
     flex: 0 0 auto;
-    align-self: stretch;
-    width: calc(3.6rem + var(--space-4) - var(--deck-row-art-inset));
-    contain: size;
+    align-self: flex-start;
+    width: var(--deck-row-art-size);
+    height: var(--deck-row-art-size);
     margin-top: calc(var(--deck-row-art-inset) - var(--deck-row-inset));
     margin-bottom: calc(var(--deck-row-art-inset) - var(--deck-row-inset));
     object-fit: cover;
+    object-position: center;
     border-radius: max(0.15rem, calc(var(--deck-row-radius) - 1px - var(--deck-row-art-inset)));
     border: 1px solid var(--border-secondary);
     box-shadow: var(--shadow-sm);
@@ -632,9 +633,9 @@
 /* Stands in for the command zone art (matches .deck-row-art-img). */
 .skeleton-deck-list-art {
     flex: 0 0 auto;
-    align-self: stretch;
-    width: calc(3.6rem + var(--space-4) - var(--deck-row-art-inset));
-    contain: size;
+    align-self: flex-start;
+    width: var(--deck-row-art-size);
+    height: var(--deck-row-art-size);
     margin-top: calc(var(--deck-row-art-inset) - var(--deck-row-inset));
     margin-bottom: calc(var(--deck-row-art-inset) - var(--deck-row-inset));
     border-radius: max(0.15rem, calc(var(--deck-row-radius) - 1px - var(--deck-row-art-inset)));

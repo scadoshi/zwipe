@@ -255,4 +255,16 @@ mod tests {
             "one wide column shows five"
         );
     }
+
+    #[test]
+    fn each_deck_row_in_the_wide_grid_keeps_its_own_height() {
+        let selector = ".deck-group > .collapsible > .collapsible-inner";
+        assert_eq!(query_for(selector), "@media (min-width: 1400px)");
+        let at = WEB_CSS.find(&format!("    {selector} {{")).unwrap();
+        let body = WEB_CSS.get(at..).unwrap().split('}').next().unwrap();
+        assert!(
+            body.contains("align-items: start;"),
+            "a one-line row beside a taller one keeps its height, with no empty band: {body:?}"
+        );
+    }
 }
