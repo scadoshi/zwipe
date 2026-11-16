@@ -52,6 +52,7 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "Undoing several swipes quickly no longer flickers through each card",
         "The changelog opens at once and still shows offline, on the web and in the app",
+        "Stacks are faster on phones, and a raised card holds still",
     ],
 }];
 
