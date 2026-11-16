@@ -40,7 +40,7 @@ use components::swipe_stack::{
 use components::{
     BackArrow, BottomSheet, CardDetailsPanelSkeleton, CardGhost, DockEye, DockFilter, MeldSource,
     PageHeader, PrintingsFace, SheetFrame, SheetWide, Surface, TOAST_QUICK, open_on_shown_face,
-    spawn_write, turn_face, use_details_eye, use_mounted, use_overlay_back,
+    spawn_write_in_order, turn_face, use_details_eye, use_mounted, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -608,7 +608,7 @@ fn SwipeSelectBody(
         };
         match action {
             SelectSwipe::Maybe(oracle_id) => {
-                spawn_write(async move {
+                spawn_write_in_order(oracle_id, async move {
                     if authed
                         .try_run("undo_commander_maybeboard", |c, s| async move {
                             c.remove_commander_maybeboard_card(oracle_id, &s).await
@@ -622,7 +622,7 @@ fn SwipeSelectBody(
                 });
             }
             SelectSwipe::Dismissed(oracle_id) => {
-                spawn_write(async move {
+                spawn_write_in_order(oracle_id, async move {
                     authed
                         .run_quiet("undismiss_commander", |c, s| async move {
                             c.undismiss_commander(oracle_id, &s).await
@@ -701,7 +701,7 @@ fn SwipeSelectBody(
                 (true, Some(oracle_id)) => {
                     // Quiet like a deck skip: a failed post only means it
                     // comes back sooner.
-                    spawn_write(async move {
+                    spawn_write_in_order(oracle_id, async move {
                         authed
                             .run_quiet("dismiss_commander", |c, s| async move {
                                 c.dismiss_commander(oracle_id, &s).await
@@ -743,7 +743,7 @@ fn SwipeSelectBody(
             if last {
                 ran_out();
             }
-            spawn_write(async move {
+            spawn_write_in_order(oracle_id, async move {
                 if authed
                     .try_run("add_commander_maybeboard", |c, s| async move {
                         c.add_commander_maybeboard_card(oracle_id, &s).await

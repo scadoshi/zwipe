@@ -20,7 +20,7 @@ use components::swipe_stack::{
 use components::{
     CardGhost, Chip, DockEye, DockFilter, LoadFailed, PrintingsFace, SheetFrame, SheetWide,
     Surface, TOAST_NORMAL, TOAST_QUICK, next_card_face, open_on_shown_face, reset_image_ease,
-    spawn_write, use_back_online, use_details_eye, use_mounted,
+    spawn_write, spawn_write_in_order, use_back_online, use_details_eye, use_mounted,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -593,7 +593,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         let card_id = card.scryfall_data.id;
         if action == AddAction::Skip {
             if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                spawn_write(async move {
+                spawn_write_in_order(oracle_id, async move {
                     authed
                         .run("undo_skip", |c, s| async move {
                             c.unskip_deck_card(deck_id, oracle_id, &s).await
@@ -698,7 +698,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             return;
         }
         mb_stack.write().insert_current(card.clone());
-        spawn_write(async move {
+        spawn_write_in_order(card_id, async move {
             let fresh = match ensure_fresh(session, client).await {
                 Ok(fresh) => fresh,
                 Err(e) => {
@@ -758,7 +758,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         }
         Swipe::Left => {
             if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                spawn_forever(async move {
+                spawn_write_in_order(oracle_id, async move {
                     authed
                         .run_quiet("skip_card", |c, s| async move {
                             c.skip_deck_card(deck_id, oracle_id, &s).await
@@ -813,7 +813,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 line.ran_out();
             }
             line.raise(confirm, toast);
-            spawn_forever(async move {
+            spawn_write_in_order(card_id, async move {
                 let to_deck =
                     HttpPatchDeckCard::new(None, Some(Board::Deck.display_name().to_owned()));
                 if authed

@@ -8,7 +8,8 @@ use std::collections::HashMap;
 
 use components::icons::{self, BoltIcon, EyeIcon};
 use components::{
-    Chip, DockAction, DockFilter, LoadFailed, ToastOptions, Toasts, use_back_online, use_toast,
+    Chip, DockAction, DockFilter, LoadFailed, Mounted, ToastOptions, Toasts, spawn_write_in_order,
+    use_back_online, use_mounted, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -67,6 +68,8 @@ const BACK_PULL_PX: f64 = 60.0;
 #[derive(Clone, Copy)]
 struct Driver {
     model: Signal<State>,
+    /// Whether this screen is still up, for a write's answer that lands after it goes.
+    mounted: Mounted,
     deck_id: Uuid,
     navigator: Navigator,
     toast: Toasts,
@@ -295,7 +298,7 @@ impl Driver {
     /// Posts a skip quietly.
     fn skip_card(self, deck_id: Uuid, oracle_id: Uuid) {
         let Self { authed, .. } = self;
-        spawn(async move {
+        spawn_write_in_order(oracle_id, async move {
             // Quiet: fires on every left swipe; a per-swipe toast on a
             // bad connection would bury the screen, and the visual
             // skip already happened.
@@ -310,7 +313,7 @@ impl Driver {
     /// Deletes a skip.
     fn unskip_card(self, deck_id: Uuid, oracle_id: Uuid) {
         let Self { authed, .. } = self;
-        spawn(async move {
+        spawn_write_in_order(oracle_id, async move {
             let _ = authed
                 .run("undo_skip", |c, s| async move {
                     c.unskip_deck_card(deck_id, oracle_id, &s).await
@@ -360,12 +363,15 @@ impl Driver {
     fn promote_card(self, ticket: Ticket, deck_id: Uuid, card_id: Uuid) {
         let Self { authed, .. } = self;
         let request = add_cards::board_request(Board::Deck);
-        spawn(async move {
+        spawn_write_in_order(card_id, async move {
             let moved = authed
                 .run("promote_maybeboard", |c, s| async move {
                     c.update_deck_card(deck_id, card_id, &request, &s).await
                 })
                 .await;
+            if !self.mounted.get() {
+                return;
+            }
             self.dispatch(match moved {
                 Some(_) => Action::Landed { ticket },
                 None => Action::Failed { ticket },
@@ -421,22 +427,25 @@ impl Driver {
         let request = add_cards::board_request(Board::Maybeboard);
         // Facade holdout: staged compensation (a refresh failure cancels the
         // entrance; a failed move leaves the promote standing).
-        spawn(async move {
+        spawn_write_in_order(card_id, async move {
             let Some(session) = self.fresh_session("undo_maybeboard").await else {
-                self.dispatch(Action::NotSent { ticket });
+                if self.mounted.get() {
+                    self.dispatch(Action::NotSent { ticket });
+                }
                 return;
             };
-            match client()
+            let moved = client()
                 .update_deck_card(deck_id, card_id, &request, &session)
-                .await
-            {
-                Ok(_) => self.dispatch(Action::Landed { ticket }),
-                Err(e) => {
-                    tracing::warn!("undo promote failed: {e}");
-                    tracing::warn!("undo failed: {e}");
-                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
-                    self.dispatch(Action::Failed { ticket });
-                }
+                .await;
+            if let Err(e) = &moved {
+                tracing::warn!("undo promote failed: {e}");
+                toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
+            }
+            if self.mounted.get() {
+                self.dispatch(match moved {
+                    Ok(_) => Action::Landed { ticket },
+                    Err(_) => Action::Failed { ticket },
+                });
             }
         });
     }
@@ -582,6 +591,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let driver = Driver {
+        mounted: use_mounted(),
         model: use_signal(State::new),
         deck_id,
         navigator: use_navigator(),

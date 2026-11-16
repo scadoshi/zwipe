@@ -25,7 +25,8 @@ use std::collections::{HashMap, HashSet};
 use components::hint::ContentHintDialog;
 use components::icons::{self, EyeIcon};
 use components::{
-    BottomSheet, DockAction, DockFilter, ToastOptions, Toasts, use_overlay_back, use_toast,
+    BottomSheet, DockAction, DockFilter, Mounted, ToastOptions, Toasts, spawn_write_in_order,
+    use_mounted, use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -66,6 +67,8 @@ const SWIPE_SPEED_PX_PER_MS: f64 = 2.5;
 #[derive(Clone, Copy)]
 struct Driver {
     model: Signal<State>,
+    /// Whether this screen is still up, for a write's answer that lands after it goes.
+    mounted: Mounted,
     session: Signal<Option<Session>>,
     client: Signal<ZwipeClient>,
     usage_buffer: Signal<UsageBuffer>,
@@ -116,7 +119,7 @@ impl Driver {
                     return;
                 };
                 let client = self.client;
-                spawn(async move {
+                spawn_write_in_order(oracle_id, async move {
                     if let Err(e) = client().dismiss_commander(oracle_id, &session).await {
                         tracing::warn!("dismiss commander failed: {e}");
                     }
@@ -128,10 +131,12 @@ impl Driver {
                     return;
                 };
                 let client = self.client;
-                spawn(async move {
+                spawn_write_in_order(oracle_id, async move {
                     if let Err(e) = client().undismiss_commander(oracle_id, &session).await {
                         tracing::warn!("undo commander dismissal failed: {e}");
-                        self.report("undismiss_commander", &e);
+                        if self.mounted.get() {
+                            self.report("undismiss_commander", &e);
+                        }
                     }
                 });
             }
@@ -140,10 +145,13 @@ impl Driver {
                     return;
                 };
                 let client = self.client;
-                spawn(async move {
+                spawn_write_in_order(oracle_id, async move {
                     let reply = client()
                         .add_commander_maybeboard_card(oracle_id, &session)
                         .await;
+                    if !self.mounted.get() {
+                        return;
+                    }
                     self.settle(
                         ticket,
                         reply,
@@ -157,10 +165,13 @@ impl Driver {
                     return;
                 };
                 let client = self.client;
-                spawn(async move {
+                spawn_write_in_order(oracle_id, async move {
                     let reply = client()
                         .remove_commander_maybeboard_card(oracle_id, &session)
                         .await;
+                    if !self.mounted.get() {
+                        return;
+                    }
                     self.settle(
                         ticket,
                         reply,
@@ -271,6 +282,7 @@ pub(crate) fn SwipeSelect(
     let layer = use_overlay_back(open);
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let driver = Driver {
+        mounted: use_mounted(),
         model: use_signal(State::new),
         session: use_context(),
         client: use_context(),
