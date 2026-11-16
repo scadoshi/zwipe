@@ -801,7 +801,10 @@ fn passwords_stay_out_of_debug_output() {
 fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "Account");
     assert_eq!(ACCOUNT, "Account");
-    assert_eq!(CHANGE, "Change");
+    assert_eq!(
+        [CHANGE_USERNAME, CHANGE_EMAIL, CHANGE_PASSWORD],
+        ["Change username", "Change email", "Change password"]
+    );
     assert_eq!((VERIFIED, UNVERIFIED), ("Verified", "Unverified"));
     assert_eq!(PASSWORD_MASK, "•••••••");
     assert_eq!(LOG_OUT, "Log out");

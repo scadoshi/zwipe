@@ -58,6 +58,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On every swipe screen a card's Flip button waits for its image, and the card's ghost while it loads is the card's own size, on the commander swipes too, on the web and in the app",
         "On the commander swipes, undoing a swipe up brings the card back down from the top, and an empty pile says why inside a card-shaped ghost, on the web and in the app",
         "Deck art and dock buttons follow the corner of what holds them, so the gap around them stays even, on the web and in the app",
+        "Change buttons are a pencil icon and the light and dark toggle is a sun or moon, on the web and in the app",
     ],
 }];
 

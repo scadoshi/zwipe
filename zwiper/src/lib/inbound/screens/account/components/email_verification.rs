@@ -1,6 +1,6 @@
 //! The Account email row: the address, its verification badge and the resend actions.
 
-use components::{AlertDialog, Button, ButtonVariant, DialogAction};
+use components::{AlertDialog, Button, ButtonVariant, DialogAction, IconButton, icons};
 use dioxus::prelude::*;
 use zwipe_ui::screens::account::{self as model, Action, Dialog};
 
@@ -22,10 +22,10 @@ pub(crate) fn EmailVerification(
         } else {
             span { class: "badge-unverified", {model::UNVERIFIED} }
         }
-        Button {
-            variant: ButtonVariant::Action,
+        IconButton {
+            label: model::CHANGE_EMAIL,
+            path: icons::PENCIL,
             onclick: move |_| on_change.call(()),
-            {model::CHANGE}
         }
     }
 }

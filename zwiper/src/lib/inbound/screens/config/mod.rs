@@ -8,8 +8,8 @@ pub mod universes_beyond;
 
 use app_icon_sheet::AppIconSheet;
 use components::{
-    Button, ButtonVariant, DarkModeButton, PaletteIcon, TOAST_NORMAL, ThemeConfig, ToastOptions,
-    Toasts, use_toast,
+    Button, ButtonVariant, DarkModeButton, IconButton, TOAST_NORMAL, ThemeConfig, ToastOptions,
+    Toasts, icons, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -278,12 +278,10 @@ pub fn Config() -> Element {
                                             driver.dispatch(Action::ToggleDarkMode { shown });
                                         },
                                     }
-                                    Button {
-                                        variant: ButtonVariant::Action,
+                                    IconButton {
+                                        label: model::CHANGE_THEME,
+                                        path: icons::PENCIL,
                                         onclick: move |_| driver.dispatch(Action::OpenThemes),
-                                        PaletteIcon {}
-                                        " "
-                                        {model::CHANGE}
                                     }
                                 }
                             }
@@ -323,10 +321,10 @@ pub fn Config() -> Element {
                                                 onclick: toggle_app_icon_dark,
                                             }
                                         }
-                                        Button {
-                                            variant: ButtonVariant::Action,
+                                        IconButton {
+                                            label: model::CHANGE_APP_ICON,
+                                            path: icons::PENCIL,
                                             onclick: move |_| app_icon_open.set(true),
-                                            "Change"
                                         }
                                     }
                                 }
@@ -378,11 +376,11 @@ pub fn Config() -> Element {
                                     components::InfoButton { onclick: move |_| ub_hint_open.set(true) }
                                 }
                                 div { class: "settings-row-value",
-                                    Button {
-                                        variant: ButtonVariant::Action,
+                                    IconButton {
+                                        label: model::CHANGE_EXCEPTIONS,
+                                        path: icons::PENCIL,
                                         disabled: !exceptions_enabled,
                                         onclick: move |_| driver.dispatch(Action::OpenExceptions),
-                                        {model::CHANGE}
                                     }
                                 }
                                 if shows_chips {

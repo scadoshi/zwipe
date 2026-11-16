@@ -5,7 +5,10 @@
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
-use components::{AlertDialog, Button, ButtonVariant, DialogAction, TOAST_LONG, TOAST_NORMAL};
+use components::{
+    AlertDialog, Button, ButtonVariant, DialogAction, IconButton, IconText, TOAST_LONG,
+    TOAST_NORMAL, icons,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
@@ -31,10 +34,10 @@ pub(super) fn EmailValue(email: String, is_verified: bool, on_change: EventHandl
         } else {
             span { class: "badge-unverified", "Unverified" }
         }
-        Button {
-            variant: ButtonVariant::Action,
+        IconButton {
+            label: account_screen::CHANGE_EMAIL,
+            path: icons::PENCIL,
             onclick: move |_| on_change.call(()),
-            "Change"
         }
     }
 }
@@ -49,7 +52,7 @@ pub(super) fn PendingEmail(email: String, expires_at: Option<DateTime<Utc>>) -> 
         div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.5rem;",
             span { "{email}" }
             if let Some(note) = note {
-                span { class: "badge-expiry", "{note}" }
+                span { class: "badge-expiry", IconText { text: note } }
             }
             div { style: "display:flex;gap:0.5rem;", PendingActions { email } }
         }

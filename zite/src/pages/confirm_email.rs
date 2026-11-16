@@ -1,4 +1,4 @@
-use components::{HintKey, Panel};
+use components::{HintKey, Panel, icons};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
 
@@ -90,7 +90,7 @@ pub fn ConfirmEmail(token: String) -> Element {
                     div { class: "outcome-error",
                     Panel { title: "Email not changed", title_h1: true, centered: true,
                         p { class: "card-summary", "{e}" }
-                        p { class: "card-summary", "To try again, tap " HintKey { "Change" } " next to your email on " HintKey { "Account" } " in the app." }
+                        p { class: "card-summary", "To try again, tap " HintKey { icons::DockIcon { path: icons::PENCIL } } " next to your email on " HintKey { "Account" } " in the app." }
                     }
                     }
                 },

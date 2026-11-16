@@ -648,12 +648,6 @@ a.stat-chip {
     margin-right: 0.45em;
 }
 
-.mode-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4em;
-}
-
 @media (hover: hover) {
     .nav-dropdown-trigger:hover,
     .mode-toggle:hover {
@@ -1112,6 +1106,12 @@ a.nav-dropdown-item.active:visited {
     height: 1.7rem;
     padding: 0;
     font-size: 1rem;
+}
+
+/* Soft: the icon's size in a text-height button; a mode icon sits on the
+   button's center rather than the text line. */
+:where(.btn-icon .mode-icon) {
+    vertical-align: 0;
 }
 
 /* Soft: the icon's size in a text-height button. */

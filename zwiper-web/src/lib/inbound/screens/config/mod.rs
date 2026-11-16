@@ -6,7 +6,9 @@
 mod exceptions;
 mod themes;
 
-use components::{Button, ButtonVariant, DarkModeButton, PaletteIcon, TOAST_NORMAL, ThemeConfig};
+use components::{
+    Button, ButtonVariant, DarkModeButton, IconButton, TOAST_NORMAL, ThemeConfig, icons,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
@@ -213,12 +215,10 @@ pub fn Config() -> Element {
                             div { class: "settings-row-value",
                                 span { {user_settings::display_theme_name(&theme().name)} }
                                 DarkModeButton { is_dark: theme().is_dark, onclick: move |_| toggle_dark_mode.call(()) }
-                                Button {
-                                    variant: ButtonVariant::Action,
+                                IconButton {
+                                    label: config::CHANGE_THEME,
+                                    path: icons::PENCIL,
                                     onclick: move |_| themes_open.set(true),
-                                    PaletteIcon {}
-                                    " "
-                                    "Change"
                                 }
                             }
                         }
@@ -277,11 +277,11 @@ pub fn Config() -> Element {
                                 }
                             }
                             div { class: "settings-row-value",
-                                Button {
-                                    variant: ButtonVariant::Action,
+                                IconButton {
+                                    label: config::CHANGE_EXCEPTIONS,
+                                    path: icons::PENCIL,
                                     disabled: !ub_loaded() || !ub_hide(),
                                     onclick: move |_| exceptions_open.set(true),
-                                    "Change"
                                 }
                             }
                             if !names.is_empty() {

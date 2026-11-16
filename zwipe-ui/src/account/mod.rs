@@ -185,12 +185,12 @@ pub fn delete_label(remaining_secs: u64) -> String {
     }
 }
 
-/// The note under a pending email change, the app's `link_expiry_text`: how long its link lasts, or that it has expired. The link is expired only once no time at all is left. Under a minute left reads "less than a minute"; otherwise seconds round up to minutes, and from an hour on, minutes round to the nearest hour.
+/// The note under a pending email change, the app's `link_expiry_text`: how long its link lasts, or that it has expired, where `[[pencil]]` is the Email row's pencil, drawn by orangui's `IconText`. The link is expired only once no time at all is left. Under a minute left reads "less than a minute"; otherwise seconds round up to minutes, and from an hour on, minutes round to the nearest hour.
 #[must_use]
 pub fn pending_note(expires_at: DateTime<Utc>, now: DateTime<Utc>) -> String {
     let left = expires_at.signed_duration_since(now);
     if left <= chrono::Duration::zero() {
-        return "Link expired; tap Change to send a new one".to_owned();
+        return "Link expired; tap [[pencil]] to send a new one".to_owned();
     }
     if left < chrono::Duration::minutes(1) {
         return "Link expires in less than a minute".to_owned();
@@ -303,11 +303,11 @@ mod tests {
         assert_eq!(note(Duration::minutes(59)), "Link expires in 59 minutes");
         assert_eq!(
             note(Duration::seconds(-5)),
-            "Link expired; tap Change to send a new one"
+            "Link expired; tap [[pencil]] to send a new one"
         );
         assert_eq!(
             note(Duration::zero()),
-            "Link expired; tap Change to send a new one"
+            "Link expired; tap [[pencil]] to send a new one"
         );
     }
 

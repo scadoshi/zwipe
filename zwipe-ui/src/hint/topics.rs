@@ -6,7 +6,7 @@
 use zwipe_core::domain::auth::models::password;
 use zwipe_core::domain::deck::MAX_DECK_TAGS;
 
-use super::{Block, HintContent, KeyIcon, Role, Span, bullet, emph, key, key_in, line, text};
+use super::{Block, HintContent, KeyIcon, Role, bullet, emph, icon_key, key, key_in, line, text};
 
 /// A `?` beside a row, a field label or a chart.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -221,9 +221,9 @@ impl HintTopic {
                     "The last group holds the high contrast and color blind themes",
                 )]),
                 bullet(vec![
-                    mode_key("Light", KeyIcon::Light),
+                    icon_key(KeyIcon::Light),
                     text(" "),
-                    mode_key("Dark", KeyIcon::Dark),
+                    icon_key(KeyIcon::Dark),
                     text(" switches between the theme's two palettes"),
                 ]),
             ],
@@ -579,15 +579,6 @@ fn works_as(field: &str) -> Block {
     ])
 }
 
-/// A light or dark mode key chip: its icon, then its label.
-fn mode_key(label: &str, icon: KeyIcon) -> Span {
-    Span::Key {
-        label: label.to_owned(),
-        role: Role::default(),
-        icon: Some(icon),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -642,11 +633,15 @@ mod tests {
     }
 
     #[test]
-    fn the_theme_topic_draws_its_mode_icons_in_the_chips() {
+    fn the_theme_topic_draws_its_mode_icons_alone_in_the_chips() {
         let blocks = HintTopic::Theme.blocks();
         let spans = blocks[2].spans();
-        assert_eq!(spans[0], mode_key("Light", KeyIcon::Light));
-        assert_eq!(spans[2], mode_key("Dark", KeyIcon::Dark));
+        assert_eq!(
+            spans[0],
+            icon_key(KeyIcon::Light),
+            "the sun alone, as the toggle shows it"
+        );
+        assert_eq!(spans[2], icon_key(KeyIcon::Dark), "the moon alone");
         assert_eq!(HintTopic::AppIcon.title(), "App icon");
     }
 }

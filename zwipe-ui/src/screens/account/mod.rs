@@ -25,8 +25,14 @@ pub const TITLE: &str = "Account";
 /// The list's title.
 pub const ACCOUNT: &str = "Account";
 
-/// The button on the Username, Email and Password rows that opens their sheet.
-pub const CHANGE: &str = "Change";
+/// The Username row's pencil, which opens its sheet: its `aria-label` and tooltip.
+pub const CHANGE_USERNAME: &str = "Change username";
+
+/// The Email row's pencil, which opens its sheet: its `aria-label` and tooltip.
+pub const CHANGE_EMAIL: &str = "Change email";
+
+/// The Password row's pencil, which opens its sheet: its `aria-label` and tooltip.
+pub const CHANGE_PASSWORD: &str = "Change password";
 
 /// The Email row's badge once the address is verified.
 pub const VERIFIED: &str = "Verified";
@@ -82,8 +88,8 @@ pub const CHANGE_CANCELLED: &str = "Email change cancelled";
 /// The accessible name of the Verification row's refresh button.
 pub const CHECK_VERIFICATION: &str = "Check verification";
 
-/// The toast after a pending email change's link expired unused: the address stays as it was.
-pub const CHANGE_LINK_EXPIRED: &str = "That link expired. Tap Change to send a new one";
+/// The toast after a pending email change's link expired unused: the address stays as it was. `[[pencil]]` is the Email row's pencil, which the toast stack draws.
+pub const CHANGE_LINK_EXPIRED: &str = "That link expired. Tap [[pencil]] to send a new one";
 
 /// The toast after a fresh link for a pending email change went out to `address`.
 #[must_use]
@@ -123,15 +129,15 @@ pub enum Destination {
 /// A row on the screen, in the order [`State::rows`] lists them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Row {
-    /// The username with its Change button.
+    /// The username with its pencil.
     Username,
-    /// The address, its badge and its Change button.
+    /// The address, its badge and its pencil.
     Email,
     /// The address waiting on its confirmation link, with the note from [`State::pending`] under it.
     Pending,
     /// Resend and the check, while the email is unverified.
     Verification,
-    /// The masked password with its Change button.
+    /// The masked password with its pencil.
     Password,
 }
 

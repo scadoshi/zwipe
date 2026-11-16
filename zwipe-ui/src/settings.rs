@@ -27,7 +27,7 @@ pub enum SettingChange {
         /// Whether it is the dark variant.
         dark_mode: bool,
     },
-    /// The Theme row's Dark/Light button: the same theme in the other mode.
+    /// The Theme row's sun or moon toggle: the same theme in the other mode.
     DarkMode {
         /// The current theme's slug, sent along with the mode.
         theme: String,
@@ -179,7 +179,7 @@ impl From<SettingChange> for HttpUpdateSettings {
 /// One of Config's optimistic toggles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Toggle {
-    /// The Theme row's Dark/Light button.
+    /// The Theme row's sun or moon toggle.
     DarkMode,
     /// The Pips button.
     Pips,

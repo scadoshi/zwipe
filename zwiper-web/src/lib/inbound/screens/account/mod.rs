@@ -8,7 +8,7 @@ mod change_username;
 mod delete_account;
 mod verification;
 
-use components::{Button, ButtonVariant};
+use components::{Button, ButtonVariant, IconButton, icons};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -82,10 +82,10 @@ pub fn Account() -> Element {
                                 span { class: "settings-row-label", "Username" }
                                 div { class: "settings-row-value",
                                     span { "{s.user.username}" }
-                                    Button {
-                                        variant: ButtonVariant::Action,
+                                    IconButton {
+                                        label: model::CHANGE_USERNAME,
+                                        path: icons::PENCIL,
                                         onclick: move |_| username_open.set(true),
-                                        "Change"
                                     }
                                 }
                             }
@@ -120,10 +120,10 @@ pub fn Account() -> Element {
                                 span { class: "settings-row-label", "Password" }
                                 div { class: "settings-row-value",
                                     span { "\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}" }
-                                    Button {
-                                        variant: ButtonVariant::Action,
+                                    IconButton {
+                                        label: model::CHANGE_PASSWORD,
+                                        path: icons::PENCIL,
                                         onclick: move |_| password_open.set(true),
-                                        "Change"
                                     }
                                 }
                             }

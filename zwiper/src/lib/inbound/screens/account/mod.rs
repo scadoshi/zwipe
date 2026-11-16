@@ -17,7 +17,7 @@ mod components;
 /// The model with the handles that perform its effects.
 mod driver;
 
-use ::components::{Button, ButtonVariant};
+use ::components::{Button, ButtonVariant, IconButton, icons};
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
@@ -81,10 +81,10 @@ pub fn Account() -> Element {
                                     span { class: "settings-row-label", {Row::Username.label()} }
                                     div { class: "settings-row-value",
                                         span { { user.username.to_string() } }
-                                        Button {
-                                            variant: ButtonVariant::Action,
+                                        IconButton {
+                                            label: model::CHANGE_USERNAME,
+                                            path: icons::PENCIL,
                                             onclick: move |_| driver.dispatch(Action::OpenSheet(Sheet::Username)),
-                                            {model::CHANGE}
                                         }
                                     }
                                 }
@@ -140,10 +140,10 @@ pub fn Account() -> Element {
                                     span { class: "settings-row-label", {Row::Password.label()} }
                                     div { class: "settings-row-value",
                                         span { {model::PASSWORD_MASK} }
-                                        Button {
-                                            variant: ButtonVariant::Action,
+                                        IconButton {
+                                            label: model::CHANGE_PASSWORD,
+                                            path: icons::PENCIL,
                                             onclick: move |_| driver.dispatch(Action::OpenSheet(Sheet::Password)),
-                                            {model::CHANGE}
                                         }
                                     }
                                 }

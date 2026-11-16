@@ -1,4 +1,4 @@
-//! Config: the theme's Dark/Light button and the Themes sheet, the pip style, Universes Beyond and its Exceptions sheet.
+//! Config: the theme's sun or moon toggle and the Themes sheet, the pip style, Universes Beyond and its Exceptions sheet.
 //!
 //! The theme and the pip style are the client's live values, since every screen draws in them and the Themes sheet previews over them. The client hands them in on the action that changes them, and the model says what to draw through [`Effect::ShowTheme`], [`Effect::ShowPips`] and their saved forms. Universes Beyond and its exceptions are the model's: they wait for the settings to load, and stay off for the visit if the load fails.
 //!
@@ -38,8 +38,14 @@ pub const UNIVERSES_BEYOND: &str = "Universes Beyond";
 /// The Exceptions row's label, and the Exceptions sheet's title.
 pub const EXCEPTIONS: &str = "Exceptions";
 
-/// The button that opens the Themes sheet or the Exceptions sheet.
-pub const CHANGE: &str = "Change";
+/// The Theme row's pencil, which opens the Themes sheet: its `aria-label` and tooltip.
+pub const CHANGE_THEME: &str = "Change theme";
+
+/// The App icon row's pencil, which opens the App icon sheet: its `aria-label` and tooltip.
+pub const CHANGE_APP_ICON: &str = "Change app icon";
+
+/// The Exceptions row's pencil, which opens the Exceptions sheet: its `aria-label` and tooltip.
+pub const CHANGE_EXCEPTIONS: &str = "Change exceptions";
 
 /// The Universes Beyond button while they are hidden.
 pub const HIDE: &str = "Hide";
@@ -160,7 +166,7 @@ pub enum Action {
         /// The ticket from the [`Effect::FetchSettings`] this answers.
         ticket: Ticket,
     },
-    /// Presses the Theme row's Dark/Light button.
+    /// Presses the Theme row's sun or moon toggle.
     ToggleDarkMode {
         /// The theme the client draws in now.
         shown: Theme,

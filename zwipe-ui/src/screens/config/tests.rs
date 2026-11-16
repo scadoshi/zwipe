@@ -586,7 +586,10 @@ fn the_copy_matches_the_app() {
     assert_eq!(PIPS, "Pips");
     assert_eq!(UNIVERSES_BEYOND, "Universes Beyond");
     assert_eq!(EXCEPTIONS, "Exceptions");
-    assert_eq!(CHANGE, "Change");
+    assert_eq!(
+        [CHANGE_THEME, CHANGE_APP_ICON, CHANGE_EXCEPTIONS],
+        ["Change theme", "Change app icon", "Change exceptions"]
+    );
     assert_eq!(HIDE, "Hide");
     assert_eq!(SHOW, "Show");
     assert_eq!(BACK, "Back");

@@ -318,7 +318,7 @@ fn key_in(label: &str, role: Role) -> Span {
 }
 
 /// An icon button's key chip, the icon alone, in the default color.
-fn icon_key(icon: KeyIcon) -> Span {
+pub(crate) fn icon_key(icon: KeyIcon) -> Span {
     icon_key_in(icon, Role::default())
 }
 
@@ -434,5 +434,72 @@ mod tests {
         assert_eq!(Role::Palette2.css_var(), "--palette-2");
         assert_eq!(Role::Tertiary.css_var(), "--accent-tertiary");
         assert_eq!(Role::Warning.css_var(), "--color-warning");
+    }
+
+    /// Every hint's body: each topic, each one-time hint for a verified and an unverified
+    /// address, the first deck hint at both layouts, and the shared deck's.
+    fn every_hint() -> Vec<HintContent> {
+        let topics = HintTopic::ALL.into_iter().map(|topic| HintContent {
+            title: topic.title().to_owned(),
+            blocks: topic.blocks(),
+        });
+        let one_time = zwipe_core::domain::user::hints::OneTimeHint::ALL
+            .into_iter()
+            .flat_map(|hint| {
+                [true, false]
+                    .into_iter()
+                    .filter_map(move |verified| one_time::content_for_user(hint, verified))
+            });
+        let decks = [one_time::DeckLayout::Narrow, one_time::DeckLayout::Wide]
+            .into_iter()
+            .map(one_time::first_deck);
+        topics
+            .chain(one_time)
+            .chain(decks)
+            .chain(std::iter::once(shared_deck::content()))
+            .collect()
+    }
+
+    /// The buttons that carry an icon and no word: a hint names them by the icon.
+    const ICON_ONLY: [&str; 3] = ["change", "light", "dark"];
+
+    #[test]
+    fn no_hint_names_a_change_light_or_dark_button_by_word() {
+        for hint in every_hint() {
+            for block in &hint.blocks {
+                for span in block.spans() {
+                    if let Span::Key { label, .. } = span {
+                        assert!(
+                            !ICON_ONLY.contains(&label.trim().to_lowercase().as_str()),
+                            "{}: the key {label:?} names an icon button by word; draw its icon",
+                            hint.title
+                        );
+                    }
+                    let words = span.text().to_lowercase();
+                    for phrase in ["change button", "tap change", "light button", "dark button"] {
+                        assert!(
+                            !words.contains(phrase),
+                            "{}: {words:?} names an icon button by word",
+                            hint.title
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn the_status_lines_that_send_you_to_the_pencil_draw_it() {
+        let expired = crate::account::pending_note(
+            chrono::DateTime::UNIX_EPOCH,
+            chrono::DateTime::UNIX_EPOCH + chrono::Duration::seconds(1),
+        );
+        for line in [
+            expired.as_str(),
+            crate::screens::account::CHANGE_LINK_EXPIRED,
+        ] {
+            assert!(line.contains("[[pencil]]"), "{line:?}");
+            assert!(!line.to_lowercase().contains("tap change"), "{line:?}");
+        }
     }
 }
