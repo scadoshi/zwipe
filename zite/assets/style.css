@@ -822,7 +822,9 @@ h2.panel-title {
 .form-group input {
     width: 100%;
     background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
+    /* The field's only edge on a panel of the same fill: the muted ink, held
+       at 4.5:1 on every theme, as the kit's .input borders. */
+    border: 1px solid var(--ink-text-muted, var(--text-muted));
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
     font-weight: 400;
