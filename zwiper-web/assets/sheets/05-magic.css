@@ -3376,6 +3376,13 @@ footer.site-footer .site-footer-note {
     z-index: 1;
 }
 
+/* A tap stack's raised card lifts and grows but holds still: the drift
+   restyles the page every frame for as long as the card is up, which a
+   phone feels. A pointer's stacks keep it. */
+.card-stack.tap .floatable.floating {
+    animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .card-stack,
     .card-stack-slot {
@@ -3524,11 +3531,26 @@ footer.site-footer .site-footer-note {
     min-width: 0;
 }
 
+/* A stack off the screen skips its layout and paint until it scrolls near,
+   keeping the height it last had. That clips its paint to its box, so the
+   box reaches --stack-paint-room past the stack on every side, room for the
+   raised card's lift and the shadows, and the margin takes the room back so
+   the layout stays where it was. The room takes no taps, which belong to
+   what it overlaps. */
 .deck-stacks.deck-stacks-touch .deck-stack {
+    --stack-paint-room: var(--space-2);
     display: flex;
     flex-direction: column;
     min-width: 0;
-    margin-bottom: var(--space-3);
+    content-visibility: auto;
+    contain-intrinsic-size: auto 30rem;
+    padding: var(--stack-paint-room);
+    margin: calc(-1 * var(--stack-paint-room)) calc(-1 * var(--stack-paint-room)) calc(var(--space-3) - var(--stack-paint-room));
+    pointer-events: none;
+}
+
+.deck-stacks.deck-stacks-touch .deck-stack > * {
+    pointer-events: auto;
 }
 
 .deck-stacks.deck-stacks-touch .deck-stack > .card-group.deck-group {
