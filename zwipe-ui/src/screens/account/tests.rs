@@ -388,6 +388,22 @@ fn a_showing_error_holds_save_and_only_the_new_password_s_does() {
 }
 
 #[test]
+fn change_password_save_waits_on_a_mismatch() {
+    let mut state = opened();
+    let _ = state.update(Action::OpenSheet(Sheet::Password));
+    edit(&mut state, Sheet::Password, Field::CurrentPassword, "old");
+    edit(&mut state, Sheet::Password, Field::NewPassword, "Abcdef1!");
+    edit(
+        &mut state,
+        Sheet::Password,
+        Field::ConfirmPassword,
+        "Abcdef1?",
+    );
+    assert!(state.error(Sheet::Password, Field::NewPassword).is_some());
+    assert!(state.submit_held(Sheet::Password), "a mismatch holds Save");
+}
+
+#[test]
 fn the_username_sheet_judges_each_field_while_it_holds_text() {
     let mut state = opened();
     assert_eq!(

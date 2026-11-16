@@ -25,6 +25,7 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
 
     let model = driver.model.read();
     let is_loading = model.is_saving(sheet);
+    let submit_held = model.submit_held(sheet);
     let save_label = model.save_label(sheet);
     let password_error = model.error(sheet, Field::NewPassword);
     drop(model);
@@ -82,7 +83,7 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
                 DockAction {
                     label: save_label,
                     icon: icons::CHECK,
-                    disabled: is_loading,
+                    disabled: is_loading || submit_held,
                     onclick: move |()| driver.dispatch(Action::Save(sheet)),
                 }
             }
@@ -101,5 +102,24 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
             ],
             {dialog.body()}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// This sheet's own source.
+    const SOURCE: &str = include_str!("change_password.rs");
+
+    #[test]
+    fn save_waits_while_the_new_password_breaks_a_rule_or_mismatches() {
+        let view = SOURCE.split("#[cfg(test)]").next().unwrap_or_default();
+        assert!(
+            view.contains("let submit_held = model.submit_held(sheet);"),
+            "the sheet reads the model's hold"
+        );
+        assert!(
+            view.contains("disabled: is_loading || submit_held,"),
+            "Save's dock button is off while a line holds it"
+        );
     }
 }

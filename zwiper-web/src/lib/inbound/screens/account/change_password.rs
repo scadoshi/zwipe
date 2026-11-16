@@ -66,11 +66,9 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
         )
     };
     let attempted = submit_attempted();
-    // The line is judged while either box holds text, and once a submit was
-    // tried.
-    let password_error = (!new_password().is_empty() || !confirm().is_empty() || attempted)
-        .then(|| account::change_password_error(&current(), &new_password(), &confirm(), attempted))
-        .flatten();
+    let password_error = line(&current(), &new_password(), &confirm(), attempted);
+    // Save waits while the line shows: a broken rule or a mismatch.
+    let held = password_error.is_some();
 
     let mut ask_to_confirm = move || {
         if *is_loading.peek() {
@@ -195,7 +193,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     button {
                         class: "action-dock-btn {SHEET_ENTER}",
                         "aria-label": if is_loading() { "Saving…" } else { "Save changes" },
-                        disabled: is_loading(),
+                        disabled: is_loading() || held,
                         onclick: move |_| ask_to_confirm(),
                         DockIcon { path: CHECK }
                     }
@@ -215,5 +213,47 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
             ],
             "Changing your password will log you out on all other devices."
         }
+    }
+}
+
+/// The line under the new password: judged while either box holds text, and once a
+/// submit was tried.
+fn line(current: &str, new: &str, confirm: &str, attempted: bool) -> Option<String> {
+    (!new.is_empty() || !confirm.is_empty() || attempted)
+        .then(|| account::change_password_error(current, new, confirm, attempted))
+        .flatten()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// This sheet's own source.
+    const SOURCE: &str = include_str!("change_password.rs");
+
+    #[test]
+    fn a_rule_breaker_or_a_mismatch_holds_save() {
+        assert!(
+            line("old", "abcdef1!", "abcdef1!", false).is_some(),
+            "missing uppercase"
+        );
+        assert!(
+            line("old", "Abcdef1!", "Abcdef1?", false).is_some(),
+            "mismatch"
+        );
+        assert!(
+            line("old", "Abcdef1!", "Abcdef1!", false).is_none(),
+            "a good pair"
+        );
+        assert!(line("", "", "", false).is_none(), "nothing typed yet");
+    }
+
+    #[test]
+    fn save_reads_the_hold() {
+        let view = SOURCE.split("#[cfg(test)]").next().unwrap_or_default();
+        assert!(
+            view.contains("disabled: is_loading() || held,"),
+            "Save's dock button is off while the line holds it"
+        );
     }
 }
