@@ -634,6 +634,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                                 entering,
                                 on_entered: move |()| stack.write().cancel_entering(),
                                 on_swipe: move |pair: (Swipe, Card)| on_swipe(pair),
+                                ghost: true,
                             }
                         } else {
                             CardGhost {}

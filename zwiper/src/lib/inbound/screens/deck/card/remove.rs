@@ -594,6 +594,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     if !stack_empty {
                         SwipeStack {
                             faces: Some(faces),
+                            ghost: true,
                             cards: window,
                             config: swipe_config,
                             entering,

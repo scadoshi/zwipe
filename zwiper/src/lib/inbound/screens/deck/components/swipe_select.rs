@@ -437,6 +437,7 @@ pub(crate) fn SwipeSelect(
                     if has_cards {
                         SwipeStack {
                             faces: Some(faces),
+                            ghost: true,
                             cards: window,
                             config: swipe_config,
                             entering,

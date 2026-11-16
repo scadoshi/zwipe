@@ -1407,6 +1407,21 @@ body .toast-container [role="alertdialog"] {
     transition: none;
 }
 
+/* Its Flip and Meld show without a fade too. */
+.swipe-reveal > .swipe-stack .card-flip-button {
+    animation: none;
+}
+
+/* No Flip or Meld while the stack holds its ghost (the top card's image is
+   not in, or has not had time to paint) or hides its cards for a reveal:
+   the button is gone from the page, since a phone's browser can paint its
+   own layer over the empty card even under a hidden card. It shows with
+   the card. */
+.swipe-stack.ghost-held .card-flip-button,
+.swipe-reveal.revealing .card-flip-button {
+    display: none;
+}
+
 /* The app's ghost card: a stack card under the others, its blank image
    in the card's own wrapper, so it takes the top card's box by the card's
    own rules. */

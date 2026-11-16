@@ -1619,6 +1619,16 @@ i.ms.ms-cost.ms-gp {
         opacity 0.15s ease,
         transform 0.15s ease;
     box-shadow: var(--shadow-sm);
+    /* It shows the frame its image is in and fades in with it, over the
+       image's own fade, never at full strength over an image still near
+       empty. */
+    animation: flip-button-in 250ms ease;
+}
+
+@keyframes flip-button-in {
+    from {
+        opacity: 0;
+    }
 }
 
 /* The meld toggle sits where Flip does (a meld half never flips) and wears
