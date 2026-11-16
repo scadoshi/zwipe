@@ -1159,3 +1159,22 @@ fn warnings_stay_for_the_visit_after_the_last_is_fixed() {
     other = State::new();
     assert!(!other.sections().contains(&Section::Warnings));
 }
+
+#[test]
+fn before_the_deck_lands_the_count_includes_the_command_zone_as_the_metrics_will() {
+    let mut profile = deck_profile("Vampires");
+    profile.card_count = 62;
+    profile.commander_id = Some(Uuid::from_u128(1));
+    profile.partner_commander_id = Some(Uuid::from_u128(2));
+    let (mut state, ticket, _) = loading(&profile);
+    let _ = state.update(Action::ProfileLoaded {
+        ticket,
+        profile: Box::new(profile),
+    });
+    assert_eq!(state.metrics(), None, "the deck has not landed");
+    assert_eq!(
+        state.card_count(),
+        64,
+        "the mainboard's 62, the commander and the partner"
+    );
+}

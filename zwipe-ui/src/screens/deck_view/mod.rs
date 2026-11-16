@@ -1104,14 +1104,13 @@ impl State {
         self.deck().map_or(&[], |d| &d.warnings)
     }
 
-    /// The Profile card's card count: the metrics' total, command zone included, else the profile's count.
+    /// The Profile card's card count: [`crate::deck::profile::card_count`], the command zone
+    /// counted from the first frame.
     #[must_use]
     pub fn card_count(&self) -> usize {
-        match (self.metrics(), self.profile()) {
-            (Some(metrics), _) => metrics.total_cards,
-            (None, Some(profile)) => usize::try_from(profile.card_count).unwrap_or(0),
-            (None, None) => 0,
-        }
+        self.profile().map_or(0, |profile| {
+            crate::deck::profile::card_count(profile, self.metrics())
+        })
     }
 
     /// The sections with something to show, in order. Empty until the profile loads.

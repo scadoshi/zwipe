@@ -14,7 +14,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{DeckEntry, deck_tag_label};
-use zwipe_ui::deck::profile::DeckInfo;
+use zwipe_ui::deck::profile::{self, DeckInfo};
 use zwipe_ui::deck::view::StatsProfile;
 use zwipe_ui::deck_cards::stacks::Reveal;
 use zwipe_ui::filter::picker::Sources;
@@ -177,10 +177,7 @@ pub fn DeckWidePage(
     });
     let name = held_profile.as_ref().map(|p| p.name.to_string());
     let facts = held_profile.as_ref().map(|p| DeckFacts {
-        cards: metrics.as_ref().map_or_else(
-            || p.card_count,
-            |m| i64::try_from(m.total_cards).unwrap_or(p.card_count),
-        ),
+        cards: i64::try_from(profile::card_count(p, metrics.as_ref())).unwrap_or(p.card_count),
         format: p.format,
         power_level: p.power_level,
         zone_names: [

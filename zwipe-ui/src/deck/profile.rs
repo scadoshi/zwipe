@@ -3,6 +3,7 @@
 
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::validate_deck::{DeckCommandZone, validate_deck};
 use zwipe_core::domain::deck::{Board, DeckName, DeckProfile, DeckWarning, Format, PowerLevel};
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
@@ -65,6 +66,27 @@ impl DeckInfo {
             owner: deck.owner.clone(),
         }
     }
+}
+
+/// The Profile card's card count: `metrics`' total, command zone included, once the deck has
+/// landed; before that `profile`'s mainboard count plus a card for each filled command-zone slot,
+/// so the count reads the same from the first frame as after the deck lands.
+#[must_use]
+pub fn card_count(profile: &DeckProfile, metrics: Option<&DeckMetrics>) -> usize {
+    if let Some(metrics) = metrics {
+        return metrics.total_cards;
+    }
+    let mainboard = usize::try_from(profile.card_count).unwrap_or(0);
+    let zone = [
+        profile.commander_id,
+        profile.partner_commander_id,
+        profile.background_id,
+        profile.signature_spell_id,
+    ]
+    .iter()
+    .flatten()
+    .count();
+    mainboard.saturating_add(zone)
 }
 
 /// The warnings a shared deck raises, as the owner's deck raises them: its format's rules over

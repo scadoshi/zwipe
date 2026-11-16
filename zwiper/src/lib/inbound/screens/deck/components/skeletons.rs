@@ -6,34 +6,50 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 
 use super::collapsible_section::{HEADER_STYLE, TITLE_GROUP_STYLE, card_style};
 
-/// One bordered "settings-list"-shaped skeleton with `rows` row placeholders inside.
+/// The label and value widths, in ch, of Budget's ghost rows: Total price and Average card
+/// price.
+const BUDGET_ROWS: [(u8, u8); 2] = [(11, 9), (18, 6)];
+
+/// The deck's stats while its cards load, in the loaded sections' own elements: Budget open,
+/// its currency chips in the header over its two rows, then Distributions, Mana and Draw odds
+/// shut in their own column. Each is the live section's height, so nothing under them moves
+/// when the deck lands.
 #[component]
-fn SkeletonInfoList(rows: usize) -> Element {
+pub(crate) fn DeckStatsSkeleton() -> Element {
     rsx! {
-        div { class: "skeleton-info-list",
-            div { class: "skeleton-card-header",
-                div { class: "skeleton-bar skeleton-section-label" }
-            }
-            for i in 0..rows {
-                div { key: "{i}", class: "skeleton-info-row",
-                    div { class: "skeleton-bar skeleton-info-row-label" }
-                    div { class: "skeleton-bar skeleton-info-row-value" }
+        SectionGhost { chars: 6, open: true, hint: false, accessory: rsx! { CurrencyChipsGhost {} },
+            div { style: "display:flex;flex-direction:column;",
+                for (i , (label , value)) in BUDGET_ROWS.into_iter().enumerate() {
+                    div { key: "{i}", class: "settings-row",
+                        span { class: "settings-row-label",
+                            span { class: "skeleton-bar ghost-text", style: "width: {label}ch;" }
+                        }
+                        span { class: "info-row-value",
+                            span { class: "skeleton-bar ghost-text", style: "width: {value}ch;" }
+                        }
+                    }
                 }
             }
+        }
+        div { style: "display: flex; flex-direction: column; gap: var(--panel-gap);",
+            SectionGhost { chars: 13, open: false, hint: false }
+            SectionGhost { chars: 4, open: false, hint: false }
+            SectionGhost { chars: 9, open: false, hint: true }
         }
     }
 }
 
+/// Budget's USD, EUR and TIX chips while the deck loads: each the live chip's box around a
+/// ghost bar the width of its three letters.
 #[component]
-pub(crate) fn DeckStatsSkeleton() -> Element {
+fn CurrencyChipsGhost() -> Element {
     rsx! {
-        div { class: "skeleton-stats",
-            // Stats opens expanded; the sections below it (Distributions,
-            // Mana, Draw odds) start collapsed: header-only boxes.
-            SkeletonInfoList { rows: 5 }
+        div { class: "chip-row", style: "margin-bottom:0;",
             for i in 0..3 {
-                div { key: "{i}", class: "skeleton-chart-box",
-                    div { class: "skeleton-bar skeleton-section-label" }
+                // A chip is a button, whose line height is `normal`; the ghost
+                // is no control, so it takes that line height itself.
+                span { key: "{i}", class: "chip ghost-box", style: "line-height: normal;",
+                    span { class: "skeleton-bar ghost-text", style: "width: 3ch;" }
                 }
             }
         }
@@ -43,10 +59,18 @@ pub(crate) fn DeckStatsSkeleton() -> Element {
 /// A [`CollapsibleSection`](super::collapsible_section::CollapsibleSection)
 /// while its screen loads: the same card and header, the title a ghost bar
 /// `chars` wide inside the title's own text line, the "?" a ghost of the
-/// button when `hint`, and `children` under the rule when `open`. Built from
-/// the section's own styles, so the swap to the live section stays in place.
+/// button when `hint`, `accessory` at the header's end where the live
+/// section's controls sit, and `children` under the rule when `open`. Built
+/// from the section's own styles, so the swap to the live section stays in
+/// place.
 #[component]
-pub(crate) fn SectionGhost(chars: u8, open: bool, hint: bool, children: Element) -> Element {
+pub(crate) fn SectionGhost(
+    chars: u8,
+    open: bool,
+    hint: bool,
+    #[props(default)] accessory: Option<Element>,
+    children: Element,
+) -> Element {
     rsx! {
         div { style: card_style("var(--border-secondary)"), "aria-hidden": "true",
             div { style: HEADER_STYLE,
@@ -56,8 +80,14 @@ pub(crate) fn SectionGhost(chars: u8, open: bool, hint: bool, children: Element)
                         span { class: "skeleton-bar ghost-text", style: "width: {chars}ch;" }
                     }
                 }
+                // In a box of its own, as the live section holds its "?".
                 if hint {
-                    span { class: "info-button ghost-box", style: if open { "" } else { "visibility:hidden;" }, "?" }
+                    div { style: if open { "" } else { "visibility:hidden;" },
+                        span { class: "info-button ghost-box", "?" }
+                    }
+                }
+                if let Some(accessory) = accessory {
+                    div { style: if open { "" } else { "visibility:hidden;" }, {accessory} }
                 }
             }
             if open {
@@ -401,6 +431,39 @@ mod tests {
         assert!(
             text(&html).trim().is_empty(),
             "ghosts only, no words: {html}"
+        );
+    }
+
+    #[test]
+    fn the_stats_ghost_is_budget_open_over_the_three_shut_sections() {
+        let html = render(|| rsx! { DeckStatsSkeleton {} });
+        assert!(
+            !html.contains("skeleton-info"),
+            "none of the short ghost rows: {html}"
+        );
+        assert_eq!(
+            html.matches("collapsible-section-rule").count(),
+            1,
+            "one open section, Budget: {html}"
+        );
+        assert_eq!(
+            html.matches(r#"class="settings-row""#).count(),
+            2,
+            "Budget's Total price and Average card price rows: {html}"
+        );
+        assert_eq!(
+            html.matches(r#"class="chip ghost-box""#).count(),
+            3,
+            "the USD, EUR and TIX chips in Budget's header: {html}"
+        );
+        assert_eq!(
+            html.matches(r#"class="card-row-arrow ghost-box""#).count(),
+            4,
+            "Budget, then Distributions, Mana and Draw odds shut: {html}"
+        );
+        assert!(
+            text(&html).replace(['\u{25b8}', '?'], "").trim().is_empty(),
+            "ghosts only, no words (the arrow and the hint's ? are drawn transparent): {html}"
         );
     }
 }
