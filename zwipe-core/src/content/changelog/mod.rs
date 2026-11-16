@@ -46,28 +46,35 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 4);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 21, 8),
-    date: None,
-    entries: &[
-        "On the web's deck page, the keyboard cursor moves up from the cards into the featured cards with k or the up arrow, along them with h, l and the side arrows, and back down with j",
-        "On touch screens, a tapped button no longer stays highlighted",
-        "A deck's total price follows a commander's printing change at once, including to a printing with no price, on the web and in the app",
-        "On the web's commander swipe screens, the Oracle tags dictionary opens over the Filter drawer, so its Use adds the tag to the filter and the drawer stays open",
-        "Every flip control turns a card's image and its details together and eases between faces, on the swipe screens and the deck page, and a card with no image flips at once and takes a tap on its Flip, on the web and in the app",
-        "On every swipe screen a card's Flip button waits for its image, and the card's ghost while it loads is the card's own size, on the commander swipes too, on the web and in the app",
-        "On the commander swipes, undoing a swipe up brings the card back down from the top, and an empty pile says why inside a card-shaped ghost, on the web and in the app",
-        "Deck art and dock buttons follow the corner of what holds them, so the gap around them stays even, on the web and in the app",
-        "Change buttons are a pencil icon and the light and dark toggle is a sun or moon, on the web and in the app",
-        "On a phone's browser, an opened card image fills the screen's width as it does in the app",
-        "Cards, docks and sheets cast shadows in three clear levels, so what sits above what reads at a glance, on the web and in the app",
-        "Menus slide over the page instead of pushing it down, and dropdowns fade in from their button, on the web",
-        "Spacing follows one scale, so buttons, chips and headers line up, on the web and in the app",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 21, 9),
+        date: NaiveDate::from_ymd_opt(2026, 11, 15),
+        entries: &[
+            "On touch screens, a tapped button no longer stays highlighted",
+            "Deck art and dock buttons follow the corner of what holds them, so the gap around them stays even, on the web and in the app",
+            "Change buttons are a pencil icon and the light and dark toggle is a sun or moon, on the web and in the app",
+            "Cards, docks and sheets cast shadows in three clear levels, so what sits above what reads at a glance, on the web and in the app",
+            "Menus slide over the page instead of pushing it down, and dropdowns fade in from their button, on the web",
+            "Spacing follows one scale, so buttons, chips and headers line up, on the web and in the app",
+        ],
+    },
+    Release {
+        version: Version::new(1, 21, 8),
+        date: NaiveDate::from_ymd_opt(2026, 11, 15),
+        entries: &[
+            "On the web's deck page, the keyboard cursor moves up from the cards into the featured cards with k or the up arrow, along them with h, l and the side arrows, and back down with j",
+            "A deck's total price follows a commander's printing change at once, including to a printing with no price, on the web and in the app",
+            "On the web's commander swipe screens, the Oracle tags dictionary opens over the Filter drawer, so its Use adds the tag to the filter and the drawer stays open",
+            "Every flip control turns a card's image and its details together and eases between faces, on the swipe screens and the deck page, and a card with no image flips at once and takes a tap on its Flip, on the web and in the app",
+            "On every swipe screen a card's Flip button waits for its image, and the card's ghost while it loads is the card's own size, on the commander swipes too, on the web and in the app",
+            "On the commander swipes, undoing a swipe up brings the card back down from the top, and an empty pile says why inside a card-shaped ghost, on the web and in the app",
+            "On a phone's browser, an opened card image fills the screen's width as it does in the app",
+        ],
+    },
     Release {
         version: Version::new(1, 21, 7),
         date: NaiveDate::from_ymd_opt(2026, 11, 14),
