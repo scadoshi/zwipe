@@ -102,8 +102,8 @@ pub(crate) fn CardDetailsSheet(
 /// out is said with a toast, so the ghost carries text only as `note`.
 #[component]
 pub(crate) fn CardSkeleton(
-    #[props(default)] note: Option<&'static str>,
-    #[props(default)] detail: Option<&'static str>,
+    #[props(default)] note: Option<String>,
+    #[props(default)] detail: Option<String>,
 ) -> Element {
     rsx! {
         div { class: "skeleton-card",

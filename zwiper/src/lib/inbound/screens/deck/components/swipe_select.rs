@@ -465,9 +465,8 @@ pub(crate) fn SwipeSelect(
                             },
                         }
                     } else if let Some(line) = empty_line {
-                        div { class: "message-empty",
-                            span { class: "chip-note", "{line}" }
-                        }
+                        // Why there is no card, inside the card's own box, as deck Add says it.
+                        CardSkeleton { note: line }
                     } else {
                         CardSkeleton {}
                     }

@@ -34,3 +34,20 @@ fn an_empty_pile_s_ghost_says_why_inside_the_card_s_box() {
         "{html}"
     );
 }
+
+#[test]
+fn a_ghost_takes_a_note_built_at_run_time() {
+    fn app() -> Element {
+        let line = zwipe_ui::screens::swipe_select::empty_pile_line("commander", true);
+        rsx! {
+            CardGhost { note: line }
+        }
+    }
+    let html = render(app);
+    assert!(
+        html.contains(
+            r#"<div class="card-ghost-note"><span>No commanders match your filters</span></div>"#
+        ),
+        "{html}"
+    );
+}

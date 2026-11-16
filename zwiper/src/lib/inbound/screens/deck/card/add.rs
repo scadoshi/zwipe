@@ -788,7 +788,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         } else if load_failed {
                             LoadFailed { message: add_cards::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Retry) }
                         } else {
-                            CardSkeleton { note: ghost_note, detail: ghost_detail }
+                            CardSkeleton { note: ghost_note.map(str::to_owned), detail: ghost_detail.map(str::to_owned) }
                         }
                     } else {
                         // Maybeboard mode
@@ -805,7 +805,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
 
                         } else {
-                            CardSkeleton { note: ghost_note, detail: ghost_detail }
+                            CardSkeleton { note: ghost_note.map(str::to_owned), detail: ghost_detail.map(str::to_owned) }
                         }
                     }
 

@@ -641,10 +641,10 @@ fn an_up_swipe_without_an_oracle_id_saves_nothing_and_moves_on() {
     assert_eq!(
         state.update(Action::Undo),
         vec![
-            Effect::Enter(Direction::Left),
+            Effect::Enter(Direction::Up),
             Effect::Confirm(Toast::quick(ToastKind::Info, UNDID_SKIP)),
         ],
-        "undo treats it as a skip"
+        "undo brings it back down from the top it left by, said as an undone skip"
     );
 }
 
@@ -692,8 +692,9 @@ fn undoing_a_save_removes_it_and_toasts_once_it_lands() {
     let mut state = loaded(&pile);
     let _ = state.update(Action::Save);
     let effects = state.update(Action::Undo);
+    // The card comes back down from the top, the side it left by.
     let [
-        Effect::Enter(Direction::Left),
+        Effect::Enter(Direction::Up),
         Effect::RemoveMaybeboardCard { ticket, oracle_id },
     ] = effects.as_slice()
     else {

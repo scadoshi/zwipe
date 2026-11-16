@@ -294,8 +294,10 @@ pub fn filter_lit(filter: &CardQueryBuilder) -> bool {
 /// One swipe that moved the pile on, so undo can reverse it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Swipe {
-    /// Left, or an up swipe that saved nothing.
+    /// Left.
     Skip,
+    /// Up, saving nothing: the card had no oracle id.
+    UnsavedUp,
     /// Up: saved this oracle id to the commander maybeboard.
     Save(Uuid),
     /// Left in [`Mode::Suggested`]: dismissed this oracle id for a week.
@@ -306,7 +308,7 @@ impl StackAction for Swipe {
     fn exited(&self) -> Direction {
         match self {
             Self::Skip | Self::Dismiss(_) => Direction::Left,
-            Self::Save(_) => Direction::Up,
+            Self::Save(_) | Self::UnsavedUp => Direction::Up,
         }
     }
 }
@@ -643,7 +645,7 @@ impl State {
         };
         let mut effects = self.advance();
         let Some(oracle_id) = oracle_id else {
-            self.stack.record(Swipe::Skip);
+            self.stack.record(Swipe::UnsavedUp);
             effects.push(Effect::Toast(Toast::normal(ToastKind::Error, CANT_SAVE)));
             return effects;
         };
@@ -653,7 +655,8 @@ impl State {
         effects
     }
 
-    /// Brings the last swiped card back from the left, and reverses its save or dismissal.
+    /// Brings the last swiped card back from the side it left by, and reverses its save or
+    /// dismissal.
     fn undo(&mut self) -> Vec<Effect> {
         if self.stack.index() == 0 {
             return vec![Effect::Toast(Toast::normal(
@@ -664,7 +667,7 @@ impl State {
         let swipe = self.stack.pop_action().unwrap_or(Swipe::Skip);
         self.stack.step_back(&swipe);
         self.stack.cancel_entering();
-        let mut effects = vec![Effect::Enter(Direction::Left)];
+        let mut effects = vec![Effect::Enter(swipe.exited())];
         match swipe {
             Swipe::Save(oracle_id) => {
                 let ticket = self.wait(Pending::Unsave);
@@ -674,7 +677,7 @@ impl State {
                 effects.push(Effect::UndismissCommander(oracle_id));
                 effects.push(Effect::Confirm(Toast::quick(ToastKind::Info, UNDID_SKIP)));
             }
-            Swipe::Skip => {
+            Swipe::Skip | Swipe::UnsavedUp => {
                 effects.push(Effect::Confirm(Toast::quick(ToastKind::Info, UNDID_SKIP)));
             }
         }

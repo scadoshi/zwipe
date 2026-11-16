@@ -14,8 +14,8 @@ const CARD_GHOST_SRC: &str =
 /// and `detail`, under it, what may be the reason, inside the card's box.
 #[component]
 pub fn GhostCard(
-    #[props(default)] note: Option<&'static str>,
-    #[props(default)] detail: Option<&'static str>,
+    #[props(default)] note: Option<String>,
+    #[props(default)] detail: Option<String>,
 ) -> Element {
     rsx! {
         div { class: "swipe-stack-card swipe-stack-ghost-card", "aria-hidden": "true",
@@ -41,8 +41,8 @@ pub fn GhostCard(
 /// so it takes the top card's box exactly and the card lands where its ghost was.
 #[component]
 pub fn CardGhost(
-    #[props(default)] note: Option<&'static str>,
-    #[props(default)] detail: Option<&'static str>,
+    #[props(default)] note: Option<String>,
+    #[props(default)] detail: Option<String>,
 ) -> Element {
     rsx! {
         div { class: "swipe-stack web-swipe-stack card-ghost-stack", "aria-hidden": "true",

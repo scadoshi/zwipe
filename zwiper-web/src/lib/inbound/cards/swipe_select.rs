@@ -151,6 +151,8 @@ pub struct SuggestedPile {
 enum SelectSwipe {
     /// Left: nothing saved.
     Skip,
+    /// Up, saving nothing: the card had no oracle id.
+    UnsavedUp,
     /// Up: saved this oracle to the commander maybeboard.
     Maybe(Uuid),
     /// Left in suggested mode: dismissed this oracle for a week.
@@ -161,9 +163,22 @@ impl StackAction for SelectSwipe {
     fn exited(&self) -> Direction {
         match self {
             Self::Skip | Self::Dismissed(_) => Direction::Left,
-            Self::Maybe(_) => Direction::Up,
+            Self::Maybe(_) | Self::UnsavedUp => Direction::Up,
         }
     }
+}
+
+/// Takes the newest swipe off `stack` and steps back to its card, which comes back from the
+/// side it left by. `None` with nothing to undo, or when the swiped card is gone, which keeps
+/// the swipe.
+fn undo_step(stack: &mut CardStack<SelectSwipe>) -> Option<SelectSwipe> {
+    let action = stack.pop_action()?;
+    if !stack.step_back(&action) {
+        stack.record(action);
+        return None;
+    }
+    stack.prime_entering(action.exited());
+    Some(action)
 }
 
 /// The page at `offset` for `mode`: zwipe-ui's slot query over the user's
@@ -581,19 +596,12 @@ fn SwipeSelectBody(
     };
 
     let undo = use_callback(move |()| {
-        let action = {
-            let mut s = stack.write();
-            let Some(action) = s.pop_action() else {
-                drop(s);
+        let had_history = stack.peek().has_history();
+        let Some(action) = undo_step(&mut stack.write()) else {
+            if !had_history {
                 toast.info("Nothing to undo".to_string(), ToastOptions::default());
-                return;
-            };
-            if !s.step_back(&action) {
-                s.record(action);
-                return;
             }
-            s.prime_entering(Direction::Left);
-            action
+            return;
         };
         match action {
             SelectSwipe::Maybe(oracle_id) => {
@@ -619,7 +627,7 @@ fn SwipeSelectBody(
                 });
                 confirm.info("Undid skip");
             }
-            SelectSwipe::Skip => {
+            SelectSwipe::Skip | SelectSwipe::UnsavedUp => {
                 confirm.info("Undid skip");
             }
         }
@@ -718,7 +726,7 @@ fn SwipeSelectBody(
         }
         Swipe::Up => {
             let Some(oracle_id) = card.scryfall_data.oracle_id else {
-                stack.write().record(SelectSwipe::Skip);
+                stack.write().record(SelectSwipe::UnsavedUp);
                 advance();
                 toast.error(
                     "This card can't be saved".to_string(),
@@ -811,9 +819,8 @@ fn SwipeSelectBody(
                 } else if loading() || loading_more() {
                     CardGhost {}
                 } else if let Some(line) = empty_line {
-                    div { class: "message-empty",
-                        span { class: "chip-note", "{line}" }
-                    }
+                    // Why there is no card, inside the card's own box, as deck Add says it.
+                    CardGhost { note: line }
                 } else {
                     CardGhost {}
                 }
@@ -925,6 +932,32 @@ fn SwipeSelectBody(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A real card, as the API serves it.
+    fn card() -> Card {
+        serde_json::from_str(include_str!(
+            "../../../../../zwipe-ui/src/test_support/card.json"
+        ))
+        .expect("the fixture card parses")
+    }
+
+    #[test]
+    fn undo_brings_a_card_back_from_the_side_it_left_by() {
+        for (swiped, back_from) in [
+            (SelectSwipe::Maybe(Uuid::nil()), Direction::Up),
+            (SelectSwipe::UnsavedUp, Direction::Up),
+            (SelectSwipe::Skip, Direction::Left),
+            (SelectSwipe::Dismissed(Uuid::nil()), Direction::Left),
+        ] {
+            let mut stack: CardStack<SelectSwipe> = CardStack::default();
+            stack.replace(vec![card(), card()]);
+            stack.record(swiped);
+            let _ = stack.advance();
+            assert_eq!(undo_step(&mut stack), Some(swiped), "{swiped:?}");
+            assert_eq!(stack.entering(), Some(back_from), "{swiped:?}");
+            assert_eq!(stack.index(), 0, "{swiped:?}");
+        }
+    }
 
     #[test]
     fn v_reaches_the_screen_through_its_open_details_drawer() {
