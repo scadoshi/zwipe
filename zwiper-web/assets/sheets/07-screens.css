@@ -1207,14 +1207,6 @@ body .toast-container [role="alertdialog"] {
     gap: var(--space-2);
 }
 
-/* Deck profile skeleton */
-.skeleton-profile {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    width: 100%;
-}
-
 /* Shared "settings-list" skeleton — bordered box with row pulses inside.
    Matches dimensions of real .settings-list / .settings-row. */
 .skeleton-info-list {

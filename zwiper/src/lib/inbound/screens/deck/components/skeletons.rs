@@ -269,11 +269,33 @@ fn SkeletonPanelHeader() -> Element {
     }
 }
 
+/// The label and value widths, in ch, of the Profile ghost's rows: a Commander deck's Name,
+/// Cards, Format and Commander.
+const PROFILE_ROWS: [(u8, u8); 4] = [(4, 11), (5, 2), (6, 9), (9, 15)];
+
+/// The Profile list while the deck loads, in the loaded list's own elements: its header, then a
+/// Commander deck's four rows, each label and value a ghost bar inside the element that holds the
+/// text. The rows are the loaded rows' height, so nothing under the list moves when the deck
+/// lands.
 #[component]
 pub(crate) fn DeckProfileSkeleton() -> Element {
     rsx! {
-        div { class: "skeleton-profile",
-            SkeletonInfoList { rows: 3 }
+        div { class: "settings-list", "aria-hidden": "true",
+            div { class: "settings-list-header",
+                span { class: "settings-list-title",
+                    span { class: "skeleton-bar ghost-text", style: "width: 7ch;" }
+                }
+            }
+            for (i , (label , value)) in PROFILE_ROWS.into_iter().enumerate() {
+                div { key: "{i}", class: "settings-row",
+                    span { class: "settings-row-label",
+                        span { class: "skeleton-bar ghost-text", style: "width: {label}ch;" }
+                    }
+                    span { class: "info-row-value",
+                        span { class: "skeleton-bar ghost-text", style: "width: {value}ch;" }
+                    }
+                }
+            }
         }
     }
 }
@@ -322,5 +344,63 @@ pub(crate) fn DeckListSkeleton() -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dioxus::dioxus_core::NoOpMutations;
+
+    use super::*;
+
+    fn render(app: fn() -> Element) -> String {
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dom.render_immediate(&mut NoOpMutations);
+        dioxus_ssr::render(&dom)
+    }
+
+    /// `html` without its tags.
+    fn text(html: &str) -> String {
+        let mut out = String::new();
+        let mut in_tag = false;
+        for c in html.chars() {
+            match c {
+                '<' => in_tag = true,
+                '>' => in_tag = false,
+                c if !in_tag => out.push(c),
+                _ => {}
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn the_profile_ghost_is_the_loaded_profile_list_s_header_and_rows() {
+        let html = render(|| rsx! { DeckProfileSkeleton {} });
+        assert!(
+            html.contains(r#"class="settings-list"#),
+            "the loaded list's box: {html}"
+        );
+        assert_eq!(
+            html.matches(r#"class="settings-list-header""#).count(),
+            1,
+            "the loaded header: {html}"
+        );
+        assert_eq!(
+            html.matches(r#"class="settings-row""#).count(),
+            4,
+            "a Commander deck's Name, Cards, Format and Commander rows: {html}"
+        );
+        assert_eq!(html.matches(r#"class="settings-row-label""#).count(), 4);
+        assert_eq!(html.matches(r#"class="info-row-value""#).count(), 4);
+        assert!(
+            !html.contains("skeleton-info"),
+            "none of the short ghost rows: {html}"
+        );
+        assert!(
+            text(&html).trim().is_empty(),
+            "ghosts only, no words: {html}"
+        );
     }
 }
