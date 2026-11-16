@@ -380,8 +380,12 @@ pub fn SwipeStack(
                     style: "{layer.style}",
                     "aria-label": "{layer.name}",
 
-                    // A gesture starts on the top card (the cards under it have
-                    // no pointer), and the stack under it never sees its events.
+                    // A gesture starts on the top card, and the stack under it
+                    // never sees its events. The cards under the top have no
+                    // pointer, so one under the top takes a touch only while
+                    // the page still draws it on top after the app moved it
+                    // down (an undo's frame not yet painted): that touch starts
+                    // the gesture too, and only an undo carries from it.
                     // One that starts while the card comes back from an undo
                     // ends the return first ([`take_hold`]), so the keyframe and
                     // the drag never fight. Once it is under way it is the
@@ -390,7 +394,6 @@ pub fn SwipeStack(
                     // lift still reach it and act on the top card.
                     ontouchstart: move |e: Event<TouchData>| {
                         e.stop_propagation();
-                        if !layer.is_top { return; }
                         take_hold(&mut entering);
                         state.ontouchstart(e);
                     },
@@ -415,7 +418,6 @@ pub fn SwipeStack(
 
                     onmousedown: move |e: Event<MouseData>| {
                         e.stop_propagation();
-                        if !layer.is_top { return; }
                         take_hold(&mut entering);
                         state.onmousedown(e);
                     },
@@ -833,6 +835,54 @@ mod tests {
             *host.rights.peek(),
             0,
             "nothing added for a card the finger never touched"
+        );
+    }
+
+    /// Three quick down swipes where the page lags the app: each lands on the card that was the
+    /// top before the last undo, which the app has already drawn as a card under the top while
+    /// the page still shows it on top.
+    #[test]
+    fn a_swipe_that_lands_on_a_card_the_app_already_moved_under_the_top_still_undoes() {
+        dioxus::html::set_event_converter(Box::new(dioxus::html::SerializedHtmlEventConverter));
+        let mut dom = VirtualDom::new(burst_app);
+        let mut edits = dioxus::dioxus_core::Mutations::default();
+        dom.rebuild(&mut edits);
+        let (mut stack, mut cards) = (None, HashMap::new());
+        ids(&edits.edits, &mut stack, &mut cards);
+        let host = dom.in_scope(ScopeId::APP, consume_context::<Host>);
+        let mut shown_top = *host.index.peek();
+        for _ in 0..3 {
+            let target = cards.get(&format!("Card {shown_top}")).copied().unwrap();
+            let (x, mut y) = (200.0, 300.0);
+            dom.runtime().handle_event(
+                "touchstart",
+                Event::new(touch_at(x, y, false), true),
+                target,
+            );
+            for _ in 0..4 {
+                y += 30.0;
+                dom.runtime().handle_event(
+                    "touchmove",
+                    Event::new(touch_at(x, y, false), true),
+                    target,
+                );
+            }
+            dom.runtime()
+                .handle_event("touchend", Event::new(touch_at(x, y, true), true), target);
+            // The app draws the undo before the next touch; the page shows the old top a little longer.
+            let mut more = dioxus::dioxus_core::Mutations::default();
+            dom.render_immediate(&mut more);
+            ids(&more.edits, &mut stack, &mut cards);
+            shown_top = (*host.index.peek()).saturating_add(1);
+        }
+        let mut more = dioxus::dioxus_core::Mutations::default();
+        dom.render_immediate(&mut more);
+        let html = dioxus_ssr::render(&dom);
+        assert_eq!(*host.undos.peek(), 3, "{html}");
+        assert_eq!(
+            html.matches("card-stack-enter-").count(),
+            1,
+            "only the last card comes in: {html}"
         );
     }
 }
