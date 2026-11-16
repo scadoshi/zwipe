@@ -733,6 +733,28 @@ h2.panel-title {
     }
 }
 
+/* Below the web app's 900px breakpoint the changelog page's scrollbar hides as
+   the web app's does, so its panels span the window less the same gutter; from
+   900px the panel sits one step under the nav, as the web app's does. */
+@media (max-width: 899px) {
+    html:has(.page > .changelog-panel) {
+        scrollbar-gutter: auto;
+        scrollbar-width: none;
+    }
+
+    html:has(.page > .changelog-panel)::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+    }
+}
+
+@media (min-width: 900px) {
+    .page > .changelog-panel {
+        margin-top: var(--space-4);
+    }
+}
+
 /* StatsStrip's source row: the chips under the hero figures. */
 .stats-source {
     display: flex;

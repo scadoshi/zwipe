@@ -121,9 +121,10 @@ fn every_client_draws_one_titled_panel_with_no_hero_or_tagline() {
 
 #[test]
 fn a_clients_version_is_a_chip_beside_the_title_and_zite_has_none() {
-    let (app, _) = renders(None, Some("v1.21.9"));
+    let label = zwipe_ui::screens::about::version_label("1.21.9");
+    let (app, _) = renders(None, Some(&label));
     assert!(
-        app.contains(r#"<span class="stat-chip">v1.21.9</span>"#),
+        app.contains(r#"<span class="stat-chip">Running 1.21.9</span>"#),
         "{app}"
     );
     let (site, _) = renders(None, None);

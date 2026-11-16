@@ -31,10 +31,10 @@ pub const LATEST: &str = "Latest";
 /// The Back button, to the screen before.
 pub const BACK: &str = "Back";
 
-/// The version chip beside the Changelog title: `v` and the client's version.
+/// The version chip beside the Changelog title: the client's version, as `Running 1.21.9`.
 #[must_use]
 pub fn version_label(version: &str) -> String {
-    format!("v{version}")
+    format!("Running {version}")
 }
 
 /// Where an action sends the user. The client maps each to its own route.

@@ -98,7 +98,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "About");
     assert_eq!(WEBSITE_LINK, "zwipe.net ↗");
     assert_eq!(VIEW, "View");
-    assert_eq!(version_label("1.15.0"), "v1.15.0");
+    assert_eq!(version_label("1.15.0"), "Running 1.15.0");
     let labels: Vec<&str> = ROWS.into_iter().map(Row::label).collect();
     assert_eq!(labels, ["Website", "Privacy policy"]);
     assert_eq!(CREDITS, "Credits");
