@@ -26,7 +26,7 @@
         max-height: none;
         border-radius: 1rem;
         border: 1px solid var(--border-secondary);
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--shadow-lg);
         transform: translateX(calc(100% + var(--drawer-float-gap) + 1px));
     }
 

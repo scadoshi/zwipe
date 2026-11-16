@@ -289,21 +289,22 @@ pub fn svg(preview: &Preview, palette: &Palette, drawn: &[&Art]) -> String {
     out
 }
 
-/// The panel's shadow, the app's `--shadow-md` (4px down, 12px soft): rings
-/// of black around the panel, each wider and fainter, which reads as a blur
-/// without the cost of a filter. Lighter under a light theme.
+/// The panel's shadow, the app's `--shadow-sm` for a card on the page (2px
+/// down, 4px soft): rings of black around the panel, each wider and fainter,
+/// which reads as a blur without the cost of a filter. Fainter under a light
+/// theme, as the app's is.
 fn draw_shadow(out: &mut String, palette: &Palette) {
-    let strength = if palette.light { 0.18 } else { 0.5 };
-    let rings: i64 = 6;
+    let strength = if palette.light { 0.1 } else { 0.22 };
+    let rings: i64 = 4;
     out.push_str(r##"<g fill="#000000">"##);
     for ring in (1..=rings).rev() {
-        let grow = ring.saturating_mul(2);
+        let grow = ring;
         let alpha = strength / f64_of(rings) * 1.4;
         let _ = write!(
             out,
             r#"<rect x="{}" y="{}" width="{}" height="{}" rx="{}" fill-opacity="{alpha:.3}"/>"#,
             PANEL_X.saturating_sub(grow),
-            PANEL_Y.saturating_add(4).saturating_sub(grow),
+            PANEL_Y.saturating_add(2).saturating_sub(grow),
             PANEL_W.saturating_add(grow.saturating_mul(2)),
             PANEL_H.saturating_add(grow.saturating_mul(2)),
             PANEL_R.saturating_add(grow)
@@ -891,6 +892,59 @@ fn int_of(v: f64) -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Each shadow ring's offset below the panel's top, how far it grows past the panel, and its
+    /// opacity.
+    fn rings(light: bool) -> Vec<(i64, i64, f64)> {
+        let palette = Palette {
+            light,
+            ..Palette::default()
+        };
+        let mut out = String::new();
+        draw_shadow(&mut out, &palette);
+        out.split("<rect ")
+            .skip(1)
+            .map(|rect| {
+                let attr = |name: &str| -> f64 {
+                    rect.split(&format!("{name}=\""))
+                        .nth(1)
+                        .and_then(|rest| rest.split('"').next())
+                        .and_then(|value| value.parse().ok())
+                        .unwrap_or(f64::NAN)
+                };
+                #[expect(
+                    clippy::as_conversions,
+                    clippy::cast_possible_truncation,
+                    reason = "a test: whole pixels"
+                )]
+                let (x, y) = (attr("x") as i64, attr("y") as i64);
+                let grow = PANEL_X.saturating_sub(x);
+                (
+                    y.saturating_sub(PANEL_Y).saturating_add(grow),
+                    grow,
+                    attr("fill-opacity"),
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_panel_casts_the_small_shadow_of_a_card_on_the_page() {
+        let dark = rings(false);
+        assert_ne!(dark.len(), 0, "the panel casts a shadow");
+        for (offset, grow, _) in &dark {
+            assert_eq!(*offset, 2, "two pixels down, as --shadow-sm: {dark:?}");
+            assert!(
+                *grow <= 4,
+                "no further than --shadow-sm's 4px blur: {dark:?}"
+            );
+        }
+        let darkest = |rings: &[(i64, i64, f64)]| rings.iter().map(|r| r.2).fold(0.0, f64::max);
+        assert!(
+            darkest(&rings(true)) < darkest(&dark),
+            "fainter on a light theme"
+        );
+    }
 
     #[test]
     fn a_long_name_wraps_to_two_lines_and_ends_in_an_ellipsis() {

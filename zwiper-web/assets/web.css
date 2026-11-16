@@ -1501,7 +1501,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         border: 1px solid var(--border-secondary);
         border-radius: 1rem;
         overflow: hidden;
-        box-shadow: 0 0 0 100vmax var(--bg-overlay), var(--shadow-sm);
+        box-shadow: 0 0 0 100vmax var(--bg-overlay), var(--shadow-lg);
         animation: modal-enter var(--enter-duration) var(--ease-enter) backwards;
     }
 

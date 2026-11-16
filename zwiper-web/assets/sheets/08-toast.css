@@ -99,7 +99,7 @@
     color: var(--text-primary);
     font-family: 'JetBrains Mono', monospace;
     font-weight: 400;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
     /* `both` holds the `from` state before the first frame paints, so the
        toast never flashes at its final position first. No `transition` on
        opacity or transform here: a transition on the same properties the

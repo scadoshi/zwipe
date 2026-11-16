@@ -1168,7 +1168,7 @@ body[class$="-dark"] .chip-value {
     max-width: min(28rem, 92vw);
     max-height: 92vh;
     border-radius: 4.75% / 3.5%;
-    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.6);
+    box-shadow: var(--shadow-lg);
 }
 
 .sd-image-overlay.dismissing .sd-image-overlay-img img {

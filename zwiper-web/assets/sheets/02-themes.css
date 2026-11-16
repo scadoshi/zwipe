@@ -65,8 +65,6 @@
     --ink-color-success: #809053;
     --ink-color-warning: #c48030;
     --ink-color-error: #d36756;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-rustbox-light {
     --bg-primary: #f0dac5;
@@ -128,8 +126,6 @@
     --ink-color-success: #4e5d29;
     --ink-color-warning: #7b4f16;
     --ink-color-error: #9c2f17;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-gruvbox-dark {
@@ -192,8 +188,6 @@
     --ink-color-success: #b8bb26;
     --ink-color-warning: #fabd2f;
     --ink-color-error: #ff6b55;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-gruvbox-light {
     --bg-primary: #fbf1c7;
@@ -255,8 +249,6 @@
     --ink-color-success: #6a650b;
     --ink-color-warning: #8b590d;
     --ink-color-error: #9d0006;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-dracula-dark {
@@ -319,8 +311,6 @@
     --ink-color-success: #69ff94;
     --ink-color-warning: #ffffa5;
     --ink-color-error: #ff7674;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-dracula-light {
     --bg-primary: #f8f8f2;
@@ -382,8 +372,6 @@
     --ink-color-success: #15782a;
     --ink-color-warning: #7c6709;
     --ink-color-error: #bc2e2e;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-everforest-dark {
@@ -446,8 +434,6 @@
     --ink-color-success: #a7c080;
     --ink-color-warning: #dbbc7f;
     --ink-color-error: #e9898a;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-everforest-light {
     --bg-primary: #f3ead3;
@@ -509,8 +495,6 @@
     --ink-color-success: #5b6800;
     --ink-color-warning: #835c00;
     --ink-color-error: #ab3836;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-catppuccin-dark {
@@ -573,8 +557,6 @@
     --ink-color-success: #a6e3a1;
     --ink-color-warning: #f9e2af;
     --ink-color-error: #f38ba8;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-catppuccin-light {
     --bg-primary: #eff1f5;
@@ -636,8 +618,6 @@
     --ink-color-success: #2c731c;
     --ink-color-warning: #905a0f;
     --ink-color-error: #be0c33;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-darcula-dark {
     --bg-primary: #2b2b2b;
@@ -699,8 +679,6 @@
     --ink-color-success: #7eac5e;
     --ink-color-warning: #bbb529;
     --ink-color-error: #ff7772;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-darcula-light {
     --bg-primary: #ffffff;
@@ -762,8 +740,6 @@
     --ink-color-success: #067a16;
     --ink-color-warning: #7d6b08;
     --ink-color-error: #ce0505;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-tokyo-night-dark {
@@ -826,8 +802,6 @@
     --ink-color-success: #9ece6a;
     --ink-color-warning: #e0af68;
     --ink-color-error: #f7768e;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-tokyo-night-light {
     --bg-primary: #d5d6db;
@@ -889,8 +863,6 @@
     --ink-color-success: #435a2b;
     --ink-color-warning: #68502c;
     --ink-color-error: #a0183f;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-nord-dark {
@@ -953,8 +925,6 @@
     --ink-color-success: #a3be8c;
     --ink-color-warning: #ebcb8b;
     --ink-color-error: #d89699;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-nord-light {
     --bg-primary: #eceff4;
@@ -1016,8 +986,6 @@
     --ink-color-success: #5c6c4e;
     --ink-color-warning: #786644;
     --ink-color-error: #974b53;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-rose-pine-dark {
@@ -1080,8 +1048,6 @@
     --ink-color-success: #9ccfd8;
     --ink-color-warning: #f6c177;
     --ink-color-error: #eb6f92;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-rose-pine-light {
     --bg-primary: #faf4ed;
@@ -1143,8 +1109,6 @@
     --ink-color-success: #3f6e77;
     --ink-color-warning: #905f1c;
     --ink-color-error: #955165;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-monokai-dark {
@@ -1207,8 +1171,6 @@
     --ink-color-success: #a6e22e;
     --ink-color-warning: #fd971f;
     --ink-color-error: #ff5d88;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-monokai-light {
     --bg-primary: #fdf9f3;
@@ -1270,8 +1232,6 @@
     --ink-color-success: #4f7409;
     --ink-color-warning: #9d5600;
     --ink-color-error: #c3105a;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-monokai-pro-dark {
     --bg-primary: #2d2a2e;
@@ -1333,8 +1293,6 @@
     --ink-color-success: #a9dc76;
     --ink-color-warning: #ffd866;
     --ink-color-error: #ff7292;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-monokai-pro-light {
     --bg-primary: #faf4f2;
@@ -1396,8 +1354,6 @@
     --ink-color-success: #1a754d;
     --ink-color-warning: #965805;
     --ink-color-error: #b3375c;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-monokai-pro-machine-dark {
     --bg-primary: #273136;
@@ -1459,8 +1415,6 @@
     --ink-color-success: #a2e57b;
     --ink-color-warning: #ffed72;
     --ink-color-error: #ff7e8a;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-monokai-pro-machine-light {
     --bg-primary: #eaf2f5;
@@ -1522,8 +1476,6 @@
     --ink-color-success: #446e2a;
     --ink-color-warning: #706405;
     --ink-color-error: #a3444f;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-monokai-pro-octagon-dark {
     --bg-primary: #282a3a;
@@ -1585,8 +1537,6 @@
     --ink-color-success: #bad761;
     --ink-color-warning: #ffd76d;
     --ink-color-error: #ff7484;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-monokai-pro-octagon-light {
     --bg-primary: #eff0f6;
@@ -1648,8 +1598,6 @@
     --ink-color-success: #546c15;
     --ink-color-warning: #815e00;
     --ink-color-error: #b03345;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-monokai-pro-ristretto-dark {
     --bg-primary: #2c2525;
@@ -1711,8 +1659,6 @@
     --ink-color-success: #adda78;
     --ink-color-warning: #f9cc6c;
     --ink-color-error: #fe6c85;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-monokai-pro-ristretto-light {
     --bg-primary: #f5ece9;
@@ -1774,8 +1720,6 @@
     --ink-color-success: #506b2c;
     --ink-color-warning: #7b5f1a;
     --ink-color-error: #aa364e;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-monokai-pro-spectrum-dark {
     --bg-primary: #222222;
@@ -1837,8 +1781,6 @@
     --ink-color-success: #7bd88f;
     --ink-color-warning: #fce566;
     --ink-color-error: #fc618d;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-monokai-pro-spectrum-light {
     --bg-primary: #f0f0f0;
@@ -1900,8 +1842,6 @@
     --ink-color-success: #336f41;
     --ink-color-warning: #726300;
     --ink-color-error: #a5405c;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-neovim-dark {
     --bg-primary: #14161b;
@@ -1963,8 +1903,6 @@
     --ink-color-success: #b3f6c0;
     --ink-color-warning: #fce094;
     --ink-color-error: #ffc0b9;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-neovim-light {
     --bg-primary: #e0e2ea;
@@ -2026,8 +1964,6 @@
     --ink-color-success: #005523;
     --ink-color-warning: #6b5300;
     --ink-color-error: #590008;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-one-dark-dark {
@@ -2090,8 +2026,6 @@
     --ink-color-success: #98c379;
     --ink-color-warning: #e5c07b;
     --ink-color-error: #e8848a;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-one-dark-light {
     --bg-primary: #fafafa;
@@ -2153,8 +2087,6 @@
     --ink-color-success: #3a7739;
     --ink-color-warning: #8f6001;
     --ink-color-error: #b44238;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-poimandres-dark {
     --bg-primary: #1b1e28;
@@ -2216,8 +2148,6 @@
     --ink-color-success: #5de4c7;
     --ink-color-warning: #fffac2;
     --ink-color-error: #d572a4;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-poimandres-light {
     --bg-primary: #eef2f9;
@@ -2279,8 +2209,6 @@
     --ink-color-success: #16705e;
     --ink-color-warning: #71650c;
     --ink-color-error: #a7396e;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-solarized-dark {
@@ -2343,8 +2271,6 @@
     --ink-color-success: #90a435;
     --ink-color-warning: #bc9431;
     --ink-color-error: #ea6a5f;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-solarized-light {
     --bg-primary: #fdf6e3;
@@ -2406,8 +2332,6 @@
     --ink-color-success: #606f00;
     --ink-color-warning: #846300;
     --ink-color-error: #be2a27;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* ==================
@@ -2474,8 +2398,6 @@
     --ink-color-success: #aad94c;
     --ink-color-warning: #ffb454;
     --ink-color-error: #f07178;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-ayu-light {
     --bg-primary: #fcfcfc;
@@ -2537,8 +2459,6 @@
     --ink-color-success: #587600;
     --ink-color-warning: #906628;
     --ink-color-error: #b93e3e;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-bluloco-dark {
     --bg-primary: #282c34;
@@ -2600,8 +2520,6 @@
     --ink-color-success: #37bd58;
     --ink-color-warning: #e18d5f;
     --ink-color-error: #ff6c69;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-bluloco-light {
     --bg-primary: #f9f9f9;
@@ -2663,8 +2581,6 @@
     --ink-color-success: #1a7739;
     --ink-color-warning: #a15821;
     --ink-color-error: #ca0000;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-github-dark {
@@ -2727,8 +2643,6 @@
     --ink-color-success: #3fb950;
     --ink-color-warning: #d29922;
     --ink-color-error: #f85149;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-github-light {
     --bg-primary: #ffffff;
@@ -2790,8 +2704,6 @@
     --ink-color-success: #197a35;
     --ink-color-warning: #916000;
     --ink-color-error: #ca212d;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-github-high-contrast-dark {
     --bg-primary: #0a0c10;
@@ -2853,8 +2765,6 @@
     --ink-color-success: #26cd4d;
     --ink-color-warning: #f0b72f;
     --ink-color-error: #ff6a69;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-github-high-contrast-light {
     --bg-primary: #ffffff;
@@ -2916,8 +2826,6 @@
     --ink-color-success: #055d20;
     --ink-color-warning: #744500;
     --ink-color-error: #c9222d;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-kanagawa-dark {
@@ -2980,8 +2888,6 @@
     --ink-color-success: #98bb6c;
     --ink-color-warning: #e6c384;
     --ink-color-error: #f25c50;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-kanagawa-light {
     --bg-primary: #f2ecbc;
@@ -3043,8 +2949,6 @@
     --ink-color-success: #53673a;
     --ink-color-warning: #875a00;
     --ink-color-error: #a83445;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-kanagawa-dragon-dark {
     --bg-primary: #181616;
@@ -3106,8 +3010,6 @@
     --ink-color-success: #98bb6c;
     --ink-color-warning: #ff9e3b;
     --ink-color-error: #ef4f44;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-kanagawa-dragon-light {
     --bg-primary: #f2ecbc;
@@ -3169,8 +3071,6 @@
     --ink-color-success: #53673a;
     --ink-color-warning: #875a00;
     --ink-color-error: #a83445;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-material-dark {
     --bg-primary: #212121;
@@ -3232,8 +3132,6 @@
     --ink-color-success: #c3e88d;
     --ink-color-warning: #ffcb6b;
     --ink-color-error: #f07178;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-material-light {
     --bg-primary: #fafafa;
@@ -3295,8 +3193,6 @@
     --ink-color-success: #2e7731;
     --ink-color-warning: #95600f;
     --ink-color-error: #c12e2b;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-night-owl-dark {
@@ -3359,8 +3255,6 @@
     --ink-color-success: #addb67;
     --ink-color-warning: #ffeb95;
     --ink-color-error: #ef5350;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-night-owl-light {
     --bg-primary: #fbfbfb;
@@ -3422,8 +3316,6 @@
     --ink-color-success: #057757;
     --ink-color-warning: #876800;
     --ink-color-error: #ba3936;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-nightfox-dark {
     --bg-primary: #192330;
@@ -3485,8 +3377,6 @@
     --ink-color-success: #81b29a;
     --ink-color-warning: #dbc074;
     --ink-color-error: #d87589;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-nightfox-light {
     --bg-primary: #f6f2ee;
@@ -3548,8 +3438,6 @@
     --ink-color-success: #396847;
     --ink-color-warning: #9e4c02;
     --ink-color-error: #a5222f;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-vantablack-dark {
@@ -3612,8 +3500,6 @@
     --ink-color-success: #6a9a6a;
     --ink-color-warning: #b09050;
     --ink-color-error: #c25d5d;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-vantablack-light {
     --bg-primary: #ffffff;
@@ -3675,8 +3561,6 @@
     --ink-color-success: #3a6a3a;
     --ink-color-warning: #84661e;
     --ink-color-error: #a83232;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-flexoki-dark {
     --bg-primary: #100f0f;
@@ -3738,8 +3622,6 @@
     --ink-color-success: #879a39;
     --ink-color-warning: #da702c;
     --ink-color-error: #d75e51;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-flexoki-light {
     --bg-primary: #fffcf0;
@@ -3801,8 +3683,6 @@
     --ink-color-success: #5a7109;
     --ink-color-warning: #ac4b12;
     --ink-color-error: #af3029;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-vscode-dark {
@@ -3865,8 +3745,6 @@
     --ink-color-success: #4ec9b0;
     --ink-color-warning: #cca700;
     --ink-color-error: #f55e5b;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-vscode-light {
     --bg-primary: #ffffff;
@@ -3928,8 +3806,6 @@
     --ink-color-success: #07794f;
     --ink-color-warning: #8f6502;
     --ink-color-error: #c42f2f;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-xcode-dark {
     --bg-primary: #1f1f24;
@@ -3991,8 +3867,6 @@
     --ink-color-success: #67b7a4;
     --ink-color-warning: #d0bf69;
     --ink-color-error: #fc6a5d;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-xcode-light {
     --bg-primary: #ffffff;
@@ -4054,8 +3928,6 @@
     --ink-color-success: #326d74;
     --ink-color-warning: #815f03;
     --ink-color-error: #c41a16;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-zenburn-dark {
@@ -4118,8 +3990,6 @@
     --ink-color-success: #aac0aa;
     --ink-color-warning: #f0dfaf;
     --ink-color-error: #dcb2b1;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-zenburn-light {
     --bg-primary: #e8e6d8;
@@ -4181,8 +4051,6 @@
     --ink-color-success: #496349;
     --ink-color-warning: #735a29;
     --ink-color-error: #844d4d;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* ==================
@@ -4249,8 +4117,6 @@
     --ink-color-success: #9ad0b0;
     --ink-color-warning: #e0c48a;
     --ink-color-error: #e08aa8;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-ethereal-light {
     --bg-primary: #f4f5fb;
@@ -4312,8 +4178,6 @@
     --ink-color-success: #417158;
     --ink-color-warning: #806330;
     --ink-color-error: #994f69;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-hackerman-dark {
@@ -4376,8 +4240,6 @@
     --ink-color-success: #33ff33;
     --ink-color-warning: #aaff33;
     --ink-color-error: #ff5555;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-hackerman-light {
     --bg-primary: #e6f2e6;
@@ -4439,8 +4301,6 @@
     --ink-color-success: #177017;
     --ink-color-warning: #526b0a;
     --ink-color-error: #af3030;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-matte-black-dark {
@@ -4503,8 +4363,6 @@
     --ink-color-success: #7e8f5a;
     --ink-color-warning: #d4a35a;
     --ink-color-error: #bd7268;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-matte-black-light {
     --bg-primary: #efefef;
@@ -4566,8 +4424,6 @@
     --ink-color-success: #59663e;
     --ink-color-warning: #7d5d20;
     --ink-color-error: #9a463c;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-melange-dark {
     --bg-primary: #292522;
@@ -4629,8 +4485,6 @@
     --ink-color-success: #85a386;
     --ink-color-warning: #ebc06d;
     --ink-color-error: #c48e8f;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-melange-light {
     --bg-primary: #f1f1f1;
@@ -4692,8 +4546,6 @@
     --ink-color-success: #3a684a;
     --ink-color-warning: #865a00;
     --ink-color-error: #8d5561;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-miasma-dark {
@@ -4756,8 +4608,6 @@
     --ink-color-success: #909a6c;
     --ink-color-warning: #bb9457;
     --ink-color-error: #c98a6a;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-miasma-light {
     --bg-primary: #e6e2d4;
@@ -4819,8 +4669,6 @@
     --ink-color-success: #545e33;
     --ink-color-warning: #715626;
     --ink-color-error: #834c30;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-modus-dark {
     --bg-primary: #000000;
@@ -4882,8 +4730,6 @@
     --ink-color-success: #44bc44;
     --ink-color-warning: #fec43f;
     --ink-color-error: #ff5f59;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-modus-light {
     --bg-primary: #ffffff;
@@ -4945,8 +4791,6 @@
     --ink-color-success: #006800;
     --ink-color-warning: #884900;
     --ink-color-error: #a60000;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-osaka-jade-dark {
@@ -5009,8 +4853,6 @@
     --ink-color-success: #7ab585;
     --ink-color-warning: #d4b26a;
     --ink-color-error: #d66d6b;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-osaka-jade-light {
     --bg-primary: #e8efe8;
@@ -5072,8 +4914,6 @@
     --ink-color-success: #326b4a;
     --ink-color-warning: #795c24;
     --ink-color-error: #9f4141;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-oxocarbon-dark {
     --bg-primary: #161616;
@@ -5135,8 +4975,6 @@
     --ink-color-success: #42be65;
     --ink-color-warning: #be95ff;
     --ink-color-error: #ee5396;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-oxocarbon-light {
     --bg-primary: #ffffff;
@@ -5198,8 +5036,6 @@
     --ink-color-success: #177a35;
     --ink-color-warning: #833bf0;
     --ink-color-error: #b54d00;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 
@@ -5263,8 +5099,6 @@
     --ink-color-success: #72f1b8;
     --ink-color-warning: #fede5d;
     --ink-color-error: #ff6366;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-synthwave-84-light {
     --bg-primary: #f5eefb;
@@ -5326,8 +5160,6 @@
     --ink-color-success: #14714d;
     --ink-color-warning: #865c09;
     --ink-color-error: #bb1b41;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-terafox-dark {
     --bg-primary: #152528;
@@ -5389,8 +5221,6 @@
     --ink-color-success: #7aa4a1;
     --ink-color-warning: #fda47f;
     --ink-color-error: #ec6e62;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-terafox-light {
     --bg-primary: #f6f2ee;
@@ -5452,8 +5282,6 @@
     --ink-color-success: #396847;
     --ink-color-warning: #9e4c02;
     --ink-color-error: #a5222f;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-powershell-dark {
@@ -5516,8 +5344,6 @@
     --ink-color-success: #4ec94e;
     --ink-color-warning: #ffe14a;
     --ink-color-error: #ff6b6b;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-powershell-light {
     --bg-primary: #f2f4f8;
@@ -5579,8 +5405,6 @@
     --ink-color-success: #227422;
     --ink-color-warning: #7d6200;
     --ink-color-error: #bb291a;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-docs-rs-dark {
@@ -5645,8 +5469,6 @@
     --ink-color-success: #9dbc5b;
     --ink-color-warning: #d9a74b;
     --ink-color-error: #ef907c;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-docs-rs-light {
     --bg-primary: #f9f7ec;
@@ -5710,8 +5532,6 @@
     --ink-color-success: #566e29;
     --ink-color-warning: #895f0a;
     --ink-color-error: #b63628;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .theme-eclipse-dark {
     --bg-primary: #1e1f22;
@@ -5773,8 +5593,6 @@
     --ink-color-success: #a7ec21;
     --ink-color-warning: #f3ec79;
     --ink-color-error: #f06273;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-eclipse-light {
     --bg-primary: #ffffff;
@@ -5836,8 +5654,6 @@
     --ink-color-success: #3a7658;
     --ink-color-warning: #7b6b00;
     --ink-color-error: #d00000;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* ==================
@@ -5904,8 +5720,6 @@
     --ink-color-success: #d4a830;
     --ink-color-warning: #e8973a;
     --ink-color-error: #6895d8;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-protanopia-light {
     --bg-primary: #f2f0ed;
@@ -5967,8 +5781,6 @@
     --ink-color-success: #77600c;
     --ink-color-warning: #90550b;
     --ink-color-error: #2e5ea0;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-deuteranopia-dark {
@@ -6031,8 +5843,6 @@
     --ink-color-success: #5e98d4;
     --ink-color-warning: #d4b840;
     --ink-color-error: #e27648;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-deuteranopia-light {
     --bg-primary: #f0f0f4;
@@ -6094,8 +5904,6 @@
     --ink-color-success: #2860a0;
     --ink-color-warning: #766309;
     --ink-color-error: #a4431d;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-tritanopia-dark {
@@ -6158,8 +5966,6 @@
     --ink-color-success: #40b0a0;
     --ink-color-warning: #d28446;
     --ink-color-error: #df717a;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-tritanopia-light {
     --bg-primary: #f2efe8;
@@ -6221,8 +6027,6 @@
     --ink-color-success: #1f6c5d;
     --ink-color-warning: #8d541b;
     --ink-color-error: #a02030;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .theme-achromatopsia-dark {
@@ -6285,8 +6089,6 @@
     --ink-color-success: #9a9a9a;
     --ink-color-warning: #c2c2c2;
     --ink-color-error: #e8e8e8;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .theme-achromatopsia-light {
     --bg-primary: #f2f2f2;
@@ -6348,8 +6150,6 @@
     --ink-color-success: #646363;
     --ink-color-warning: #484848;
     --ink-color-error: #202020;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.12);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* ==================
@@ -6393,10 +6193,6 @@
     --mana-red: #fb4934;
     --mana-green: #b8bb26;
 
-    /* Shadows */
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-
     /* ink: each chip tone as text that reads 4.6:1 on its tint, a margin over 4.5 */
     --ink-accent-primary: #86a79a;
     --ink-accent-secondary: #fabd2f;
@@ -6418,9 +6214,14 @@
    derived: the sink and the grid
  ==================== */
 
-/* The recessed background under the panels, the faint grid drawn on it, and
-   the raised surface of a control that floats over a panel (the action
-   dock), mixed from the active theme's own colors. Declared on the element
+/* The recessed background under the panels, the faint grid drawn on it, the
+   raised surface of a control that floats over a panel (the action dock),
+   mixed from the active theme's own colors, and the three shadow levels.
+   Each level is larger and softer than the one below, in stacked layers
+   whose offset and blur grow together, all cast from straight above: sm for
+   what sits on the page (chips, buttons, inputs, cards, bars), md for what
+   floats over it (the dock, toasts, banners, dropdowns) and lg for what
+   covers it (sheets, drawers, modals, dialogs). Declared on the element
    that carries the theme class, so color-mix() resolves against that theme
    rather than the root's. */
 :root,
@@ -6430,14 +6231,25 @@
     --grid-size: 28px;
     --bg-sink: color-mix(in srgb, var(--bg-primary), #000 15%);
     --bg-raised: color-mix(in srgb, var(--bg-primary), #fff 6%);
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.22), 0 2px 4px rgb(0 0 0 / 0.18);
+    --shadow-md: 0 2px 4px rgb(0 0 0 / 0.16), 0 4px 8px rgb(0 0 0 / 0.18), 0 8px 16px rgb(0 0 0 / 0.2);
+    --shadow-lg:
+        0 2px 4px rgb(0 0 0 / 0.12), 0 6px 12px rgb(0 0 0 / 0.16), 0 12px 24px rgb(0 0 0 / 0.2),
+        0 24px 48px rgb(0 0 0 / 0.24);
 }
 
 /* A light theme lifts the sink toward white, since darkening a cream palette
-   reads muddy, and sets the raised surface a shade darker than the panel,
-   since a cream panel has nowhere lighter to go. */
+   reads muddy, sets the raised surface a shade darker than the panel, since
+   a cream panel has nowhere lighter to go, and halves the shadows, which show
+   plainly on a light page. */
 [class*="theme-"][class*="-light"] {
     --bg-sink: color-mix(in srgb, var(--bg-primary), #fff 35%);
     --bg-raised: color-mix(in srgb, var(--bg-primary), #000 5%);
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.1), 0 2px 4px rgb(0 0 0 / 0.08);
+    --shadow-md: 0 2px 4px rgb(0 0 0 / 0.07), 0 4px 8px rgb(0 0 0 / 0.08), 0 8px 16px rgb(0 0 0 / 0.1);
+    --shadow-lg:
+        0 2px 4px rgb(0 0 0 / 0.06), 0 6px 12px rgb(0 0 0 / 0.08), 0 12px 24px rgb(0 0 0 / 0.1),
+        0 24px 48px rgb(0 0 0 / 0.14);
 }
 
 /* ==================

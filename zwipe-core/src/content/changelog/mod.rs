@@ -60,6 +60,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Deck art and dock buttons follow the corner of what holds them, so the gap around them stays even, on the web and in the app",
         "Change buttons are a pencil icon and the light and dark toggle is a sun or moon, on the web and in the app",
         "On a phone's browser, an opened card image fills the screen's width as it does in the app",
+        "Cards, docks and sheets cast shadows in three clear levels, so what sits above what reads at a glance, on the web and in the app",
     ],
 }];
 

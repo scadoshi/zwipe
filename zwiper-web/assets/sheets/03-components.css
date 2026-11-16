@@ -324,10 +324,10 @@ a.stat-chip {
     box-shadow: var(--shadow-sm);
 }
 
-/* The open menu is a raised sheet over the page: the medium shadow under
+/* The open menu is a raised sheet over the page: the large shadow under
    the wrapper's bottom rule, the way a bottom sheet sits over a screen. */
 .nav-wrapper:has(.nav-panel-open) {
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-lg);
 }
 
 /* Scoped to the shell's wrapper so a consumer's other semantic <nav>
@@ -1200,7 +1200,7 @@ a.nav-dropdown-item.active:visited {
     max-height: 85vh;
     background: var(--bg-primary);
     border-radius: 1rem 1rem 0 0;
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-lg);
     transform: translateY(100%);
     visibility: hidden;
     transition: transform 0.3s ease, visibility 0s linear 0.3s;
@@ -1320,12 +1320,6 @@ html:has(.bottom-sheet.show) body,
     .bottom-sheet.sheet-pulls:is(.sheet-dragging, .sheet-dragging-right, .sheet-dragging-left) > :is(.sheet-header, .sheet-handle) {
         cursor: grabbing;
     }
-}
-
-/* On a light theme the sheet lifts off the page: its shadow doubles up,
-   since a light shadow alone barely marks a cream edge on a cream page. */
-[class*="theme-"][class*="-light"] .bottom-sheet {
-    box-shadow: var(--shadow-md), var(--shadow-md);
 }
 
 .bottom-sheet > .sheet-header,
@@ -1565,7 +1559,7 @@ html:has(.bottom-sheet.show) body,
         max-height: none;
         border-radius: 1rem;
         border: 1px solid var(--border-secondary);
-        box-shadow: var(--shadow-md), var(--shadow-md);
+        box-shadow: var(--shadow-lg);
         transform: translateX(calc(100% + 1rem));
     }
 
