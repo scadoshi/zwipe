@@ -5,7 +5,11 @@
 //! The sheet opens on what its row shows: the face the row is on, and melded where the row's
 //! half is melded ([`MeldSource::on`]). Turning it in the sheet leaves the row as it was.
 
+use std::collections::HashMap;
+use std::hash::BuildHasher;
+
 use dioxus::prelude::*;
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 
 use crate::icons::{DockIcon, FLIP};
@@ -39,6 +43,19 @@ pub fn hand_face_then(
         }
         on_printings.call(());
     })
+}
+
+/// Opens Printings for card `id` on the face `faces` shows for it, handing that face to the
+/// sheet's [`PrintingsFace`] first: a screen's Printings key does what a details pane's
+/// Printings button does.
+pub fn open_on_shown_face<S: BuildHasher + 'static>(
+    handed: Option<PrintingsFace>,
+    faces: Signal<HashMap<Uuid, usize, S>>,
+    id: Uuid,
+    mut open: Signal<bool>,
+) {
+    let face = faces.peek().get(&id).copied().unwrap_or(0);
+    hand_face_then(handed, face, EventHandler::new(move |()| open.set(true))).call(());
 }
 
 /// The face a Printings sheet opens on: `face` when its host gives one (a row it knows), else the
@@ -281,5 +298,19 @@ mod tests {
             html.contains("Some(1)"),
             "the sheet opens with the face in hand: {html}"
         );
+    }
+    #[test]
+    fn a_keyed_printings_opens_on_the_face_the_screen_shows_for_the_card() {
+        fn app() -> Element {
+            let handed = use_context_provider(|| PrintingsFace(Signal::new(0)));
+            let id = Uuid::nil();
+            let faces = use_signal(|| HashMap::from([(id, 1)]));
+            let open = use_signal(|| false);
+            use_hook(move || open_on_shown_face(Some(handed), faces, id, open));
+            let PrintingsFace(handed) = handed;
+            rsx! { p { "open {open()} on {handed()}" } }
+        }
+        let html = render(app);
+        assert!(html.contains("open true on 1"), "{html}");
     }
 }

@@ -19,7 +19,7 @@ use components::swipe_stack::{
 };
 use components::{
     CardGhost, Chip, DockEye, DockFilter, LoadFailed, PrintingsFace, SheetFrame, SheetWide,
-    Surface, TOAST_NORMAL, TOAST_QUICK, hand_face_then, next_card_face, reset_image_ease,
+    Surface, TOAST_NORMAL, TOAST_QUICK, next_card_face, open_on_shown_face, reset_image_ease,
     use_back_online, use_details_eye,
 };
 use dioxus::core::spawn_forever;
@@ -112,18 +112,6 @@ impl AddSource {
 
 /// The swipe directions every Add stack takes.
 const ALL_SWIPES: [Swipe; 4] = [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Down];
-
-/// Opens Printings for card `id` on the face it shows in `faces`, handing that face to the
-/// sheet's [`PrintingsFace`] as a details pane's Printings button does.
-fn open_printings(
-    handed: Option<PrintingsFace>,
-    faces: Signal<HashMap<Uuid, usize>>,
-    id: Uuid,
-    mut open: Signal<bool>,
-) {
-    let face = faces.peek().get(&id).copied().unwrap_or(0);
-    hand_face_then(handed, face, EventHandler::new(move |()| open.set(true))).call(());
-}
 
 /// The Add cards screen for `deck_id`.
 #[component]
@@ -996,7 +984,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         && revealing.peek().is_none()
                         && let Some(card) = stack.peek().current()
                     {
-                        open_printings(handed, faces, card.scryfall_data.id, printing_open);
+                        open_on_shown_face(handed, faces, card.scryfall_data.id, printing_open);
                     }
                 }
                 Some(Shortcut::Details) => {
@@ -1297,30 +1285,5 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 }
         }
         OneTimeHintDialog { hint: OneTimeHint::AddDeckCards, open: hint_open }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use dioxus::dioxus_core::NoOpMutations;
-
-    use super::*;
-
-    #[test]
-    fn printings_open_on_the_face_the_swipe_card_shows() {
-        fn app() -> Element {
-            let handed = use_context_provider(|| PrintingsFace(Signal::new(0)));
-            let id = Uuid::nil();
-            let faces = use_signal(|| HashMap::from([(id, 1)]));
-            let open = use_signal(|| false);
-            use_hook(move || open_printings(Some(handed), faces, id, open));
-            let PrintingsFace(handed) = handed;
-            rsx! { p { "open {open()} on {handed()}" } }
-        }
-        let mut dom = VirtualDom::new(app);
-        dom.rebuild_in_place();
-        dom.render_immediate(&mut NoOpMutations);
-        let html = dioxus_ssr::render(&dom);
-        assert!(html.contains("open true on 1"), "{html}");
     }
 }

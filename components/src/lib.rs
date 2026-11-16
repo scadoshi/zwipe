@@ -204,8 +204,8 @@ pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use picker_search::use_picker_search;
 pub use pressable::{Pressable, is_press};
 pub use printing_face::{
-    FaceTurn, PrintingFace, PrintingFaceButton, PrintingsFace, hand_face_then, use_opening_face,
-    use_printing_face, use_printings_face_root,
+    FaceTurn, PrintingFace, PrintingFaceButton, PrintingsFace, hand_face_then, open_on_shown_face,
+    use_opening_face, use_printing_face, use_printings_face_root,
 };
 pub use printing_sheet::{
     ArtistChip, PrintingChips, PrintingChipsGhost, PrintingSheet, PrintingsFetch, PrintingsSource,

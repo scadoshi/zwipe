@@ -39,8 +39,8 @@ use components::swipe_stack::{
 };
 use components::{
     BackArrow, BottomSheet, CardDetailsPanelSkeleton, CardGhost, DockEye, DockFilter, MeldSource,
-    PageHeader, SheetFrame, SheetWide, Surface, TOAST_QUICK, turn_face, use_details_eye,
-    use_overlay_back,
+    PageHeader, PrintingsFace, SheetFrame, SheetWide, Surface, TOAST_QUICK, open_on_shown_face,
+    turn_face, use_details_eye, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -555,6 +555,7 @@ fn SwipeSelectBody(
     // The face each card shows, the front where it has none: its stack image, its pane and its
     // drawer show it, and their flips and `v` turn it, so the image and the details turn together.
     let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
+    let handed = try_use_context::<PrintingsFace>();
     let melds = try_use_context::<MeldSource>();
     let mut filter_open = use_signal(|| false);
     let suggested = mode == SwipeMode::Suggested;
@@ -664,8 +665,8 @@ fn SwipeSelectBody(
         Callback::new(
             move |key: String| match shortcuts::swipe_screen_shortcut(&key) {
                 Some(Shortcut::Printings) => {
-                    if stack.peek().current().is_some() {
-                        printing_open.set(true);
+                    if let Some(card) = stack.peek().current() {
+                        open_on_shown_face(handed, faces, card.scryfall_data.id, printing_open);
                     }
                 }
                 Some(Shortcut::Details) => {
