@@ -112,7 +112,7 @@ fn a_new_screen_shows_the_compiled_copy_on_latest() {
     let state = State::new();
     assert_eq!(state.filter(), &Filter::Latest);
     assert_eq!(state.changelog(), &HttpChangelog::current());
-    assert!(!state.chip_rows().is_empty());
+    assert_ne!(state.chip_rows(), Vec::<Vec<Chip>>::new());
     assert!(!state.shown().is_empty());
 }
 
