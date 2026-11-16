@@ -91,9 +91,11 @@ struct Layer {
     sd: ScryfallData,
     /// The card's roles and tags, which a no-art proxy lists.
     profile: CardProfile,
-    /// The card and config a touch release dispatches, on the top card only.
+    /// The stack's top card and the config a touch release dispatches, on every card: a
+    /// gesture outlives its card's turn on top when the frame for an earlier undo lands
+    /// mid-swipe, and its release still acts on the top.
     touch: Option<(Card, SwipeConfig)>,
-    /// The card and config a mouse release dispatches, on the top card only.
+    /// The top card and the config a mouse release dispatches, on every card.
     mouse: Option<(Card, SwipeConfig)>,
 }
 
@@ -104,6 +106,15 @@ struct Layer {
 fn take_hold(entering: &mut Signal<Option<Direction>>) {
     if entering.peek().is_some() {
         entering.set(None);
+    }
+}
+
+/// A swipe lifted from a card that is no longer the top (the frame for an earlier undo landed
+/// mid-swipe) keeps only an undo: any other swipe would act on a card the finger never touched,
+/// so it is dropped.
+fn keep_only_undo_off_top(mut state: Signal<SwipeState>, on_top: bool) {
+    if !on_top && state.peek().latest_swipe != Some(Direction::Down) {
+        state.write().latest_swipe = None;
     }
 }
 
@@ -311,8 +322,8 @@ pub fn SwipeStack(
             class,
             style,
             loaded: shown_cards.read().contains(&card_id),
-            touch: is_top.then(|| (card.clone(), config.clone())),
-            mouse: is_top.then(|| (card.clone(), config.clone())),
+            touch: top_touch.clone(),
+            mouse: top_mouse.clone(),
             profile: card.card_profile,
             sd: card.scryfall_data,
         }
@@ -369,11 +380,14 @@ pub fn SwipeStack(
                     style: "{layer.style}",
                     "aria-label": "{layer.name}",
 
-                    // Only the top card takes gestures (the cards under it
-                    // have no pointer), and the stack under it never sees its
-                    // events. One that starts while the card comes back from
-                    // an undo ends the return first ([`take_hold`]), so the
-                    // keyframe and the drag never fight.
+                    // A gesture starts on the top card (the cards under it have
+                    // no pointer), and the stack under it never sees its events.
+                    // One that starts while the card comes back from an undo
+                    // ends the return first ([`take_hold`]), so the keyframe and
+                    // the drag never fight. Once it is under way it is the
+                    // stack's: the frame for an earlier undo can land mid-swipe
+                    // and take this card off the top, and the finger's moves and
+                    // lift still reach it and act on the top card.
                     ontouchstart: move |e: Event<TouchData>| {
                         e.stop_propagation();
                         if !layer.is_top { return; }
@@ -382,13 +396,15 @@ pub fn SwipeStack(
                     },
                     ontouchmove: move |e: Event<TouchData>| {
                         e.stop_propagation();
-                        if !layer.is_top { return; }
+                        if !state.peek().is_swiping { return; }
                         state.ontouchmove(e);
                     },
                     ontouchend: move |e: Event<TouchData>| {
                         e.stop_propagation();
+                        if !state.peek().is_swiping { return; }
                         let Some((card, config)) = &layer.touch else { return; };
                         state.ontouchend(e, config);
+                        keep_only_undo_off_top(state, layer.is_top);
                         dispatch_latest(state, exiting_overlay, handlers, card);
                     },
 
@@ -405,13 +421,15 @@ pub fn SwipeStack(
                     },
                     onmousemove: move |e: Event<MouseData>| {
                         e.stop_propagation();
-                        if !layer.is_top { return; }
+                        if !state.peek().is_swiping { return; }
                         state.onmousemove(e);
                     },
                     onmouseup: move |e: Event<MouseData>| {
                         e.stop_propagation();
+                        if !state.peek().is_swiping { return; }
                         let Some((card, config)) = &layer.mouse else { return; };
                         state.onmouseup(e, config);
+                        keep_only_undo_off_top(state, layer.is_top);
                         dispatch_latest(state, exiting_overlay, handlers, card);
                     },
 
@@ -593,14 +611,20 @@ mod tests {
     struct Host {
         index: Signal<usize>,
         undos: Signal<usize>,
+        rights: Signal<usize>,
     }
 
     fn burst_app() -> Element {
         let cards: Vec<Card> = (0..5).map(card).collect();
         let mut index = use_signal(|| 3_usize);
         let mut undos = use_signal(|| 0_usize);
+        let mut rights = use_signal(|| 0_usize);
         let mut entering = use_signal(|| Some(Direction::Left));
-        use_context_provider(|| Host { index, undos });
+        use_context_provider(|| Host {
+            index,
+            undos,
+            rights,
+        });
         let window: Vec<Card> = cards.get(index()..).map_or_else(Vec::new, <[Card]>::to_vec);
         let config = SwipeConfig::new(
             vec![
@@ -618,7 +642,7 @@ mod tests {
                 cards: window,
                 config,
                 on_swipe_left: none,
-                on_swipe_right: none,
+                on_swipe_right: move |_: Card| *rights.write() += 1,
                 on_swipe_up: none,
                 on_swipe_down: move |_: Card| {
                     let back = index.peek().saturating_sub(1);
@@ -711,5 +735,104 @@ mod tests {
         let (undos, entering, html) = burst(true);
         assert_eq!(undos, 3, "{html}");
         assert_eq!(entering, 1, "only the last card comes in: {html}");
+    }
+
+    /// Three quick down swipes as Android delivers them: each starts on the card that was on
+    /// top in the last frame drawn, and the frame for the undo before it lands mid-swipe, so
+    /// the card under the finger stops being the top before the finger lifts.
+    #[test]
+    fn a_swipe_that_outlives_its_card_s_turn_on_top_still_undoes() {
+        dioxus::html::set_event_converter(Box::new(dioxus::html::SerializedHtmlEventConverter));
+        let mut dom = VirtualDom::new(burst_app);
+        let mut edits = dioxus::dioxus_core::Mutations::default();
+        dom.rebuild(&mut edits);
+        let (mut stack, mut cards) = (None, HashMap::new());
+        ids(&edits.edits, &mut stack, &mut cards);
+        let host = dom.in_scope(ScopeId::APP, consume_context::<Host>);
+        let mut drawn_top = *host.index.peek();
+        for _ in 0..3 {
+            let target = cards.get(&format!("Card {drawn_top}")).copied().unwrap();
+            let (x, mut y) = (200.0, 300.0);
+            dom.runtime().handle_event(
+                "touchstart",
+                Event::new(touch_at(x, y, false), true),
+                target,
+            );
+            // The last undo's frame lands while the finger is down.
+            let mut more = dioxus::dioxus_core::Mutations::default();
+            dom.render_immediate(&mut more);
+            ids(&more.edits, &mut stack, &mut cards);
+            drawn_top = *host.index.peek();
+            for _ in 0..4 {
+                y += 30.0;
+                dom.runtime().handle_event(
+                    "touchmove",
+                    Event::new(touch_at(x, y, false), true),
+                    target,
+                );
+            }
+            dom.runtime()
+                .handle_event("touchend", Event::new(touch_at(x, y, true), true), target);
+        }
+        let mut more = dioxus::dioxus_core::Mutations::default();
+        dom.render_immediate(&mut more);
+        let html = dioxus_ssr::render(&dom);
+        assert_eq!(*host.undos.peek(), 3, "{html}");
+        assert_eq!(
+            html.matches("card-stack-enter-").count(),
+            1,
+            "only the last card comes in: {html}"
+        );
+    }
+
+    /// A swipe right that starts on the top card of the last frame, whose undo frame then lands
+    /// mid-swipe: the card under the finger is no longer the top, so the swipe adds nothing.
+    #[test]
+    fn a_side_swipe_that_outlives_its_card_s_turn_on_top_does_nothing() {
+        dioxus::html::set_event_converter(Box::new(dioxus::html::SerializedHtmlEventConverter));
+        let mut dom = VirtualDom::new(burst_app);
+        let mut edits = dioxus::dioxus_core::Mutations::default();
+        dom.rebuild(&mut edits);
+        let (mut stack, mut cards) = (None, HashMap::new());
+        ids(&edits.edits, &mut stack, &mut cards);
+        let host = dom.in_scope(ScopeId::APP, consume_context::<Host>);
+        let drawn_top = cards.get("Card 3").copied().unwrap();
+        let swipe = |dom: &mut VirtualDom,
+                     target,
+                     dx: f64,
+                     dy: f64,
+                     mid: Option<&mut dioxus::dioxus_core::Mutations>| {
+            let (mut x, mut y) = (200.0, 300.0);
+            dom.runtime().handle_event(
+                "touchstart",
+                Event::new(touch_at(x, y, false), true),
+                target,
+            );
+            if let Some(m) = mid {
+                dom.render_immediate(m);
+            }
+            for _ in 0..4 {
+                x += dx;
+                y += dy;
+                dom.runtime().handle_event(
+                    "touchmove",
+                    Event::new(touch_at(x, y, false), true),
+                    target,
+                );
+            }
+            dom.runtime()
+                .handle_event("touchend", Event::new(touch_at(x, y, true), true), target);
+        };
+        // A down swipe undoes; its frame is not drawn yet.
+        swipe(&mut dom, drawn_top, 0.0, 30.0, None);
+        assert_eq!(*host.undos.peek(), 1);
+        // A swipe right on the card still drawn on top; the undo's frame lands mid-swipe.
+        let mut more = dioxus::dioxus_core::Mutations::default();
+        swipe(&mut dom, drawn_top, 40.0, 0.0, Some(&mut more));
+        assert_eq!(
+            *host.rights.peek(),
+            0,
+            "nothing added for a card the finger never touched"
+        );
     }
 }
