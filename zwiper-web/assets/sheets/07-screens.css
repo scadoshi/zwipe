@@ -813,12 +813,14 @@ body .toast-container [role="alertdialog"] {
     padding: var(--deck-list-gap) 0 0;
 }
 
-/* The row's corner and its inset from the top: the art, top-aligned at that
-   inset, takes the corner less the border and the inset, so it nests in the
-   row's curve. */
+/* The row's corner, the text's inset, and the art's own smaller inset: the
+   art sits nearer the corner than the text, so it is bigger, and takes the
+   corner less the border and its inset, so it nests in the row's curve and
+   is rounder. */
 .deck-row {
     --deck-row-radius: 1rem;
     --deck-row-inset: var(--space-3);
+    --deck-row-art-inset: var(--space-1);
     padding: var(--deck-row-inset) var(--space-4);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
@@ -833,17 +835,31 @@ body .toast-container [role="alertdialog"] {
     border-bottom: 1px solid var(--border-secondary);
 }
 
-/* The command zone's art crops lead the row, top-aligned beside the text
-   column. Two crops (partners, or oathbreaker and signature spell) follow
-   one another. Their corners nest in the row's (see .deck-row). */
+/* The command zone's art crops lead the row beside the text column. Two
+   crops (partners, or oathbreaker and signature spell) follow one another.
+   Each reaches out past the text's padding to the art's own inset at the top
+   and bottom and fills the height the text and chips set, never driving it:
+   size containment gives the image no height of its own, so a short row
+   keeps its height and a tall one gets a tall crop. It grows by what it
+   gains, so the text and chips stay where they were; its corners nest in the
+   row's at that inset (see .deck-row). */
 .deck-row-art-img {
     flex: 0 0 auto;
-    width: 3.6rem;
-    height: 3.2rem;
+    align-self: stretch;
+    width: calc(3.6rem + var(--space-4) - var(--deck-row-art-inset));
+    contain: size;
+    margin-top: calc(var(--deck-row-art-inset) - var(--deck-row-inset));
+    margin-bottom: calc(var(--deck-row-art-inset) - var(--deck-row-inset));
     object-fit: cover;
-    border-radius: max(0.15rem, calc(var(--deck-row-radius) - 1px - var(--deck-row-inset)));
+    border-radius: max(0.15rem, calc(var(--deck-row-radius) - 1px - var(--deck-row-art-inset)));
     border: 1px solid var(--border-secondary);
     box-shadow: var(--shadow-sm);
+}
+
+/* The first crop reaches left to the art's inset too, so it sits in the
+   row's corner; a second crop follows it in the row's flow. */
+.deck-list-row > :is(.deck-row-art-img, .skeleton-deck-list-art):first-child {
+    margin-left: calc(var(--deck-row-art-inset) - var(--space-4));
 }
 
 /* The art, then one column with the name and the chips, so the chips wrap
@@ -1311,9 +1327,12 @@ body .toast-container [role="alertdialog"] {
 /* Stands in for the command zone art (matches .deck-row-art-img). */
 .skeleton-deck-list-art {
     flex: 0 0 auto;
-    width: 3.6rem;
-    height: 3.2rem;
-    border-radius: max(0.15rem, calc(var(--deck-row-radius) - 1px - var(--deck-row-inset)));
+    align-self: stretch;
+    width: calc(3.6rem + var(--space-4) - var(--deck-row-art-inset));
+    contain: size;
+    margin-top: calc(var(--deck-row-art-inset) - var(--deck-row-inset));
+    margin-bottom: calc(var(--deck-row-art-inset) - var(--deck-row-inset));
+    border-radius: max(0.15rem, calc(var(--deck-row-radius) - 1px - var(--deck-row-art-inset)));
 }
 
 .skeleton-deck-list-title {

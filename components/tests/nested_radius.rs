@@ -18,9 +18,10 @@ fn rule(sheet: &'static str, selector: &str) -> &'static str {
         .map_or("", |(body, _)| body)
 }
 
-/// The nested radius of a deck row's art, from the row's tokens.
+/// The nested radius of a deck row's art: the row's corner less its border and the art's own
+/// inset, which is smaller than the text's, so the art sits nearer the corner and rounder.
 const DECK_ART_RADIUS: &str =
-    "border-radius: max(0.15rem, calc(var(--deck-row-radius) - 1px - var(--deck-row-inset)));";
+    "border-radius: max(0.15rem, calc(var(--deck-row-radius) - 1px - var(--deck-row-art-inset)));";
 
 #[test]
 fn a_deck_rows_art_follows_the_rows_corner() {
@@ -33,6 +34,10 @@ fn a_deck_rows_art_follows_the_rows_corner() {
     );
     assert!(
         row.contains("border-radius: var(--deck-row-radius);"),
+        "{row:?}"
+    );
+    assert!(
+        row.contains("--deck-row-art-inset: var(--space-1);"),
         "{row:?}"
     );
     for art in [".deck-row-art-img", ".skeleton-deck-list-art"] {
@@ -63,5 +68,36 @@ fn a_docks_text_buttons_follow_the_docks_corner() {
             "border-radius: max(0.15rem, calc(var(--dock-radius) - 1px - var(--dock-inset)));"
         ),
         "as orangui's dock buttons: {button:?}"
+    );
+}
+
+#[test]
+fn a_deck_rows_art_reaches_out_to_its_own_inset() {
+    // Out past the text's padding to the art's inset at the top and bottom, and the first crop
+    // at the left, filling the row's height, so the text and chips stay where they were.
+    let reach = "calc(var(--deck-row-art-inset) - var(--deck-row-inset))";
+    for art in [".deck-row-art-img", ".skeleton-deck-list-art"] {
+        let body = rule(SCREENS_COMPONENTS, art);
+        assert!(body.contains("align-self: stretch;"), "{art}: {body:?}");
+        // The art fills the height the text and chips set and never drives it: no size of its
+        // own (size containment) and no minimum.
+        assert!(body.contains("contain: size;"), "{art}: {body:?}");
+        assert!(!body.contains("min-height"), "{art}: {body:?}");
+        assert!(
+            body.contains(&format!("margin-top: {reach};")),
+            "{art}: {body:?}"
+        );
+        assert!(
+            body.contains(&format!("margin-bottom: {reach};")),
+            "{art}: {body:?}"
+        );
+    }
+    let first = rule(
+        SCREENS_COMPONENTS,
+        ".deck-list-row > :is(.deck-row-art-img, .skeleton-deck-list-art):first-child",
+    );
+    assert!(
+        first.contains("margin-left: calc(var(--deck-row-art-inset) - var(--space-4));"),
+        "{first:?}"
     );
 }
