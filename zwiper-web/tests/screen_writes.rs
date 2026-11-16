@@ -1,9 +1,10 @@
-//! Every server write on the swipe screens (Add, Remove and the commander swipes) runs in
+//! Every server write on the deck and commander screens (Add, Remove, the commander swipes,
+//! the deck editor, Quick add, the deck view, Playstyle and the commander maybeboard) runs in
 //! `spawn_write`, never in a task that ends with the screen, so leaving mid-write or
 //! mid-undo never drops one.
 
-/// The swipe screens' sources.
-const SCREENS: [(&str, &str); 3] = [
+/// The screens' sources.
+const SCREENS: [(&str, &str); 8] = [
     (
         "Add",
         include_str!("../src/lib/inbound/screens/deck/cards/add.rs"),
@@ -16,10 +17,30 @@ const SCREENS: [(&str, &str); 3] = [
         "commander swipes",
         include_str!("../src/lib/inbound/cards/swipe_select.rs"),
     ),
+    (
+        "deck editor",
+        include_str!("../src/lib/inbound/screens/deck/cards/editor.rs"),
+    ),
+    (
+        "Quick add",
+        include_str!("../src/lib/inbound/screens/deck/cards/quick_add.rs"),
+    ),
+    (
+        "deck view",
+        include_str!("../src/lib/inbound/screens/deck/view/mod.rs"),
+    ),
+    (
+        "Playstyle",
+        include_str!("../src/lib/inbound/screens/playstyle/mod.rs"),
+    ),
+    (
+        "commander maybeboard",
+        include_str!("../src/lib/inbound/screens/commander_maybeboard.rs"),
+    ),
 ];
 
 /// The client calls that write to the server.
-const WRITES: [&str; 10] = [
+const WRITES: [&str; 13] = [
     ".create_deck_card(",
     ".delete_deck_card(",
     ".delete_undone_deck_card(",
@@ -30,6 +51,9 @@ const WRITES: [&str; 10] = [
     ".undismiss_commander(",
     ".add_commander_maybeboard_card(",
     ".remove_commander_maybeboard_card(",
+    ".clear_commander_maybeboard(",
+    ".update_deck_profile(",
+    ".clear_commander_dismissals(",
 ];
 
 /// Each `spawn(async move { .. })` block in `src`: a task that ends with its screen.
@@ -64,7 +88,7 @@ fn screen_tasks(src: &str) -> Vec<&str> {
 }
 
 #[test]
-fn no_swipe_screen_writes_from_a_task_that_ends_with_it() {
+fn no_screen_writes_from_a_task_that_ends_with_it() {
     for (screen, src) in SCREENS {
         for task in screen_tasks(src) {
             for write in WRITES {

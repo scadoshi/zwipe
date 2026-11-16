@@ -20,7 +20,7 @@ use std::collections::HashSet;
 use components::deck_cursor::use_card_list_cursor;
 use components::{
     AlertDialog, Button, ButtonVariant, CardListFold, Chip, DangerZoneAction, DialogAction,
-    HoverStackHost, TOAST_LONG, TOAST_QUICK, use_hover_stack,
+    HoverStackHost, TOAST_LONG, TOAST_QUICK, spawn_write, use_hover_stack, use_mounted,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -74,6 +74,8 @@ pub fn Playstyle() -> Element {
     let navigator = use_navigator();
     let session: Signal<Option<Session>> = use_context();
     let toast = use_toast();
+    // A save or skip lands even after the screen goes; its row update waits on this.
+    let mounted = use_mounted();
     let authed = use_authed();
     let seed: CreateDeckSeed = use_context();
     let hint_open = use_one_time_hint(OneTimeHint::SuggestedCommanders);
@@ -236,7 +238,7 @@ pub fn Playstyle() -> Element {
     };
 
     let on_maybe = move |oracle_id: Uuid| {
-        spawn(async move {
+        spawn_write(async move {
             if authed
                 .run("add_commander_maybeboard", |c, s| async move {
                     c.add_commander_maybeboard_card(oracle_id, &s).await
@@ -244,7 +246,9 @@ pub fn Playstyle() -> Element {
                 .await
                 .is_some()
             {
-                drop_row(oracle_id);
+                if mounted.get() {
+                    drop_row(oracle_id);
+                }
                 toast.success(
                     "Added to your commander maybeboard".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
@@ -254,7 +258,7 @@ pub fn Playstyle() -> Element {
     };
 
     let on_dismiss = move |oracle_id: Uuid| {
-        spawn(async move {
+        spawn_write(async move {
             if authed
                 .run("dismiss_commander", |c, s| async move {
                     c.dismiss_commander(oracle_id, &s).await
@@ -262,7 +266,9 @@ pub fn Playstyle() -> Element {
                 .await
                 .is_some()
             {
-                drop_row(oracle_id);
+                if mounted.get() {
+                    drop_row(oracle_id);
+                }
                 toast.info(
                     "Skipped for a week".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
@@ -272,7 +278,7 @@ pub fn Playstyle() -> Element {
     };
 
     let clear_dismissals = use_callback(move |()| {
-        spawn(async move {
+        spawn_write(async move {
             if authed
                 .run("clear_commander_dismissals", |c, s| async move {
                     c.clear_commander_dismissals(&s).await
@@ -284,7 +290,9 @@ pub fn Playstyle() -> Element {
                     "Skips cleared".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
-                refetch();
+                if mounted.get() {
+                    refetch();
+                }
             }
         });
     });

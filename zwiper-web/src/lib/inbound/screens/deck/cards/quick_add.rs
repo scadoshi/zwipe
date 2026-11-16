@@ -8,7 +8,7 @@
 //! clears the box, which closes them. Esc closes them and leaves the box, so the page's keys
 //! answer again. `/` focuses the box.
 
-use components::{ClearWrap, TOAST_QUICK};
+use components::{ClearWrap, TOAST_QUICK, spawn_write, use_mounted};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
@@ -49,6 +49,8 @@ pub(crate) fn QuickAdd(
     let client: Signal<ZwipeClient> = use_context();
     let usage = telemetry::use_usage();
     let toast = use_toast();
+    // An add lands even after the screen goes; what it then shows here waits on this.
+    let mounted = use_mounted();
     let CardStores { mut undo, .. } = use_context();
     let mut query = use_signal(String::new);
     let mut results: Signal<Vec<Card>> = use_signal(Vec::new);
@@ -100,7 +102,7 @@ pub(crate) fn QuickAdd(
         query.set(String::new());
         results.set(Vec::new());
         show.set(false);
-        spawn(async move {
+        spawn_write(async move {
             let card = match picked.scryfall_data.oracle_id {
                 Some(oracle_id) => {
                     let http = client.peek().clone();
@@ -127,8 +129,10 @@ pub(crate) fn QuickAdd(
                 return;
             };
             let card_name = card.scryfall_data.name.clone();
-            entries.write().push(DeckEntry { card, deck_card });
-            on_added.call(());
+            if mounted.get() {
+                entries.write().push(DeckEntry { card, deck_card });
+                on_added.call(());
+            }
             undo.write().push(
                 deck_id,
                 UndoAction::Added {

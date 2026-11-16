@@ -15,7 +15,7 @@ use components::keys::focus_by_id;
 use components::{
     ActionDock, AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap,
     DangerZoneAction, DialogAction, DockFilter, HoverStackHost, TOAST_LONG, TOAST_QUICK,
-    use_hover_stack,
+    spawn_write, use_hover_stack, use_mounted,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -159,6 +159,8 @@ pub fn CommanderMaybeboard() -> Element {
     let session: Signal<Option<Session>> = use_context();
     let seed: CreateDeckSeed = use_context();
     let toast = use_toast();
+    // A save or remove lands even after the screen goes; its list update waits on this.
+    let mounted = use_mounted();
     let authed = use_authed();
     let usage = telemetry::use_usage();
     let hint_open = use_one_time_hint(OneTimeHint::CommanderMaybeboard);
@@ -274,7 +276,7 @@ pub fn CommanderMaybeboard() -> Element {
             .write()
             .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
         highlight.set(None);
-        spawn(async move {
+        spawn_write(async move {
             if authed
                 .run("add_commander_maybeboard", |c, s| async move {
                     c.add_commander_maybeboard_card(oracle_id, &s).await
@@ -283,14 +285,16 @@ pub fn CommanderMaybeboard() -> Element {
                 .is_some()
             {
                 let name = card.scryfall_data.name.clone();
-                let already_saved = entries
-                    .peek()
-                    .iter()
-                    .any(|c| c.scryfall_data.oracle_id == Some(oracle_id));
-                if !already_saved {
-                    entries.write().insert(0, card);
+                if mounted.get() {
+                    let already_saved = entries
+                        .peek()
+                        .iter()
+                        .any(|c| c.scryfall_data.oracle_id == Some(oracle_id));
+                    if !already_saved {
+                        entries.write().insert(0, card);
+                    }
+                    list.refetch();
                 }
-                list.refetch();
                 toast.info(
                     format!("Added {name}"),
                     ToastOptions::default().duration(TOAST_QUICK),
@@ -331,7 +335,7 @@ pub fn CommanderMaybeboard() -> Element {
     });
 
     let on_remove = use_callback(move |oracle_id: Uuid| {
-        spawn(async move {
+        spawn_write(async move {
             if authed
                 .run("remove_commander_maybeboard", |c, s| async move {
                     c.remove_commander_maybeboard_card(oracle_id, &s).await
@@ -339,7 +343,9 @@ pub fn CommanderMaybeboard() -> Element {
                 .await
                 .is_some()
             {
-                list.remove(oracle_id);
+                if mounted.get() {
+                    list.remove(oracle_id);
+                }
                 toast.info(
                     "Removed".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
@@ -349,7 +355,7 @@ pub fn CommanderMaybeboard() -> Element {
     });
 
     let clear_maybeboard = use_callback(move |()| {
-        spawn(async move {
+        spawn_write(async move {
             if authed
                 .run("clear_commander_maybeboard", |c, s| async move {
                     c.clear_commander_maybeboard(&s).await
@@ -357,7 +363,9 @@ pub fn CommanderMaybeboard() -> Element {
                 .await
                 .is_some()
             {
-                list.clear();
+                if mounted.get() {
+                    list.clear();
+                }
                 toast.info(
                     "Maybeboard cleared".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),

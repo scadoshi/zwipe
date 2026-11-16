@@ -18,7 +18,9 @@ pub mod sections;
 use std::iter;
 
 use components::icons::{CloneIcon, EditIcon, ShareIcon};
-use components::{LoadFailed, TOAST_NORMAL, TOAST_QUICK, use_back_online};
+use components::{
+    LoadFailed, TOAST_NORMAL, TOAST_QUICK, spawn_write, use_back_online, use_mounted,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
@@ -76,6 +78,8 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
     let toast = use_toast();
+    // A fix lands even after the page goes; what it then changes here waits on this.
+    let mounted = use_mounted();
     let usage = telemetry::use_usage();
     let hint_open = use_one_time_hint(OneTimeHint::FirstDeck);
     let on_hint = use_callback(move |()| {
@@ -169,7 +173,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                 .iter()
                 .find(|e| e.deck_card.scryfall_data_id == card)
                 .map(|e| (e.card.scryfall_data.name.clone(), *e.deck_card.quantity));
-            spawn(async move {
+            spawn_write(async move {
                 if authed
                     .run("update_card_quantity", |c, s| async move {
                         c.update_deck_card(deck_id, card, &request, &s).await
@@ -193,15 +197,17 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                         format!("Quantity set to {quantity}"),
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
-                    // The reload can take a warning away, so the page settles around it.
-                    components::settle::watch();
-                    fixed.with_mut(|n| *n = n.wrapping_add(1));
+                    if mounted.get() {
+                        // The reload can take a warning away, so the page settles around it.
+                        components::settle::watch();
+                        fixed.with_mut(|n| *n = n.wrapping_add(1));
+                    }
                 }
             });
         }),
         clear_commander: use_callback(move |()| {
             let request = Slot::Commander.update_request(None);
-            spawn(async move {
+            spawn_write(async move {
                 let cleared = authed
                     .run("remove_commander", |c, s| async move {
                         c.update_deck_profile(deck_id, &request, &s).await
@@ -215,6 +221,9 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                     format!("{label} cleared"),
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
+                if !mounted.get() {
+                    return;
+                }
                 commander.set(None);
                 components::settle::watch();
                 profile.restart();
@@ -226,7 +235,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
         remove: use_callback(move |card: Uuid| {
             // The row as it stands, for the deck's undo log, which Cards' Undo walks.
             let undone = UndoAction::removal(&rows.peek(), card);
-            spawn(async move {
+            spawn_write(async move {
                 let current = session.peek().clone();
                 let result = match current {
                     Some(current) => {
@@ -245,8 +254,10 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                             "Card removed".to_string(),
                             ToastOptions::default().duration(TOAST_QUICK),
                         );
-                        components::settle::watch();
-                        fixed.with_mut(|n| *n = n.wrapping_add(1));
+                        if mounted.get() {
+                            components::settle::watch();
+                            fixed.with_mut(|n| *n = n.wrapping_add(1));
+                        }
                     }
                     Err(e) => {
                         tracing::warn!("remove_flagged_card failed: {e}");
