@@ -18,7 +18,7 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
         div { style: "display:flex;flex-direction:column;",
             if !deck_profile.tags.is_empty() {
                 div { class: "settings-row info-row-stacked",
-                    span { style: "display:flex;align-items:center;gap:0.35rem;",
+                    span { style: "display:flex;align-items:center;gap:var(--space-1);",
                         span { class: "settings-row-label", "Deck tags" }
                         InfoButton { topic: HintTopic::DeckViewDeckTags }
                     }
@@ -31,7 +31,7 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
             }
             if !deck_profile.oracle_tags.is_empty() {
                 div { class: "settings-row info-row-stacked",
-                    span { style: "display:flex;align-items:center;gap:0.35rem;",
+                    span { style: "display:flex;align-items:center;gap:var(--space-1);",
                         span { class: "settings-row-label", "Oracle tags" }
                         InfoButton { topic: HintTopic::DeckViewOracleTags }
                     }

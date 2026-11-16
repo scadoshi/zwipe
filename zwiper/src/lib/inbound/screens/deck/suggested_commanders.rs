@@ -991,7 +991,7 @@ pub fn SuggestedCommanders() -> Element {
                 // width and overflow the viewport on long rows.
                 div {
                     class: "flex-col",
-                    style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
+                    style: "max-width: 40rem; width: 100%; padding: 0 var(--space-4);",
                     if status == Status::Loading {
                         // First load only: a refetch keeps the data in place.
                         // The profile ghosts as its five sections, Summary open

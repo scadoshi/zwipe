@@ -11,7 +11,7 @@
     /* A dialog's widest. */
     --web-dialog-max: 74rem;
     /* Where a sticky column stops: the page's 1rem gap under the nav. */
-    --web-sticky-top: 1rem;
+    --web-sticky-top: var(--space-4);
     /* How tall a sticky column may be: the window less the nav, the gap
        over the column and room at the bottom. */
     --web-sticky-max: calc(100dvh - 10rem);
@@ -828,12 +828,12 @@ body:has(.bottom-sheet.show) .toast-container {
 /* A dock inside a closed sheet form is not on screen, so it leaves the
    stack at the window's foot. */
 html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bottom-sheet:not(.show) *))) {
-    --toast-bottom: 1rem;
+    --toast-bottom: var(--space-4);
 }
 
 @media (min-width: 900px) {
     body:has(.action-dock) {
-        --toast-bottom: 1rem;
+        --toast-bottom: var(--space-4);
     }
 
     body:has(.swipe-bottom-row) {
@@ -945,7 +945,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
    whole pixel so its border draws crisp. */
 @media (min-width: 900px) {
     :root {
-        --sheet-drawer-top: round(calc(var(--web-nav-h, 4.7rem) + 0.7rem), 1px);
+        --sheet-drawer-top: round(calc(var(--web-nav-h, 4.7rem) + var(--space-3)), 1px);
     }
 
     /* The dock sits as far left of the scrollbar along the drawer's right
@@ -1179,7 +1179,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 }
 
 .web-printing-body > .cover-flow {
-    --flow-step-inset: 1rem;
+    --flow-step-inset: var(--space-4);
     margin: 0 calc(-1 * var(--space-5)) var(--space-3);
 }
 
@@ -1263,7 +1263,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
        body's side padding to the modal's edges, its stage stretching rather
        than keeping the phone's shape. */
     .web-flow-body > .cover-flow {
-        --flow-step-inset: 1.5rem;
+        --flow-step-inset: var(--space-5);
         flex: 1 1 auto;
         min-height: 0;
         margin-inline: calc(-1 * var(--space-5));
@@ -1373,7 +1373,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
    right: in the bottom row beside the pile chips, or on their own over the
    screen. The swipes' buttons carry the action's name beside the arrow. */
 .web-dock-pair {
-    --pair-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem);
+    --pair-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2));
     position: fixed;
     right: var(--pair-gap);
     bottom: calc(var(--pair-gap) + var(--keyboard-inset, 0px));
@@ -1439,7 +1439,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
        A pair that is one dock (the swipes with a tail) leaves the kit's
        offset and the screen's room for one dock. */
     body:has(.web-dock-pair > .action-dock + .action-dock) .sheet-form-drawer > .bottom-sheet.drawer-every-width {
-        bottom: round(calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + 2 * 3.125rem + 0.5rem + var(--drawer-float-gap)), 1px);
+        bottom: round(calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2) + 2 * (2.4rem + 2 * var(--space-1) + 2px) + var(--space-2) + var(--drawer-float-gap)), 1px);
     }
 
     .web-dock-pair > .action-dock {
@@ -2836,7 +2836,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 
     .alert-dialog-description {
-        padding: 1.25rem var(--dialog-pad-x);
+        padding: var(--space-5) var(--dialog-pad-x);
     }
 
     /* Every hint takes one width, whatever its longest line: a page's hint

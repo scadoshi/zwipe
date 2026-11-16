@@ -252,7 +252,7 @@ pub fn BarChart(
     // adds no height.
     let plain_row = |index: usize, bar: &Bar| {
         rsx! {
-            div { style: "display:flex;align-items:center;gap:0.5rem;padding:0.175rem 0;",
+            div { style: "display:flex;align-items:center;gap:var(--space-2);padding:var(--space-1) 0;",
                 span { style: label_style(bar), onclick: tap(bar.key.clone()),
                     "{bar.label}"
                 }
@@ -266,7 +266,7 @@ pub fn BarChart(
     // Three grid cells and the row's reveal, spanning the grid.
     let chip_row = |index: usize, bar: &Bar| {
         rsx! {
-            div { style: "padding:0.175rem 0;text-align:right;",
+            div { style: "padding:var(--space-1) 0;text-align:right;",
                 if bar.revealable {
                     button { class: chip_class(bar), onclick: tap_chip(bar.key.clone()),
                         "{chip_label(bar)}"
@@ -291,13 +291,13 @@ pub fn BarChart(
         }
     };
     rsx! {
-        div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
+        div { style: "display:flex;flex-direction:column;gap:var(--space-1);padding:0 var(--space-3);",
             if let Some(text) = label {
                 ChartLabel { text, hint }
             }
             match layout {
                 Layout::Vertical => rsx! {
-                    div { style: "display:flex;justify-content:center;align-items:flex-end;gap:0.25rem;height:6rem;",
+                    div { style: "display:flex;justify-content:center;align-items:flex-end;gap:var(--space-1);height:6rem;",
                         for (index, bar) in bars.iter().enumerate() {
                             div { style: "{column}display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
                                 if bar.count > 0 {
@@ -310,7 +310,7 @@ pub fn BarChart(
                             }
                         }
                     }
-                    div { style: "display:flex;justify-content:center;gap:0.25rem;",
+                    div { style: "display:flex;justify-content:center;gap:var(--space-1);",
                         for bar in bars.iter() {
                             span { style: label_style(bar), onclick: tap(bar.key.clone()), "{bar.label}" }
                         }
@@ -334,7 +334,7 @@ pub fn BarChart(
                 // padding, not a row gap, so the shut reveals and a shut fold
                 // add no height.
                 Layout::ChipRows => rsx! {
-                    div { style: format!("display:grid;grid-template-columns:fit-content({CHIP_LABEL_MAX_WIDTH}) minmax(0,1fr) auto;column-gap:0.5rem;align-items:center;"),
+                    div { style: format!("display:grid;grid-template-columns:fit-content({CHIP_LABEL_MAX_WIDTH}) minmax(0,1fr) auto;column-gap:var(--space-2);align-items:center;"),
                         for (index, bar) in shown_bars.iter().enumerate() {
                             {chip_row(index, bar)}
                         }
@@ -547,9 +547,9 @@ pub(crate) fn bar_delay(index: usize) -> String {
 #[component]
 pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7], hint: Option<Element>) -> Element {
     rsx! {
-        div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
+        div { style: "display:flex;flex-direction:column;gap:var(--space-1);padding:0 var(--space-3);",
             ChartLabel { text: "Mana curve", hint }
-            div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
+            div { style: "display:flex;align-items:flex-end;gap:var(--space-1);height:6rem;",
                 for (index, (count, pct)) in mana_curve_bars.iter().enumerate() {
                     div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
                         if *count > 0 {
@@ -562,7 +562,7 @@ pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7], hint: Option<Element>) -> E
                     }
                 }
             }
-            div { style: "display:flex;gap:0.25rem;",
+            div { style: "display:flex;gap:var(--space-1);",
                 for label in ["0", "1", "2", "3", "4", "5", "6+"] {
                     span { style: "flex:1;text-align:center;font-size:0.65rem;color:var(--text-primary);opacity:0.85;", "{label}" }
                 }
@@ -609,8 +609,8 @@ pub fn DrawOdds(
         .collect();
     let (shown_rows, folded_rows) = fold_split(&rows, FOLD_AT);
     rsx! {
-        div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
-            div { style: "display:flex;align-items:center;justify-content:center;gap:0.6rem;",
+        div { style: "display:flex;flex-direction:column;gap:var(--space-1);padding:0 var(--space-3);",
+            div { style: "display:flex;align-items:center;justify-content:center;gap:var(--space-2);",
                 // Reuse the combat-filter stepper button: solid background gives
                 // native press feedback and suppresses WKWebView's focus ring.
                 // Each step is off at its bound, turn 0 or the last turn.
@@ -659,7 +659,7 @@ fn OddsRow(
     let (class, delay) = odds_fill(entrance);
     rsx! {
         div {
-            style: "display:flex;align-items:center;gap:0.5rem;padding:0.175rem 0;",
+            style: "display:flex;align-items:center;gap:var(--space-2);padding:var(--space-1) 0;",
             span { style: "width:{DRAW_ODDS_LABEL_WIDTH};font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
                 "{label}"
             }

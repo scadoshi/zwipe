@@ -342,7 +342,7 @@
 
 .card-row-detail {
     --card-row-detail-pad-x: 1rem;
-    padding: 0.5rem var(--card-row-detail-pad-x) 0.25rem;
+    padding: var(--space-2) var(--card-row-detail-pad-x) var(--space-1);
     font-size: 0.75rem;
     color: var(--ink-text-muted, var(--text-muted));
     max-width: 100%;
@@ -911,7 +911,7 @@ i.ms.ms-cost.ms-gp {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: calc(0.2rem - 0.1em) 0.4rem;
+    padding: calc(var(--space-1) - 0.1em) var(--space-2);
 }
 
 .card-action-icon > .action-dock-icon {
@@ -2273,8 +2273,8 @@ html.keyboard-up .web-dock-pair {
     position: relative;
     justify-content: center;
     flex-wrap: nowrap;
-    padding-left: calc(1rem + var(--home-panel-action-width, 0rem) + 0.5rem);
-    padding-right: calc(1rem + var(--home-panel-action-width, 0rem) + 0.5rem);
+    padding-left: calc(var(--space-4) + var(--home-panel-action-width, 0rem) + var(--space-2));
+    padding-right: calc(var(--space-4) + var(--home-panel-action-width, 0rem) + var(--space-2));
 }
 
 .home-panel-header-title {
@@ -3539,7 +3539,9 @@ footer.site-footer .site-footer-note {
    and count on one line cut short past the column, then the price tag and
    the cart on the line under them. */
 .deck-stacks.deck-stacks-touch .deck-stack > .deck-group > .card-group-header.group-collapsible {
-    --stack-head-inset: 0.5rem;
+    --stack-head-inset: var(--space-2);
+    /* The arrow's slot in the left inset, which the toggle reaches back over. */
+    --stack-arrow-room: 1.2rem;
     position: relative;
     display: flex;
     flex-wrap: wrap;
@@ -3550,7 +3552,7 @@ footer.site-footer .site-footer-note {
     box-sizing: border-box;
     width: 100%;
     margin: 0 0 var(--space-2);
-    padding: var(--stack-head-inset) var(--stack-head-inset) var(--stack-head-inset) calc(var(--stack-head-inset) + 1.2rem);
+    padding: var(--stack-head-inset) var(--stack-head-inset) var(--stack-head-inset) calc(var(--stack-head-inset) + var(--stack-arrow-room));
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
     background-color: var(--bg-primary);
@@ -3573,11 +3575,10 @@ footer.site-footer .site-footer-note {
    over it), so the price line starts under the name, and on the words'
    first line when they wrap. */
 .deck-stacks.deck-stacks-touch .deck-stack > .deck-group > .card-group-header > .card-group-toggle {
-    --stack-arrow-room: 1.2rem;
     display: flex;
     flex: 1 0 100%;
     align-items: baseline;
-    gap: calc(var(--stack-arrow-room) - 1rem);
+    gap: calc(var(--stack-arrow-room) - var(--space-4));
     min-width: 0;
     margin-left: calc(-1 * var(--stack-arrow-room));
     cursor: pointer;

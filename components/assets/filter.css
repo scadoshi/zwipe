@@ -11,15 +11,17 @@
    breakpoint it is the kit's drawer. Below it the drawer floats along the
    right edge: under the status bar and the header (the kit's --app-nav-h),
    above the docks at the bottom (their gap from the edge plus their
-   height) and the host's --sheet-drawer-floor, as the kit's drawer is, one
+   height, written from the kit's dock: its --space-2 gap, its 2.4rem
+   buttons, their two --space-1 insets and its 2px border) and the host's
+   --sheet-drawer-floor, as the kit's drawer is, one
    dock gap in from the right, with the panel's corners, border and shadow,
    and slides in from the right as the wide one does. Its offsets round to
    whole pixels so its border draws crisp. */
 @media (max-width: 59.99rem) {
     .sheet-form-drawer > .bottom-sheet.drawer-every-width {
-        --drawer-float-gap: 0.6rem;
+        --drawer-float-gap: var(--space-2);
         top: round(calc(env(safe-area-inset-top, 0px) + var(--app-nav-h, 2.75rem) + var(--drawer-float-gap)), 1px);
-        bottom: round(calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + 3.125rem + var(--drawer-float-gap) + var(--sheet-drawer-floor, 0px)), 1px);
+        bottom: round(calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2) + 2.4rem + 2 * var(--space-1) + 2px + var(--drawer-float-gap) + var(--sheet-drawer-floor, 0px)), 1px);
         left: auto;
         right: round(var(--drawer-float-gap), 1px);
         width: min(calc(100vw - 3rem), 26rem);
@@ -274,7 +276,7 @@
     width: var(--label-clear-w);
     padding-inline: 0;
     text-align: center;
-    margin-right: calc(-1 * (var(--label-clear-w) + 0.5rem));
+    margin-right: calc(-1 * (var(--label-clear-w) + var(--space-1) + var(--space-1)));
 }
 
 /* A mode chip that comes with a pick, as Basic types include's Any, stays in

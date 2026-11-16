@@ -122,7 +122,9 @@
    more lines in a narrow column; the price tag and the cart right after it
    share the line under them. */
 .deck-stack > .deck-group > .card-group-header.group-collapsible {
-    --stack-head-inset: 0.6rem;
+    --stack-head-inset: var(--space-2);
+    /* The arrow's slot in the left inset, which the toggle reaches back over. */
+    --stack-arrow-room: 1.4rem;
     position: relative;
     display: flex;
     flex-wrap: wrap;
@@ -133,7 +135,7 @@
     box-sizing: border-box;
     width: 100%;
     margin: 0 0 var(--space-2);
-    padding: var(--stack-head-inset) var(--stack-head-inset) var(--stack-head-inset) calc(var(--stack-head-inset) + 1.4rem);
+    padding: var(--stack-head-inset) var(--stack-head-inset) var(--stack-head-inset) calc(var(--stack-head-inset) + var(--stack-arrow-room));
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
     background-color: var(--bg-primary);
@@ -156,11 +158,10 @@
    over it), so the price line starts under the name, and on the words'
    first line when they wrap. */
 .deck-stack > .deck-group > .card-group-header > .card-group-toggle {
-    --stack-arrow-room: 1.4rem;
     display: flex;
     flex: 1 0 100%;
     align-items: baseline;
-    gap: calc(var(--stack-arrow-room) - 1rem);
+    gap: calc(var(--stack-arrow-room) - var(--space-4));
     min-width: 0;
     margin-left: calc(-1 * var(--stack-arrow-room));
     cursor: pointer;

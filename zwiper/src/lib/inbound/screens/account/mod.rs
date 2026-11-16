@@ -109,12 +109,12 @@ pub fn Account() -> Element {
                                         class: "settings-row",
                                         span { class: "settings-row-label", {Row::Pending.label()} }
                                         div { class: "settings-row-value",
-                                            div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.5rem;",
+                                            div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-2);",
                                                 PendingEmail {
                                                     email: pending.email,
                                                     note: pending.note,
                                                 }
-                                                div { style: "display:flex;gap:0.5rem;",
+                                                div { style: "display:flex;gap:var(--space-2);",
                                                     PendingActions {}
                                                 }
                                             }

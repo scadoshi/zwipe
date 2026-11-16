@@ -192,7 +192,7 @@ pub(crate) fn PrintingSheet(
                     } else if let Some(card) = visible_card {
                         // Single printing: just show the image, no carousel
                         if card.scryfall_data.primary_image_url(ImageSize::Large).is_some() {
-                            div { style: "display: flex; justify-content: center; margin-bottom: 0.75rem;",
+                            div { style: "display: flex; justify-content: center; margin-bottom: var(--space-3);",
                                 FlippableCardImage {
                                     sd: card.scryfall_data.clone(),
                                     size: ImageSize::Large,

@@ -26,9 +26,9 @@ const DECK_ART_RADIUS: &str =
 fn a_deck_rows_art_follows_the_rows_corner() {
     let row = rule(SCREENS_COMPONENTS, ".deck-row");
     assert!(row.contains("--deck-row-radius: 1rem;"), "{row:?}");
-    assert!(row.contains("--deck-row-inset: 0.75rem;"), "{row:?}");
+    assert!(row.contains("--deck-row-inset: var(--space-3);"), "{row:?}");
     assert!(
-        row.contains("padding: var(--deck-row-inset) 1rem;"),
+        row.contains("padding: var(--deck-row-inset) var(--space-4);"),
         "{row:?}"
     );
     assert!(

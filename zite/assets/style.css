@@ -573,7 +573,7 @@ code {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--panel-gap);
     align-items: stretch;
-    margin: 0.25rem 0 var(--panel-gap);
+    margin: var(--space-1) 0 var(--panel-gap);
 }
 
 .demo-col {

@@ -1,16 +1,76 @@
 //! zwipe's sheets take their spacing from orangui's scale, `--space-1` to `--space-7` (0.25 to 3rem
 //! on a 4px base): a padding, margin or gap names a step by its token. Off the scale on purpose:
 //! hairlines (0.15rem and under), `em` padding that follows its own text, and the listed lengths
-//! that make room for something rather than space things apart. A value built in `calc()`,
-//! `var()`, `env()`, `min()`, `max()` or `clamp()` ties a gap to another measurement and is mapped
-//! by hand, so this leaves those out.
+//! that make room for something rather than space things apart or follow a size that isn't
+//! spacing. This holds for a value built in `calc()` or `var()` too, for the custom properties
+//! that carry a gap into one, and for a padding, margin or gap set inline in the Rust code.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Lengths off the scale on purpose: (the sheet's path from the workspace root, the
 /// declaration's property, the length, why).
-const ALLOWED: [(&str, &str, &str, &str); 9] = [
+const ALLOWED: [(&str, &str, &str, &str); 19] = [
+    (
+        "components/assets/screens/base.css",
+        "--content-pad-bottom",
+        "5rem",
+        "a screen's room for its dock under the content",
+    ),
+    (
+        "zwiper-web/assets/web.css",
+        "--content-pad-bottom",
+        "5rem",
+        "a screen's room for its dock under the content",
+    ),
+    (
+        "zwiper-web/assets/web.css",
+        "--content-pad-bottom",
+        "8.6rem",
+        "a screen's room for its two stacked docks under the content",
+    ),
+    (
+        "components/assets/magic.css",
+        "margin-top",
+        "0.85rem",
+        "the color count ghost centers on a line of the count's 0.85rem text",
+    ),
+    (
+        "components/assets/magic.css",
+        "margin-top",
+        "0.65rem",
+        "the color count ghost's own 0.65rem height",
+    ),
+    (
+        "components/assets/magic.css",
+        "margin-bottom",
+        "0.85rem",
+        "the color count ghost centers on a line of the count's 0.85rem text",
+    ),
+    (
+        "components/assets/magic.css",
+        "margin-bottom",
+        "0.65rem",
+        "the color count ghost's own 0.65rem height",
+    ),
+    (
+        "components/assets/screens/base.css",
+        "--toast-bottom",
+        "4.5rem",
+        "a toast's room above the dock",
+    ),
+    (
+        "zwiper-web/assets/web.css",
+        "--toast-bottom",
+        "4.5rem",
+        "a toast's room above the dock",
+    ),
+    (
+        "zwiper-web/assets/web.css",
+        "--toast-bottom",
+        "7.75rem",
+        "a toast's room above two stacked docks",
+    ),
     (
         "components/assets/magic.css",
         "margin-bottom",
@@ -67,6 +127,21 @@ const ALLOWED: [(&str, &str, &str, &str); 9] = [
     ),
 ];
 
+/// The custom properties that carry a gap into a rule.
+const SPACING_TOKENS: [&str; 11] = [
+    "--drawer-float-gap",
+    "--deck-list-gap",
+    "--deck-row-inset",
+    "--flow-step-inset",
+    "--content-pad-bottom",
+    "--heat-gutter",
+    "--toast-bottom",
+    "--row-gap",
+    "--pair-gap",
+    "--web-sticky-top",
+    "--stack-head-inset",
+];
+
 /// Every `.css` file under `dir`.
 fn sheets(dir: &Path, out: &mut Vec<PathBuf>) {
     let Ok(entries) = fs::read_dir(dir) else {
@@ -81,7 +156,7 @@ fn sheets(dir: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
-/// Every spacing declaration in `css` written out in lengths: its property and its value.
+/// Every spacing declaration in `css`: its property and its value.
 fn declarations(css: &str) -> Vec<(&str, &str)> {
     css.split(';')
         .filter_map(|chunk| {
@@ -95,22 +170,40 @@ fn declarations(css: &str) -> Vec<(&str, &str)> {
             let value = value.trim();
             let spacing = ["padding", "margin", "gap", "row-gap", "column-gap"]
                 .iter()
-                .any(|p| property == *p || property.starts_with(&format!("{p}-")));
-            let computed = ["calc(", "var(", "env(", "min(", "max(", "clamp("]
-                .iter()
-                .any(|f| value.contains(f));
-            (spacing && !computed).then_some((property, value))
+                .any(|p| property == *p || property.starts_with(&format!("{p}-")))
+                || SPACING_TOKENS.contains(&property);
+            spacing.then_some((property, value))
         })
         .collect()
 }
 
-/// Every rem length written out in `value`, without its sign.
+/// Every rem length written out in `value`, without its sign: a number right before `rem`.
 fn rem_lengths(value: &str) -> Vec<String> {
     value
-        .split(|c: char| c.is_whitespace() || c == ',')
-        .filter_map(|word| word.trim_start_matches('-').strip_suffix("rem"))
-        .map(|number| format!("{number}rem"))
+        .match_indices("rem")
+        .filter_map(|(at, _)| {
+            let before = value.get(..at)?;
+            let start = before
+                .rfind(|c: char| !(c.is_ascii_digit() || c == '.'))
+                .map_or(0, |i| i.saturating_add(1));
+            let number = before.get(start..)?;
+            (!number.is_empty()).then(|| format!("{number}rem"))
+        })
         .collect()
+}
+
+/// Every `.rs` file under `dir`.
+fn sources(dir: &Path, out: &mut Vec<PathBuf>) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+    for path in entries.filter_map(Result::ok).map(|entry| entry.path()) {
+        if path.is_dir() {
+            sources(&path, out);
+        } else if path.extension().is_some_and(|ext| ext == "rs") {
+            out.push(path);
+        }
+    }
 }
 
 #[test]
@@ -168,5 +261,60 @@ fn the_stacks_column_gap_is_the_one_the_columns_are_counted_with() {
         zwipe_ui::deck_cards::columns::STACK_GAP_CENTIREM,
         100,
         "--space-4 is 1rem, a hundred hundredths"
+    );
+}
+
+#[test]
+fn every_inline_spacing_length_in_the_rust_names_a_step() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+    let mut found = Vec::new();
+    for dir in ["components/src", "zwiper-web/src", "zwiper/src", "zite/src"] {
+        sources(&root.join(dir), &mut found);
+    }
+    assert!(found.len() > 50, "the sources were found");
+    for path in found {
+        let code = fs::read_to_string(&path).unwrap_or_default();
+        for literal in code.split('"').skip(1).step_by(2) {
+            for (property, value) in declarations(literal) {
+                for length in rem_lengths(value) {
+                    let rem: f64 = length.trim_end_matches("rem").parse().unwrap_or(f64::NAN);
+                    assert!(
+                        rem <= 0.15,
+                        "{}: inline `{property}: {value}` writes {length}; name a step (var(--space-N))",
+                        path.display()
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// The dock's height and gap as zwipe writes them where it reserves room for the kit's dock.
+const DOCK: &str = "var(--space-2) + 2.4rem + 2 * var(--space-1) + 2px";
+
+#[test]
+fn the_room_kept_for_the_dock_is_the_kit_dock() {
+    let kit = components::COMPONENTS_CSS;
+    assert!(
+        kit.contains("--dock-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2));"),
+        "the kit's dock sits --space-2 off the bottom"
+    );
+    assert!(
+        kit.contains("--dock-inset: var(--space-1);"),
+        "its buttons sit --space-1 in"
+    );
+    assert!(
+        kit.contains("height: 2.4rem;\n    margin: var(--dock-inset) 0;"),
+        "its buttons are 2.4rem"
+    );
+    let filter = include_str!("../assets/filter.css");
+    assert!(
+        filter.contains(DOCK),
+        "the filter drawer clears one dock: {DOCK}"
+    );
+    let web = include_str!("../../zwiper-web/assets/web.css");
+    assert!(
+        web.contains("var(--space-2) + 2 * (2.4rem + 2 * var(--space-1) + 2px) + var(--space-2)"),
+        "the card details drawer clears a stacked pair of docks"
     );
 }

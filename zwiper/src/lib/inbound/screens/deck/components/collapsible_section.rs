@@ -10,16 +10,17 @@ use dioxus::prelude::*;
 /// are the same box.
 pub(crate) fn card_style(border: &str) -> String {
     format!(
-        "width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid {border};border-radius:0.5rem;padding:0.75rem 0;display:flex;flex-direction:column;cursor:pointer;user-select:none;"
+        "width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid {border};border-radius:0.5rem;padding:var(--space-3) 0;display:flex;flex-direction:column;cursor:pointer;user-select:none;"
     )
 }
 
 /// The header row's style: the title group, then the accessory.
-pub(crate) const HEADER_STYLE: &str = "display:flex;align-items:center;gap:0.5rem;padding:0 1rem;";
+pub(crate) const HEADER_STYLE: &str =
+    "display:flex;align-items:center;gap:var(--space-2);padding:0 var(--space-4);";
 
 /// The title group's style: the arrow, the title and the badge.
 pub(crate) const TITLE_GROUP_STYLE: &str =
-    "display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0;";
+    "display:flex;align-items:center;gap:var(--space-2);flex:1;min-width:0;";
 
 #[component]
 pub(crate) fn CollapsibleSection(

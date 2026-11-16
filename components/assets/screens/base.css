@@ -161,7 +161,7 @@ body .toast-container [role="alertdialog"] {
    own padding: the status bar's on top of the kit's 1rem, the indicator's on
    top of the room a screen asks for in --content-pad-bottom. */
 .screen > .screen-content {
-    padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+    padding-top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
     padding-bottom: calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px));
 }
 
@@ -233,7 +233,7 @@ body .toast-container [role="alertdialog"] {
    and bottom edges as a lone dock sits, and lifts over the keyboard the same
    way. The chips keep the screen's gutter on the left. */
 .swipe-bottom-row {
-    --row-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem);
+    --row-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2));
     position: fixed;
     left: 0;
     right: 0;
@@ -244,7 +244,7 @@ body .toast-container [role="alertdialog"] {
     justify-content: space-between;
     align-items: center;
     gap: var(--space-2);
-    padding: 0 var(--row-gap) 0 1rem;
+    padding: 0 var(--row-gap) 0 var(--space-4);
     box-sizing: border-box;
     pointer-events: none;
 }

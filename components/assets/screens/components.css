@@ -94,7 +94,7 @@
    its own. An open group's decks sit the gap under its chip, with nothing
    added after the last, so the next chip's margin is the only gap. */
 .deck-list-stack {
-    --deck-list-gap: 0.75rem;
+    --deck-list-gap: var(--space-3);
 }
 
 .deck-list-stack .chip-row {
@@ -123,8 +123,8 @@
    row's curve. */
 .deck-row {
     --deck-row-radius: 1rem;
-    --deck-row-inset: 0.75rem;
-    padding: var(--deck-row-inset) 1rem;
+    --deck-row-inset: var(--space-3);
+    padding: var(--deck-row-inset) var(--space-4);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: var(--deck-row-radius);

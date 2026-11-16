@@ -115,7 +115,7 @@ pub fn BudgetBody(
 fn TagRow(label: String, topic: Option<StatTopic>, chips: Vec<String>) -> Element {
     rsx! {
         div { class: "settings-row info-row-stacked",
-            span { style: "display:flex;align-items:center;gap:0.35rem;",
+            span { style: "display:flex;align-items:center;gap:var(--space-1);",
                 span { class: "settings-row-label", "{label}" }
                 if let Some(topic) = topic {
                     {hint(topic)}

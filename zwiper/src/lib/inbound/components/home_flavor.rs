@@ -37,7 +37,7 @@ pub fn FlavorPanel(
                         div { class: "settings-list-header", style: "justify-content: center;",
                             span { class: "settings-list-title", {home::FEATURED_FLAVOR} }
                         }
-                        div { class: "flavor-quote", style: "padding: 1rem;",
+                        div { class: "flavor-quote", style: "padding: var(--space-4);",
                             "{quote.text} "
                         }
                         div { class: "flavor-buy-row",
@@ -75,7 +75,7 @@ pub fn FlavorPanel(
                     div { class: "skeleton-card-header", style: "display: flex; justify-content: center;",
                         div { class: "skeleton-bar skeleton-section-label", style: "width: 45%; margin-bottom: 0;" }
                     }
-                    div { class: "skeleton-flavor", style: "padding: 1rem;",
+                    div { class: "skeleton-flavor", style: "padding: var(--space-4);",
                         div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-1" }
                         div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-2" }
                         div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-3" }

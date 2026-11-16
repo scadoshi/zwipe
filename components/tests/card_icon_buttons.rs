@@ -46,8 +46,15 @@ fn its_icon_takes_the_text_buttons_line_so_the_heights_match() {
     let button = css.get(at..).unwrap();
     let button = button.get(..button.find('}').unwrap()).unwrap();
     assert!(
-        button.contains("padding: calc(0.2rem - 0.1em) 0.4rem;"),
-        "the larger icon takes its room from the padding, so the height stays the text's: {button}"
+        button.contains("padding: calc(var(--space-1) - 0.1em) var(--space-2);"),
+        "the larger icon takes its room from the text button's padding, so the height stays the text's: {button}"
+    );
+    let at = css.find("\n.card-action-btn {").unwrap();
+    let text = css.get(at..).unwrap();
+    let text = text.get(..text.find('}').unwrap()).unwrap();
+    assert!(
+        text.contains("padding: var(--space-1) var(--space-2);"),
+        "the text button's padding, the icon's less its 0.1em: {text}"
     );
 }
 

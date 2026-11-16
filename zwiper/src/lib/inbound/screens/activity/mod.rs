@@ -233,7 +233,7 @@ pub fn Activity() -> Element {
                 // so an unbounded column would grow to content width.
                 div {
                     class: "flex-col",
-                    style: "max-width: 40rem; width: 100%; padding: 0 1rem; gap: var(--panel-gap);",
+                    style: "max-width: 40rem; width: 100%; padding: 0 var(--space-4); gap: var(--panel-gap);",
                     // The user's lifetime counters head the screen in every
                     // state, rolling until the activity lands (or fails) so
                     // they resolve with the rest of the screen.

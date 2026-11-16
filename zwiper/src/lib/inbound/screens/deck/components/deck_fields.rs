@@ -145,7 +145,7 @@ pub(crate) fn DeckFields(
                 }
 
                 // Price target (budget; empty = no budget)
-                div { style: "margin-top: 1rem;",
+                div { style: "margin-top: var(--space-4);",
                     div { class: "label-row",
                         label { class: "label", {model::PRICE_TARGET} }
                         InfoButton { topic: HintTopic::PriceTarget }

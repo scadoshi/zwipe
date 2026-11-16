@@ -330,7 +330,7 @@ pub fn DeckList() -> Element {
                     // Same wrapper as the deck cards and maybeboard screens,
                     // so the console starts at the same distance from the
                     // header on all three.
-                    style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
+                    style: "max-width: 40rem; width: 100%; padding: 0 var(--space-4);",
 
                     // While the decks load the whole console ghosts with the
                     // list. Once loaded, the five colors always show (a color

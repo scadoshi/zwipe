@@ -23,8 +23,10 @@ fn a_label_row_s_clear_takes_no_room() {
     assert!(held.contains("box-sizing: border-box"), "{held}");
     assert!(held.contains("width: var(--label-clear-w)"), "{held}");
     assert!(
-        held.contains("margin-right: calc(-1 * (var(--label-clear-w) + 0.5rem))"),
-        "the width, its 0.25rem left margin and the row's 0.25rem gap: {held}"
+        held.contains(
+            "margin-right: calc(-1 * (var(--label-clear-w) + var(--space-1) + var(--space-1)))"
+        ),
+        "the width, its --space-1 left margin and the row's --space-1 gap: {held}"
     );
 }
 

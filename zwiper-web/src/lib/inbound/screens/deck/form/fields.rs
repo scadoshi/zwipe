@@ -168,7 +168,7 @@ fn BudgetFields(form: DeckForm) -> Element {
                 span { class: "settings-list-title", "Budget" }
             }
             div { class: "web-form-fields",
-                div { style: "margin-top: 1rem;",
+                div { style: "margin-top: var(--space-4);",
                     div { class: "label-row",
                         label { class: "label", "Land target" }
                         InfoButton { topic: HintTopic::LandTarget }
@@ -203,7 +203,7 @@ fn BudgetFields(form: DeckForm) -> Element {
                         }
                     }
                 }
-                div { style: "margin-top: 1rem;",
+                div { style: "margin-top: var(--space-4);",
                     div { class: "label-row",
                         label { class: "label", r#for: "price_target", "Price target" }
                         InfoButton { topic: HintTopic::PriceTarget }
@@ -258,7 +258,7 @@ fn TagFields(form: DeckForm) -> Element {
                 span { class: "settings-list-title", "Tags" }
             }
             div { class: "web-form-fields",
-                div { style: "margin-top: 1rem;",
+                div { style: "margin-top: var(--space-4);",
                     div { class: "label-row",
                         label { class: "label", "Deck tags" }
                         InfoButton { topic: HintTopic::DeckTags }
@@ -295,7 +295,7 @@ fn TagFields(form: DeckForm) -> Element {
                         }
                     }
                 }
-                div { style: "margin-top: 1rem;",
+                div { style: "margin-top: var(--space-4);",
                     div { class: "label-row",
                         label { class: "label", "Oracle tags" }
                         InfoButton { topic: HintTopic::OracleTags }
@@ -332,7 +332,7 @@ fn TagFields(form: DeckForm) -> Element {
                         }
                     }
                 }
-                div { style: "margin-top: 1rem;",
+                div { style: "margin-top: var(--space-4);",
                     div { class: "label-row",
                         label { class: "label", "Other tags" }
                         InfoButton { topic: HintTopic::OtherTags }

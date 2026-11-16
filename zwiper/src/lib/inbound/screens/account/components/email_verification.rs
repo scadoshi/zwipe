@@ -36,7 +36,7 @@ pub(crate) fn EmailVerification(
 #[component]
 pub(crate) fn PendingEmail(email: String, note: Option<String>) -> Element {
     rsx! {
-        div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem;",
+        div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-1);",
             span { "{email}" }
             if let Some(note) = note {
                 span { class: "badge-expiry", "{note}" }

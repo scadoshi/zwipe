@@ -1056,7 +1056,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                 div { class: "screen-content",
 
-                div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
+                div { style: "max-width: 40rem; width: 100%; padding: 0 var(--space-4);",
                     // Deck identity: name + format/power/tag chips in one
                     // wrapping row, echoing the zite share page (same stat-chip
                     // accents).

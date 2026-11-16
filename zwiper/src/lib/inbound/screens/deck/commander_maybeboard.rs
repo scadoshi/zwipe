@@ -399,7 +399,7 @@ pub fn CommanderMaybeboard() -> Element {
                 // width and overflow the viewport on long rows.
                 div {
                     class: "flex-col",
-                    style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
+                    style: "max-width: 40rem; width: 100%; padding: 0 var(--space-4);",
                     // The whole page ghosts on the first load: the Quick add and Show
                     // rows as their shapes, the list with its header title as a bar.
                     if is_loading {

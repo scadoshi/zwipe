@@ -517,7 +517,7 @@ pub(crate) fn FlavorPanel(
                 div { class: "settings-list-header", style: "justify-content: center;",
                     span { class: "settings-list-title", {home::FEATURED_FLAVOR} }
                 }
-                div { class: "flavor-quote", style: "padding: 1rem;", "{quote.text} " }
+                div { class: "flavor-quote", style: "padding: var(--space-4);", "{quote.text} " }
                 div { class: "flavor-buy-row",
                     span { class: "flavor-name", "{quote.name}" }
                     if let Some(price) = quote.price.as_ref() {
@@ -549,7 +549,7 @@ pub(crate) fn FlavorPanel(
             div { class: "settings-list-header", style: "justify-content: center;",
                 span { class: "settings-list-title", GhostText { chars: 15 } }
             }
-            div { class: "flavor-quote", style: "padding: 1rem;", GhostWords { chars: 130 } }
+            div { class: "flavor-quote", style: "padding: var(--space-4);", GhostWords { chars: 130 } }
             div { class: "flavor-buy-row",
                 span { class: "flavor-name web-ghost-chip",
                     span { "Card name" }

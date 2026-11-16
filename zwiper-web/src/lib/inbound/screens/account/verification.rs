@@ -49,12 +49,12 @@ pub(super) fn EmailValue(email: String, is_verified: bool, on_change: EventHandl
 pub(super) fn PendingEmail(email: String, expires_at: Option<DateTime<Utc>>) -> Element {
     let note = expires_at.map(|at| zwipe_ui::account::pending_note(at, Utc::now()));
     rsx! {
-        div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.5rem;",
+        div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-2);",
             span { "{email}" }
             if let Some(note) = note {
                 span { class: "badge-expiry", IconText { text: note } }
             }
-            div { style: "display:flex;gap:0.5rem;", PendingActions { email } }
+            div { style: "display:flex;gap:var(--space-2);", PendingActions { email } }
         }
     }
 }

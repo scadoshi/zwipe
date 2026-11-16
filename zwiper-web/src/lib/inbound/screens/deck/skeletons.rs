@@ -165,13 +165,13 @@ pub fn EditDeckSkeleton() -> Element {
                             div { class: "collapsible-inner" }
                         }
                     }
-                    div { style: "margin-top: 1rem;",
+                    div { style: "margin-top: var(--space-4);",
                         GhostLabelRow { chars: 11 }
                         GhostChips { chips: vec![14, 8, 12, 13, 8] }
                     }
                 }
                 GhostFormPanel { chars: 6,
-                    div { style: "margin-top: 1rem;",
+                    div { style: "margin-top: var(--space-4);",
                         GhostLabelRow { chars: 11 }
                         div { class: "stepper",
                             span { class: "skeleton-bar skeleton-chip web-ghost-box web-ghost-stepper" }
@@ -181,7 +181,7 @@ pub fn EditDeckSkeleton() -> Element {
                             span { class: "skeleton-bar skeleton-chip web-ghost-box web-ghost-stepper" }
                         }
                     }
-                    div { style: "margin-top: 1rem;",
+                    div { style: "margin-top: var(--space-4);",
                         GhostLabelRow {
                             chars: 12,
                             extra: rsx! {
@@ -199,12 +199,12 @@ pub fn EditDeckSkeleton() -> Element {
             div { class: "flex-col text-center web-deck-form-column",
                 GhostFormPanel { chars: 4,
                     for (i, chars) in [9, 11].into_iter().enumerate() {
-                        div { key: "{i}", style: "margin-top: 1rem;",
+                        div { key: "{i}", style: "margin-top: var(--space-4);",
                             GhostLabelRow { chars, extra: rsx! { span { class: "field-count", GhostText { chars: 4 } } } }
                             div { class: "input input-placeholder", GhostText { chars: 7 } }
                         }
                     }
-                    div { style: "margin-top: 1rem;",
+                    div { style: "margin-top: var(--space-4);",
                         GhostLabelRow { chars: 10 }
                         GhostChips { chips: vec![6, 4, 4, 6, 15] }
                     }

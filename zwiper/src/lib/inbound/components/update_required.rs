@@ -35,7 +35,7 @@ pub fn UpdateRequired() -> Element {
                             class: "settings-list-title update-required-title",
                             "Update required"
                         }
-                        hr { class: "box-rule", style: "margin-left: -1rem; margin-right: -1rem;" }
+                        hr { class: "box-rule", style: "margin-left: calc(-1 * var(--space-4)); margin-right: calc(-1 * var(--space-4));" }
                         p { class: "text-muted",
                             "This version of "
                             strong { style: "color: var(--palette-3);", "Zwipe" }
@@ -47,7 +47,7 @@ pub fn UpdateRequired() -> Element {
                         class: "btn",
                         href: "{WEB_BASE}{STORE_PATH}",
                         target: "_blank",
-                        style: "text-decoration: none; display: block; margin-top: 1rem;",
+                        style: "text-decoration: none; display: block; margin-top: var(--space-4);",
                         "{STORE_LABEL} ↗"
                     }
                 }

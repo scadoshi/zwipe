@@ -135,10 +135,10 @@ pub fn GhostFold(
 pub fn GhostChipBars(chips: Vec<u8>, #[props(default)] suffixed: bool) -> Element {
     let count = if suffixed { "width:4ch;" } else { "width:3ch;" };
     rsx! {
-        div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
-            div { style: "display:grid;grid-template-columns:fit-content(50%) minmax(0,1fr) auto;column-gap:0.5rem;align-items:center;",
+        div { style: "display:flex;flex-direction:column;gap:var(--space-1);padding:0 var(--space-3);",
+            div { style: "display:grid;grid-template-columns:fit-content(50%) minmax(0,1fr) auto;column-gap:var(--space-2);align-items:center;",
                 for (i, chars) in chips.into_iter().enumerate() {
-                    div { key: "{i}", style: "padding:0.175rem 0;text-align:right;",
+                    div { key: "{i}", style: "padding:var(--space-1) 0;text-align:right;",
                         GhostChip { chars, button: true }
                     }
                     div { class: "skeleton-bar chart-track" }

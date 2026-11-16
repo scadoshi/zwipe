@@ -108,7 +108,7 @@ pub(crate) fn PriceFilter() -> Element {
                 }
             }
 
-            div { class: "chip-row", style: "margin-bottom: 0.5rem; justify-content: center;",
+            div { class: "chip-row", style: "margin-bottom: var(--space-2); justify-content: center;",
                 for currency in PriceCurrency::all().iter().copied() {
                     div {
                         class: if chips::is_selected(

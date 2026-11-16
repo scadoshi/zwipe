@@ -26,7 +26,7 @@
    column would push its top out of reach. No panel shrinks to make room. */
 .home-content {
     /* Room under the last panel once the column scrolls, matching the top. */
-    --content-pad-bottom: 1rem;
+    --content-pad-bottom: var(--space-4);
 }
 
 .home-content > * {
@@ -568,7 +568,7 @@
     overflow-y: auto;
     width: 100%;
     max-width: 40rem;
-    padding: 0.5rem 1rem calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px) + 0.75rem);
+    padding: var(--space-2) var(--space-4) calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px) + var(--space-3));
     display: flex;
     flex-wrap: wrap;
     align-content: flex-start;
@@ -656,7 +656,7 @@
 }
 
 .dict-controls > .tag-controls-head {
-    margin-bottom: calc(0.35rem - 0.5rem);
+    margin-bottom: calc(var(--space-1) - var(--space-2));
 }
 
 /* The letter rail is the horizontal scroll container itself: the ancestor
@@ -703,7 +703,7 @@
     /* The entries fade in under the rail and run out under the dock to the
        list's foot, fading there too, the trailing padding scrolling the
        last one clear of the fade. */
-    padding: 0.75rem 1rem calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px) + 1rem);
+    padding: var(--space-3) var(--space-4) calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px) + var(--space-4));
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
@@ -1179,7 +1179,7 @@
    colors. Mon, Wed and Fri stay pinned at its left, on the panel's color,
    while the weeks scroll under them; the left fade starts past them. */
 .activity-scroll {
-    --heat-gutter: calc(0.75rem + 24px);
+    --heat-gutter: calc(var(--space-3) + 24px);
     padding: var(--space-1) var(--space-3) 0;
     scrollbar-color: var(--border-secondary) transparent;
     -webkit-mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
