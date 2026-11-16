@@ -734,8 +734,7 @@ h2.panel-title {
 }
 
 /* Below the web app's 900px breakpoint the changelog page's scrollbar hides as
-   the web app's does, so its panels span the window less the same gutter; from
-   900px the panel sits one step under the nav, as the web app's does. */
+   the web app's does, so its panels span the window less the same gutter. */
 @media (max-width: 899px) {
     html:has(.page > .changelog-panel) {
         scrollbar-gutter: auto;
@@ -746,12 +745,6 @@ h2.panel-title {
         width: 0;
         height: 0;
         display: none;
-    }
-}
-
-@media (min-width: 900px) {
-    .page > .changelog-panel {
-        margin-top: var(--space-4);
     }
 }
 

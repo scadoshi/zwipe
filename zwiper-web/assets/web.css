@@ -2210,7 +2210,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 @media (min-width: 900px) {
     .web-maybeboard {
         max-width: var(--web-page-max);
-        padding: var(--space-4) var(--space-5) var(--space-6);
+        padding: 0 var(--space-5) var(--space-6);
     }
 
     .web-maybeboard > .settings-list,
@@ -2411,7 +2411,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 @media (min-width: 900px) {
     .web-deck-list {
         max-width: var(--web-page-max);
-        padding: var(--space-4) var(--space-5) var(--space-6);
+        padding: 0 var(--space-5) var(--space-6);
     }
 }
 

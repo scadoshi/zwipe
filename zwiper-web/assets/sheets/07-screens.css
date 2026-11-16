@@ -174,10 +174,14 @@ body .toast-container [role="alertdialog"] {
     text-align: left;
 }
 
-/* About's panels under the first, Credits and Changelog, each a panel gap
-   below what precedes it. */
+/* About's panels, Credits and Changelog, each a panel gap below what precedes
+   it; one with nothing above it sits where every screen's first panel does. */
 .about-panel {
     margin-top: var(--panel-gap);
+}
+
+.about-panel:first-child {
+    margin-top: 0;
 }
 
 /* The Credits panel's body: two short paragraphs as the row text, with the

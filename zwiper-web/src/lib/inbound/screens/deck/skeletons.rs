@@ -267,4 +267,17 @@ mod tests {
             "a one-line row beside a taller one keeps its height, with no empty band: {body:?}"
         );
     }
+
+    #[test]
+    fn decks_and_the_maybeboard_start_where_every_screen_does() {
+        for selector in [".web-deck-list", ".web-maybeboard"] {
+            assert_eq!(query_for(selector), "@media (min-width: 900px)");
+            let at = WEB_CSS.find(&format!("    {selector} {{")).unwrap();
+            let body = WEB_CSS.get(at..).unwrap().split('}').next().unwrap();
+            assert!(
+                body.contains("padding: 0 var(--space-5) var(--space-6);"),
+                "{selector} adds no space above its first panel: {body:?}"
+            );
+        }
+    }
 }

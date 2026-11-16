@@ -1728,6 +1728,7 @@ i.ms.ms-cost.ms-gp {
     flex-wrap: wrap;
     gap: var(--space-2);
     padding: var(--space-3) var(--space-4);
+    min-height: calc(2 * var(--space-3) + 1.75rem);
     border-bottom: 1px solid var(--border-secondary);
 }
 
@@ -1735,6 +1736,15 @@ i.ms.ms-cost.ms-gp {
     font-size: 1rem;
     letter-spacing: 0.1em;
     color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+/* The version chip fits inside the title's line (0.75rem at 1.6 with 2px of
+   padding is 25.2px against the title's 25.6px), so the header is one height
+   with or without it, in every browser. */
+.changelog-panel .home-panel-header-title > .stat-chip {
+    margin: 0;
+    padding-block: 0.125rem;
+    line-height: 1.6;
 }
 
 .changelog-panel > .settings-row.changelog-filters-row {
