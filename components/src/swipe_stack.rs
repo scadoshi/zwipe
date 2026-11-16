@@ -580,13 +580,17 @@ fn ExitingCard(gone: Exiting, on_end: EventHandler<Uuid>) -> Element {
 /// of its own passes them as `tail` instead, after a rule in the swipes' own
 /// dock, so the whole set is one bar at every width. The buttons route as the arrow
 /// keys do ([`SwipeRoute::of`]): through `control` while `card_on_top`,
-/// else down calls `on_undo` and the rest are off.
+/// else down calls `on_undo` and the rest are off. Down is off too while
+/// `can_undo` says there is nothing to undo.
 #[component]
 pub fn SwipeDock(
     control: SwipeControl,
     buttons: Vec<(Swipe, &'static str)>,
     card_on_top: bool,
     on_undo: EventHandler<()>,
+    /// Whether there is a swipe to undo; without one the down button is off.
+    #[props(default = true)]
+    can_undo: bool,
     #[props(default)] tail: Option<Element>,
     children: Element,
 ) -> Element {
@@ -602,7 +606,7 @@ pub fn SwipeDock(
                                 class: "action-dock-btn web-swipe-dock-btn",
                                 "aria-label": label,
                                 title: label,
-                                disabled: route == SwipeRoute::Ignore,
+                                disabled: route == SwipeRoute::Ignore || (swipe == Swipe::Down && !can_undo),
                                 onclick: move |_| match route {
                                     SwipeRoute::Stack => control.press(swipe),
                                     SwipeRoute::Undo => on_undo.call(()),
@@ -988,5 +992,32 @@ mod face_tests {
                 && html.contains(r#"aria-label="Final""#),
             "{html}"
         );
+    }
+
+    #[test]
+    fn undo_is_off_with_nothing_to_undo() {
+        fn app() -> Element {
+            rsx! {
+                SwipeDock {
+                    control: use_swipe_control(),
+                    buttons: vec![(Swipe::Left, "Skip"), (Swipe::Down, "Undo")],
+                    card_on_top: true,
+                    can_undo: false,
+                    on_undo: |()| {},
+                }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dom.render_immediate(&mut NoOpMutations);
+        let html = dioxus_ssr::render(&dom);
+        let button = |label: &str| {
+            let at = html.find(&format!("aria-label=\"{label}\"")).unwrap();
+            let start = html[..at].rfind("<button").unwrap();
+            let end = at.saturating_add(html[at..].find('>').unwrap());
+            html[start..end].to_owned()
+        };
+        assert!(button("Undo").contains("disabled"), "Undo off: {html}");
+        assert!(!button("Skip").contains("disabled"), "Skip on: {html}");
     }
 }

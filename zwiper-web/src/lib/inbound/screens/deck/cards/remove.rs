@@ -672,6 +672,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     control,
                     buttons,
                     card_on_top: current.is_some(),
+                    can_undo: stack.read().has_history(),
                     on_undo: move |()| undo_last.call(()),
                     div { class: "action-dock",
                         DockFilter {

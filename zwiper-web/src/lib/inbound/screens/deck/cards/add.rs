@@ -123,6 +123,11 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let usage = telemetry::use_usage();
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
+    let stores: CardStores = use_context();
+    // The search stack is the root's, shared by every deck's Add: this deck
+    // takes it before anything reads it, so another deck's swiped cards and
+    // undo history never show here.
+    use_hook(move || stores.claim_add_stack(deck_id));
     let CardStores {
         mut filters,
         mut stacks,
@@ -130,7 +135,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         mut in_flight,
         add_stack: mut stack,
         mut last_search,
-    } = use_context();
+        ..
+    } = stores;
 
     let restored = use_hook(|| filters.peek().restore(FilterScope::AddSearch, deck_id));
     let had_restored = restored.is_some();
@@ -554,6 +560,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     };
 
     let undo_search = use_callback(move |()| {
+        // The stack is the root's: undo only ever acts on the deck it belongs to.
+        if *stores.add_stack_deck.peek() != Some(deck_id) {
+            return;
+        }
         revealing.set(None);
         let popped = stack.write().pop_action();
         let Some(action) = popped else {
@@ -937,6 +947,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         AddSource::Maybeboard => mb_stack.read().current_wrapping().cloned(),
     };
     let has_current = current.is_some();
+    let can_undo = match at {
+        AddSource::Search => stack.read().has_history(),
+        AddSource::Maybeboard => mb_stack.read().has_history(),
+    };
     use_swipe_keys_or_undo(
         control,
         ALL_SWIPES.to_vec(),
@@ -1202,6 +1216,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     control,
                     buttons,
                     card_on_top: has_current,
+                    can_undo,
                     on_undo: move |()| undo_now.call(()),
                     div { class: "action-dock",
                         // Synergy on or off: constrains the stack to the commander's

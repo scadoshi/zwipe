@@ -857,6 +857,7 @@ fn SwipeSelectBody(
             control,
             buttons: labels.buttons(),
             card_on_top: has_card,
+            can_undo: stack.read().has_history(),
             on_undo: move |()| undo.call(()),
             div { class: "action-dock action-dock-right",
                 if has_filter {
