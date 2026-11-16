@@ -2,8 +2,8 @@
 //! Oracle Tags cannot cleanly express: `Pump`, `Stax`, `Protection`, `GraveyardHate`.
 //!
 //! The other ~18 categories are derived from Oracle-tag subtrees (the
-//! community gold standard) and `Tokens` from `all_parts`; see
-//! `context/plans/archive/otags/`. Those concepts map cleanly to otags. These four
+//! community gold standard) and `Tokens` from `all_parts`. Those concepts map cleanly
+//! to otags. These four
 //! do NOT: the otag taxonomy carves the space differently (no single "single-target
 //! pump" or "tax/denial" concept, and `hate-graveyard` under-covers graveyard hate).
 //! So we keep a small, stable regex heuristic *only* for them.

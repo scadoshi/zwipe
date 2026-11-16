@@ -3,8 +3,7 @@
 # default placeholder (the green Android droid).
 #
 # dx regenerates the Android Gradle project's res/ on EVERY `dx bundle`, so run
-# this AFTER `dx bundle` and BEFORE the Gradle repackage. See
-# context/operations/android/play-store/submission/build.md.
+# this AFTER `dx bundle` and BEFORE the Gradle repackage.
 #
 # Usage: zcripts/android/launcher_icons.sh [RES_DIR]
 set -euo pipefail

@@ -300,8 +300,7 @@ pub(crate) fn SwipeSelect(
 
     // Local filter context (its own builder) so the shared CardFilterSheet
     // operates here without clobbering the app-wide add-screen filter. Starts
-    // sortless: the server's popularity ordering is the default
-    // (context/archive/commander_select_ordering.md). Persists across open/close
+    // sortless: the server's popularity ordering is the default. Persists across open/close
     // because this component stays mounted.
     let mut filter_builder = use_signal(CardQueryBuilder::new);
     use_context_provider(|| filter_builder);

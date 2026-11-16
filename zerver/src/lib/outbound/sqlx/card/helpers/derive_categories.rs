@@ -3,7 +3,6 @@
 //! For the ~18 `CardRole` variants that map cleanly to an Oracle-tag
 //! subtree, plus `Tokens` from Scryfall's `all_parts` token metadata, this computes
 //! `card_profiles.card_roles` directly from the community gold standard.
-//! See `context/plans/otags/`.
 //!
 //! The role rules themselves (`CATEGORY_ROOTS`, `ROLE_TAG_OVERRIDES`,
 //! `ROLE_TAG_EXCLUSIONS`) live in zwipe-core's

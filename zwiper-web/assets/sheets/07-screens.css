@@ -2609,8 +2609,7 @@ body .toast-container [role="alertdialog"] {
 /* ── Overlay layers ─────────────────────────────────────────────────────────
    Every overlay on orangui's overlay stack draws at its place there:
    `--overlay-z`, set on it while it is open, puts the one opened last on top
-   (context/plans/overlay_layers.md). The numbers below are only for a host
-   with no stack, as on zwipe.net.
+   The numbers below are only for a host with no stack, as on zwipe.net.
      base screen                              (default)
      modal backdrop / bottom sheet / filter   200–202
      a sheet over a sheet (printings)         204–205

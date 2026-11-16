@@ -549,7 +549,7 @@ impl DeckRepository for Postgres {
     ///
     /// Supports setting quantity (absolute), board, printing, and/or
     /// MVP star. The database's check constraint on `quantity` stays as the
-    /// backstop, surfacing as `QuantityUnderflow` if it ever trips. MVP rules (`context/plans/deck_mvps/`): mainboard
+    /// backstop, surfacing as `QuantityUnderflow` if it ever trips. MVP rules: mainboard
     /// only, at most 3 per deck (checked in the tx under the deck row lock), and moving a card off
     /// the mainboard clears its star in the same UPDATE.
     async fn update_deck_card(

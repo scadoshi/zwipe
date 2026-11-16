@@ -204,7 +204,7 @@ impl TryFrom<&str> for CardRole {
 
 /// Wire view of a card role for the server-delivered role catalog
 /// (`GET /api/card/roles`). Lets a client label any role slug it's sent without
-/// a compiled enum; see `context/plans/server_driven_catalogs.md` (Part B).
+/// a compiled enum, so a new role reaches clients on deploy.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CardRoleView {
     /// `snake_case` slug (matches the served role values, e.g. `graveyard_hate`).

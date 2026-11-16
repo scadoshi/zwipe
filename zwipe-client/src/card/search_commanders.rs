@@ -3,7 +3,7 @@
 //! Same `CardQuery` card_filter.clone() as the plain search, but the server orders by
 //! decks-helmed popularity, banded + wildcarded per user per day, with
 //! token/emblem printings excluded. An explicit sort in the filter still
-//! wins. (context/archive/commander_select_ordering.md)
+//! wins.
 
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;

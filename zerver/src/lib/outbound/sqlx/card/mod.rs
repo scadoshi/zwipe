@@ -108,7 +108,7 @@ impl WildcardWindow {
     }
 }
 
-// Default-synergy-ordering dials (context/plans/suggestion_signal.md).
+// Default-synergy-ordering dials.
 // `W_SIGNAL = 0.0` and `BAND_SIZE = 1` together give plain score ordering.
 
 /// Weight of the pooled add-rate term (centered on the global rate, so a
@@ -156,7 +156,7 @@ const W_STEER: f64 = 0.12;
 /// region is a deliberate future retune (raise this anchor), not v1.
 const UNSCORED_ANCHOR: f64 = -10.5;
 
-// Wildcard slot dials (context/archive/wildcard_slot/).
+// Wildcard slot dials.
 
 /// Wildcard slots per page: positions reserved for cards drawn from beyond
 /// the reachable horizon (rank > `DEEP_POOL_FLOOR`), least-shown first, so the
@@ -219,7 +219,7 @@ const DISMISSAL_TTL_DAYS: i32 = 7;
 /// name, then id for a stable tiebreak. Shared by the wildcard CTE's
 /// `row_number()` and the non-wildcard banded ORDER BY. Absent popularity rows
 /// sort last, so an empty table degrades to pure `edhrec_rank`; the revert
-/// lever. (`context/archive/commander_select_ordering.md` §2.)
+/// lever.
 const POPULARITY_RANK: &str = "pop.pop_decks DESC NULLS LAST, latest_cards.edhrec_rank ASC NULLS LAST, latest_cards.name ASC, latest_cards.id";
 
 /// A best match's popularity: the card's EDHREC rank, or, for one of the 100 most-helmed
@@ -248,8 +248,8 @@ const POPULARITY_JOIN: &str = "LEFT JOIN (SELECT oracle_id AS pop_oracle_id, dec
 /// First-party select-signal join for the commander-select wildcard's
 /// least-shown deep slice, aliased for the same ambiguity reason as
 /// [`POPULARITY_JOIN`]. An absent row COALESCEs to 0 impressions, so an empty
-/// table leaves the deep slice on the daily shuffle alone; the dormant-until-
-/// data-accrues behavior (`context/archive/commander_select_signal.md` §3).
+/// table leaves the deep slice on the daily shuffle alone, so the signal stays
+/// dormant until data accrues.
 const SELECT_SIGNAL_JOIN: &str = "LEFT JOIN (SELECT commander_oracle_id AS sel_oid, shown AS sel_shown FROM commander_select_signal) sel ON sel.sel_oid = latest_cards.oracle_id";
 
 /// A printing a decklist import may resolve to: never an Art Series card
@@ -614,8 +614,8 @@ impl CardRepository for MyPostgres {
     /// default ordering, and (when `synergy_only`) a membership constraint to
     /// the commander's synergy pool. The plain search is this with no extras.
     ///
-    /// `commander_seed` switches the engine into commander-select mode
-    /// (`context/archive/commander_select_ordering.md`): decks-helmed popularity
+    /// `commander_seed` switches the engine into commander-select mode:
+    /// decks-helmed popularity
     /// ordering, banded + wildcarded by that caller-supplied seed (typically
     /// `{user_id}:{date}`, no deck required), and token/emblem printings
     /// excluded from the candidate pool. Exposed as `search_commanders`; every
@@ -677,7 +677,7 @@ impl CardRepository for MyPostgres {
         // an explicit sort (an explicit sort still wins, as everywhere).
         let commander_select = commander_seed.is_some();
         let popularity_ordering = commander_select && request.sort().is_none();
-        // Wildcard serving (context/archive/wildcard_slot/): the banded serve
+        // Wildcard serving: the banded serve
         // reserves WILDCARD_SLOTS per page for deep-pool probes. It needs the
         // ranked pool twice (band + deep slice), so the query becomes a CTE.
         // Synergy seeds by deck; commander-select seeds by `commander_seed`.
@@ -787,8 +787,7 @@ impl CardRepository for MyPostgres {
             // instead of synergy score. The deep slice orders least-shown first
             // using the first-party select signal; with no signal rows yet the
             // COALESCE floors every pool_shown to 0 and the ordering collapses
-            // to the daily shuffle alone, byte-identical to the pre-signal
-            // behavior (context/archive/commander_select_signal.md §3). Both
+            // to the daily shuffle alone. Both
             // joins are 1:1 (PK on oracle_id) and aliased so no bare
             // `name`/`oracle_id` collides with the shared WHERE filters.
             let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
@@ -846,7 +845,7 @@ impl CardRepository for MyPostgres {
         // card's oracle_id and excludes these layouts, so serving must agree;
         // otherwise a same-named token could be offered as a commander and would
         // never join a real deck. Applies to every commander search, even one
-        // with an explicit sort. (context/archive/commander_select_ordering.md §1.)
+        // with an explicit sort.
         if commander_select {
             sep.push("latest_cards.layout NOT IN ('token', 'double_faced_token', 'emblem')");
         }
@@ -1623,8 +1622,7 @@ impl CardRepository for MyPostgres {
                 qb.push(", name ASC");
             }
         } else if wildcard_serving {
-            // Close the pool CTE and take two slices of it
-            // (context/archive/wildcard_slot/server.md):
+            // Close the pool CTE and take two slices of it:
             //   band slice: the normal banded page, WILDCARD_SLOTS narrower.
             //         Offsets are consumption-aligned (page_index * band
             //         width) for pools that hold still between pages. The
@@ -1659,8 +1657,7 @@ impl CardRepository for MyPostgres {
                 ")) AS combined ORDER BY slice ASC, pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC"
             ));
         } else if let Some(scores) = synergy_scores {
-            // Default synergy ordering: band shuffle over (base + signal)
-            // (context/plans/suggestion_signal.md).
+            // Default synergy ordering: band shuffle over (base + signal).
             //   score: the commander's synergy score (unscored cards anchor
             //          below the scored floor, see UNSCORED_ANCHOR) + the
             //          pooled net-rate, shrunk toward and centered on the
@@ -2203,8 +2200,8 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
-    /// First-class commander search (`context/archive/commander_select_ordering.md`):
-    /// decks-helmed popularity ordering, banded + wildcarded per user per day
+    /// First-class commander search: decks-helmed popularity ordering, banded +
+    /// wildcarded per user per day
     /// (no deck required), token/emblem printings excluded. An explicit sort in
     /// `request` still wins; the pool is always token-free. The shuffle seed is
     /// `{user_id}:{date}`, mirroring the synergy serve's `{deck_id}:{date}`.

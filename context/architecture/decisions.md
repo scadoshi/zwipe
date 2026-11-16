@@ -22,7 +22,7 @@ Dioxus 0.7 does NOT generate an Xcode project; it produces a `.app` bundle direc
 dx build --platform ios --device "scotland-mobile"
 ```
 
-Full iOS signing + deploy reference: `operations/ios/`.
+Full iOS signing + deploy reference: `zwipe-context zwipe/context/operations/ios/`.
 
 ---
 
@@ -168,7 +168,7 @@ Ship the full application as a webapp at `zwipe.net` alongside the existing mark
 
 ## Hosting: Ubuntu Server via Cloudflare Tunnel
 
-See `architecture/hosting.md`.
+See `zwipe-context zwipe/context/architecture/hosting.md`.
 
 ---
 

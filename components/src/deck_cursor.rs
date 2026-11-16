@@ -1,4 +1,4 @@
-//! The deck cards page's keyboard cursor (`context/plans/deck_keyboard_nav.md`): the arrow keys
+//! The deck cards page's keyboard cursor: the arrow keys
 //! and `h` `j` `k` `l` move focus between the cards, List rows and stack cards alike, and Home and
 //! End go to the first and last card while the cursor shows. The cursor is the browser's focus on
 //! a card's own focusable line or button, so Enter opens the card as it always did, a stack card

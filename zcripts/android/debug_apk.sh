@@ -7,8 +7,8 @@
 # the vendored tao needs wry_activity.sh. dx regenerates the Gradle project on
 # every build, so the patches run after it each time.
 #
-# Prints the APK path on the last line. Needs JAVA_HOME and ANDROID_HOME, as in
-# context/operations/android/emulator.md section 0.
+# Prints the APK path on the last line. Needs JAVA_HOME and ANDROID_HOME set to
+# the JDK and the Android SDK.
 #
 # Usage: zcripts/android/debug_apk.sh
 set -euo pipefail

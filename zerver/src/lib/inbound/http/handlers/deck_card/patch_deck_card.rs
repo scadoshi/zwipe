@@ -1,8 +1,7 @@
 //! Idempotent (PATCH) deck-card update.
 //!
 //! `quantity` is an **absolute** value ("set to 3"), so replaying the
-//! request is harmless. Migration notes:
-//! `context/plans/patch_idempotent_updates.md`.
+//! request is harmless.
 //!
 //! Every field of a deck card is non-clearable, so an explicit `null` in
 //! the body is a 422 per the RFC 7396 resolution (null clears nullable

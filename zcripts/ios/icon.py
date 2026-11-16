@@ -10,8 +10,7 @@ each theme's logo color on its background, the text color in dark and the
 accent in light like orangui's --logo, read from
 the themes.css of the orangui build Cargo.lock pins. Sized and placed to
 match the gruvbox primary icon in zwiper/assets/favicon, which was made with
-asciier and stays as it is (context/operations/ios/app-store/submission/
-icon_update.md).
+asciier and stays as it is.
 
 Writes zwiper/assets/app-icons/<theme>-<mode>.png. zcripts/ios/icons.sh
 compiles them into the alternate icons the App icon sheet switches between.

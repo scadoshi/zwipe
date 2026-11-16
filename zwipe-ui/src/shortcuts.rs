@@ -1,4 +1,4 @@
-//! Keyboard shortcuts every client shares (`context/plans/keyboard_shortcuts.md`): the keys that
+//! Keyboard shortcuts every client shares: the keys that
 //! mean the same on every screen, the keys every page answers, undo, Printings' cover flow, and
 //! the rows the shortcuts sheet lists for the deck cards page. A deck page that cannot be edited
 //! (a shared deck) answers only the keys that read ([`Editable::No`]).

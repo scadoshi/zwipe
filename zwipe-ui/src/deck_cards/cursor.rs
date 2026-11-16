@@ -1,4 +1,4 @@
-//! The deck cards page's keyboard cursor (`context/plans/deck_keyboard_nav.md`): which card a
+//! The deck cards page's keyboard cursor: which card a
 //! move lands on, given the cards as the page draws them, in columns. orangui-core's
 //! [`grid_cursor`](orangui_core::grid_cursor) decides; here a card is named by its Scryfall id.
 //! A screen of card lists side by side walks them as [`Walk::Lists`].

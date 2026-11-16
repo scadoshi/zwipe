@@ -4,7 +4,7 @@ A release has one piece of outward text, the store notes, written from the versi
 
 ## The store text
 
-`operations/store-submissions/<version>/whats_new.md`, one text pasted into both App Store Connect and the Play Console.
+`zwipe-context zwipe/context/operations/store-submissions/<version>/whats_new.md`, one text pasted into both App Store Connect and the Play Console.
 
 - Under Play's 500 characters, with a margin. Count with `wc -c` on the fenced block and write the count and the spare into the file's first line. The two consoles need not agree on how they count a newline, and a rejection at paste time is a bad place to find out.
 - Same rules as a changelog entry: a phrase, no period at the end, no examples, no em dash. [`changelog_guidelines.md`](changelog_guidelines.md) is the rule; this file only adds the cap.
@@ -22,4 +22,4 @@ A release has one piece of outward text, the store notes, written from the versi
 
 ## Mechanics
 
-Write the store text at cut time, before the builds start, from the moved changelog block. Record the submitted build in `operations/ios/app-store/submission/history.md` and `operations/android/play-store/submission/history.md` the moment it is uploaded, whether or not it ships; a number is burned on upload.
+Write the store text at cut time, before the builds start, from the moved changelog block. Record the submitted build in `zwipe-context zwipe/context/operations/ios/app-store/submission/history.md` and `zwipe-context zwipe/context/operations/android/play-store/submission/history.md` the moment it is uploaded, whether or not it ships; a number is burned on upload.

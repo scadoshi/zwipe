@@ -1030,7 +1030,7 @@ impl TryFrom<&str> for DeckTag {
 /// Wire view of a deck tag for the server-delivered deck-tag catalog
 /// (`GET /api/deck/tags`). Lets a client render the picker (label + description)
 /// and seed oracle tags from the server, so a new deck tag or seed relationship
-/// reaches clients on deploy. See `context/plans/server_driven_catalogs.md` (Part C).
+/// reaches clients on deploy.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeckTagView {
     /// `snake_case` slug (matches the served tag values).

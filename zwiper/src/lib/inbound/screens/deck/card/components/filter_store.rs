@@ -4,8 +4,7 @@
 //! each screen owns a local `Signal<CardQueryBuilder>` (provided as context so
 //! the filter modules bind to it), initialized from here on mount and parked
 //! back on drop. With one context per screen, a filter cannot leak across
-//! screens. In-memory only: an app restart forgets. Plan:
-//! `context/plans/filter_persistence.md`.
+//! screens. In-memory only: an app restart forgets.
 
 use std::collections::HashMap;
 

@@ -4,8 +4,7 @@
 //! Two tabs, or one page firing two refreshes at once, present the same
 //! refresh token. The first rotates it; the second, inside the window, gets
 //! that same successor instead of a replay's revocation. Both then hold one
-//! token, so a later replay of it is still caught. See
-//! `context/plans/refresh_reuse_window.md`.
+//! token, so a later replay of it is still caught.
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};

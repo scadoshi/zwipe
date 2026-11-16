@@ -11,6 +11,7 @@ The code explains itself. A comment covers the part it cannot: the surprise, the
 - The sermon. No "without this, X would happen, and then Y". Say what the line does. If the consequence is the part that is not obvious, give it one short clause.
 - A restatement. `/// Returns the name.` above `fn name()` is noise. Delete it. When every item in a container explains itself, put `#[expect(missing_docs, reason = "...")]` on the container.
 - Advice. Unless it is an instruction the reader must follow: "loopback only, do not widen".
+- A reference to documentation. No "see the plan", no "Plan:", no path or link to a doc. A comment stands on its own: when the reason lives in a doc, write the reason in a line or two in the comment instead. Plans, issues and runbooks live in the private zwipe-context, where a reader of this repo cannot follow them. Applied migrations are the one exception: SQLx checksums each file, so their comments stay as they shipped.
 
 ## Do write
 
@@ -57,7 +58,7 @@ pub additions: Option<u64>,
 ## Checking
 
 ```bash
-grep -rnE 'previously|used to|no longer|without this|in order to|—' src tests
+grep -rnE 'previously|used to|no longer|without this|in order to|—|\.md\b|context/' src tests
 ```
 
 A hit is not always wrong. "used to" also means "used for". Read each one. Then reread every comment you wrote and delete the ones a competent reader would not miss.

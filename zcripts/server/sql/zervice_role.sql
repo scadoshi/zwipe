@@ -1,6 +1,6 @@
--- Scoped Postgres role for the nightly sync/upkeep binary (zervice).
--- Phase 2 of context/archive/zervice_least_privilege.md + the upkeep grants
--- from context/plans/client-error-reporting.md.
+-- Scoped Postgres role for the nightly sync/upkeep binary (zervice): only the
+-- grants the card sync and the upkeep jobs (pruning old client errors and crash
+-- reports) need.
 --
 -- IDEMPOTENT: first run and every re-run are the same command. Re-run this
 -- whenever zervice gains a table (grants are the ledger of what it may touch).

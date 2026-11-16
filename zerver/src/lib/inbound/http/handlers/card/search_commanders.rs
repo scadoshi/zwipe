@@ -14,7 +14,6 @@ use crate::inbound::http::{ApiError, AppState};
 /// results are ordered by decks-helmed popularity, banded + wildcarded per user
 /// per day, with token/emblem printings excluded. The shuffle seed is derived
 /// from the authenticated user, so it needs no deck (works in create and edit).
-/// (`context/archive/commander_select_ordering.md`)
 ///
 /// # Errors
 ///

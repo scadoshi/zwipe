@@ -1,8 +1,7 @@
 //! Get oracle tags operation.
 //!
 //! Retrieves the full oracle tag catalog (slug, label, description, parent slugs).
-//! Used to populate the otag filter picker in card search. See
-//! `context/plans/otags/`.
+//! Used to populate the otag filter picker in card search.
 
 use thiserror::Error;
 

@@ -1,4 +1,4 @@
-//! The web's keyboard shortcuts (`context/plans/keyboard_shortcuts.md`): which key does what on
+//! The web's keyboard shortcuts: which key does what on
 //! the swipe screens, in Printings and everywhere, and the rows the shortcuts sheet lists on each
 //! screen that offers it. When a key reaches a screen at all is `components::keys`' guard,
 //! re-exported here for `swipe_stack` and the deck screens.

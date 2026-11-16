@@ -1,5 +1,4 @@
-//! The deck cards page's keys for one card (`context/plans/keyboard_shortcuts.md`, "Deck cards
-//! screen"): `p` opens its Printings, `i` its image, `v` flips it, `d` opens or closes its
+//! The deck cards page's keys for one card: `p` opens its Printings, `i` its image, `v` flips it, `d` opens or closes its
 //! details, `m` and `s` move it to the maybeboard and the sideboard, Shift+S stars or unstars it,
 //! and `-` and `+` (or `=`) step its quantity. Each does exactly what that card's own button
 //! does, and nothing where it has no such button. The card is the one under the cursor, else the

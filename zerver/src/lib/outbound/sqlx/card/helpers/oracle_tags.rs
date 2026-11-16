@@ -2,7 +2,7 @@
 //!
 //! Full-replaces the `oracle_tags` catalog and the `scryfall`-sourced rows of
 //! `card_oracle_tags` from a fresh Oracle Tags pull, all in one transaction. Rows
-//! with a non-`scryfall` `source` are left untouched. See `context/plans/otags/`.
+//! with a non-`scryfall` `source` are left untouched.
 
 use anyhow::Context;
 use sqlx::{PgConnection, QueryBuilder};

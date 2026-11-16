@@ -1,7 +1,6 @@
 //! Group each card's oracle tags under the coarse role they fall beneath, for the
 //! card display. Computed server-side so the role<->tag mapping and the noise
-//! filter update on deploy, without waiting on mobile client releases. See
-//! `context/plans/otags/`.
+//! filter update on deploy, without waiting on mobile client releases.
 //!
 //! Writes two `card_profiles` columns per card:
 //! - `oracle_tags_by_role`: `{ role: [tags] }` for the card's tags that fall in a

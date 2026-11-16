@@ -11,8 +11,7 @@ use serde::{Deserialize, Deserializer};
 /// derived `Deserialize` that unknown variant would error the *entire* card/deck.
 /// This helper drops the unknown element and keeps the rest, so an already-shipped
 /// client keeps working against every future server (it just doesn't *show* the new
-/// value until it adopts the server-driven catalog). See
-/// `context/plans/server_driven_catalogs.md` (Part 0).
+/// value until it adopts the server-driven catalog).
 ///
 /// Apply with `#[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]`.
 /// Deserialize-only: serialization is unchanged, so the wire is identical and

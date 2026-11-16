@@ -1,7 +1,7 @@
 //! Oracle tag catalog entry served to clients.
 //!
 //! Scryfall's community-maintained Oracle Tags (the Tagger project) are ingested
-//! into the `oracle_tags` catalog table (see `context/plans/otags/`). This type is
+//! into the `oracle_tags` catalog table. This type is
 //! the read-side projection the server serves and the client consumes to build the
 //! otag filter picker: the slug players filter on plus the human label, definition,
 //! and parent slugs for grouping. It is deliberately lighter than the ingest record

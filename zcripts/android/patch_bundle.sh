@@ -10,7 +10,6 @@
 #   back_handler.sh    missing -> OS back exits the app instead of navigating
 #   manifest.sh        missing -> the ndk-context double-init crash returns,
 #                                 and a system theme change closes the app
-#                                 (context/plans/archive/android_ndk_context_crash.md)
 #   launcher label     missing -> launcher shows "Zwiper" (dx names it after
 #                                 the binary, not Dioxus.toml)
 #   wry_activity.sh    missing -> UnsatisfiedLinkError in onCreate on every

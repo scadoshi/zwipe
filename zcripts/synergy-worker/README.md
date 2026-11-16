@@ -1,6 +1,6 @@
 # Synergy worker database role
 
-`setup_role.sh` creates the least-privilege Postgres role the synergy worker (separate private service, see `context/plans/synergy-data-layer.md`) connects as. Run it once per database, after the synergy tables migration.
+`setup_role.sh` creates the least-privilege Postgres role the synergy worker (separate private service, see `zwipe-context zwipe/context/plans/synergy-data-layer.md`) connects as. Run it once per database, after the synergy tables migration.
 
 ```bash
 # prod (ubuntu server; uses sudo -u postgres automatically)

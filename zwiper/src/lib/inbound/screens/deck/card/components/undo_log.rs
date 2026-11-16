@@ -6,9 +6,8 @@
 //! (see `apply_undo` in `view.rs`). The swipe screens' own gesture undo
 //! stays local, but reconciles through this store: it takes its entry back
 //! before reversing, and skips its server mutation when the entry is
-//! already gone (consumed by the button). Memory-only by design, the
-//! decision trail is in `context/plans/global_undo.md` (built on
-//! `archive/deck_cards_undo.md`).
+//! already gone (consumed by the button). Memory-only by design: an undo
+//! applies to this session's own changes.
 
 use std::collections::HashMap;
 

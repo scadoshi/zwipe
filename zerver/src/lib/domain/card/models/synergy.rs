@@ -6,7 +6,7 @@
 //! rename is a build failure on both sides instead of a silent outage here.
 //! Parsing is deliberately lenient (unknown fields ignored, missing scores
 //! tolerated); shape drift must degrade to "no signal", never to a failed
-//! search. Shape contract: `context/plans/synergy_data_layer.md`.
+//! search.
 //!
 //! Re-exported at this path so every call site keeps its existing import.
 

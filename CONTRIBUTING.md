@@ -1,12 +1,14 @@
 # Contributing
 
+This repo is the code and the docs that describe it (`context/architecture/`, `context/development/`). Plans, issues, QA notes and operations docs (server setup, deploys, store builds) live in the maintainers' private `zwipe-context` repo; the paths below that start with `zwipe-context` name them for maintainers.
+
 ## Prerequisites
 
 - Rust (stable)
 - PostgreSQL
 - [Dioxus CLI](https://dioxuslabs.com/learn/0.7/getting_started) (`cargo install dioxus-cli --version 0.7.10 --locked`); project is on Dioxus 0.7
 - iOS: Xcode + `ios-deploy` (`brew install ios-deploy`)
-- Android: Android Studio (SDK + NDK); see `context/operations/android/setup.md` (note the JDK 21 `JAVA_HOME` gotcha)
+- Android: Android Studio (SDK + NDK), with `JAVA_HOME` on JDK 21; maintainers: `zwipe-context zwipe/context/operations/android/setup.md`
 
 ## Setup
 
@@ -28,7 +30,7 @@ zerver/.env   # DATABASE_URL, JWT_SECRET, BIND_ADDRESS, ALLOWED_ORIGINS, RESEND_
 zwiper/.env   # BACKEND_URL, RUST_LOG, RUST_BACKTRACE
 ```
 
-Copy `.env.example` if present, or refer to `context/operations/infrastructure/server.md`.
+Copy `.env.example` if present, or refer to `zwipe-context zwipe/context/operations/infrastructure/server.md`.
 
 ## Project Structure
 
@@ -111,4 +113,4 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ## Deployment
 
-See `context/operations/infrastructure/server.md` for server setup and `context/operations/ios/` for iOS builds (and `context/operations/android/setup.md` for Android).
+See `zwipe-context zwipe/context/operations/infrastructure/server.md` for server setup and `zwipe-context zwipe/context/operations/ios/` for iOS builds (and `zwipe-context zwipe/context/operations/android/setup.md` for Android).

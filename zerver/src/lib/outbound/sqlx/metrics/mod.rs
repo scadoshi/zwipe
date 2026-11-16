@@ -361,8 +361,7 @@ impl MetricsRepository for Postgres {
             .map_err(db)?;
         }
 
-        // Generalized-context per-otag signal (the cross-format dataset,
-        // context/plans/otags/moat.md). For every add-stack
+        // Generalized-context per-otag signal (the cross-format dataset). For every add-stack
         // signal we credit each OTAG OF THE SWIPED CARD (card_profiles.oracle_tags),
         // keyed by the deck's generalized context:
         //   * commander present → 'commander:<oracle_id>',
@@ -454,8 +453,8 @@ impl MetricsRepository for Postgres {
         }
 
         // Commander-select signal: pooled shown/selected/skipped per candidate.
-        // Pure aggregate: no user_id, no per-user mirror (deliberately the
-        // lighter posture; see context/archive/commander_select_signal.md).
+        // Pure aggregate: no user_id and no per-user mirror, since the commander
+        // ordering reads only the pooled counts.
         for sig in &select_signals {
             query!(
                 r#"INSERT INTO commander_select_signal

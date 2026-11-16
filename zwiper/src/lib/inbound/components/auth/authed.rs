@@ -3,7 +3,7 @@
 //!
 //! Screens go through this instead of calling `ensure_fresh`, `report_error`,
 //! and the toast themselves, so every screen handles a failed authed call the
-//! same way (context/plans/authed_error_handler.md).
+//! same way.
 //!
 //! Not for everything: `session_upkeep`, `signal_logout`, the catalog cache,
 //! and the hint recorder have shapes that don't fit a screen-scoped facade
