@@ -235,7 +235,7 @@ zerver/src/
 |-------|---------|
 | `users` | Accounts (email, username, hashed password; the lockout columns are legacy, the lockout is in memory per address) |
 | `user_settings` | Theme, dark mode |
-| `scryfall_data` | All card printings (~110k rows, ~100 columns) |
+| `scryfall_data` | All card printings (~120k rows, ~100 columns) |
 | `card_profiles` | Internal card metadata (is_token, card_roles) |
 | `decks` | Deck profiles (name, format, commander_id, partner_commander_id, background_id, signature_spell_id) |
 | `deck_cards` | Deck-card join (quantity, board, mvp_at) |
@@ -249,7 +249,7 @@ The rest are signal/analytics tables (user and commander signal, weekly facets, 
 
 | Materialized view | Purpose |
 |-------|---------|
-| `latest_cards` | Deduplicated to latest printing per oracle_id (~35k rows). Refreshed by zervice after sync. All search queries read from this view. |
+| `latest_cards` | Deduplicated to latest printing per oracle_id (~39k rows). Refreshed by zervice after sync. All search queries read from this view. |
 | `card_signal_rollup` | Aggregated per-card signal |
 | `otag_context_signal_rollup` | Aggregated per-otag contextual signal |
 

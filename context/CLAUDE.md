@@ -13,7 +13,7 @@ Zwipe is a mobile-first Magic: The Gathering deck builder with swipe-based navig
 - `zwipe-client/`: the typed API client. Both zwiper and zite call the API through it
 - `components/`: the Magic UI pieces over [orangui](https://github.com/scadoshi/orangui), the generic Dioxus kit it re-exports
 - `zwipe-ui/`: the screen logic the clients share (color bars, filter draft, stores, swipe stack, hint copy, timings), with no UI crate, so it builds for mobile, the terminal and wasm32. See `zwipe-ui/README.md`
-- Database: ~118k Magic cards synced nightly from Scryfall
+- Database: ~120k Magic card printings (~39k unique cards) synced nightly from Scryfall
 
 ## zwipe-core Purity Rules
 

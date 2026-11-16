@@ -379,7 +379,7 @@ pub fn About() -> Element {
 
                     Panel { title: "Card data pipeline",
                         p { class: "card-summary",
-                            "115k+ printings synced nightly from "
+                            "120k+ printings synced nightly from "
                             a { href: URL_SCRYFALL, "Scryfall" }
                             "."
                         }
@@ -390,7 +390,7 @@ pub fn About() -> Element {
                                 code { "PartialEq" }
                                 " delta detection: only changed rows written"
                             }
-                            li { "Materialized view for dedup search (~35k unique)" }
+                            li { "Materialized view for dedup search (~39k unique)" }
                             li {
                                 "Roles derived at sync, stored on the row: filter one indexed column (see "
                                 a { href: URL_CARD_ROLE, "card_role" }
