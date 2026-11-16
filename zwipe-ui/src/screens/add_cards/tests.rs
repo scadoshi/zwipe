@@ -296,6 +296,32 @@ fn an_empty_search_says_why_on_the_ghost_alone() {
 }
 
 #[test]
+fn nothing_to_serve_says_try_a_filter_on_the_ghost_as_well() {
+    for built in [pile_deck(), deck(deck_profile("No format"), Vec::new())] {
+        let (mut state, _) = with_deck(&built);
+        let effects = state.update(Action::Filter(state.filter().clone()));
+        assert!(!has_search(&effects));
+        assert_eq!(state.pile(), Pile::Empty);
+        assert_eq!(state.ghost_note(), Some(TRY_A_FILTER), "{built:?}");
+        assert_eq!(state.ghost_synergy_note(), None);
+    }
+}
+
+#[test]
+fn a_filter_that_searches_takes_try_a_filter_off_the_ghost() {
+    let (mut state, _) = with_deck(&pile_deck());
+    let _asked = state.update(Action::Filter(state.filter().clone()));
+    let effects = state.update(Action::Filter(CardQueryBuilder::with_name_contains("elf")));
+    assert!(has_search(&effects));
+    assert_eq!(state.ghost_note(), None);
+    let _ = state.update(Action::Searched {
+        ticket: ticket_of(&effects),
+        page: page(Vec::new()),
+    });
+    assert_eq!(state.ghost_note(), Some(NO_CARDS_MATCH));
+}
+
+#[test]
 fn the_ghost_has_no_note_before_a_search() {
     let (state, _) = with_deck(&commander_deck(&[]));
     assert_eq!(state.ghost_note(), None);

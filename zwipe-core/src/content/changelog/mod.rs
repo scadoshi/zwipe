@@ -54,6 +54,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The changelog opens at once and still shows offline, on the web and in the app",
         "Stacks are faster on phones, and a raised card holds still",
         "Creating or changing a password shows which rule is missing as you type",
+        "Add says Try a filter on its empty card when a deck with no format has no filter",
     ],
 }];
 

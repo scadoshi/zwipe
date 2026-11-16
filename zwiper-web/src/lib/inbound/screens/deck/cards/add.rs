@@ -150,6 +150,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let mut related: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
     let mut related_announced = use_signal(|| false);
     let mut exhausted = use_signal(|| false);
+    // The deck is in and the filter gives Search nothing to serve, so the
+    // ghost says Try a filter as the toast does.
+    let mut needs_filter = use_signal(|| false);
     let mut loading_cards = use_signal(|| true);
     // The loads that failed, which Retry and the connection coming back
     // send again: the deck's context, and the search from the top.
@@ -284,7 +287,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         reset_image_ease();
         last_search.set(None);
         exhausted.set(false);
+        needs_filter.set(false);
         if deck.peek().is_some() && !context().serves(&filter.peek()) {
+            needs_filter.set(true);
             toast.warning(
                 add_cards::TRY_A_FILTER.to_string(),
                 ToastOptions::default().duration(TOAST_NORMAL),
@@ -292,9 +297,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             return;
         }
         let Ok(query) = builder.build() else {
-            // Nothing to search on: once the deck is in, say so rather than
-            // leave a blank ghost.
+            // Nothing to search on: once the deck is in, say so on the ghost
+            // and in a toast rather than leave a blank ghost.
             if deck.peek().is_some() {
+                needs_filter.set(true);
                 toast.warning(
                     add_cards::TRY_A_FILTER.to_string(),
                     ToastOptions::default().duration(TOAST_NORMAL),
@@ -893,6 +899,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         reset_image_ease();
         last_search.set(None);
         exhausted.set(false);
+        needs_filter.set(false);
         loading_cards.set(true);
         search_failed.set(false);
         let snapshot = filter.peek().clone();
@@ -1079,9 +1086,13 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             (s.window().to_vec(), s.entering(), false)
         }
     };
-    // The ghost says why when the filter leaves nothing to deal: a search
-    // that came back empty, or maybeboard cards none of which match.
+    // The ghost says why when the filter leaves nothing to deal: a filter
+    // that gives Search nothing to serve, a search that came back empty, or
+    // maybeboard cards none of which match.
     let ghost_note = match at {
+        AddSource::Search if needs_filter() && !stack.read().has_served() => {
+            Some(add_cards::TRY_A_FILTER)
+        }
         AddSource::Search => {
             (!loading_cards() && last_search.read().is_some() && !stack.read().has_served())
                 .then_some(NO_CARDS_MATCH)
@@ -1101,7 +1112,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         && (search_failed() || (deck_failed() && deck.read().is_none()));
     // Under it, after an empty search with Synergy on, whether Synergy may
     // be the reason.
-    let ghost_detail = if at == AddSource::Search && ghost_note.is_some() {
+    let ghost_detail = if at == AddSource::Search && ghost_note == Some(NO_CARDS_MATCH) {
         let synergy = last_search
             .read()
             .as_ref()

@@ -575,6 +575,16 @@ struct Run {
     exhausted: bool,
 }
 
+/// What Search's ghost asks for while it has nothing to show.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+enum Ask {
+    /// Nothing: the ghost waits on a search, or a search said why it came back empty.
+    #[default]
+    Nothing,
+    /// A filter: the deck is in and the filter gives Search nothing to serve.
+    Filter,
+}
+
 /// The loads that failed, which [`Action::Retry`] sends again.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 struct Failed {
@@ -604,6 +614,8 @@ pub struct State {
     /// The ticket of a search whose pile landed but whose top card is not on screen yet.
     revealing: Option<Ticket>,
     run: Run,
+    /// What the Search ghost asks for: a filter once the deck is in and the filter serves nothing.
+    ask: Ask,
     failed: Failed,
     /// The filter that produced the stack, which parking records.
     last_search: Option<CardQueryBuilder>,
@@ -793,11 +805,13 @@ impl State {
         self.stack.clear_ahead();
         self.last_search = None;
         self.run.exhausted = false;
+        self.ask = Ask::Nothing;
         let mut effects = vec![Effect::StopEnter(Source::Search), Effect::EaseImages];
         if self.source == Source::Search
             && let Some(add_deck) = &self.deck
             && !add_deck.context().serves(&self.filter)
         {
+            self.ask = Ask::Filter;
             effects.push(Effect::Toast(Toast::normal(
                 ToastKind::Warning,
                 TRY_A_FILTER,
@@ -806,8 +820,10 @@ impl State {
         }
         let Ok(query) = add::normalized(&self.filter).build() else {
             // Nothing to search on, as with no deck format and no filter:
-            // once the deck is in, say so rather than leave a blank ghost.
+            // once the deck is in, say so on the ghost and in a toast rather
+            // than leave a blank ghost.
             if self.deck.is_some() {
+                self.ask = Ask::Filter;
                 effects.push(Effect::Toast(Toast::normal(
                     ToastKind::Warning,
                     TRY_A_FILTER,
@@ -1528,6 +1544,7 @@ impl State {
         self.revealing = None;
         self.stack.reset();
         self.last_search = None;
+        self.ask = Ask::Nothing;
         self.run.exhausted = false;
         self.run.searching = true;
         self.failed.search = false;
@@ -1638,13 +1655,17 @@ impl State {
         }
     }
 
-    /// The note the ghost card carries: [`NO_CARDS_MATCH`] when the filter left nothing to deal, a
-    /// search that came back empty or a maybeboard with cards none of which match. `None` while
-    /// cards show, while a search runs and for an empty maybeboard.
+    /// The note the ghost card carries: [`TRY_A_FILTER`] when the deck is in and the filter gives
+    /// Search nothing to serve, so the ghost never reads as loading; [`NO_CARDS_MATCH`] when a
+    /// search came back empty or a maybeboard holds cards none of which match. `None` while cards
+    /// show, while a search runs and for an empty maybeboard.
     #[must_use]
     pub fn ghost_note(&self) -> Option<&'static str> {
         if self.pile() != Pile::Empty {
             return None;
+        }
+        if self.source == Source::Search && self.ask == Ask::Filter {
+            return Some(TRY_A_FILTER);
         }
         let matched_none = match self.source {
             Source::Search => self.last_search.is_some(),
@@ -1660,7 +1681,7 @@ impl State {
     /// [`add::synergy_note`].
     #[must_use]
     pub fn ghost_synergy_note(&self) -> Option<&'static str> {
-        if self.source != Source::Search || self.ghost_note().is_none() {
+        if self.source != Source::Search || self.ghost_note() != Some(NO_CARDS_MATCH) {
             return None;
         }
         let synergy = self
