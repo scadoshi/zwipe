@@ -29,7 +29,7 @@ print(best[1]) if best else sys.exit(1)
   echo "No simulator named \"$DEVICE\" on any installed iOS runtime." >&2
   echo "Installed runtimes:" >&2
   xcrun simctl list runtimes | grep -i ios >&2
-  echo "Create one with zcripts/ios/sim.sh's device name, see operations/ios/simulator.md" >&2
+  echo "Create one named \"$DEVICE\" in Xcode's Devices and Simulators window." >&2
   exit 1
 }
 

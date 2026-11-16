@@ -1647,7 +1647,7 @@ async fn current_card_request(
 }
 
 /// The printing `id` stands for now: the live replacement `removed_printings` logs for a printing
-/// zervice removed (`zwipe-context ideas/sync_remove_deleted_printings.md`), which an older client
+/// zervice removed, which an older client
 /// may still name, else `id` itself.
 async fn current_printing<'e, E: sqlx::PgExecutor<'e>>(
     executor: E,

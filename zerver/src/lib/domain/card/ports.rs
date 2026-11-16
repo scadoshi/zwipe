@@ -504,7 +504,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
         record: &StepRecord,
     ) -> impl Future<Output = anyhow::Result<()>> + Send;
 
-    /// Removes the printings Scryfall deleted (`zwipe-context ideas/sync_remove_deleted_printings.md`):
+    /// Removes the printings Scryfall deleted:
     /// every stored printing `bulk` (the ids of a complete bulk file) no longer lists, after its deck
     /// references move to its card's cheapest regular survivor, else its preferred one. A deck-held
     /// card with no other printing is kept and reported. [`RemovalMode::Preview`] computes the plan

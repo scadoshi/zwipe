@@ -159,6 +159,7 @@ opt-level = "z"
 lto = true
 codegen-units = 1
 
-# tao 0.37.0 vendored as 0.34.9. See vendor/tao/VENDOR.md.
+# tao 0.37.0, labeled 0.34.9 so dioxus-desktop's `tao ^0.34` takes it: 0.37 serves
+# windows from a UISceneDelegate, which iOS 27 requires at launch.
 [patch.crates-io]
 tao = { path = "vendor/tao" }

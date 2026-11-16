@@ -7,8 +7,8 @@
 # the upload.
 #
 # Run after every build and before signing: zcripts/ios/deploy.sh does it for
-# a phone, zcripts/ios/sim_icons.sh for the simulator, and build.md step 3 for
-# the store.
+# a phone, zcripts/ios/sim_icons.sh for the simulator, and the store build runs
+# it before signing too.
 #
 # Usage: zcripts/ios/icons.sh [APP_BUNDLE]
 set -euo pipefail

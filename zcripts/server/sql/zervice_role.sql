@@ -80,8 +80,7 @@ GRANT SELECT (expires_at) ON email_change_requests TO zervice;
 -- Step 1b (printing removal): the log of removed printings in full, and on
 -- deck_cards and decks only the printing id columns it reads and moves onto a
 -- replacement. zervice sees which printings decks use and can repoint them,
--- but never a deck's name, owner, quantity or board, nor anything about users
--- (zwipe-context ideas/sync_remove_deleted_printings.md).
+-- but never a deck's name, owner, quantity or board, nor anything about users.
 GRANT SELECT, INSERT, UPDATE, DELETE ON removed_printings TO zervice;
 GRANT SELECT (scryfall_data_id), UPDATE (scryfall_data_id) ON deck_cards TO zervice;
 GRANT SELECT (commander_id, partner_commander_id, background_id, signature_spell_id),
@@ -97,7 +96,7 @@ COMMIT;
 -- email tokens, ...) is deliberately ungranted: a compromised zervice reads no
 -- user data beyond which printing ids decks hold.
 --
--- FOOTGUN (documented in operations/infrastructure/server.md): a migration
+-- FOOTGUN: a migration
 -- that drops/recreates one of the three matviews resets ownership to the
 -- migration user — re-run this file afterward, or the next nightly run fails
 -- loudly via the alert email.

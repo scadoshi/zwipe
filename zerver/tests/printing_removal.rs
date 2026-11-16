@@ -1,5 +1,5 @@
-//! zervice's removal of the printings Scryfall deleted, against a real database
-//! (`zwipe-context ideas/sync_remove_deleted_printings.md`): a preview changes nothing, an
+//! zervice's removal of the printings Scryfall deleted, against a real database: a preview
+//! changes nothing, an
 //! applied run moves every deck reference to the card's cheapest regular survivor before it
 //! deletes, keeps a held card with no other printing, and a second run finds nothing to do. An id
 //! an older client still holds is translated by the deck routes.

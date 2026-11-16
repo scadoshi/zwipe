@@ -1,4 +1,4 @@
-//! zervice's dry run against a real database (`zwipe-context ideas/sync_remove_deleted_printings.md`):
+//! zervice's dry run against a real database:
 //! with [`Writes::Discard`] every step's write runs and reports what it would change, and nothing
 //! changes. The same writes with [`Writes::Keep`] change the rows.
 //!

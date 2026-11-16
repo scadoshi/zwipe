@@ -9,8 +9,8 @@
 //! each criterion assert `{cards SQL returns} == {cards matches() keeps}`.
 //!
 //! Excluded by design: `is_partner` / `is_background` / `is_signature_spell`.
-//! `matches` deliberately does not evaluate these (command-zone pool constraints
-//! the server applies only); see the doc comment on `CardCriteria::matches`.
+//! `matches` deliberately does not evaluate these: they are command-zone pool
+//! constraints only the server applies.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 

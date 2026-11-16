@@ -1,4 +1,4 @@
-//! Removing the printings Scryfall deleted (`zwipe-context ideas/sync_remove_deleted_printings.md`):
+//! Removing the printings Scryfall deleted:
 //! which stored printings the bulk file no longer lists, the printing each one's deck references
 //! move to, and which stay because a deck holds a card with no other printing. The plan is pure;
 //! zervice gathers its inputs from the database and the bulk file it just synced, and applies it.

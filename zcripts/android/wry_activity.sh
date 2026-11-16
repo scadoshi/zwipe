@@ -4,7 +4,7 @@
 # dx 0.7.10 copies wry 0.53.5's Kotlin activity, whose native entry points are
 # `create`, `start`, `resume`, `pause`, `stop`, `save`, `destroy`, `memory`
 # and `focus`: the names tao 0.34 exports. The vendored tao 0.37
-# (vendor/tao/VENDOR.md, needed for iOS 27) exports `onFirstActivityCreate`,
+# (needed for iOS 27) exports `onFirstActivityCreate`,
 # `onCreate`, `onStart`, `onResume`, `onPause`, `onStop`, `onDestroy`,
 # `onWindowFocusChanged`, `onLowMemory` and `onNewIntent` instead, and its
 # `onCreate` reads the activity's `id`. `onLowMemory` and `onNewIntent` are

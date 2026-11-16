@@ -1,5 +1,4 @@
-//! The SQL behind removing the printings Scryfall deleted
-//! (`zwipe-context ideas/sync_remove_deleted_printings.md`): the stored printings, the survivors
+//! The SQL behind removing the printings Scryfall deleted: the stored printings, the survivors
 //! a removed one moves to, what references each, and the batched remap and delete. Every delete
 //! checks that nothing still references the printing, so a deck never loses a card, whatever the
 //! plan says.

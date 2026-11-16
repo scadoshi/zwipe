@@ -19,9 +19,8 @@ use crate::version::Version;
 pub const DISPLAY_DATE_FORMAT: &str = "%b %-d, %Y";
 
 /// One version and its notes, dated the day its build was cut and submitted
-/// to the stores; newest first. Entries
-/// follow `context/development/changelog_guidelines.md`: a phrase saying what
-/// changed, no period, no examples. The tests below hold the parts of that a
+/// to the stores; newest first. Each entry is a phrase saying what changed,
+/// with no period and no examples. The tests below hold the parts of that a
 /// machine can check.
 #[derive(Debug)]
 pub struct Release {

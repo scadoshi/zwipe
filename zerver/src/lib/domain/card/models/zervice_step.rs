@@ -1,4 +1,4 @@
-//! One recorded zervice step (`zwipe-context ideas/sync_remove_deleted_printings.md`): every step
+//! One recorded zervice step: every step
 //! of a nightly run writes a `zervice_steps` row saying when it ran, how long it took, how it
 //! ended and what it counted, so the database holds the whole night, not only the card sync.
 

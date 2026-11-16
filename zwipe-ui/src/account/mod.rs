@@ -106,7 +106,7 @@ pub fn reset_email_error(raw: &str) -> Option<String> {
 
 /// The check of a new password and its confirmation, on Register, Change password and the website's reset form: [`PASSWORD_REQUIRED`] once a submit was tried with both empty, then the first rule of zwipe-core's password policy the password breaks (the check the server makes, judged as it is typed), then [`PASSWORDS_DIFFER`]. A confirmation still shorter than the password is not judged until a submit was tried, since mid-typing it cannot match yet.
 ///
-/// The clients hold a password the policy turns down, so changing the policy needs a migration plan first (see `context/development/api_evolution.md`). Login and an account's current password are never judged here.
+/// The clients hold a password the policy turns down, so changing the policy needs a migration plan first: a stricter one ships in the apps before the server enforces it. Login and an account's current password are never judged here.
 #[must_use]
 pub fn password_error(password: &str, confirm: &str, attempted: bool) -> Option<String> {
     if password.is_empty() && confirm.is_empty() {
