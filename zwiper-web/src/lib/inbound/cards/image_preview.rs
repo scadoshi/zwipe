@@ -79,3 +79,35 @@ fn flip_shown_card() {
         &components::data_action::FLIP_OR_MELD,
     ));
 }
+
+#[cfg(test)]
+mod tests {
+    /// The web's sheet.
+    const WEB_CSS: &str = include_str!("../../../../assets/web.css");
+
+    /// The phone block's rule for the open card's image.
+    fn phone_rule() -> &'static str {
+        let (_, phone) = WEB_CSS
+            .split_once("@media (max-width: 599px) {\n    .image-preview-container .flippable-card-wrapper.card-image img {")
+            .expect("the phone rule for the open card");
+        let (body, _) = phone.split_once('}').expect("its end");
+        body
+    }
+
+    #[test]
+    fn a_phone_s_open_card_takes_the_width_less_its_gutters_capped_by_the_visible_height() {
+        let rule = phone_rule();
+        assert!(
+            rule.contains("width: min(calc(100vw - 2rem), calc((100dvh - 4rem) * 63 / 88));"),
+            "{rule}"
+        );
+        assert!(
+            rule.contains("max-height: none;"),
+            "the shared 55vh cap lifts: {rule}"
+        );
+        assert!(
+            !rule.contains("55vh"),
+            "the large viewport's height never sizes it: {rule}"
+        );
+    }
+}

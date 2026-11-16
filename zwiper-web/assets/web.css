@@ -1147,14 +1147,16 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     max-height: 92vh;
 }
 
-/* On a phone the open card is the app's size: 55vh tall, the app's
-   `.card-image` cap, unless a 1rem gutter each side narrows it first
-   (333px at 411 wide). A set width, so the size never rests on how a
-   browser resolves the image's own size. */
+/* On a phone the open card takes the window's width less a 1rem gutter
+   each side, as in the app, and shrinks only where the whole card would
+   not fit the visible height (dvh, which leaves out a browser's toolbars)
+   less its margins. A set width, so the size never rests on how a browser
+   resolves the image's own size. */
 @media (max-width: 599px) {
     .image-preview-container .flippable-card-wrapper.card-image img {
-        width: min(calc(100vw - 2rem), calc(55vh * 63 / 88));
+        width: min(calc(100vw - 2rem), calc((100dvh - 4rem) * 63 / 88));
         max-width: none;
+        max-height: none;
         height: auto;
     }
 }
