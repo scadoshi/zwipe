@@ -14,7 +14,7 @@
 //! file draws it through the same `SwipeStack` as the add screen.
 
 use components::icons::EyeIcon;
-use components::{Toasts, use_overlay_back, use_toast, use_undo_burst};
+use components::{Toasts, use_overlay_back, use_toast};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -163,14 +163,7 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
         )
     };
 
-    // A quick run of backs waits for the card coming back, then runs together.
-    let entering = driver.entering;
-    let entering_now = use_memo(move || entering().is_some());
-    let go_back_burst = use_undo_burst(
-        entering_now,
-        use_callback(move |()| driver.dispatch(Action::BackOne)),
-    );
-    let go_back = move || go_back_burst.call(());
+    let go_back = move || driver.dispatch(Action::BackOne);
 
     let no_card = current.is_none();
     rsx! {

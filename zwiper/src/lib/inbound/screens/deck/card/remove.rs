@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 use components::icons::{self, EyeIcon};
-use components::{Chip, DockAction, DockFilter, ToastOptions, Toasts, use_toast, use_undo_burst};
+use components::{Chip, DockAction, DockFilter, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
@@ -539,12 +539,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let swipe_hint_open = driver.hint_open;
     let usage_buffer = driver.usage_buffer;
     let mut entering = driver.entering;
-    // A quick run of Undos waits for the card coming back, then runs together.
-    let entering_now = use_memo(move || entering().is_some());
-    let undo = use_undo_burst(
-        entering_now,
-        use_callback(move |()| driver.dispatch(Action::Undo)),
-    );
 
     // Offers the hint on the first render and loads the deck, once per mount.
     use_hook(move || {
@@ -620,7 +614,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             },
                             on_swipe_down: move |_card: Card| {
                                 usage_buffer().record_swipe(Direction::Down);
-                                undo.call(());
+                                driver.dispatch(Action::Undo);
                             },
                         }
 
@@ -631,7 +625,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             config: down_config,
                             on_down: move |()| {
                                 usage_buffer().record_swipe(Direction::Down);
-                                undo.call(());
+                                driver.dispatch(Action::Undo);
                             },
                             CardSkeleton {}
                         }
@@ -679,7 +673,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         label: remove_cards::UNDO,
                         icon: icons::UNDO,
                         disabled: !can_undo,
-                        onclick: move |()| undo.call(()),
+                        onclick: move |()| driver.dispatch(Action::Undo),
                     }
                     span { class: "action-dock-divider" }
                     button {

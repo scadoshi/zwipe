@@ -40,7 +40,7 @@ use components::swipe_stack::{
 use components::{
     BackArrow, BottomSheet, CardDetailsPanelSkeleton, CardGhost, DockEye, DockFilter, MeldSource,
     PageHeader, PrintingsFace, SheetFrame, SheetWide, Surface, TOAST_QUICK, open_on_shown_face,
-    turn_face, use_details_eye, use_overlay_back, use_undo_burst,
+    turn_face, use_details_eye, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -596,7 +596,7 @@ fn SwipeSelectBody(
         );
     };
 
-    let undo_now = use_callback(move |()| {
+    let undo = use_callback(move |()| {
         let had_history = stack.peek().has_history();
         let Some(action) = undo_step(&mut stack.write()) else {
             if !had_history {
@@ -633,9 +633,6 @@ fn SwipeSelectBody(
             }
         }
     });
-    // A quick run of Undos waits for the card coming back, then runs together.
-    let entering = use_memo(move || stack.read().entering().is_some());
-    let undo = use_undo_burst(entering, undo_now);
     use_swipe_keys_or_undo(
         control,
         allowed.clone(),

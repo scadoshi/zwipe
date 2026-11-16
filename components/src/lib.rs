@@ -106,7 +106,6 @@ mod stacks_ghost;
 mod staple_decks_chip;
 pub mod swipe_stack;
 mod theme;
-mod undo_burst;
 
 pub use architecture::ZwipeArchitecture;
 pub use back_arrow::BackArrow;
@@ -219,7 +218,6 @@ pub use site_footer::SiteFooter;
 pub use stacks_ghost::DeckStacksGhost;
 pub use staple_decks_chip::StapleDecksChip;
 pub use theme::{pip_style_class, theme_from_settings};
-pub use undo_burst::use_undo_burst;
 
 /// The `JetBrains Mono` faces at 400, 500 and 700, from the complete font files,
 /// which each client bundles unhashed at `/assets/`. Load it before every

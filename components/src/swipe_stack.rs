@@ -259,6 +259,13 @@ pub fn SwipeStack(
     let allowed_for_control = allowed.clone();
 
     let commit = use_callback(move |(swipe, card, from): (Swipe, Card, (f64, f64))| {
+        // A swipe while the top card enters takes that card where it is: its
+        // enter ends now, so the card under it comes up without one.
+        if entering.is_some()
+            && let Some(handler) = on_entered
+        {
+            handler.call(());
+        }
         if let Some(direction) = swipe.exit() {
             last_exit_at.set(Some(Utc::now()));
             exiting.write().push(Exiting {
@@ -294,6 +301,8 @@ pub fn SwipeStack(
         }
     }));
 
+    let allowed_for_release = allowed.clone();
+    let top_for_release = top;
     let shown: Vec<Card> = cards.into_iter().take(STACK_DEPTH).collect();
     let count = shown.len();
     let allowed_up = allowed.contains(&Swipe::Up);
@@ -360,7 +369,24 @@ pub fn SwipeStack(
     });
 
     rsx! {
-        div { class: if held { "swipe-stack web-swipe-stack ghost-held" } else { "swipe-stack web-swipe-stack" },
+        div {
+            class: if held { "swipe-stack web-swipe-stack ghost-held" } else { "swipe-stack web-swipe-stack" },
+            // The cards under the top take no pointer, so a press that misses
+            // the top card while it comes back from an undo lands here. It
+            // ends the return, the card at rest under the pointer, and drags
+            // the top card, so no swipe made during a return is lost.
+            onpointerdown: move |e: Event<PointerData>| {
+                let Some(handler) = on_entered.filter(|_| entering.is_some()) else {
+                    return;
+                };
+                handler.call(());
+                let p = e.client_coordinates();
+                drag.set(Some(Drag { start: (p.x, p.y), now: (p.x, p.y) }));
+            },
+            onpointermove: move |e: Event<PointerData>| follow(&mut drag, &e),
+            onpointerup: move |_| release(&mut drag, &allowed_for_release, top_for_release.clone(), commit),
+            onpointerleave: move |_| drag.set(None),
+            onpointercancel: move |_| drag.set(None),
             if held && ghost {
                 crate::GhostCard {}
             }
@@ -372,33 +398,39 @@ pub fn SwipeStack(
                     class: "{layer.class}",
                     style: "{layer.style}",
                     "aria-label": "{layer.name}",
+                    // Only the top card takes the pointer (the cards under it
+                    // have none), and the stack under it never sees its events.
                     onpointerdown: move |e: Event<PointerData>| {
-                        if !layer.is_top || entering.is_some() {
+                        e.stop_propagation();
+                        if !layer.is_top {
                             return;
+                        }
+                        // A grab while the card comes back from an undo ends
+                        // the return, the card at rest, so the drag counts.
+                        if entering.is_some()
+                            && let Some(handler) = on_entered
+                        {
+                            handler.call(());
                         }
                         let p = e.client_coordinates();
                         drag.set(Some(Drag { start: (p.x, p.y), now: (p.x, p.y) }));
                     },
                     onpointermove: move |e: Event<PointerData>| {
-                        let current = *drag.peek();
-                        if let Some(mut d) = current {
-                            let p = e.client_coordinates();
-                            d.now = (p.x, p.y);
-                            drag.set(Some(d));
-                        }
+                        e.stop_propagation();
+                        follow(&mut drag, &e);
                     },
-                    onpointerup: move |_| {
-                        let Some(d) = drag.take() else {
-                            return;
-                        };
-                        let (dx, dy) = d.delta();
-                        if let Some(swipe) = Swipe::of_drag(dx, dy).filter(|s| layer.allowed.contains(s)) {
-                            let from = if swipe == Swipe::Up { (0.0, dy.min(0.0)) } else { (dx, 0.0) };
-                            commit.call((swipe, layer.card.clone(), from));
-                        }
+                    onpointerup: move |e: Event<PointerData>| {
+                        e.stop_propagation();
+                        release(&mut drag, &layer.allowed, Some(layer.card.clone()), commit);
                     },
-                    onpointerleave: move |_| drag.set(None),
-                    onpointercancel: move |_| drag.set(None),
+                    onpointerleave: move |e: Event<PointerData>| {
+                        e.stop_propagation();
+                        drag.set(None);
+                    },
+                    onpointercancel: move |e: Event<PointerData>| {
+                        e.stop_propagation();
+                        drag.set(None);
+                    },
                     onanimationend: move |_| {
                         if layer.is_top && entering.is_some()
                             && let Some(handler) = on_entered
@@ -446,6 +478,39 @@ struct Layer {
     loaded: bool,
     card: Card,
     allowed: Vec<Swipe>,
+}
+
+/// Moves a drag in progress to the pointer in `e`.
+fn follow(drag: &mut Signal<Option<Drag>>, e: &Event<PointerData>) {
+    let current = *drag.peek();
+    if let Some(mut d) = current {
+        let p = e.client_coordinates();
+        d.now = (p.x, p.y);
+        drag.set(Some(d));
+    }
+}
+
+/// Ends a drag in progress: a swipe in `allowed` commits `card`; any other springs back.
+fn release(
+    drag: &mut Signal<Option<Drag>>,
+    allowed: &[Swipe],
+    card: Option<Card>,
+    commit: Callback<(Swipe, Card, (f64, f64))>,
+) {
+    let Some(d) = drag.take() else {
+        return;
+    };
+    let (dx, dy) = d.delta();
+    if let Some(swipe) = Swipe::of_drag(dx, dy).filter(|s| allowed.contains(s))
+        && let Some(card) = card
+    {
+        let from = if swipe == Swipe::Up {
+            (0.0, dy.min(0.0))
+        } else {
+            (dx, 0.0)
+        };
+        commit.call((swipe, card, from));
+    }
 }
 
 /// One stack card's image, the top one flippable, on its face in `faces` when
@@ -850,5 +915,78 @@ mod face_tests {
             "a stack card with the card's own wrapper and a card-shaped blank: {html}"
         );
         assert!(!html.contains("swipe-stack-ghost\""), "{html}");
+    }
+
+    /// Delver under another id and name, so a stack can hold several.
+    fn delver_as(id: u128, name: &str) -> Card {
+        let mut card = delver();
+        card.scryfall_data.id = Uuid::from_u128(id);
+        card.scryfall_data.name = name.to_owned();
+        card
+    }
+
+    #[test]
+    fn a_swipe_while_a_card_enters_ends_the_enter_before_it_swipes() {
+        #[derive(Clone, Copy)]
+        struct Log(Signal<Vec<&'static str>>);
+
+        fn app() -> Element {
+            let mut log = use_signal(Vec::new);
+            use_context_provider(|| Log(log));
+            let control = use_swipe_control();
+            let SwipeControl(mut asked) = control;
+            use_hook(move || asked.set(Some(Swipe::Right)));
+            rsx! {
+                SwipeStack {
+                    cards: vec![delver_as(1, "Incoming"), delver_as(2, "Under")],
+                    allowed: vec![Swipe::Left, Swipe::Right],
+                    control,
+                    on_swipe: move |_| log.write().push("swiped"),
+                    entering: Some(Direction::Left),
+                    on_entered: move |()| log.write().push("entered"),
+                }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        for _ in 0..4 {
+            dom.process_events();
+            dom.render_immediate(&mut NoOpMutations);
+        }
+        let Log(log) = dom.in_scope(ScopeId::APP, consume_context::<Log>);
+        assert_eq!(
+            *log.peek(),
+            ["entered", "swiped"],
+            "the incoming card's enter ends first, so the card under it has none"
+        );
+    }
+
+    #[test]
+    fn a_burst_of_undos_draws_only_its_final_card_entering() {
+        fn app() -> Element {
+            rsx! {
+                SwipeStack {
+                    cards: vec![delver_as(1, "Final"), delver_as(2, "Middle"), delver_as(3, "Under")],
+                    allowed: vec![Swipe::Left, Swipe::Right],
+                    control: use_swipe_control(),
+                    on_swipe: |_| {},
+                    entering: Some(Direction::Left),
+                }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dom.render_immediate(&mut NoOpMutations);
+        let html = dioxus_ssr::render(&dom);
+        assert_eq!(
+            html.matches("card-stack-enter-").count(),
+            1,
+            "one enter: {html}"
+        );
+        assert!(
+            html.contains(r#"class="swipe-stack-card top card-stack-enter-left""#)
+                && html.contains(r#"aria-label="Final""#),
+            "{html}"
+        );
     }
 }

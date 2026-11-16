@@ -16,7 +16,7 @@ use components::swipe_stack::{
 };
 use components::{
     CardGhost, Chip, DockEye, DockFilter, SheetFrame, SheetWide, Surface, TOAST_QUICK,
-    use_details_eye, use_undo_burst,
+    use_details_eye,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -260,7 +260,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
         },
     );
 
-    let undo_last_now = use_callback(move |()| {
+    let undo_last = use_callback(move |()| {
         let popped = stack.write().pop_action();
         let Some(action) = popped else {
             toast.info("Nothing to undo".to_string(), ToastOptions::default());
@@ -399,9 +399,6 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
             }
         }
     });
-    // A quick run of Undos waits for the card coming back, then runs together.
-    let entering = use_memo(move || stack.read().entering().is_some());
-    let undo_last = use_undo_burst(entering, undo_last_now);
 
     let mut on_swipe = move |(swipe, card): (Swipe, Card)| {
         usage.peek().record_swipe(swipe.into());

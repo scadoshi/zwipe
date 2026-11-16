@@ -137,7 +137,7 @@ pub fn OracleTagExamples(
 
     use_hook(load_more);
 
-    let go_back_now = use_callback(move |()| {
+    let go_back = use_callback(move |()| {
         let mut s = stack.write();
         let Some(action) = s.pop_action() else {
             drop(s);
@@ -150,9 +150,6 @@ pub fn OracleTagExamples(
             s.record(action);
         }
     });
-    // A quick run of backs waits for the card coming back, then runs together.
-    let entering = use_memo(move || stack.read().entering().is_some());
-    let go_back = crate::use_undo_burst(entering, go_back_now);
     // Shift+H lists the modal's keys while it is open.
     use_offer_shortcuts(ShortcutsList {
         groups: shortcuts::examples_groups(),

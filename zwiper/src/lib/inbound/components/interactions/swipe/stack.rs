@@ -17,7 +17,8 @@
 //!
 //! Undo uses the `entering` signal: when set to `Some(dir)`, the freshly-
 //! restored top card plays a keyframe animation entering from `dir`, then the
-//! stack clears the signal on `animationend`.
+//! stack clears the signal on `animationend`, or as soon as a gesture starts
+//! on the card, which ends the return with the card at rest.
 
 use std::collections::{HashMap, HashSet};
 
@@ -94,6 +95,16 @@ struct Layer {
     touch: Option<(Card, SwipeConfig)>,
     /// The card and config a mouse release dispatches, on the top card only.
     mouse: Option<(Card, SwipeConfig)>,
+}
+
+/// A finger or mouse on the stack while the top card comes back from an undo: the return ends
+/// now, the card at rest under the finger, so the gesture that follows counts, on whichever card
+/// it started. A down swipe undoes again; any other swipe takes the top card, and the card under
+/// it comes up without a return of its own.
+fn take_hold(entering: &mut Signal<Option<Direction>>) {
+    if entering.peek().is_some() {
+        entering.set(None);
+    }
 }
 
 /// Dispatches the committed latest swipe from `state` for `card`. For an
@@ -210,6 +221,8 @@ pub fn SwipeStack(
         up: on_swipe_up,
         down: on_swipe_down,
     };
+    let top_touch = visible.first().map(|c| (c.clone(), config.clone()));
+    let top_mouse = top_touch.clone();
     let layers = visible.into_iter().enumerate().rev().map(|(i, card)| {
         let is_top = i == 0;
         let peek_i = gesture_math::layout_index(i);
@@ -306,7 +319,40 @@ pub fn SwipeStack(
     });
 
     rsx! {
-        div { class: if held { "swipe-stack ghost-held" } else { "swipe-stack" },
+        div {
+            class: if held { "swipe-stack ghost-held" } else { "swipe-stack" },
+            // The cards under the top have no pointer, so a gesture that
+            // misses the top card while it comes back from an undo lands
+            // here. It ends the return ([`take_hold`]), the card at rest, and
+            // acts on the top card, so no swipe made during a return is lost.
+            ontouchstart: move |e: Event<TouchData>| {
+                if entering.peek().is_none() { return; }
+                take_hold(&mut entering);
+                state.ontouchstart(e);
+            },
+            ontouchmove: move |e: Event<TouchData>| {
+                if state.peek().is_swiping { state.ontouchmove(e); }
+            },
+            ontouchend: move |e: Event<TouchData>| {
+                let Some((card, config)) = &top_touch else { return; };
+                if !state.peek().is_swiping { return; }
+                state.ontouchend(e, config);
+                dispatch_latest(state, exiting_overlay, handlers, card);
+            },
+            onmousedown: move |e: Event<MouseData>| {
+                if entering.peek().is_none() { return; }
+                take_hold(&mut entering);
+                state.onmousedown(e);
+            },
+            onmousemove: move |e: Event<MouseData>| {
+                if state.peek().is_swiping { state.onmousemove(e); }
+            },
+            onmouseup: move |e: Event<MouseData>| {
+                let Some((card, config)) = &top_mouse else { return; };
+                if !state.peek().is_swiping { return; }
+                state.onmouseup(e, config);
+                dispatch_latest(state, exiting_overlay, handlers, card);
+            },
             if held && ghost {
                 GhostCard {}
             }
@@ -320,35 +366,43 @@ pub fn SwipeStack(
                     style: "{layer.style}",
                     "aria-label": "{layer.name}",
 
-                    // Guards: only the top card receives gestures, and
-                    // never during an enter (undo) keyframe so the
-                    // animation isn't fought by inline transform.
+                    // Only the top card takes gestures (the cards under it
+                    // have no pointer), and the stack under it never sees its
+                    // events. One that starts while the card comes back from
+                    // an undo ends the return first ([`take_hold`]), so the
+                    // keyframe and the drag never fight.
                     ontouchstart: move |e: Event<TouchData>| {
-                        if !layer.is_top || entering.peek().is_some() { return; }
+                        e.stop_propagation();
+                        if !layer.is_top { return; }
+                        take_hold(&mut entering);
                         state.ontouchstart(e);
                     },
                     ontouchmove: move |e: Event<TouchData>| {
-                        if !layer.is_top || entering.peek().is_some() { return; }
+                        e.stop_propagation();
+                        if !layer.is_top { return; }
                         state.ontouchmove(e);
                     },
                     ontouchend: move |e: Event<TouchData>| {
+                        e.stop_propagation();
                         let Some((card, config)) = &layer.touch else { return; };
-                        if entering.peek().is_some() { return; }
                         state.ontouchend(e, config);
                         dispatch_latest(state, exiting_overlay, handlers, card);
                     },
 
                     onmousedown: move |e: Event<MouseData>| {
-                        if !layer.is_top || entering.peek().is_some() { return; }
+                        e.stop_propagation();
+                        if !layer.is_top { return; }
+                        take_hold(&mut entering);
                         state.onmousedown(e);
                     },
                     onmousemove: move |e: Event<MouseData>| {
-                        if !layer.is_top || entering.peek().is_some() { return; }
+                        e.stop_propagation();
+                        if !layer.is_top { return; }
                         state.onmousemove(e);
                     },
                     onmouseup: move |e: Event<MouseData>| {
+                        e.stop_propagation();
                         let Some((card, config)) = &layer.mouse else { return; };
-                        if entering.peek().is_some() { return; }
                         state.onmouseup(e, config);
                         dispatch_latest(state, exiting_overlay, handlers, card);
                     },
@@ -455,5 +509,29 @@ fn StackCardImage(
             on_face_change: share_face(faces, id),
             on_load,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dioxus::dioxus_core::NoOpMutations;
+
+    use super::*;
+
+    #[test]
+    fn a_grab_during_a_return_ends_the_return_so_the_gesture_counts() {
+        fn app() -> Element {
+            let mut entering = use_signal(|| Some(Direction::Left));
+            use_hook(move || take_hold(&mut entering));
+            rsx! { p { "{entering():?}" } }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dom.render_immediate(&mut NoOpMutations);
+        let html = dioxus_ssr::render(&dom);
+        assert!(
+            html.contains("<p>None</p>"),
+            "the card snaps to rest: {html}"
+        );
     }
 }

@@ -26,7 +26,6 @@ use components::hint::ContentHintDialog;
 use components::icons::{self, EyeIcon};
 use components::{
     BottomSheet, DockAction, DockFilter, ToastOptions, Toasts, use_overlay_back, use_toast,
-    use_undo_burst,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -286,12 +285,6 @@ pub(crate) fn SwipeSelect(
     };
     let hint_open = driver.hint_open;
     let entering = driver.entering;
-    // A quick run of Undos waits for the card coming back, then runs together.
-    let entering_now = use_memo(move || entering().is_some());
-    let undo = use_undo_burst(
-        entering_now,
-        use_callback(move |()| driver.dispatch(Action::Undo)),
-    );
 
     // Local filter context (its own builder) so the shared CardFilterSheet
     // operates here without clobbering the app-wide add-screen filter. Starts
@@ -468,7 +461,7 @@ pub(crate) fn SwipeSelect(
                             },
                             on_swipe_down: move |_card: Card| {
                                 usage_buffer().record_swipe(Direction::Down);
-                                undo.call(());
+                                driver.dispatch(Action::Undo);
                             },
                         }
                     } else if let Some(line) = empty_line {

@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use components::icons::{self, BoltIcon, EyeIcon};
 use components::{
     Chip, DockAction, DockFilter, LoadFailed, ToastOptions, Toasts, use_back_online, use_toast,
-    use_undo_burst,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -664,16 +663,6 @@ pub fn Add(deck_id: Uuid) -> Element {
         SWIPE_SPEED_PX_PER_MS,
     );
 
-    // A quick run of Undos waits for the card coming back, then runs together.
-    let entering_now = use_memo(move || {
-        let source = driver.model.read().source();
-        driver.entering(source)().is_some()
-    });
-    let undo = use_undo_burst(
-        entering_now,
-        use_callback(move |()| driver.dispatch(Action::Undo)),
-    );
-
     // A committed swipe: telemetry first, then the model.
     let on_swipe = move |direction: Direction, card: &Card| {
         usage_buffer.peek().record_swipe(direction);
@@ -683,10 +672,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 .peek()
                 .record_signal(deck_id, card.scryfall_data.oracle_id, direction);
         }
-        match committed {
-            Some(swipe) => driver.dispatch(Action::Swipe(swipe)),
-            None => undo.call(()),
-        }
+        driver.dispatch(committed.map_or(Action::Undo, Action::Swipe));
     };
 
     let (
@@ -723,7 +709,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let end_pull = move |end: (f64, f64), start: (f64, f64)| {
         let (dx, dy) = (end.0 - start.0, end.1 - start.1);
         if dy >= BACK_PULL_PX && dy.abs() > dx.abs() {
-            undo.call(());
+            driver.dispatch(Action::Undo);
         }
     };
 
