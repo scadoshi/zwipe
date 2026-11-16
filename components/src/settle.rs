@@ -187,9 +187,20 @@ const SETTLE_JS: &str = r"
       gone.push(key);
     }
     const goneSet = new Set(gone);
+    // A gone thing whose keyed contents all still show moved apart, as a regroup moves every
+    // card to a new group: its contents slide to their places, so it leaves no copy.
+    const scattered = (key) => {
+      let any = false;
+      for (const [k, o] of prev) {
+        if (o.parent !== key) continue;
+        any = true;
+        if (!now.has(k)) return false;
+      }
+      return any;
+    };
     for (const key of gone) {
       const old = prev.get(key);
-      if (!(old.parent && goneSet.has(old.parent))) ghost(old, timing);
+      if (!(old.parent && goneSet.has(old.parent)) && !scattered(key)) ghost(old, timing);
       prev.delete(key);
     }
     for (const [key, cur] of now) prev.set(key, cur);
@@ -331,6 +342,20 @@ mod tests {
             script.matches("ease()").count(),
             1,
             "the easing is read once per check, into its timing"
+        );
+    }
+
+    #[test]
+    fn a_group_whose_cards_all_still_show_leaves_no_copy() {
+        let script = script();
+        assert!(
+            script.contains("if (!(old.parent && goneSet.has(old.parent)) && !scattered(key)) ghost(old, timing);"),
+            "only a gone thing whose contents left with it is copied"
+        );
+        assert!(
+            script.contains("if (o.parent !== key) continue;")
+                && script.contains("if (!now.has(k)) return false;"),
+            "scattered asks whether every keyed thing inside still shows"
         );
     }
 }
