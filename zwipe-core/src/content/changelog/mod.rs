@@ -61,6 +61,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Change buttons are a pencil icon and the light and dark toggle is a sun or moon, on the web and in the app",
         "On a phone's browser, an opened card image fills the screen's width as it does in the app",
         "Cards, docks and sheets cast shadows in three clear levels, so what sits above what reads at a glance, on the web and in the app",
+        "Menus slide over the page instead of pushing it down, and dropdowns fade in from their button, on the web",
     ],
 }];
 
