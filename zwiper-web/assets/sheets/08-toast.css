@@ -6,22 +6,21 @@
  * <div role="alertdialog" data-type="...">. `data-type` is part of
  * ToastProvider's documented stable contract. */
 
-/* Top left, over the page header, stacking downwards. Below, they land on
-   the buttons being reached for at the moment they fire. The header is the
-   one strip with nothing to read, so covering it costs nothing. The
-   safe-area inset keeps the first toast out from under the status bar on a
-   notched device. */
+/* Bottom left, as far from the window's left edge as from its bottom edge,
+   stacking upwards. --toast-inset sets both distances, and the banner stack
+   reads it too, so toasts and banners share the corner. Each side adds its
+   own safe-area inset, so neither sits under a notch or a home indicator. */
 .toast-container {
     position: fixed;
     z-index: 9999;
-    left: 1rem;
-    top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+    left: calc(var(--toast-inset, var(--space-4)) + env(safe-area-inset-left, 0px));
+    bottom: calc(var(--toast-inset, var(--space-4)) + env(safe-area-inset-bottom, 0px));
     /* Never past the right edge, whatever the message. */
-    max-width: min(16rem, calc(100vw - 2rem));
+    max-width: min(16rem, calc(100vw - 2 * var(--toast-inset, var(--space-4))));
 }
 
-/* The library renders newest first, so a plain column puts the newest at the
-   top and older ones below it.
+/* The library renders newest first, so a reversed column puts the newest at
+   the bottom and older ones above it.
  *
  * Two layouts. Collapsed is the default: the older toasts slide up behind the
  * newest and show only a sliver, so the stack costs roughly one toast of
@@ -29,7 +28,7 @@
  * any toast switches between them, which is what `.toast-tap` is for. */
 .toast-container ol {
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     padding: 0;
     margin: 0;
     gap: 0;
@@ -38,10 +37,10 @@
 
 .toast-container li {
     display: flex;
-    /* Pulls each toast up behind the one before it, leaving a sliver showing.
-       Tuned against a one-line toast; a taller one shows a little more. */
-    /* The overlap with the toast before, off the scale. */
-    margin-top: -2.75rem;
+    /* Pulls each older toast down behind the newer one under it, leaving a
+       sliver showing. Tuned against a one-line toast; a taller one shows a
+       little more. The overlap, off the scale. */
+    margin-bottom: -2.75rem;
     position: relative;
 }
 
@@ -51,7 +50,7 @@
    landed. CSS cannot tell that reflow apart from a tap, so ToastStack sets
    `.animating` for the length of the toggle and nothing else ever has it. */
 .toast-container.animating li {
-    transition: margin-top 0.2s ease;
+    transition: margin-bottom 0.2s ease;
 }
 
 .toast-container.animating ol {
@@ -67,7 +66,7 @@
 }
 
 .toast-container li:first-child {
-    margin-top: 0;
+    margin-bottom: 0;
 }
 
 /* Newest is first in the DOM and has to paint over the ones behind it. */
@@ -83,7 +82,7 @@
 }
 
 .toast-container.expanded li {
-    margin-top: 0;
+    margin-bottom: 0;
 }
 
 /* The tap target wraps each toast. `contents` generates no box, so it changes
@@ -114,16 +113,16 @@
        opacity or transform here: a transition on the same properties the
        animation drives fights it, which read as the toast arriving from the
        wrong direction. */
-    animation: toast-drop-in 0.22s ease-out both;
+    animation: toast-rise-in 0.22s ease-out both;
 }
 
-/* Drops in from above, matching the direction the stack grows. The slight
+/* Rises in from below, matching the direction the stack grows. The slight
    scale gives the motion a direction the eye reads even when the travel is
    short. */
-@keyframes toast-drop-in {
+@keyframes toast-rise-in {
     from {
         opacity: 0;
-        transform: translateY(-1.5rem) scale(0.96);
+        transform: translateY(1.5rem) scale(0.96);
     }
 
     to {

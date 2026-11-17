@@ -65,70 +65,21 @@ button {
   toasts
  ==================== */
 
-/* The stack sits bottom left, clear of the title bar's back button, and
-   reads up from the bottom: the newest at the bottom, the older ones
-   tucked above it, each rising in from below. A screen with a dock or a
-   bottom row keeps it above them. The kit's toast sheet loads after this
-   one, so each rule names the body to win. The stack's height off the
-   window's foot, --toast-bottom, is set on the body, so a sheet reads the
-   same value to keep its content clear of the stack. */
-body .toast-container {
-    top: auto;
-    right: auto;
-    bottom: calc(var(--toast-bottom, 1rem) + env(safe-area-inset-bottom, 0px));
-    left: 1rem;
-}
+/* The kit puts the stack in the window's bottom-left corner, as far from
+   the left edge as from the bottom (--toast-inset), the newest at the
+   bottom; nothing here moves it, over a dock or anywhere else.
 
-body:has(.action-dock, .swipe-bottom-row) {
-    --toast-bottom: 4.5rem;
-}
-
-body .toast-container ol {
-    flex-direction: column-reverse;
-}
-
-/* While a toast is up over an open sheet with a dock, the sheet's content
-   ends above the toast band as well as the dock. The band's top is wherever
-   the stack stands (--toast-bottom, which a screen raises over its dock or
-   bottom row) plus a three-line toast (a connection error, about 6.75rem)
-   and a gap, so a sheet sized to its content grows upward and a scrolling
-   one scrolls its last row clear, on any screen. */
+   While a toast is up over an open sheet with a dock, the sheet's content
+   ends above the toast band as well as the dock. The band's top is the
+   stack's inset plus a three-line toast (a connection error, about
+   6.75rem) and a gap, so a sheet sized to its content grows upward and a
+   scrolling one scrolls its last row clear. */
 body {
-    --toast-band-top: calc(var(--toast-bottom, 1rem) + 8rem + env(safe-area-inset-bottom, 0px));
+    --toast-band-top: calc(var(--toast-inset, var(--space-4)) + 8rem + env(safe-area-inset-bottom, 0px));
 }
 
 body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-content {
     padding-bottom: var(--toast-band-top);
-}
-
-body .toast-container li {
-    margin-top: 0;
-    margin-bottom: -2.75rem;
-}
-
-body .toast-container li:first-child,
-body .toast-container.expanded li {
-    margin-bottom: 0;
-}
-
-body .toast-container.animating li {
-    transition: margin-bottom 0.2s ease;
-}
-
-body .toast-container [role="alertdialog"] {
-    animation-name: toast-rise-in;
-}
-
-@keyframes toast-rise-in {
-    from {
-        opacity: 0;
-        transform: translateY(1.5rem) scale(0.96);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {

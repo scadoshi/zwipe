@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 /// Lengths off the scale on purpose: (the sheet's path from the workspace root, the
 /// declaration's property, the length, why).
-const ALLOWED: [(&str, &str, &str, &str); 19] = [
+const ALLOWED: [(&str, &str, &str, &str); 16] = [
     (
         "components/assets/screens/base.css",
         "--content-pad-bottom",
@@ -52,24 +52,6 @@ const ALLOWED: [(&str, &str, &str, &str); 19] = [
         "margin-bottom",
         "0.65rem",
         "the color count ghost's own 0.65rem height",
-    ),
-    (
-        "components/assets/screens/base.css",
-        "--toast-bottom",
-        "4.5rem",
-        "a toast's room above the dock",
-    ),
-    (
-        "zwiper-web/assets/web.css",
-        "--toast-bottom",
-        "4.5rem",
-        "a toast's room above the dock",
-    ),
-    (
-        "zwiper-web/assets/web.css",
-        "--toast-bottom",
-        "7.75rem",
-        "a toast's room above two stacked docks",
     ),
     (
         "components/assets/magic.css",
@@ -128,14 +110,13 @@ const ALLOWED: [(&str, &str, &str, &str); 19] = [
 ];
 
 /// The custom properties that carry a gap into a rule.
-const SPACING_TOKENS: [&str; 11] = [
+const SPACING_TOKENS: [&str; 10] = [
     "--drawer-float-gap",
     "--deck-list-gap",
     "--deck-row-inset",
     "--flow-step-inset",
     "--content-pad-bottom",
     "--heat-gutter",
-    "--toast-bottom",
     "--row-gap",
     "--pair-gap",
     "--web-sticky-top",

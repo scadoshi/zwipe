@@ -815,50 +815,9 @@ body {
 
 /* ---- Toasts ----
 
-   The stack is the screens' (components' base.css): bottom left, newest
-   at the bottom, above a screen's dock or bottom row. On a wide window a
-   dock sits far right of it, so only the swipe screens' pile chips lift
-   it; below the breakpoint the swipe screens' stacked docks lift it
-   further. */
-/* The stack rises by as much of the footer as shows (`--web-footer-lift`,
-   which footer_lift.rs keeps on the root), so it rests the same gap above
-   the footer as the docks, except while a sheet is open, where a toast
-   stays at the sheet's foot. */
-body .toast-container {
-    translate: 0 calc(-1 * var(--web-footer-lift, 0px));
-}
-
-/* Every side drawer, the kit's and the narrow one, ends the same gap above
-   the footer while it is in view, its dock with it. */
-:root {
-    --sheet-drawer-floor: var(--web-footer-lift, 0px);
-}
-
-body:has(.bottom-sheet.show) .toast-container {
-    translate: none;
-}
-
-/* A dock inside a closed sheet form is not on screen, so it leaves the
-   stack at the window's foot. */
-html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bottom-sheet:not(.show) *))) {
-    --toast-bottom: var(--space-4);
-}
-
-@media (min-width: 900px) {
-    body:has(.action-dock) {
-        --toast-bottom: var(--space-4);
-    }
-
-    body:has(.swipe-bottom-row) {
-        --toast-bottom: 4.5rem;
-    }
-}
-
-@media (max-width: 899px) {
-    body:has(.web-dock-pair) {
-        --toast-bottom: 7.75rem;
-    }
-}
+   The stack sits where the kit puts it: the window's bottom-left corner, as
+   far from the left edge as from the bottom. Nothing here lifts it over a
+   dock or the footer. */
 
 /* Below the kit's modal breakpoint every sheet is a bottom sheet across the
    window, where the stack stands at its foot. While a toast is up, a sheet
@@ -866,12 +825,21 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
    its content above the toast band too, as a docked sheet's does in
    07-screens.css, so a sheet sized to its content grows upward and its
    text and buttons (Couldn't load printings and its Retry, say) clear the
-   toast wherever the screen puts the stack: --toast-band-top (07-screens.css)
-   follows --toast-bottom, so it holds over Add's and Remove's raised stack. */
+   toast in the corner: --toast-band-top (07-screens.css) sits above the
+   stack's inset. */
 @media (max-width: 59.99rem) {
     body:has(.toast-container li) .bottom-sheet.show:not(:has(.sheet-dock)) > .sheet-content {
         padding-bottom: var(--toast-band-top);
     }
+}
+
+/* ---- Drawers over the footer ----
+
+   Every side drawer, the kit's and the narrow one, ends the same gap above
+   the footer while it is in view, its dock with it (`--web-footer-lift`,
+   which footer_lift.rs keeps on the root). */
+:root {
+    --sheet-drawer-floor: var(--web-footer-lift, 0px);
 }
 
 /* ---- Settings lists (Account, Config) ---- */

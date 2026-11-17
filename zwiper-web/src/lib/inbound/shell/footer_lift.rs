@@ -1,8 +1,8 @@
-//! Keeps the toast stack just above the site footer while the footer is in
-//! view, and at the window's foot otherwise. The browser reports the
-//! footer's top against the viewport as the page scrolls or changes, and
-//! the lift goes on the root as `--web-footer-lift`, which web.css raises
-//! the stack by.
+//! How far the site footer reaches up into the window, for the side drawers:
+//! while the footer is in view a drawer and its dock end just above it, and at
+//! the window's foot otherwise. The browser reports the footer's top against
+//! the viewport as the page scrolls or changes, and the reach goes on the root
+//! as `--web-footer-lift`, which web.css turns into the drawers' floor.
 
 use dioxus::prelude::*;
 
