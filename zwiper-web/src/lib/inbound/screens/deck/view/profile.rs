@@ -13,8 +13,8 @@ use zwipe_ui::deck::view::StatsProfile;
 
 use super::ghost::{DeckFootGhost, DeckViewGhost, StatsSectionsGhost};
 use super::sections::{
-    BudgetSection, ProfileCard, StatsSections, TagsSection, WarningActions, WarningsBody,
-    WarningsSection,
+    BudgetSection, ProfileCard, StatsSections, TagsSection, UnpricedEntry, WarningActions,
+    WarningsBody, WarningsSection, warnings_count,
 };
 
 /// Whether the deck has had warnings this visit: true from the first render with any, and kept
@@ -40,9 +40,10 @@ pub(crate) fn DeckProfilePhone(
     metrics: Option<DeckMetrics>,
     #[props(default)] metrics_loading: bool,
     currency: Signal<PriceCurrency>,
-    // The deck's warnings, and the owner's fixes for them.
+    // The deck's warnings, the owner's fixes for them, and the Unpriced entry.
     warnings: Vec<DeckWarning>,
     actions: Option<WarningActions>,
+    #[props(default)] unpriced: Option<UnpricedEntry>,
     // The Data panel, and the owner's Danger zone.
     data: Element,
     #[props(default)] danger: Option<Element>,
@@ -50,7 +51,7 @@ pub(crate) fn DeckProfilePhone(
     let open_section: Signal<Option<String>> = use_signal(|| Some("Budget".to_owned()));
     // Warnings stay up for the visit once there were any, so a fix that clears the last one
     // leaves the page where it was.
-    let warned = use_warned(!warnings.is_empty());
+    let warned = use_warned(warnings_count(&warnings, unpriced.as_ref()) > 0);
     let Some(info) = info else {
         return rsx! {
             DeckViewGhost {}
@@ -77,7 +78,7 @@ pub(crate) fn DeckProfilePhone(
                 StatsSections { metrics, land_target: stats.land_target, open_section }
             }
             if warned {
-                WarningsSection { warnings, actions, open_section }
+                WarningsSection { warnings, actions, unpriced, open_section }
             }
             {data}
             {danger}
@@ -92,10 +93,12 @@ pub(crate) fn DeckFoot(
     loaded: bool,
     warnings: Vec<DeckWarning>,
     actions: Option<WarningActions>,
+    #[props(default)] unpriced: Option<UnpricedEntry>,
     data: Element,
     #[props(default)] danger: Option<Element>,
 ) -> Element {
-    let warned = use_warned(!warnings.is_empty());
+    let count = warnings_count(&warnings, unpriced.as_ref());
+    let warned = use_warned(count > 0);
     if !loaded {
         return rsx! {
             DeckFootGhost {}
@@ -108,11 +111,11 @@ pub(crate) fn DeckFoot(
                     div { class: "web-section-head",
                         div { class: "web-section-title",
                             span { class: "settings-list-title", "Warnings" }
-                            span { class: "web-section-badge", "{warnings.len()}" }
+                            span { class: "web-section-badge", "{count}" }
                         }
                     }
                     hr { class: "web-section-rule" }
-                    WarningsBody { warnings, actions }
+                    WarningsBody { warnings, actions, unpriced }
                 }
             }
             {data}

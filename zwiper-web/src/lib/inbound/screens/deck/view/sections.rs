@@ -5,11 +5,12 @@
 //! that draws the body in the phone's accordion.
 
 use components::{
-    BudgetBody, Button, ButtonVariant, CurrencyChips, DistributionsBody, DrawOddsStepper, InfoRow,
-    ManaBody, TagsBody, charted,
+    BudgetBody, Button, ButtonVariant, Chip, CurrencyChips, DistributionsBody, DrawOddsStepper,
+    InfoRow, ManaBody, TagsBody, charted,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::DeckWarning;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
@@ -152,30 +153,62 @@ pub struct WarningActions {
     pub fixes: WarningFixes,
 }
 
+/// The warning color the warnings' buttons take.
+const WARNING_BUTTON_STYLE: &str = "color: var(--ink-color-warning, var(--color-warning)); border-color: var(--border-warning); margin-bottom: 0;";
+
+/// Warnings' Unpriced entry: the deck's cards with no price in the shown currency, and what a
+/// tap on one of them does (its details open, to pick a priced printing).
+#[derive(Debug, Clone, PartialEq)]
+pub struct UnpricedEntry {
+    /// The cards, from [`zwipe_ui::deck::warning::unpriced`].
+    pub cards: Vec<Card>,
+    /// The currency they have no price in.
+    pub currency: PriceCurrency,
+    /// Opens a card's details by its printing ID.
+    pub open: Callback<Uuid>,
+}
+
+/// How many entries Warnings holds: the warnings, and the Unpriced entry while it has a card.
+#[must_use]
+pub fn warnings_count(warnings: &[DeckWarning], unpriced: Option<&UnpricedEntry>) -> usize {
+    let unpriced = unpriced.is_some_and(|u| !u.cards.is_empty());
+    warnings.len().saturating_add(usize::from(unpriced))
+}
+
 /// The Warnings section: [`WarningsBody`] in the phone's accordion.
 #[component]
 pub fn WarningsSection(
     warnings: Vec<DeckWarning>,
     actions: Option<WarningActions>,
+    #[props(default)] unpriced: Option<UnpricedEntry>,
     open_section: Signal<Option<String>>,
 ) -> Element {
-    let count = warnings.len();
+    let count = warnings_count(&warnings, unpriced.as_ref());
     rsx! {
         CollapsibleSection { title: "Warnings", warn: true, badge: count.to_string(), open_section,
-            WarningsBody { warnings, actions }
+            WarningsBody { warnings, actions, unpriced }
         }
     }
 }
 
-/// Warnings' body: each warning's message and, on the right, its fix where
-/// the owner's `actions` are given. Once a fix has cleared the last one it says so, so the
-/// panel stays where it was.
+/// Warnings' body: the Unpriced entry first while the deck has an unpriced card, then each
+/// warning's message and, on the right, its fix where the owner's `actions` are given. Once a fix
+/// has cleared the last one it says so, so the panel stays where it was.
 #[component]
-pub fn WarningsBody(warnings: Vec<DeckWarning>, actions: Option<WarningActions>) -> Element {
+pub fn WarningsBody(
+    warnings: Vec<DeckWarning>,
+    actions: Option<WarningActions>,
+    #[props(default)] unpriced: Option<UnpricedEntry>,
+) -> Element {
     let navigator = use_navigator();
+    let unpriced = unpriced.filter(|u| !u.cards.is_empty());
+    let none_left = warnings.is_empty() && unpriced.is_none();
     rsx! {
         div { style: "display:flex;flex-direction:column;",
-                if warnings.is_empty() {
+                if let Some(entry) = unpriced {
+                    UnpricedRow { entry }
+                }
+                if none_left {
                     div { class: "settings-row deck-warning-row",
                         span { class: "text-muted", "{deck_view::NO_WARNINGS_LEFT}" }
                     }
@@ -189,7 +222,7 @@ pub fn WarningsBody(warnings: Vec<DeckWarning>, actions: Option<WarningActions>)
                                     Button {
                                         key: "{j}",
                                         variant: ButtonVariant::Small,
-                                        style: "color: var(--ink-color-warning, var(--color-warning)); border-color: var(--border-warning); margin-bottom: 0;",
+                                        style: WARNING_BUTTON_STYLE,
                                         onclick: move |_| match fix {
                                             Fix::BelowMinimum if j == 0 => {
                                                 navigator.push(Route::AddDeckCard { deck_id });
@@ -208,6 +241,45 @@ pub fn WarningsBody(warnings: Vec<DeckWarning>, actions: Option<WarningActions>)
                         }
                     }
                 }
+        }
+    }
+}
+
+/// The Unpriced entry: how many cards have no price, and its Show button, which lays the cards
+/// out as chips under it. It starts with them hidden.
+#[component]
+fn UnpricedRow(entry: UnpricedEntry) -> Element {
+    let mut shown = use_signal(|| false);
+    let UnpricedEntry {
+        cards,
+        currency,
+        open,
+    } = entry;
+    let line = warning::unpriced_line(cards.len(), currency);
+    rsx! {
+        div { class: "settings-row deck-warning-row",
+            span { class: "text-muted", "{line}" }
+            Button {
+                variant: ButtonVariant::Small,
+                class: "deck-unpriced-toggle".to_owned(),
+                style: WARNING_BUTTON_STYLE,
+                onclick: move |_| shown.toggle(),
+                if shown() { {warning::HIDE_UNPRICED} } else { {warning::SHOW_UNPRICED} }
+            }
+        }
+        if shown() {
+            div { class: "settings-row deck-warning-row",
+                div { class: "chip-row deck-unpriced-chips",
+                    for card in cards {
+                        Chip {
+                            key: "{card.scryfall_data.id}",
+                            selected: false,
+                            onclick: move |_| open.call(card.scryfall_data.id),
+                            "{card.scryfall_data.name}"
+                        }
+                    }
+                }
+            }
         }
     }
 }

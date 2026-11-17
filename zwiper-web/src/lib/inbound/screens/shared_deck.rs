@@ -29,6 +29,7 @@ use zwipe_core::http::contracts::deck::HttpSharedDeck;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck::profile::{DeckInfo, shared_warnings};
 use zwipe_ui::deck::view::{DeckView, StatsProfile};
+use zwipe_ui::deck::warning;
 use zwipe_ui::deck_cards::keys::RowKind;
 use zwipe_ui::deck_cards::listing::Listed;
 use zwipe_ui::deck_cards::stacks::{CardsView, Reveal};
@@ -46,6 +47,7 @@ use crate::inbound::screens::deck::view::body::DeckPageBody;
 use crate::inbound::screens::deck::view::cards_layer::use_cards_route;
 use crate::inbound::screens::deck::view::panels::DataPanel;
 use crate::inbound::screens::deck::view::profile::{DeckFoot, DeckProfilePhone};
+use crate::inbound::screens::deck::view::sections::UnpricedEntry;
 use crate::inbound::screens::not_found::DeadEnd;
 use crate::inbound::session::return_to;
 use crate::inbound::shell::{ScreenFrame, nav};
@@ -286,6 +288,8 @@ fn SharedDeckView(
     let details_open = use_signal(|| false);
     let stack_details = use_stack_details(reveal, details_open);
     let details = use_context_provider(|| stack_details);
+    // An unpriced card's chip opens its details.
+    let open_unpriced = use_callback(move |id: Uuid| details.feature(id));
 
     // The rows as the owner's deck page lists them, from the same pass, with each card's
     // quantity, board and star.
@@ -467,6 +471,12 @@ fn SharedDeckView(
     // The Profile and the foot, as the owner's: Warnings read only, and Export alone in Data.
     let stats = StatsProfile::from(&deck);
     let warnings = shared_warnings(&deck);
+    let shown = currency();
+    let unpriced = UnpricedEntry {
+        cards: warning::unpriced(&deck.entries, &zone_cards, shown),
+        currency: shown,
+        open: open_unpriced,
+    };
     let info = DeckInfo::of_shared(
         &deck,
         metrics.as_ref().map_or_else(
@@ -527,11 +537,12 @@ fn SharedDeckView(
                     currency,
                     warnings: warnings.clone(),
                     actions: None,
+                    unpriced: unpriced.clone(),
                     data: data.clone(),
                 }
             },
             foot: rsx! {
-                DeckFoot { loaded: true, warnings, actions: None, data }
+                DeckFoot { loaded: true, warnings, actions: None, unpriced, data }
             },
             // The Profile's filter, before the cart and Cards.
             profile_dock: rsx! {

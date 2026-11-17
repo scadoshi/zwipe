@@ -25,7 +25,7 @@ use super::body::DeckPageBody;
 use super::dialogs::DeckDialogs;
 use super::panels::{DangerZonePanel, DataPanel};
 use super::profile::{DeckFoot, DeckProfilePhone};
-use super::sections::{WarningActions, WarningFixes};
+use super::sections::{UnpricedEntry, WarningActions, WarningFixes};
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::use_card_overlays;
 use crate::inbound::cards::otag::use_otag_reveals;
@@ -67,6 +67,8 @@ pub fn DeckWidePage(
     let details_open = use_signal(|| false);
     let stack_details = use_stack_details(reveal, details_open);
     let stack_details_state = use_context_provider(|| stack_details);
+    // An unpriced card's chip opens its details, where a priced printing can be picked.
+    let open_unpriced = use_callback(move |id: Uuid| stack_details_state.feature(id));
     let ed = use_deck_editor(deck_id);
     let Editor {
         deck,
@@ -170,6 +172,14 @@ pub fn DeckWidePage(
     let deck_buy = held_deck.as_ref().map(buy::deck_links);
     let has_cards = metrics.is_some();
     let shown = currency();
+    let unpriced = UnpricedEntry {
+        cards: held_deck.as_ref().map_or_default(|d| {
+            zone.read()
+                .live_unpriced(&d.entries, &entries.read(), shown)
+        }),
+        currency: shown,
+        open: open_unpriced,
+    };
     let price = metrics.as_ref().and_then(|m| match shown {
         PriceCurrency::Eur => m.total_price_eur,
         PriceCurrency::Tix => m.total_price_tix,
@@ -222,6 +232,7 @@ pub fn DeckWidePage(
             currency,
             warnings: warnings.clone(),
             actions: Some(WarningActions { deck_id, fixes }),
+            unpriced: unpriced.clone(),
             data: rsx! {
                 DataPanel {
                     import: Some(Route::ImportDeck { deck_id }),
@@ -301,6 +312,7 @@ pub fn DeckWidePage(
                     loaded: loaded(),
                     warnings,
                     actions: Some(WarningActions { deck_id, fixes }),
+                    unpriced,
                     data: rsx! {
                         DataPanel {
                             import: Some(Route::ImportDeck { deck_id }),

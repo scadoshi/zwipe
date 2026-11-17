@@ -452,7 +452,7 @@ fn the_budget_lines_follow_the_picked_currency() {
 }
 
 #[test]
-fn the_budget_lines_count_unpriced_cards() {
+fn unpriced_cards_are_a_warning_and_the_budget_lines_stay_plain() {
     let profile = deck_profile("Budget");
     let mut unpriced = card("Mystery Card");
     unpriced.scryfall_data.prices.usd = None;
@@ -463,17 +463,24 @@ fn the_budget_lines_count_unpriced_cards() {
     let total = state.total_price_line();
     let average = state.average_price_line();
     assert!(
-        total
-            .as_deref()
-            .is_some_and(|t| t.ends_with(" (1 unpriced)")),
+        total.as_deref().is_some_and(|t| !t.contains("unpriced")),
         "{total:?}"
     );
     assert!(
-        average
-            .as_deref()
-            .is_some_and(|a| a.ends_with(" (1 unpriced)")),
+        average.as_deref().is_some_and(|a| !a.contains("unpriced")),
         "{average:?}"
     );
+    let names: Vec<String> = state
+        .unpriced_cards()
+        .into_iter()
+        .map(|c| c.scryfall_data.name)
+        .collect();
+    assert_eq!(names, ["Mystery Card"]);
+    assert!(
+        state.sections().contains(&Section::Warnings),
+        "the deck has no other warning, and Warnings shows for the unpriced card"
+    );
+    assert_eq!(state.badge(Section::Warnings).as_deref(), Some("1"));
 }
 
 #[test]

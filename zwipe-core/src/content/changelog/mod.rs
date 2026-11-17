@@ -48,7 +48,10 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 9);
 pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 21, 11),
     date: None,
-    entries: &["On Android, the app no longer signs you out now and then after a restart"],
+    entries: &[
+        "On Android, the app no longer signs you out now and then after a restart",
+        "Warnings lists a deck's unpriced cards, each opening its details to pick a priced printing, in place of the unpriced count on Budget",
+    ],
 }];
 
 /// Shipped releases, newest first.

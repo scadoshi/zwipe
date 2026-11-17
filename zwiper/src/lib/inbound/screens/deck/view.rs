@@ -429,6 +429,11 @@ impl Driver {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HeldDeck(pub Signal<Option<Deck>>);
 
+/// A card the Profile's Unpriced entry sends to the Cards: the Cards open its details once it is
+/// listed, then let it go.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct OpenOnCards(pub Signal<Option<Uuid>>);
+
 /// The deck's Cards screen as a full-screen layer over its Profile, while the route holds
 /// `?view=cards`, sliding in and, while `leaving`, back out. It sits on the overlay stack, so
 /// the OS back closes it first; closing it goes back to the Profile's entry, as the screen's own
@@ -508,6 +513,8 @@ pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
     // The deck as loaded, for the Cards layer to open on.
     let held = use_signal(|| None::<Deck>);
     use_context_provider(|| HeldDeck(held));
+    let open_on_cards = use_signal(|| None::<Uuid>);
+    use_context_provider(|| OpenOnCards(open_on_cards));
     use_effect(move || {
         let mut held = held;
         let shown = driver.model.read().deck().cloned();
@@ -574,6 +581,7 @@ pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
     let sections = state.sections();
     let stats_loading = state.stats_loading();
     let warnings = state.warnings().to_vec();
+    let unpriced = state.unpriced_cards();
     let currency = state.currency();
     let currency_chips = state.currency_chips_shown();
     let total_line = state.total_price_line();
@@ -784,6 +792,13 @@ pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
                                         badge: warnings_badge,
                                         DeckWarnings {
                                             warnings: warnings,
+                                            unpriced,
+                                            currency,
+                                            on_open_unpriced: move |id: Uuid| {
+                                                let mut open_on_cards = open_on_cards;
+                                                open_on_cards.set(Some(id));
+                                                driver.navigator.push(route(Destination::DeckCards(deck_id)));
+                                            },
                                             ondispatch: move |action| driver.dispatch(action),
                                         }
                                     }

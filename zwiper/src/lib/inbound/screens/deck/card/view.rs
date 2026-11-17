@@ -56,7 +56,7 @@ use crate::inbound::screens::deck::components::skeletons::{
     ChipGhost, ChipRowGhost, DeckCardListSkeleton, QuickAddSkeleton,
 };
 use crate::inbound::screens::deck::missing_deck;
-use crate::inbound::screens::deck::view::HeldDeck;
+use crate::inbound::screens::deck::view::{HeldDeck, OpenOnCards};
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 use crate::outbound::cards_view_store;
 
@@ -830,6 +830,24 @@ pub fn View(deck_id: Uuid) -> Element {
             .collect::<Vec<_>>()
     });
     use_stack_details_sync(reveal, details_open, listed_ids);
+    // A card the Profile's Unpriced entry sent opens its details once the deck is in: at once
+    // when it is listed, and it is let go either way.
+    let open_on_cards = try_use_context::<OpenOnCards>();
+    use_effect(move || {
+        let Some(OpenOnCards(mut pending)) = open_on_cards else {
+            return;
+        };
+        let Some(id) = pending() else {
+            return;
+        };
+        if !driver.model.read().is_loaded() {
+            return;
+        }
+        pending.set(None);
+        if listed_ids.read().contains(&id) {
+            stack_details.feature(id);
+        }
+    });
     // The stacks deal in on entering Stacks, once the deck is in, for as
     // long as the longest stack takes.
     let mut deal_cue = use_signal(DealCue::default);

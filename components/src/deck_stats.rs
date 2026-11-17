@@ -10,7 +10,7 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_tag_label;
 use zwipe_ui::colors::ColorCounts;
-use zwipe_ui::deck::view::{StatsProfile, with_unpriced};
+use zwipe_ui::deck::view::StatsProfile;
 
 use crate::{Chip, ColorChart, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment};
 
@@ -89,12 +89,11 @@ pub fn BudgetBody(
         (Some(m), PriceCurrency::Usd) => (m.total_price_usd, m.avg_price_usd),
         (None, _) => (None, None),
     };
-    let unpriced = metrics.as_ref().map_or(0, |m| m.unpriced(shown));
     rsx! {
         div { style: "display:flex;flex-direction:column;",
             InfoRow {
                 label: "Total price",
-                value: with_unpriced(profile.total_price_line(total, shown), unpriced),
+                value: profile.total_price_line(total, shown),
             }
             if metrics.is_some() {
                 InfoRow {
@@ -102,7 +101,7 @@ pub fn BudgetBody(
                     value: average
                         .map_or_else(
                             || "N/A".to_owned(),
-                            |v| with_unpriced(shown.format_amount(v), unpriced),
+                            |v| shown.format_amount(v),
                         ),
                 }
             }

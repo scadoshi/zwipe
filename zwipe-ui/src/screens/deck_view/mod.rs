@@ -1104,6 +1104,15 @@ impl State {
         self.deck().map_or(&[], |d| &d.warnings)
     }
 
+    /// The cards with no price in the picked currency, Warnings' Unpriced entry
+    /// ([`warning::unpriced`]). Empty until the deck loads.
+    #[must_use]
+    pub fn unpriced_cards(&self) -> Vec<Card> {
+        self.deck().map_or_else(Vec::new, |d| {
+            crate::deck::warning::unpriced(&d.entries, &d.command_zone_cards, self.currency)
+        })
+    }
+
     /// The Profile card's card count: [`crate::deck::profile::card_count`], the command zone
     /// counted from the first frame.
     #[must_use]
@@ -1115,7 +1124,7 @@ impl State {
 
     /// The sections with something to show, in order. Empty until the profile loads.
     ///
-    /// Budget shows with a price target or metrics, Tags with any tag, Distributions and Draw odds with a mainboard card, Mana with a mainboard card or a land target, Warnings with any warning.
+    /// Budget shows with a price target or metrics, Tags with any tag, Distributions and Draw odds with a mainboard card, Mana with a mainboard card or a land target, Warnings with any warning or unpriced card.
     #[must_use]
     pub fn sections(&self) -> Vec<Section> {
         let Some(profile) = self.profile() else {
@@ -1129,17 +1138,23 @@ impl State {
                 Section::Tags => view::tag_count(profile) > 0,
                 Section::Distributions | Section::DrawOdds => charted,
                 Section::Mana => charted || profile.land_target.is_some(),
-                Section::Warnings => self.warned || !self.warnings().is_empty(),
+                Section::Warnings => {
+                    self.warned || !self.warnings().is_empty() || !self.unpriced_cards().is_empty()
+                }
             })
             .collect()
     }
 
-    /// The count beside a section's title: the tag count on Tags, the warning count on Warnings.
+    /// The count beside a section's title: the tag count on Tags, and on Warnings the warning
+    /// count with the Unpriced entry as one more.
     #[must_use]
     pub fn badge(&self, section: Section) -> Option<String> {
         match section {
             Section::Tags => self.profile().map(|p| view::tag_count(p).to_string()),
-            Section::Warnings => Some(self.warnings().len().to_string()),
+            Section::Warnings => {
+                let unpriced = usize::from(!self.unpriced_cards().is_empty());
+                Some(self.warnings().len().saturating_add(unpriced).to_string())
+            }
             Section::Budget | Section::Distributions | Section::Mana | Section::DrawOdds => None,
         }
     }
@@ -1164,28 +1179,23 @@ impl State {
         self.metrics().is_some()
     }
 
-    /// The [`TOTAL_PRICE`] row's value in the picked currency, with how many copies have no price in it. `None` until the profile loads.
+    /// The [`TOTAL_PRICE`] row's value in the picked currency. `None` until the profile loads.
     #[must_use]
     pub fn total_price_line(&self) -> Option<String> {
         let total = self.metrics().and_then(|m| self.totals(m).0);
-        let unpriced = self.metrics().map_or(0, |m| m.unpriced(self.currency));
         self.profile()
-            .map(|p| view::with_unpriced(view::total_price_line(p, total, self.currency), unpriced))
+            .map(|p| view::total_price_line(p, total, self.currency))
     }
 
-    /// The [`AVERAGE_CARD_PRICE`] row's value in the picked currency with how many copies have no price in it, [`NO_PRICE`] when nothing is priced. `None` without metrics, which hides the row.
+    /// The [`AVERAGE_CARD_PRICE`] row's value in the picked currency, [`NO_PRICE`] when nothing is priced. `None` without metrics, which hides the row.
     #[must_use]
     pub fn average_price_line(&self) -> Option<String> {
         let metrics = self.metrics()?;
-        Some(self.totals(metrics).1.map_or_else(
-            || NO_PRICE.to_owned(),
-            |v| {
-                view::with_unpriced(
-                    self.currency.format_amount(v),
-                    metrics.unpriced(self.currency),
-                )
-            },
-        ))
+        Some(
+            self.totals(metrics)
+                .1
+                .map_or_else(|| NO_PRICE.to_owned(), |v| self.currency.format_amount(v)),
+        )
     }
 
     /// The running total and average in the picked currency.

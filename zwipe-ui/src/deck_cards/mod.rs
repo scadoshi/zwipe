@@ -6,6 +6,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::cards::{Cards, sort_deck_entries};
 use zwipe_core::domain::card::search_card::group_cards::{CardGroup, GroupByOption, GroupCards};
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
@@ -128,6 +129,18 @@ impl Zone {
         let zone_cards = self.to_cards();
         (!all.is_empty() || !zone_cards.is_empty())
             .then(|| DeckMetrics::from_entries_and_command_zone(&all, &zone_cards))
+    }
+
+    /// The cards with no price in `currency` while the screen holds `live`, from the entries and
+    /// zone [`Self::live_metrics`] prices, so they are the copies its totals leave out.
+    #[must_use]
+    pub fn live_unpriced(
+        &self,
+        fetched: &[DeckEntry],
+        live: &[DeckEntry],
+        currency: PriceCurrency,
+    ) -> Vec<Card> {
+        crate::deck::warning::unpriced(&self.rejoin(fetched, live), &self.to_cards(), currency)
     }
 
     /// The deck's warnings as a fresh fetch would give them while the screen holds `live`, worked out as the server does: the entries rejoined as for [`Self::live_metrics`], `fetched_profile` counting the main board's copies as they stand, and the command zone as this zone holds it.
