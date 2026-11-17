@@ -6,8 +6,6 @@
 //! screen's own signals end with it, so such a task checks [`Mounted`] before it
 //! touches them; root state and toasts it may touch at any time.
 
-use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
 use std::future::Future;
 
 use dioxus::core::spawn_forever;
@@ -36,13 +34,31 @@ pub fn spawn_in_order(key: Uuid, write: impl Future<Output = ()> + 'static) {
     let _task = spawn(in_order(key, write));
 }
 
-thread_local! {
-    /// Each key's latest write while it is out, by its number: the next write for the key
-    /// waits on it. The app's tasks all run on one thread, the web's and the phone's alike.
-    static LATEST: RefCell<HashMap<Uuid, (u64, oneshot::Receiver<()>)>> = RefCell::new(HashMap::new());
-    /// The number the next write takes.
-    static NEXT: Cell<u64> = const { Cell::new(0) };
+/// The per-thread state that orders each key's writes.
+#[cfg_attr(
+    target_os = "android",
+    expect(
+        clippy::missing_const_for_thread_local,
+        reason = "fires on Android for the const-initialized NEXT, which is already const"
+    )
+)]
+mod slots {
+    use std::cell::{Cell, RefCell};
+    use std::collections::HashMap;
+
+    use futures_channel::oneshot;
+    use uuid::Uuid;
+
+    thread_local! {
+        /// Each key's latest write while it is out, by its number: the next write for the key
+        /// waits on it. The app's tasks all run on one thread, the web's and the phone's alike.
+        pub(super) static LATEST: RefCell<HashMap<Uuid, (u64, oneshot::Receiver<()>)>> = RefCell::new(HashMap::new());
+        /// The number the next write takes.
+        pub(super) static NEXT: Cell<u64> = const { Cell::new(0) };
+    }
 }
+
+use slots::{LATEST, NEXT};
 
 /// `write`, once the key's previous write has ended. A write ends when it finishes or when its
 /// task is dropped, since dropping it drops its sender, so a write whose screen or root went
@@ -91,6 +107,7 @@ pub fn use_mounted() -> Mounted {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::RefCell;
     use std::time::Duration;
 
     use dioxus::dioxus_core::NoOpMutations;
