@@ -1,6 +1,7 @@
 //! The stores the card screens share for the visit, zwipe-ui's, held in
 //! root signals: each screen's filter per deck, Add's parked stacks and its
-//! live search stack, the per-deck undo log and the adds still in flight.
+//! live search stack, the per-deck undo log, the adds still in flight and a
+//! count of the commander maybeboard writes that landed.
 //!
 //! They live in the root because work outlives the screen that started it:
 //! an add's answer lands after Add is gone and still records its undo entry.
@@ -49,6 +50,10 @@ pub struct CardStores {
     pub add_stack_deck: Signal<Option<Uuid>>,
     /// The filter that produced `add_stack`; `None` while a search is out.
     pub last_search: Signal<Option<CardQueryBuilder>>,
+    /// How many commander maybeboard saves and removes made off the maybeboard screen
+    /// (Swipe select, Playstyle) have landed. The maybeboard screen reloads its list when it
+    /// changes, so a save shows once the server has it, whichever screen made it.
+    pub maybeboard_writes: Signal<u32>,
 }
 
 /// Provides [`CardStores`] to everything under the root, in signals the
@@ -65,11 +70,20 @@ pub fn use_card_stores() {
         add_stack: use_root_signal(CardStack::default),
         add_stack_deck: use_root_signal(|| None),
         last_search: use_root_signal(|| None),
+        maybeboard_writes: use_root_signal(|| 0),
     };
     use_context_provider(|| stores);
 }
 
 impl CardStores {
+    /// Counts a commander maybeboard save or remove that landed, which reloads the
+    /// maybeboard screen's list.
+    pub fn maybeboard_written(self) {
+        let mut writes = self.maybeboard_writes;
+        let count = *writes.peek();
+        writes.set(count.wrapping_add(1));
+    }
+
     /// Hands `deck`'s Add screen the search stack ([`claim_add_stack`]). Add calls it as it
     /// opens, before it restores a parked stack or searches.
     pub fn claim_add_stack(self, deck: Uuid) {
@@ -220,6 +234,56 @@ mod tests {
         assert_eq!(
             stack.current().map(|c| c.scryfall_data.id),
             Some(Uuid::from_u128(3))
+        );
+    }
+
+    thread_local! {
+        /// How many times the stand-in maybeboard list loaded.
+        static LOADS: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+    }
+
+    /// The root's stores over a stand-in maybeboard list and a screen that saves once.
+    #[component]
+    fn MaybeboardRoot() -> Element {
+        use_card_stores();
+        rsx! {
+            MaybeboardList {}
+            SavingScreen {}
+        }
+    }
+
+    /// Loads the way the maybeboard screen does: its effect reads the write count.
+    #[component]
+    fn MaybeboardList() -> Element {
+        let stores: CardStores = use_context();
+        use_effect(move || {
+            let _written = (stores.maybeboard_writes)();
+            LOADS.with(|loads| loads.set(loads.get().saturating_add(1)));
+        });
+        rsx! {}
+    }
+
+    /// A screen whose maybeboard save lands once.
+    #[component]
+    fn SavingScreen() -> Element {
+        let stores: CardStores = use_context();
+        use_effect(move || stores.maybeboard_written());
+        rsx! {}
+    }
+
+    #[test]
+    fn a_maybeboard_write_that_lands_reloads_the_list() {
+        LOADS.with(|loads| loads.set(0));
+        let mut dom = VirtualDom::new(MaybeboardRoot);
+        dom.rebuild_in_place();
+        for _ in 0..8 {
+            dom.process_events();
+            dom.render_immediate(&mut dioxus::core::NoOpMutations);
+        }
+        assert_eq!(
+            LOADS.with(std::cell::Cell::get),
+            2,
+            "the first load, then one more once the save landed"
         );
     }
 }

@@ -56,6 +56,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Add says Try a filter on its empty card when a deck with no format has no filter",
         "About shows your version beside Changelog, and a release live on the web and in the stores reads Web and Mobile",
         "On the web, j and k scroll a hint or the shortcuts sheet taller than the window",
+        "On the web, the commander maybeboard shows a save or undo from Swipe select or Playstyle without a reload",
     ],
 }];
 

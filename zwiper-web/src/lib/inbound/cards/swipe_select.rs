@@ -66,6 +66,7 @@ use zwipe_ui::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
 
 use crate::domain::swipe_select::{card_key, redeal};
 use crate::inbound::card_filter::CardFilterPanel;
+use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{
     CardDetailsSheet, DETAILS_DRAWER_CLASS, THROUGH_DRAWER_KEYS,
 };
@@ -536,6 +537,7 @@ fn SwipeSelectBody(
     let confirm = use_swipe_confirm();
     // A write lands even after the screen goes; its confirmation waits on this.
     let mounted = use_mounted();
+    let stores = try_use_context::<CardStores>();
     let authed = use_authed().in_component(component::SWIPE_SELECT);
     let usage = telemetry::use_usage();
     let describe_tag = use_describe_tag();
@@ -609,14 +611,16 @@ fn SwipeSelectBody(
         match action {
             SelectSwipe::Maybe(oracle_id) => {
                 spawn_write_in_order(oracle_id, async move {
-                    if authed
+                    let removed = authed
                         .try_run("undo_commander_maybeboard", |c, s| async move {
                             c.remove_commander_maybeboard_card(oracle_id, &s).await
                         })
                         .await
-                        .is_ok()
-                        && mounted.get()
-                    {
+                        .is_ok();
+                    if removed && let Some(stores) = stores {
+                        stores.maybeboard_written();
+                    }
+                    if removed && mounted.get() {
                         confirm.info("Removed from your commander maybeboard");
                     }
                 });
@@ -744,14 +748,16 @@ fn SwipeSelectBody(
                 ran_out();
             }
             spawn_write_in_order(oracle_id, async move {
-                if authed
+                let saved = authed
                     .try_run("add_commander_maybeboard", |c, s| async move {
                         c.add_commander_maybeboard_card(oracle_id, &s).await
                     })
                     .await
-                    .is_ok()
-                    && mounted.get()
-                {
+                    .is_ok();
+                if saved && let Some(stores) = stores {
+                    stores.maybeboard_written();
+                }
+                if saved && mounted.get() {
                     if last {
                         confirm.quietly("Added to your commander maybeboard");
                     } else {

@@ -38,6 +38,7 @@ use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
 use crate::domain::commander_maybeboard;
 use crate::inbound::caches::CreateDeckSeed;
 use crate::inbound::card_filter::CardFilterPanel;
+use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlaysHost, CardRow, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::row_keys::use_card_row_keys_and;
@@ -158,6 +159,7 @@ pub fn CommanderMaybeboard() -> Element {
     let navigator = use_navigator();
     let session: Signal<Option<Session>> = use_context();
     let seed: CreateDeckSeed = use_context();
+    let stores = try_use_context::<CardStores>();
     let toast = use_toast();
     // A save or remove lands even after the screen goes; its list update waits on this.
     let mounted = use_mounted();
@@ -196,8 +198,11 @@ pub fn CommanderMaybeboard() -> Element {
         reload,
         ..
     } = list;
+    // A save or remove from Swipe select or Playstyle reloads the list once it has landed, so
+    // the list never reads the server ahead of the write.
     use_effect(move || {
         let _tick = reload();
+        let _written = stores.map(|stores| (stores.maybeboard_writes)());
         let ticket = list.begin_load();
         spawn(async move {
             let reply = authed

@@ -46,6 +46,7 @@ pub use self::rows::SuggestionReasons;
 use self::rows::{StaplesPanel, SuggestionRow};
 use self::skeleton::PlaystyleSkeleton;
 use crate::inbound::caches::CreateDeckSeed;
+use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlaysHost, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::row_keys::use_card_row_keys;
@@ -76,6 +77,7 @@ pub fn Playstyle() -> Element {
     let toast = use_toast();
     // A save or skip lands even after the screen goes; its row update waits on this.
     let mounted = use_mounted();
+    let stores = try_use_context::<CardStores>();
     let authed = use_authed();
     let seed: CreateDeckSeed = use_context();
     let hint_open = use_one_time_hint(OneTimeHint::SuggestedCommanders);
@@ -246,6 +248,9 @@ pub fn Playstyle() -> Element {
                 .await
                 .is_some()
             {
+                if let Some(stores) = stores {
+                    stores.maybeboard_written();
+                }
                 if mounted.get() {
                     drop_row(oracle_id);
                 }
