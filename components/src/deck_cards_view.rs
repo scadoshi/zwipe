@@ -670,6 +670,7 @@ pub fn DeckRow(
                     show_classification: true,
                     describe_tag,
                     on_examples,
+                    send_to: true,
                 }
             }
         }

@@ -29,6 +29,7 @@ pub mod home;
 pub mod pending_settings;
 pub mod playstyle;
 pub mod screens;
+pub mod send_to;
 pub mod session;
 pub mod settings;
 pub mod shortcuts;

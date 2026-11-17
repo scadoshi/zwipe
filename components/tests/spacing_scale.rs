@@ -10,12 +10,18 @@ use std::path::{Path, PathBuf};
 
 /// Lengths off the scale on purpose: (the sheet's path from the workspace root, the
 /// declaration's property, the length, why).
-const ALLOWED: [(&str, &str, &str, &str); 16] = [
+const ALLOWED: [(&str, &str, &str, &str); 17] = [
     (
         "components/assets/screens/base.css",
         "--content-pad-bottom",
         "5rem",
         "a screen's room for its dock under the content",
+    ),
+    (
+        "components/assets/screens/screens-b.css",
+        "--content-pad-bottom",
+        "5rem",
+        "a picker's room for its dock under the chips",
     ),
     (
         "zwiper-web/assets/web.css",

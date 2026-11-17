@@ -76,6 +76,10 @@ pub fn CardRow(
     /// `card-action-btn` buttons that stop propagation themselves.
     #[props(default)]
     extra_actions: Option<Element>,
+    /// A Send to row under the opened row's moves, where the client provides
+    /// [`crate::SendTo`]: the deck page's rows have one.
+    #[props(default)]
+    send_to: bool,
     on_toggle_mvp: Option<EventHandler<()>>,
     /// Cursor enters/leaves the compact row. Never fires on touch devices
     /// (no mouseenter), so touch hosts can omit them. The screen's
@@ -234,11 +238,13 @@ pub fn CardRow(
         .unwrap_or_default();
     // The `actions` slot the shared detail hangs its bar on: qty stepper,
     // printing, star, move-to. Image is a `CardDetails` default, not part of it.
+    let send_to = send_to && try_use_context::<crate::SendTo>().is_some();
     let has_slot_actions = on_qty_change.is_some()
         || on_printing.is_some()
         || (mvp.is_some() && on_toggle_mvp.is_some())
         || on_move_to.is_some()
-        || extra_actions.is_some();
+        || extra_actions.is_some()
+        || send_to;
     // Always mounted; the `.open` class drives the grid-rows + opacity collapse
     // so the detail eases open and closed instead of popping.
     let collapse_class = if is_expanded {
@@ -377,6 +383,11 @@ pub fn CardRow(
                     action_rows: rsx! {
                         if let Some(handler) = on_move_to {
                             CardBoardMoves { current_board, on_move_to: handler }
+                        }
+                        if send_to {
+                            div { class: "card-action-row",
+                                crate::SendToButton { card: card.clone() }
+                            }
                         }
                     },
                 }

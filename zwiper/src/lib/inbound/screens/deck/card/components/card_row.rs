@@ -123,6 +123,8 @@ pub(crate) fn CardRow(
             show_classification: true,
             describe_tag,
             on_examples,
+            // The deck page's rows, the one place that keeps the shared faces, carry Send to.
+            send_to: deck_faces.is_some(),
         }
     }
 }

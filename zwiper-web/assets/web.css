@@ -2475,41 +2475,6 @@ body {
     }
 }
 
-/* A picker's body in its sheet: the controls on top and the chip grid
-   under them, the grid scrolling on its own right down to the sheet's
-   foot and running under the dock, as the app's pickers do. The grid's
-   own trailing padding scrolls its last row clear of the dock. */
-.bottom-sheet.web-picker-sheet:has(.sheet-dock) > .sheet-content {
-    padding: 0;
-}
-
-.web-picker-body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1 1 auto;
-    min-height: 0;
-}
-
-.web-picker-body .tag-search-label {
-    color: var(--ink-accent-primary, var(--accent-primary));
-}
-
-/* The controls and the chips fill the sheet's width, the grid's
-   scrollbar along its right edge. */
-.web-picker-body > .tag-controls,
-.web-picker-body > .tag-grid {
-    max-width: none;
-    box-sizing: border-box;
-}
-
-/* The chips are cut at the definition bar's bottom border, where the grid
-   starts, and at the sheet's foot. The room the dock takes goes through
-   --content-pad-bottom, which the grid's trailing padding adds to. */
-.web-picker-body > .tag-grid {
-    --content-pad-bottom: 5rem;
-}
-
 /* ---- The oracle tag dictionary as the kit's modal ----
 
    From the kit's modal width the dictionary is its modal, the large

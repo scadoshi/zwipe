@@ -532,6 +532,41 @@
     padding-bottom: 0;
 }
 
+/* A picker's body in its sheet: the controls on top and the chip grid
+   under them, the grid scrolling on its own right down to the sheet's
+   foot and running under the dock, as the app's pickers do. The grid's
+   own trailing padding scrolls its last row clear of the dock. */
+.bottom-sheet.picker-sheet:has(.sheet-dock) > .sheet-content {
+    padding: 0;
+}
+
+.picker-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.picker-body .tag-search-label {
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+/* The controls and the chips fill the sheet's width, the grid's
+   scrollbar along its right edge. */
+.picker-body > .tag-controls,
+.picker-body > .tag-grid {
+    max-width: none;
+    box-sizing: border-box;
+}
+
+/* The chips are cut at the definition bar's bottom border, where the grid
+   starts, and at the sheet's foot. The room the dock takes goes through
+   --content-pad-bottom, which the grid's trailing padding adds to. */
+.picker-body > .tag-grid {
+    --content-pad-bottom: 5rem;
+}
+
 .tag-controls {
     flex: 0 0 auto;
     width: 100%;

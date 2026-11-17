@@ -69,6 +69,16 @@ pub fn use_authed(screen: Screen) -> Authed {
 }
 
 impl Authed {
+    /// This handle with its calls reported under `screen`, for a sheet above the screens
+    /// that learns its host when it opens.
+    #[must_use]
+    pub fn at(mut self, screen: Screen) -> Self {
+        self.screen = screen;
+        self
+    }
+}
+
+impl Authed {
     /// The uniform path: refresh, run, and on any failure report + toast,
     /// yielding `None`. `op` is the telemetry action name, part of the
     /// server-side `client_errors` dedupe key, so it stays fixed per site.

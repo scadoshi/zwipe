@@ -51,6 +51,7 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "On Android, the app no longer signs you out now and then after a restart",
         "Warnings lists a deck's unpriced cards, each opening its details to pick a priced printing, in place of the unpriced count on Budget",
+        "A card's details and an open deck row have Send to, which adds the card to another of your decks on its main, maybe or side board",
     ],
 }];
 

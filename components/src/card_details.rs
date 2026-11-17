@@ -446,7 +446,12 @@ pub fn CardDetailsPanel(
     /// the melded card too (a drawer). Left out, the panel keeps its own.
     #[props(default)]
     meld: Option<MeldToggle>,
+    /// A Send to button in the foot, where the client provides [`crate::SendTo`]: the drawer's
+    /// panel has one.
+    #[props(default)]
+    send_to: bool,
 ) -> Element {
+    let send_to = send_to && try_use_context::<crate::SendTo>().is_some();
     let sd = &card.scryfall_data;
     // A meld half can show its melded card's name, type, rules and stats in
     // its place; the set, prices and tags stay the half's own.
@@ -486,8 +491,8 @@ pub fn CardDetailsPanel(
     let show_flip_btn = face_count > 1 && show_flip;
     let show_image = has_image && on_image.is_some();
     let show_meld = meld.available();
-    let has_foot =
-        footer.is_some() || show_flip_btn || show_image || show_meld || on_printings.is_some();
+    let has_buttons = show_flip_btn || show_image || show_meld || on_printings.is_some() || send_to;
+    let has_foot = footer.is_some() || has_buttons;
     let class = match class {
         Some(extra) => format!("card-details-panel {extra}"),
         None => "card-details-panel".to_string(),
@@ -503,7 +508,7 @@ pub fn CardDetailsPanel(
             actions: has_foot.then(|| rsx! {
                 div { class: "card-details-foot",
                     {footer}
-                    if show_flip_btn || show_image || show_meld || on_printings.is_some() {
+                    if has_buttons {
                         div { class: "card-action-row",
                             if show_flip_btn {
                                 FlipButton { face_idx, current: cur, face_count, on_face_change }
@@ -516,6 +521,9 @@ pub fn CardDetailsPanel(
                             }
                             if let Some(handler) = on_printings {
                                 FootButton { label: "Printings", action: data_action::PRINTINGS, on_click: handler }
+                            }
+                            if send_to {
+                                crate::SendToButton { card: card.clone() }
                             }
                         }
                     }

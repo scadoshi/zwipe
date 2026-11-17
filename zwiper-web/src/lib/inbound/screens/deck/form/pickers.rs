@@ -10,12 +10,10 @@
 //! change and stays off while nothing has. `/` focuses the search.
 
 use components::hint::{ContentHintDialog, HintBody, guide_for_screen};
-use components::icons::CHECK;
-use components::keys::{SHEET_ENTER_OR_CLOSE, focus_by_id, use_page_keys, use_sheet_focus};
 use components::{
-    ActionDock, AlertDialog, BackArrow, Button, ButtonVariant, Chip, ClearWrap, DialogAction,
-    DockAction, DrawerSheet, HintDialog, PageHeader, TOAST_NORMAL, TOAST_QUICK, use_min_width,
-    use_overlay_back_action, use_picker_search,
+    AlertDialog, Button, ButtonVariant, Chip, DialogAction, HintDialog, PICKER_DRAWER_PX,
+    PickerSearch, PickerSheet, TOAST_NORMAL, TOAST_QUICK, use_min_width, use_overlay_back_action,
+    use_picker_search,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -39,10 +37,6 @@ use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
-/// The width, in pixels, from which a picker is a drawer beside the form; narrower it is a
-/// screen over it.
-const PICKER_DRAWER_PX: u32 = 600;
-
 /// Whether an open picker covers the form, as a screen over another does: on a window
 /// narrower than [`PICKER_DRAWER_PX`] (`narrow`) while any of the three (`open`) is open.
 pub(crate) fn covers_form(narrow: bool, open: [bool; 3]) -> bool {
@@ -60,117 +54,6 @@ pub(crate) fn use_pickers_cover(form: &DeckForm) -> bool {
             (form.oracle_tags_open)(),
         ],
     )
-}
-
-/// What takes focus as a picker opens as a screen: its back arrow, so no field raises a phone's
-/// keyboard.
-const SCREEN_ENTRY: &str = ".web-picker-screen.show .page-header-support";
-
-/// The picker, open on `open`. From [`PICKER_DRAWER_PX`] it is components' [`DrawerSheet`] as
-/// a drawer at every width, sliding in from the right: the kit's drawer on a wide window, the
-/// window's height along the right edge below it, its title bar's × and a backdrop tap calling
-/// `on_back`. Narrower it is a screen over the form, as the app's pickers are: it fades in with
-/// no slide, its header's back arrow calls `on_back`, and the form under it is hidden
-/// ([`use_pickers_cover`]). The dock's checkmark calls `on_save` and stays off while
-/// `unchanged`. The body mounts while open (and, as a drawer, through the slide out), so its
-/// keys stop answering once the picker is gone. As a screen its back arrow takes focus as it
-/// opens and the opener gets it back as it closes; as a drawer, its ×.
-#[component]
-fn PickerSheet(
-    open: Signal<bool>,
-    title: &'static str,
-    search_id: &'static str,
-    mut hint_open: Signal<bool>,
-    unchanged: bool,
-    on_back: EventHandler<()>,
-    on_save: EventHandler<()>,
-    layer: Option<u32>,
-    children: Element,
-) -> Element {
-    let wide = use_min_width(PICKER_DRAWER_PX);
-    let as_screen = use_memo(move || open() && !wide());
-    use_sheet_focus(as_screen.into(), SCREEN_ENTRY);
-    let save = rsx! {
-        DockAction {
-            label: "Save",
-            icon: CHECK,
-            disabled: unchanged,
-            class: SHEET_ENTER_OR_CLOSE.to_owned(),
-            onclick: move |()| on_save.call(()),
-        }
-    };
-    if !wide() {
-        let shown = open();
-        return rsx! {
-            div {
-                class: if shown { "screen swipe-select-screen web-picker-screen show" } else { "screen swipe-select-screen web-picker-screen" },
-                style: layer.map(|z| format!("--overlay-z: {z};")),
-                components::GridCells { still: true }
-                if shown {
-                    PageHeader {
-                        title,
-                        leading: rsx! {
-                            BackArrow { class: "page-header-support", onclick: move |()| on_back.call(()) }
-                        },
-                        on_hint: move |()| hint_open.set(true),
-                    }
-                    div { class: "screen-content content-enter",
-                        PickerBody { search_id, {children} }
-                    }
-                    ActionDock { {save} }
-                }
-            }
-        };
-    }
-    rsx! {
-        DrawerSheet {
-            open,
-            layer,
-            title,
-            on_close: move |()| on_back.call(()),
-            on_hint: move |()| hint_open.set(true),
-            class: "web-picker-sheet",
-            every_width: true,
-            dock: save,
-            PickerBody { search_id, {children} }
-        }
-    }
-}
-
-/// The open picker's body, with `/` focusing its search.
-#[component]
-fn PickerBody(search_id: &'static str, children: Element) -> Element {
-    use_page_keys(Callback::new(move |key: String| {
-        if key == "/" {
-            focus_by_id(search_id);
-        }
-    }));
-    rsx! {
-        div { class: "web-picker-body", {children} }
-    }
-}
-
-/// The search input every picker leads with, its `×` easing in as text is
-/// typed.
-#[component]
-fn PickerSearch(id: &'static str, placeholder: &'static str, mut query: Signal<String>) -> Element {
-    rsx! {
-        ClearWrap {
-            filled: !query.read().is_empty(),
-            on_clear: move |()| query.set(String::new()),
-            input {
-                class: "input",
-                id,
-                r#type: "text",
-                placeholder,
-                value: "{query}",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| query.set(event.value()),
-            }
-        }
-    }
 }
 
 /// Asks before a picker's ×, backdrop tap or Esc throws its picks away. Keep,
@@ -822,7 +705,7 @@ mod tests {
         dom.rebuild_in_place();
         let html = dioxus_ssr::render(&dom);
         assert!(
-            html.contains("class=\"screen swipe-select-screen web-picker-screen show\""),
+            html.contains("class=\"screen swipe-select-screen picker-screen show\""),
             "the picker shows as a screen: {html}"
         );
         assert!(html.contains("--overlay-z: 205;"), "at its layer: {html}");

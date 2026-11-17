@@ -3,6 +3,7 @@
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 
+use crate::inbound::cards::send_to::{SendToHost, use_send_to};
 use crate::inbound::router::Route;
 use crate::inbound::session::return_to;
 
@@ -17,6 +18,7 @@ pub fn AuthGate() -> Element {
     let session: Signal<Option<Session>> = use_context();
     let has_session = use_memo(move || session().is_some_and(|current| !current.is_expired()));
     let opened_signed_out = use_hook(|| !*has_session.peek());
+    let send_to = use_send_to();
 
     use_effect(move || {
         if !has_session() {
@@ -28,7 +30,10 @@ pub fn AuthGate() -> Element {
     });
 
     if has_session() {
-        rsx! { Outlet::<Route> {} }
+        rsx! {
+            Outlet::<Route> {}
+            SendToHost { send_to }
+        }
     } else {
         rsx! {}
     }

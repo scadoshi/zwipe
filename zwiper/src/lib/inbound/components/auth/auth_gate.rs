@@ -10,6 +10,7 @@
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 
+use crate::inbound::components::send_to::{SendToHost, use_send_to};
 use crate::inbound::router::Router;
 
 /// Router layout that admits only authenticated users, redirecting to `/login`
@@ -31,5 +32,10 @@ pub fn AuthGate() -> Element {
         }
     });
 
-    rsx! { Outlet::<Router> {} }
+    let send_to = use_send_to();
+
+    rsx! {
+        Outlet::<Router> {}
+        SendToHost { send_to }
+    }
 }

@@ -40,6 +40,8 @@ pub mod navigation;
 pub mod on_bump;
 /// Shared screen header (centered title + optional "?" hint trigger).
 pub mod screen_header;
+/// Send to: the sheet that adds a card to another deck.
+pub mod send_to;
 /// The account's settings fetched and applied, the theme by the latest choice.
 pub mod settings_sync;
 /// Global floating help/support button + bottom sheet.
