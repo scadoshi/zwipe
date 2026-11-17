@@ -281,6 +281,10 @@ pub fn CommanderMaybeboard() -> Element {
             .write()
             .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
         highlight.set(None);
+        // A phone's keyboard drops with the focus, so the Added toast below it shows.
+        document::eval(&format!(
+            "document.getElementById('{QUICK_ADD_ID}')?.blur();"
+        ));
         spawn_write(async move {
             if authed
                 .run("add_commander_maybeboard", |c, s| async move {
@@ -747,5 +751,20 @@ mod tests {
                 "{key}"
             );
         }
+    }
+
+    #[test]
+    fn a_pick_takes_focus_off_the_box_so_a_phone_s_keyboard_drops() {
+        let source = include_str!("commander_maybeboard.rs");
+        let pick = source
+            .split("let add_from_search = use_callback(move |card: Card| {")
+            .nth(1)
+            .and_then(|rest| rest.split("spawn_write(").next())
+            .unwrap_or_default();
+        assert!(
+            pick.contains("document::eval(")
+                && pick.contains("\"document.getElementById('{QUICK_ADD_ID}')?.blur();\""),
+            "the pick blurs {QUICK_ADD_ID} before its add goes out: {pick}"
+        );
     }
 }
