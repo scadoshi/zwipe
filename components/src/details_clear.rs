@@ -30,7 +30,7 @@ const SURFACES: [(&str, &str, &str); 3] = [
 const CLEAR_GAP_PX: u8 = 16;
 
 /// Installs the slide once per tab: it measures each surface on a resize and
-/// whenever a class changes (the panel shown or hidden, a card coming in).
+/// whenever a class changes (the panel shown or hidden, a card coming in or landing).
 /// The card's own `translate` carries the shift, so its other transforms are
 /// untouched; the panel's and the card's positions are read at rest, less any
 /// slide in flight.
@@ -50,6 +50,10 @@ if (!window.__zwipeDetailsClear) {
             for (const body of document.querySelectorAll(bodySel)) {
                 const card = body.querySelector(cardSel);
                 if (!card) continue;
+                // A card coming back from an undo is a window's width to one side until it
+                // lands; the slide holds until then, and the class change as it lands runs this
+                // again with the card at rest.
+                if (card.querySelector(`.swipe-stack-card.top[class*='card-stack-enter-']`)) continue;
                 const top = card.querySelector('.swipe-stack-card.top img')
                     || card.querySelector('.swipe-stack-card.top')
                     || card;
@@ -122,6 +126,14 @@ mod tests {
             );
         }
         assert!(js.contains(".web-examples-body"), "the examples slide too");
+    }
+
+    #[test]
+    fn a_card_coming_back_from_an_undo_is_measured_once_it_lands() {
+        // Mid-entrance the top card sits a window's width to one side; measured there, it would
+        // slide the whole stack off the screen.
+        let skip = "if (card.querySelector(`.swipe-stack-card.top[class*='card-stack-enter-']`)) continue;";
+        assert!(DETAILS_CLEAR_JS.contains(skip), "{DETAILS_CLEAR_JS}");
     }
 
     #[test]
