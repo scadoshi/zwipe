@@ -2531,6 +2531,11 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
     pointer-events: none;
 }
 
+/* A grayed row's "?" still opens its hint. */
+.ub-chips-disabled .info-button {
+    pointer-events: auto;
+}
+
 /* The Exceptions row wraps so its selected-franchise chips sit on their own
    line inside the same row, under the label and Change button. */
 .settings-row.ub-exceptions-row {
