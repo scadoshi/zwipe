@@ -42,8 +42,9 @@ use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::cards::stack_view::StackDetails;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
-use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
+use crate::inbound::chrome::shortcuts::{self, CardKey, DeckAction, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
+use crate::inbound::router::Route;
 use crate::inbound::telemetry;
 use crate::outbound::timer;
 
@@ -917,6 +918,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         )
     });
 
+    let navigator = use_navigator();
     // Shift+H opens the shortcuts sheet with this screen's keys.
     use_offer_shortcuts(ShortcutsScreen::DeckCards);
     // `p`, `i`, `v`, `d`, `m`, `s`, Shift+S, `-` and `+` act on the card under the cursor, else
@@ -956,6 +958,15 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         other_keys: Some(Callback::new(move |key: String| {
             if shortcuts::undo_letter(&key) {
                 apply_undo.call(());
+                return;
+            }
+            // `a`, `r` and `e` go where the dock's Add, Remove and Edit buttons go.
+            if let Some(action) = shortcuts::deck_action_key(&key) {
+                navigator.push(match action {
+                    DeckAction::AddCards => Route::AddDeckCard { deck_id },
+                    DeckAction::RemoveCards => Route::RemoveDeckCard { deck_id },
+                    DeckAction::EditDeck => Route::EditDeck { deck_id },
+                });
                 return;
             }
             match screen_key(&key) {

@@ -222,6 +222,36 @@ pub fn rows_of(groups: &[SheetGroup]) -> Vec<SheetRow> {
 /// The key that puts the cursor in a page's Quick add.
 pub const QUICK_ADD_KEY: &str = "/";
 
+/// A deck action the owner's deck page opens from the keyboard, as its dock button does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DeckAction {
+    /// `a`: Add cards.
+    AddCards,
+    /// `r`: Remove cards.
+    RemoveCards,
+    /// `e`: Edit deck.
+    EditDeck,
+}
+
+/// The deck action `key` (`KeyboardEvent.key`) opens on the owner's deck page: `a` Add cards,
+/// `r` Remove cards, `e` Edit deck. Lowercase only, so Shift+A and the rest stay free.
+#[must_use]
+pub fn deck_action_key(key: &str) -> Option<DeckAction> {
+    match key {
+        "a" => Some(DeckAction::AddCards),
+        "r" => Some(DeckAction::RemoveCards),
+        "e" => Some(DeckAction::EditDeck),
+        _ => None,
+    }
+}
+
+/// The sheet's rows for [`deck_action_key`]'s keys, in its order.
+const DECK_ACTION_ROWS: [SheetRow; 3] = [
+    (&["a"], "Add cards"),
+    (&["r"], "Remove cards"),
+    (&["e"], "Edit deck"),
+];
+
 /// The deck cards page's own rows, the read-only page's being only the keys that read, with no
 /// Quick add.
 #[must_use]
@@ -243,9 +273,9 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
     ];
     let filter: SheetRow = (&["f"], "Filter");
     let quick_add: SheetRow = (&[QUICK_ADD_KEY], "Quick add");
-    let (edits, quick_add) = match editable {
-        Editable::Yes => (&edits[..], Some(quick_add)),
-        Editable::No => (&[][..], None),
+    let (edits, quick_add, actions) = match editable {
+        Editable::Yes => (&edits[..], Some(quick_add), &DECK_ACTION_ROWS[..]),
+        Editable::No => (&[][..], None, &[][..]),
     };
     moves
         .into_iter()
@@ -254,6 +284,7 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
         .chain(edits.iter().copied())
         .chain([filter])
         .chain(quick_add)
+        .chain(actions.iter().copied())
         .collect()
 }
 
@@ -297,8 +328,9 @@ pub fn card_rows_rows(layout: ListLayout) -> Vec<SheetRow> {
 pub const FEATURED_ROW: SheetRow = (&["↑", "k"], "Up into the featured cards");
 
 /// The deck cards page's groups: the cursor's moves, the way up into the featured cards, and Enter under Navigation; the keys that
-/// read a card, then (owner's page) the ones that change it, under Card; Undo, the filter and
-/// Quick add (owner's page) under Page. The cursor keeps `j` and `k`.
+/// read a card, then (owner's page) the ones that change it, under Card; Undo, the filter, then
+/// (owner's page) Quick add and Add cards, Remove cards and Edit deck under Page. The cursor keeps
+/// `j` and `k`.
 #[must_use]
 pub fn deck_cards_groups(editable: Editable) -> Vec<SheetGroup> {
     let rows = deck_cards_rows(editable);
@@ -312,7 +344,7 @@ pub fn deck_cards_groups(editable: Editable) -> Vec<SheetGroup> {
             .collect(),
         open: find("Enter"),
         card: pick(&["p", "i", "v", "d", "m", "s", "Shift+S", "-", "+"]),
-        page: pick(&["u", "f", QUICK_ADD_KEY]),
+        page: pick(&["u", "f", QUICK_ADD_KEY, "a", "r", "e"]),
         ..ScreenKeys::default()
     })
 }
@@ -487,11 +519,32 @@ mod tests {
                     "Card",
                     vec!["p", "i", "v", "d", "m", "s", "Shift+S", "-", "+"]
                 ),
-                ("Page", vec!["u", "f", "/", "t", "?", "Shift+H", "Esc"]),
+                (
+                    "Page",
+                    vec!["u", "f", "/", "a", "r", "e", "t", "?", "Shift+H", "Esc"]
+                ),
                 ("In printings", vec!["←", "h", "v", "Enter"]),
                 ("In themes", vec!["↑", "h", "gg", "Enter"]),
             ]
         );
+    }
+
+    #[test]
+    fn the_owner_s_deck_page_opens_add_remove_and_edit_with_a_r_and_e() {
+        assert_eq!(deck_action_key("a"), Some(DeckAction::AddCards));
+        assert_eq!(deck_action_key("r"), Some(DeckAction::RemoveCards));
+        assert_eq!(deck_action_key("e"), Some(DeckAction::EditDeck));
+        for key in ["A", "R", "E", "b", "c", "x", "/", "Enter"] {
+            assert_eq!(deck_action_key(key), None, "{key}");
+        }
+        let rows = rows_of(&deck_cards_groups(Editable::Yes));
+        for (key, does) in [
+            ("a", "Add cards"),
+            ("r", "Remove cards"),
+            ("e", "Edit deck"),
+        ] {
+            assert!(rows.contains(&(&[key][..], does)), "{key}: {does}");
+        }
     }
 
     #[test]

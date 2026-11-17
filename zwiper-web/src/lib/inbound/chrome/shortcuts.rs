@@ -15,8 +15,8 @@ use zwipe_ui::shortcuts::{
     deck_cards_groups, examples_groups, rows_of,
 };
 pub use zwipe_ui::shortcuts::{
-    CardKey, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, QUICK_ADD_KEY, UNDO_COMBO, card_key,
-    flow_key, global_key, undo_letter,
+    CardKey, DeckAction, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, QUICK_ADD_KEY, UNDO_COMBO,
+    card_key, deck_action_key, flow_key, global_key, undo_letter,
 };
 
 /// What a key does on a swipe screen (Add, Remove, Commander swipe): the same action as its
@@ -371,7 +371,8 @@ mod tests {
                     || global_key(key).is_some()
                     || key == "Esc"
                     || key == UNDO_COMBO
-                    || key == QUICK_ADD_KEY;
+                    || key == QUICK_ADD_KEY
+                    || deck_action_key(key).is_some();
                 assert!(known, "{label} for {does}");
             }
         }

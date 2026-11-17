@@ -57,6 +57,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "About shows your version beside Changelog, and a release live on the web and in the stores reads Web and Mobile",
         "On the web, j and k scroll a hint or the shortcuts sheet taller than the window",
         "On the web, the commander maybeboard shows a save or undo from Swipe select or Playstyle without a reload",
+        "On the web, a, r and e on your deck page open Add cards, Remove cards and Edit deck",
     ],
 }];
 
