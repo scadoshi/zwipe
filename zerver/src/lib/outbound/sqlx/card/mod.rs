@@ -245,6 +245,16 @@ const WORDS_NAME: &str =
 /// columns ambiguous. Keyed on the real card's `oracle_id`.
 const POPULARITY_JOIN: &str = "LEFT JOIN (SELECT oracle_id AS pop_oracle_id, decks AS pop_decks FROM commander_popularity) pop ON pop.pop_oracle_id = latest_cards.oracle_id";
 
+/// The signal rollup join plus the global net-rate the signal term centers on.
+/// The rate is a scalar subquery so Postgres runs it once per statement as an
+/// `InitPlan`. As a plain derived table it can land on the inner side of a
+/// nested loop when a text filter drives the row estimate down to one, and
+/// then it rescans the whole rollup for every candidate card.
+const SIGNAL_JOIN: &str =
+    "LEFT JOIN card_signal_rollup sig ON sig.card_oracle_id = latest_cards.oracle_id
+             CROSS JOIN (SELECT (SELECT COALESCE(SUM(net) / NULLIF(SUM(shown), 0), 0)
+                                 FROM card_signal_rollup) AS rate) g";
+
 /// First-party select-signal join for the commander-select wildcard's
 /// least-shown deep slice, aliased for the same ambiguity reason as
 /// [`POPULARITY_JOIN`]. An absent row COALESCEs to 0 impressions, so an empty
@@ -768,15 +778,13 @@ impl CardRepository for MyPostgres {
                     qb.push("FALSE");
                 }
             }
-            qb.push(
+            qb.push(format!(
                 " AS pool_returned, COALESCE(sig.shown, 0) AS pool_shown
              FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
-             LEFT JOIN card_signal_rollup sig ON sig.card_oracle_id = latest_cards.oracle_id
-             CROSS JOIN (SELECT COALESCE(SUM(net) / NULLIF(SUM(shown), 0), 0) AS rate
-                         FROM card_signal_rollup) g
-             WHERE ",
-            );
+             {SIGNAL_JOIN}
+             WHERE "
+            ));
             qb
         } else if wildcard_serving
             && popularity_ordering
@@ -809,14 +817,12 @@ impl CardRepository for MyPostgres {
             ));
             qb
         } else if signal_ordering {
-            QueryBuilder::new(
+            QueryBuilder::new(format!(
                 "SELECT latest_cards.* FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
-             LEFT JOIN card_signal_rollup sig ON sig.card_oracle_id = latest_cards.oracle_id
-             CROSS JOIN (SELECT COALESCE(SUM(net) / NULLIF(SUM(shown), 0), 0) AS rate
-                         FROM card_signal_rollup) g
-             WHERE ",
-            )
+             {SIGNAL_JOIN}
+             WHERE "
+            ))
         } else if popularity_ordering {
             // Non-wildcard commander-select (WILDCARD_SLOTS = 0 revert lever):
             // popularity join for the banded ORDER BY below, no deep-probe CTE.
