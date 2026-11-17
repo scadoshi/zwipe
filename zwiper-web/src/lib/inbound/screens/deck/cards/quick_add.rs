@@ -102,6 +102,8 @@ pub(crate) fn QuickAdd(
         query.set(String::new());
         results.set(Vec::new());
         show.set(false);
+        // A phone's keyboard drops with the focus, so the Added toast below it shows.
+        document::eval(&BLUR_JS.replace("__ID__", QUICK_ADD_ID));
         spawn_write(async move {
             let card = match picked.scryfall_data.oracle_id {
                 Some(oracle_id) => {
@@ -234,5 +236,24 @@ pub(crate) fn QuickAdd(
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_pick_takes_focus_off_the_box_so_a_phone_s_keyboard_drops() {
+        let source = include_str!("quick_add.rs");
+        let pick = source
+            .split("let mut add = move |picked: Card| {")
+            .nth(1)
+            .and_then(|rest| rest.split("spawn_write(").next())
+            .unwrap_or_default();
+        assert!(
+            pick.contains("document::eval(&BLUR_JS.replace(\"__ID__\", QUICK_ADD_ID));"),
+            "the pick blurs {QUICK_ADD_ID} before its add goes out: {pick}"
+        );
     }
 }
