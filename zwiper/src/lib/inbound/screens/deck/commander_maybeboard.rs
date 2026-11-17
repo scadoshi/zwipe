@@ -431,6 +431,7 @@ pub fn CommanderMaybeboard() -> Element {
                             }
                         }
                     } else {
+                        div {
                         div { class: "chip-row",
                             label {
                                 class: "stat-chip stat-chip-p1 chip-row-label",
@@ -454,42 +455,36 @@ pub fn CommanderMaybeboard() -> Element {
                                 }
                             }
                         }
-                        // Catalog results float below the bar, over the Show row
-                        // and list: the shared search-float chips, hung downward
-                        // (this console is the top of the page, so down is the
-                        // only direction with room). Tap a chip to save it.
+                        // The results sit under the bar in the page's flow, as the deck page's Quick
+                        // add does, so the rows below move down rather than hide under them.
                         if let Some(results) = quick_add {
-                            div { class: "search-float-anchor",
+                            div { class: "card-filter-results quick-add-results",
                                 match results {
                                     QuickAddResults::Searching => rsx! {
-                                        div { class: "search-float-results search-float-below",
-                                            div { class: "chip-unselected search-float-chip", {model::SEARCHING} }
-                                        }
+                                        div { class: "chip-unselected card-filter-result", {model::SEARCHING} }
                                     },
                                     QuickAddResults::Empty => rsx! {
-                                        div { class: "search-float-results search-float-below",
-                                            div { class: "chip-unselected search-float-chip", {model::NO_RESULTS} }
-                                        }
+                                        div { class: "chip-unselected card-filter-result", {model::NO_RESULTS} }
                                     },
                                     QuickAddResults::Found(found) => rsx! {
-                                        div { class: "search-float-results search-float-below",
-                                            for (i, card) in found.into_iter().enumerate() {
-                                                div {
-                                                    key: "{card.scryfall_data.id}",
-                                                    class: "chip-unselected search-float-chip",
-                                                    style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                                    onclick: move |_| {
-                                                        if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                                                            driver.dispatch(Action::Add(oracle_id));
-                                                        }
-                                                    },
-                                                    "{card.scryfall_data.name}"
-                                                }
+                                        for (i, card) in found.into_iter().enumerate() {
+                                            button {
+                                                key: "{card.scryfall_data.id}",
+                                                r#type: "button",
+                                                class: "chip-unselected card-filter-result",
+                                                style: "animation-delay: {i.saturating_mul(40)}ms;",
+                                                onclick: move |_| {
+                                                    if let Some(oracle_id) = card.scryfall_data.oracle_id {
+                                                        driver.dispatch(Action::Add(oracle_id));
+                                                    }
+                                                },
+                                                "{card.scryfall_data.name}"
                                             }
                                         }
                                     },
                                 }
                             }
+                        }
                         }
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", {model::SHOW} }

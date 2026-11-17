@@ -280,4 +280,17 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn maybeboard_quick_add_results_center_under_its_bar() {
+        let selector = ".web-maybeboard > .quick-add";
+        assert_eq!(query_for(selector), "@media (min-width: 900px)");
+        let at = WEB_CSS.find(&format!("    {selector} {{")).unwrap();
+        let body = WEB_CSS.get(at..).unwrap().split('}').next().unwrap();
+        assert!(body.contains("width: fit-content;"), "{body:?}");
+        assert!(
+            WEB_CSS.contains("    .web-maybeboard > .quick-add > .quick-add-results {\n        contain: inline-size;"),
+            "the results never widen the bar"
+        );
+    }
 }

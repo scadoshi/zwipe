@@ -698,3 +698,16 @@ fn the_sort_row_orders_the_list_and_is_remembered() {
         "a remembered sort opens the screen"
     );
 }
+
+#[test]
+fn quick_add_matches_a_name_typed_with_punctuation() {
+    for (typed, sent) in [
+        ("yes man,personal", "yes man personal"),
+        ("yes man, personal", "yes man personal"),
+        ("urza's", "urzas"),
+        ("urza’s", "urzas"),
+    ] {
+        let built = search_query(typed).build().unwrap();
+        assert_eq!(built.criteria().name_contains(), Some(sent), "{typed:?}");
+    }
+}

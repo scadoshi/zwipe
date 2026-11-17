@@ -241,6 +241,13 @@
     border-color: var(--color-error);
 }
 
+/* Quick add keeps its field's width steady: the × keeps its room while the
+   field is empty and only fades in, so the first letter moves nothing. */
+.input-clear-wrap:has(> #quick-add, > #commander-maybeboard-search) > .input-clear-btn {
+    width: 2.2rem;
+    margin-left: var(--space-2);
+}
+
 /* `position: relative` after `all: unset` keeps the touch target's tap box
    on the button. */
 .clear-btn {

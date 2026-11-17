@@ -2194,6 +2194,21 @@ body {
         padding: 0 var(--space-5) var(--space-6);
     }
 
+    /* Quick add is as wide as its bar, as the deck page's is, so its results
+       center and wrap under the field rather than across the page. */
+    .web-maybeboard > .quick-add {
+        width: fit-content;
+        max-width: 100%;
+    }
+
+    .web-maybeboard > .quick-add .input-clear-wrap:has(> #commander-maybeboard-search) {
+        width: var(--web-field-max);
+    }
+
+    .web-maybeboard > .quick-add > .quick-add-results {
+        contain: inline-size;
+    }
+
     .web-maybeboard > .settings-list,
     .web-maybeboard > .card-group {
         width: 100%;

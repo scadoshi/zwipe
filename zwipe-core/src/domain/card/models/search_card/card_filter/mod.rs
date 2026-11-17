@@ -31,21 +31,50 @@ pub use query::{CardQuery, Limit};
 pub use sort_direction::SortDirection;
 
 /// Folds accents (see [`accent_fold::fold_accents`]), then strips punctuation,
-/// keeping only alphanumeric characters and whitespace. Used for accent- and
-/// punctuation-insensitive text search: "akromas will" matches "Akroma's
-/// Will" and "jotun" matches "Jötun Grunt". The server folds the stored text
-/// the same way in SQL.
+/// keeping only alphanumeric characters and whitespace, and trims the ends. Used
+/// for accent- and punctuation-insensitive text search: "akromas will" matches
+/// "Akroma's Will" and "jotun" matches "Jötun Grunt". The server folds the stored
+/// text the same way in SQL. A card name always puts a space after a comma, so a
+/// comma typed with no space after it becomes one: "yes man,personal" reads as
+/// "yes man personal", as "Yes Man, Personal Securitron" strips.
 #[must_use]
 pub fn strip_punctuation(s: &str) -> String {
-    accent_fold::fold_accents(s)
-        .chars()
-        .filter(|c| c.is_alphanumeric() || c.is_whitespace())
-        .collect()
+    let folded = accent_fold::fold_accents(s);
+    let mut chars = folded.chars().peekable();
+    let mut kept = String::with_capacity(folded.len());
+    while let Some(c) = chars.next() {
+        if c.is_alphanumeric() || c.is_whitespace() {
+            kept.push(c);
+        } else if c == ',' && chars.peek().is_some_and(|next| !next.is_whitespace()) {
+            kept.push(' ');
+        }
+    }
+    kept.trim().to_owned()
 }
 
 #[cfg(test)]
 mod tests {
     use super::strip_punctuation;
+
+    #[test]
+    fn a_comma_with_no_space_still_splits_the_words() {
+        assert_eq!(strip_punctuation("yes man,personal"), "yes man personal");
+        assert_eq!(strip_punctuation("yes man, personal"), "yes man personal");
+        assert_eq!(strip_punctuation("tawnos,urza's"), "tawnos urzas");
+    }
+
+    #[test]
+    fn the_ends_trim_and_inner_spaces_stay_as_the_server_strips_names() {
+        assert_eq!(
+            strip_punctuation("  kaalia of the vast, "),
+            "kaalia of the vast"
+        );
+        assert_eq!(
+            strip_punctuation("fire // ice"),
+            "fire  ice",
+            "the server strips \"Fire // Ice\" to two spaces, so the query keeps them"
+        );
+    }
 
     #[test]
     fn strips_apostrophes() {

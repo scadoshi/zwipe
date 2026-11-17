@@ -440,11 +440,12 @@ pub fn CommanderMaybeboard() -> Element {
                     if is_loading() {
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 9 } }
+                            // An empty field ghosts empty; the space keeps a typed field's height.
                             div { class: "input-clear-wrap web-ghost-field",
                                 div {
                                     class: "input input-compact input-placeholder",
                                     style: "line-height: normal;",
-                                    GhostText { chars: 25 }
+                                    "\u{a0}"
                                 }
                             }
                         }
@@ -466,6 +467,7 @@ pub fn CommanderMaybeboard() -> Element {
                             GhostActionRow { label: 16, button: 5 }
                         }
                     } else {
+                        div { class: "quick-add",
                         div { class: "chip-row",
                             label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: QUICK_ADD_ID, "Quick add" }
                             ClearWrap {
@@ -506,26 +508,29 @@ pub fn CommanderMaybeboard() -> Element {
                                 }
                             }
                         }
+                        // The results sit under the bar in the page's flow, as the deck page's Quick
+                        // add does, so the rows below move down rather than hide under them.
                         if searching_catalog {
-                            div { class: "search-float-anchor",
-                                div { class: "search-float-results search-float-below",
-                                    if is_searching() {
-                                        div { class: "chip-unselected search-float-chip", "Searching…" }
-                                    } else if results.is_empty() {
-                                        div { class: "chip-unselected search-float-chip", "No results" }
-                                    } else {
-                                        for (i, card) in results.into_iter().enumerate() {
-                                            div {
-                                                key: "{card.scryfall_data.id}",
-                                                class: if lit == Some(i) { "chip-unselected search-float-chip web-float-highlight" } else { "chip-unselected search-float-chip" },
-                                                style: "animation-delay: {i.saturating_mul(40)}ms, {i.saturating_mul(40).saturating_add(250)}ms;",
-                                                onclick: move |_| add_from_search.call(card.clone()),
-                                                "{card.scryfall_data.name}"
-                                            }
+                            div { class: "card-filter-results quick-add-results",
+                                if is_searching() {
+                                    div { class: "chip-unselected", "Searching…" }
+                                } else if results.is_empty() {
+                                    div { class: "chip-unselected", "No results" }
+                                } else {
+                                    for (i, card) in results.into_iter().enumerate() {
+                                        button {
+                                            key: "{card.scryfall_data.id}",
+                                            r#type: "button",
+                                            class: if lit == Some(i) { "chip-unselected card-filter-result card-filter-highlight" } else { "chip-unselected card-filter-result" },
+                                            style: "animation-delay: {i.saturating_mul(40)}ms;",
+                                            onmousedown: move |e| e.prevent_default(),
+                                            onclick: move |_| add_from_search.call(card.clone()),
+                                            "{card.scryfall_data.name}"
                                         }
                                     }
                                 }
                             }
+                        }
                         }
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }

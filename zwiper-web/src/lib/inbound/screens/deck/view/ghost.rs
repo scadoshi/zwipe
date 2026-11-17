@@ -53,10 +53,11 @@ pub fn DeckControlsGhost() -> Element {
             span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 9 } }
             div {
                 class: "input-clear-wrap web-ghost-field",
+                // An empty field ghosts empty; the space keeps a typed field's height.
                 div {
                     class: "input input-compact input-placeholder",
                     style: "line-height: normal;",
-                    GhostText { chars: 20 }
+                    "\u{a0}"
                 }
             }
         }
