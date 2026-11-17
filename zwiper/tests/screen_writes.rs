@@ -1,7 +1,7 @@
 //! The app's writes run as tasks of the screen that makes them (`spawn`, or `spawn_in_order` for
-//! one card's writes in order), never in the root: a root task from `spawn_write` or
-//! `spawn_write_in_order` never reaches the server on the phone, so a swipe that saves or
-//! dismisses through one is lost with no error.
+//! one card's writes in order), never in the root through `spawn_write` or
+//! `spawn_write_in_order`: on the phone, the saves and dismissals the swipe screens sent through
+//! that root lane were lost with no error.
 
 use std::fs;
 use std::path::Path;
