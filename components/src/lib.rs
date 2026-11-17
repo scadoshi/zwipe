@@ -213,7 +213,7 @@ pub use printing_sheet::{
     ArtistChip, PrintingChips, PrintingChipsGhost, PrintingSheet, PrintingsFetch, PrintingsSource,
 };
 pub use role_tags::{OtagDef, RoleTags};
-pub use screen_task::{Mounted, spawn_write, spawn_write_in_order, use_mounted};
+pub use screen_task::{Mounted, spawn_in_order, spawn_write, spawn_write_in_order, use_mounted};
 pub use settle::use_settle;
 pub use share_url::{ShareUrl, shared_link_actions};
 pub use site_footer::SiteFooter;

@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use components::icons::{self, BoltIcon, EyeIcon};
 use components::{
-    Chip, DockAction, DockFilter, LoadFailed, Mounted, ToastOptions, Toasts, spawn_write_in_order,
+    Chip, DockAction, DockFilter, LoadFailed, Mounted, ToastOptions, Toasts, spawn_in_order,
     use_back_online, use_mounted, use_toast,
 };
 use dioxus::prelude::*;
@@ -298,7 +298,7 @@ impl Driver {
     /// Posts a skip quietly.
     fn skip_card(self, deck_id: Uuid, oracle_id: Uuid) {
         let Self { authed, .. } = self;
-        spawn_write_in_order(oracle_id, async move {
+        spawn_in_order(oracle_id, async move {
             // Quiet: fires on every left swipe; a per-swipe toast on a
             // bad connection would bury the screen, and the visual
             // skip already happened.
@@ -313,7 +313,7 @@ impl Driver {
     /// Deletes a skip.
     fn unskip_card(self, deck_id: Uuid, oracle_id: Uuid) {
         let Self { authed, .. } = self;
-        spawn_write_in_order(oracle_id, async move {
+        spawn_in_order(oracle_id, async move {
             let _ = authed
                 .run("undo_skip", |c, s| async move {
                     c.unskip_deck_card(deck_id, oracle_id, &s).await
@@ -363,7 +363,7 @@ impl Driver {
     fn promote_card(self, ticket: Ticket, deck_id: Uuid, card_id: Uuid) {
         let Self { authed, .. } = self;
         let request = add_cards::board_request(Board::Deck);
-        spawn_write_in_order(card_id, async move {
+        spawn_in_order(card_id, async move {
             let moved = authed
                 .run("promote_maybeboard", |c, s| async move {
                     c.update_deck_card(deck_id, card_id, &request, &s).await
@@ -427,7 +427,7 @@ impl Driver {
         let request = add_cards::board_request(Board::Maybeboard);
         // Facade holdout: staged compensation (a refresh failure cancels the
         // entrance; a failed move leaves the promote standing).
-        spawn_write_in_order(card_id, async move {
+        spawn_in_order(card_id, async move {
             let Some(session) = self.fresh_session("undo_maybeboard").await else {
                 if self.mounted.get() {
                     self.dispatch(Action::NotSent { ticket });

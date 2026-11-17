@@ -25,8 +25,8 @@ use std::collections::{HashMap, HashSet};
 use components::hint::ContentHintDialog;
 use components::icons::{self, EyeIcon};
 use components::{
-    BottomSheet, DockAction, DockFilter, Mounted, ToastOptions, Toasts, spawn_write_in_order,
-    use_mounted, use_overlay_back, use_toast,
+    BottomSheet, DockAction, DockFilter, ToastOptions, Toasts, spawn_in_order, use_overlay_back,
+    use_toast,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -41,6 +41,7 @@ use zwipe_ui::screens::swipe_select::{self as model, Action, Destination, Effect
 pub(crate) use zwipe_ui::screens::swipe_select::{Mode as SwipeMode, SuggestedPile};
 use zwipe_ui::stack;
 
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
@@ -67,8 +68,6 @@ const SWIPE_SPEED_PX_PER_MS: f64 = 2.5;
 #[derive(Clone, Copy)]
 struct Driver {
     model: Signal<State>,
-    /// Whether this screen is still up, for a write's answer that lands after it goes.
-    mounted: Mounted,
     session: Signal<Option<Session>>,
     client: Signal<ZwipeClient>,
     usage_buffer: Signal<UsageBuffer>,
@@ -115,43 +114,42 @@ impl Driver {
             Effect::DismissCommander(oracle_id) => {
                 // Quiet like a deck skip: the pile already moved on, and a
                 // failed post only means it comes back sooner.
-                let Some(session) = self.session.peek().clone() else {
-                    return;
-                };
                 let client = self.client;
-                spawn_write_in_order(oracle_id, async move {
-                    if let Err(e) = client().dismiss_commander(oracle_id, &session).await {
+                spawn_in_order(oracle_id, async move {
+                    let reply = match self.fresh().await {
+                        Ok(session) => client().dismiss_commander(oracle_id, &session).await,
+                        Err(e) => Err(e),
+                    };
+                    if let Err(e) = reply {
                         tracing::warn!("dismiss commander failed: {e}");
                     }
                 });
             }
             Effect::UndismissCommander(oracle_id) => {
                 // Quiet like the dismissal itself: the card is already back.
-                let Some(session) = self.session.peek().clone() else {
-                    return;
-                };
                 let client = self.client;
-                spawn_write_in_order(oracle_id, async move {
-                    if let Err(e) = client().undismiss_commander(oracle_id, &session).await {
+                spawn_in_order(oracle_id, async move {
+                    let reply = match self.fresh().await {
+                        Ok(session) => client().undismiss_commander(oracle_id, &session).await,
+                        Err(e) => Err(e),
+                    };
+                    if let Err(e) = reply {
                         tracing::warn!("undo commander dismissal failed: {e}");
-                        if self.mounted.get() {
-                            self.report("undismiss_commander", &e);
-                        }
+                        self.report("undismiss_commander", &e);
                     }
                 });
             }
             Effect::AddMaybeboardCard { ticket, oracle_id } => {
-                let Some(session) = self.session.peek().clone() else {
-                    return;
-                };
                 let client = self.client;
-                spawn_write_in_order(oracle_id, async move {
-                    let reply = client()
-                        .add_commander_maybeboard_card(oracle_id, &session)
-                        .await;
-                    if !self.mounted.get() {
-                        return;
-                    }
+                spawn_in_order(oracle_id, async move {
+                    let reply = match self.fresh().await {
+                        Ok(session) => {
+                            client()
+                                .add_commander_maybeboard_card(oracle_id, &session)
+                                .await
+                        }
+                        Err(e) => Err(e),
+                    };
                     self.settle(
                         ticket,
                         reply,
@@ -161,17 +159,16 @@ impl Driver {
                 });
             }
             Effect::RemoveMaybeboardCard { ticket, oracle_id } => {
-                let Some(session) = self.session.peek().clone() else {
-                    return;
-                };
                 let client = self.client;
-                spawn_write_in_order(oracle_id, async move {
-                    let reply = client()
-                        .remove_commander_maybeboard_card(oracle_id, &session)
-                        .await;
-                    if !self.mounted.get() {
-                        return;
-                    }
+                spawn_in_order(oracle_id, async move {
+                    let reply = match self.fresh().await {
+                        Ok(session) => {
+                            client()
+                                .remove_commander_maybeboard_card(oracle_id, &session)
+                                .await
+                        }
+                        Err(e) => Err(e),
+                    };
                     self.settle(
                         ticket,
                         reply,
@@ -215,6 +212,11 @@ impl Driver {
                 }
             });
         });
+    }
+
+    /// The session with an access token that is still good, refreshed first when it is due.
+    async fn fresh(self) -> Result<Session, ClientError> {
+        self.session.ensure_fresh(self.client).await
     }
 
     /// Answers a maybeboard request: [`Action::Landed`], or on a failure a
@@ -282,7 +284,6 @@ pub(crate) fn SwipeSelect(
     let layer = use_overlay_back(open);
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let driver = Driver {
-        mounted: use_mounted(),
         model: use_signal(State::new),
         session: use_context(),
         client: use_context(),

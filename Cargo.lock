@@ -1091,6 +1091,7 @@ dependencies = [
  "chrono",
  "dioxus",
  "dioxus-ssr",
+ "futures-channel",
  "gloo-timers 0.4.0",
  "orangui",
  "orangui-core",

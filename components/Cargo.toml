@@ -16,6 +16,8 @@ path = "src/lib.rs"
 # The router draws the guides' links, which every client routes already.
 dioxus = { version = "0.7.9", features = ["router"] }
 uuid.workspace = true
+# A card's writes wait for the one before them through a oneshot channel.
+futures-channel = "0.3"
 # The swipe stack times a key press against the last card's exit on the browser's clock.
 chrono.workspace = true
 zwipe-core = { path = "../zwipe-core" }

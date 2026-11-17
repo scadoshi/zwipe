@@ -6,14 +6,13 @@
 //! screen's own signals end with it, so such a task checks [`Mounted`] before it
 //! touches them; root state and toasts it may touch at any time.
 
-use std::cell::RefCell;
-use std::collections::{HashMap, VecDeque};
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::future::Future;
-use std::mem;
-use std::pin::Pin;
 
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
+use futures_channel::oneshot;
 use uuid::Uuid;
 
 /// Runs `write` in the root, so it is sent and runs to its end even when the screen
@@ -27,47 +26,47 @@ pub fn spawn_write(write: impl Future<Output = ()> + 'static) {
 /// run to its end: writes for one card reach the server in the order they were made, so an
 /// undo can never land before the write it undoes. Writes under different keys run at once.
 pub fn spawn_write_in_order(key: Uuid, write: impl Future<Output = ()> + 'static) {
-    let idle = LANES.with(|lanes| {
-        let mut lanes = lanes.borrow_mut();
-        let lane = lanes.entry(key).or_default();
-        lane.waiting.push_back(Box::pin(write));
-        !mem::replace(&mut lane.running, true)
-    });
-    if idle {
-        spawn_write(run_lane(key));
-    }
+    spawn_write(in_order(key, write));
 }
 
-/// One key's writes: those waiting their turn, and whether one is out.
-#[derive(Default)]
-struct Lane {
-    waiting: VecDeque<Pin<Box<dyn Future<Output = ()>>>>,
-    running: bool,
+/// Runs `write` as a task of the current screen, after every earlier write given the same
+/// `key` has run to its end or been dropped with its screen, so writes for one card reach the
+/// server in the order they were made.
+pub fn spawn_in_order(key: Uuid, write: impl Future<Output = ()> + 'static) {
+    let _task = spawn(in_order(key, write));
 }
 
 thread_local! {
-    /// Each key's lane, for as long as it has a write out or waiting. The app's tasks all run
-    /// on one thread, the web's and the phone's alike.
-    static LANES: RefCell<HashMap<Uuid, Lane>> = RefCell::new(HashMap::new());
+    /// Each key's latest write while it is out, by its number: the next write for the key
+    /// waits on it. The app's tasks all run on one thread, the web's and the phone's alike.
+    static LATEST: RefCell<HashMap<Uuid, (u64, oneshot::Receiver<()>)>> = RefCell::new(HashMap::new());
+    /// The number the next write takes.
+    static NEXT: Cell<u64> = const { Cell::new(0) };
 }
 
-/// Runs `key`'s writes one after another until none waits, then closes its lane.
-async fn run_lane(key: Uuid) {
-    loop {
-        let next = LANES.with(|lanes| {
-            let mut lanes = lanes.borrow_mut();
-            let next = lanes
-                .get_mut(&key)
-                .and_then(|lane| lane.waiting.pop_front());
-            if next.is_none() {
-                lanes.remove(&key);
-            }
-            next
-        });
-        let Some(write) = next else {
-            return;
-        };
+/// `write`, once the key's previous write has ended. A write ends when it finishes or when its
+/// task is dropped, since dropping it drops its sender, so a write whose screen or root went
+/// never holds the next one back.
+fn in_order(key: Uuid, write: impl Future<Output = ()> + 'static) -> impl Future<Output = ()> {
+    let number = NEXT.with(|next| {
+        let number = next.get();
+        next.set(number.wrapping_add(1));
+        number
+    });
+    let (done, finished) = oneshot::channel::<()>();
+    let previous = LATEST.with(|latest| latest.borrow_mut().insert(key, (number, finished)));
+    async move {
+        let _done = done;
+        if let Some((_, previous)) = previous {
+            let _ = previous.await;
+        }
         write.await;
+        LATEST.with(|latest| {
+            let mut latest = latest.borrow_mut();
+            if latest.get(&key).is_some_and(|(at, _)| *at == number) {
+                latest.remove(&key);
+            }
+        });
     }
 }
 
@@ -157,6 +156,47 @@ mod tests {
         assert_eq!(
             LOG.with(|l| l.borrow().clone()),
             ["other card", "dismiss", "undismiss"]
+        );
+    }
+
+    #[test]
+    fn a_card_s_writes_still_run_after_the_runner_of_its_earlier_ones_is_dropped() {
+        thread_local! {
+            static RAN: RefCell<Vec<&'static str>> = const { RefCell::new(Vec::new()) };
+        }
+        fn holding() -> Element {
+            use_hook(|| {
+                spawn_write_in_order(Uuid::from_u128(7), async {
+                    std::future::pending::<()>().await;
+                });
+            });
+            rsx! {}
+        }
+        fn saving() -> Element {
+            use_hook(|| {
+                spawn_write_in_order(Uuid::from_u128(7), async {
+                    RAN.with(|r| r.borrow_mut().push("save"));
+                });
+            });
+            rsx! {}
+        }
+        let card = Uuid::from_u128(7);
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .unwrap();
+        let _guard = rt.enter();
+        let mut first = VirtualDom::new(holding);
+        first.rebuild_in_place();
+        run(&rt, &mut first);
+        drop(first);
+        let mut second = VirtualDom::new(saving);
+        second.rebuild_in_place();
+        run(&rt, &mut second);
+        assert_eq!(
+            RAN.with(|r| r.borrow().clone()),
+            ["save"],
+            "the dropped runner let go of card {card}"
         );
     }
 }
