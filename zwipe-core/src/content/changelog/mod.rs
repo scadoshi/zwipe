@@ -46,23 +46,29 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 9);
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 21, 10),
+    version: Version::new(1, 21, 11),
     date: None,
-    entries: &[
-        "Undoing several swipes quickly no longer flickers through each card",
-        "The changelog opens at once and still shows offline, on the web and in the app",
-        "Stacks are faster on phones, and a raised card holds still",
-        "Creating or changing a password shows which rule is missing as you type",
-        "Add says Try a filter on its empty card when a deck with no format has no filter",
-        "About shows your version beside Changelog, and a release live on the web and in the stores reads Web and Mobile",
-        "On the web, j and k scroll a hint or the shortcuts sheet taller than the window",
-        "On the web, the commander maybeboard shows a save or undo from Swipe select or Playstyle without a reload",
-        "On the web, a, r and e on your deck page open Add cards, Remove cards and Edit deck",
-    ],
+    entries: &["On Android, the app no longer signs you out now and then after a restart"],
 }];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 21, 10),
+        date: NaiveDate::from_ymd_opt(2026, 11, 17),
+        entries: &[
+            "Undoing several swipes quickly no longer flickers through each card",
+            "The changelog opens at once and still shows offline, on the web and in the app",
+            "Stacks are faster on phones, and a raised card holds still",
+            "Creating or changing a password shows which rule is missing as you type",
+            "Add says Try a filter on its empty card when a deck with no format has no filter",
+            "About shows your version beside Changelog, and a release live on the web and in the stores reads Web and Mobile",
+            "On the web, j and k scroll a hint or the shortcuts sheet taller than the window",
+            "On the web, the commander maybeboard shows a save or undo from Swipe select or Playstyle without a reload",
+            "On the web, a, r and e on your deck page open Add cards, Remove cards and Edit deck",
+            "Add's search with synergy on and a card type or rules text filter loads in under a second instead of failing",
+        ],
+    },
     Release {
         version: Version::new(1, 21, 9),
         date: NaiveDate::from_ymd_opt(2026, 11, 15),
