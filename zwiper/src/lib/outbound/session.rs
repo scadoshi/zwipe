@@ -120,6 +120,79 @@ mod platform {
     }
 }
 
+/// How Android's session file reads: sealed, legacy plaintext, or neither.
+#[cfg(any(target_os = "android", test))]
+mod stored {
+    /// What a session file holds once read.
+    #[derive(Debug, PartialEq, Eq)]
+    pub(crate) enum Stored {
+        /// A sealed file that opened, with its JSON.
+        Sealed(Vec<u8>),
+        /// Plaintext JSON from before sealing, to be rewritten sealed.
+        Plaintext(Vec<u8>),
+        /// Neither: the key is gone after a reinstall, or the file is
+        /// corrupt. Why it did not open.
+        Unreadable(String),
+    }
+
+    /// Reads a session file's `bytes`, opening a sealed one with `open`.
+    ///
+    /// A sealed file starts with a random nonce, so its first byte is `{` one
+    /// time in 256; the bytes are tried as sealed first, and only a file
+    /// that does not open and starts with `{` counts as plaintext.
+    pub(crate) fn read(
+        bytes: Vec<u8>,
+        open: impl FnOnce(&[u8]) -> anyhow::Result<Vec<u8>>,
+    ) -> Stored {
+        match open(&bytes) {
+            Ok(json) => Stored::Sealed(json),
+            Err(_) if bytes.first() == Some(&b'{') => Stored::Plaintext(bytes),
+            Err(e) => Stored::Unreadable(e.to_string()),
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        /// The nonce a fake seal writes, starting with `{` as one real
+        /// nonce in 256 does.
+        const BRACE_NONCE: &[u8; 12] = b"{nonce-bytes";
+
+        /// Opens what [`seal`] wrote, and nothing else, as the Keystore
+        /// would.
+        fn open(blob: &[u8]) -> anyhow::Result<Vec<u8>> {
+            blob.strip_prefix(BRACE_NONCE.as_slice())
+                .map(<[u8]>::to_vec)
+                .ok_or_else(|| anyhow::anyhow!("tag mismatch"))
+        }
+
+        fn seal(json: &[u8]) -> Vec<u8> {
+            [BRACE_NONCE.as_slice(), json].concat()
+        }
+
+        const JSON: &[u8] = br#"{"user":"someone"}"#;
+
+        #[test]
+        fn a_sealed_file_whose_nonce_starts_with_a_brace_opens() {
+            assert_eq!(read(seal(JSON), open), Stored::Sealed(JSON.to_vec()));
+        }
+
+        #[test]
+        fn plaintext_json_reads_as_plaintext() {
+            assert_eq!(read(JSON.to_vec(), open), Stored::Plaintext(JSON.to_vec()));
+        }
+
+        #[test]
+        fn a_file_that_neither_opens_nor_is_json_is_unreadable() {
+            assert_eq!(
+                read(b"\x01garbage".to_vec(), open),
+                Stored::Unreadable("tag mismatch".to_owned())
+            );
+        }
+    }
+}
+
 // Android: the session JSON sealed under a Keystore key, in a file in the
 // app's private internal storage.
 #[cfg(target_os = "android")]
@@ -127,6 +200,7 @@ mod platform {
     use std::path::PathBuf;
 
     use super::Session;
+    use super::stored::{self, Stored};
     use crate::outbound::{android_fs, android_keystore};
 
     fn session_path() -> anyhow::Result<PathBuf> {
@@ -140,10 +214,10 @@ mod platform {
         Ok(())
     }
 
-    /// A file that starts with `{` is plaintext JSON; it is read as is and
-    /// rewritten sealed. A sealed file that does
-    /// not open (the key is gone after a reinstall, or the file is corrupt)
-    /// counts as logged out and is removed.
+    /// A sealed file opens; plaintext JSON from before sealing is read as is
+    /// and rewritten sealed (see [`stored::read`]). A file that is neither
+    /// (the key is gone after a reinstall, or the file is corrupt) counts as
+    /// logged out and is removed.
     pub(crate) fn load() -> anyhow::Result<Option<Session>> {
         let path = session_path()?;
         let bytes = match std::fs::read(&path) {
@@ -151,20 +225,16 @@ mod platform {
             Err(e) => return Err(e.into()),
             Ok(bytes) => bytes,
         };
-        let plaintext = bytes.first() == Some(&b'{');
-        let json = if plaintext {
-            tracing::info!("session: sealing a plaintext session file");
-            bytes
-        } else {
-            match android_keystore::open(&bytes) {
-                Ok(json) => json,
-                Err(e) => {
-                    tracing::warn!(
-                        "session: sealed file does not open, treating as logged out: {e}"
-                    );
-                    let _ = std::fs::remove_file(&path);
-                    return Ok(None);
-                }
+        let (json, plaintext) = match stored::read(bytes, android_keystore::open) {
+            Stored::Sealed(json) => (json, false),
+            Stored::Plaintext(json) => {
+                tracing::info!("session: sealing a plaintext session file");
+                (json, true)
+            }
+            Stored::Unreadable(e) => {
+                tracing::warn!("session: sealed file does not open, treating as logged out: {e}");
+                let _ = std::fs::remove_file(&path);
+                return Ok(None);
             }
         };
         let session: Session = match serde_json::from_slice(&json) {
