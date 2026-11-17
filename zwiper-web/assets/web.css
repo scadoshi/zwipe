@@ -540,6 +540,19 @@ body {
     }
 }
 
+/* While the keys move through the cards (`keyboard_pointer.js` sets the class), the pointer hides
+   and the cards let it through, so a page scrolling under a still mouse lifts, reveals and
+   previews nothing. A wheel over a card reaches the scroller behind it. */
+:root.keyboard-nav,
+:root.keyboard-nav * {
+    cursor: none !important;
+}
+
+:root.keyboard-nav :is(.card-stack, .card-stack-slot, .card-row, .web-card-row, .web-deck-row, .deck-head-card-image, .deck-featured-card, .floatable),
+:root.keyboard-nav :is(.card-stack, .card-stack-slot, .card-row, .web-card-row, .web-deck-row, .deck-head-card-image, .deck-featured-card, .floatable) * {
+    pointer-events: none !important;
+}
+
 /* ---- Top nav ----
 
    zite's bar from the kit's NavBar: the Z mark home on the left and the

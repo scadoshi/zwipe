@@ -10,6 +10,7 @@ use components::{
 use dioxus::prelude::*;
 use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::settings::PipStyle;
+use zwipe_ui::deck_cards::cursor::MOVE_KEYS;
 
 use crate::inbound::chrome::fresh_build::{NewBuildNotice, use_new_build_watch};
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic, InfoButton};
@@ -38,6 +39,11 @@ const MANIFEST: Asset = asset!("/assets/site.webmanifest");
 /// The header's scroll follow at phone width: the web's own copy of the
 /// app's `header_hide.js`, keyed to the shell's header and scroller.
 const HEADER_HIDE_JS: &str = include_str!("../../../assets/header_hide.js");
+/// Keyboard mode: a card cursor key hides the pointer and lets it through the cards until the
+/// mouse moves, with its key list and text fields filled in by [`keyboard_pointer_js`].
+const KEYBOARD_POINTER_JS: &str = include_str!("../../../assets/keyboard_pointer.js");
+/// The keys besides the cursor's moves that start keyboard mode: the first and last card.
+const KEYBOARD_POINTER_JUMPS: [&str; 2] = ["Home", "End"];
 
 /// Every element a screen scrolls in: the screen's column and any layer over it (a deck's
 /// Cards). The page keys scroll the topmost one shown.
@@ -148,6 +154,7 @@ pub fn App() -> Element {
         document::Link { rel: "manifest", href: MANIFEST }
         document::Script { {components::SCROLL_FADE_JS} }
         document::Script { {HEADER_HIDE_JS} }
+        document::Script { {keyboard_pointer_js()} }
         document::Script { {components::KEYBOARD_JS} }
         // Enter runs the open sheet's main action.
         document::Script { {components::keys::SHEET_ENTER_JS} }
@@ -219,6 +226,26 @@ if (!window.__zwipeHintFocus) {
 "#;
 
 /// [`HINT_FOCUS_JS`] with the deck cursor's stops filled in.
+/// [`KEYBOARD_POINTER_JS`] with the card cursor's keys and the tags a key types into.
+fn keyboard_pointer_js() -> String {
+    let quoted = |items: &[&str]| {
+        let list = items
+            .iter()
+            .map(|item| format!("'{item}'"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("[{list}]")
+    };
+    let keys: Vec<&str> = MOVE_KEYS
+        .iter()
+        .chain(KEYBOARD_POINTER_JUMPS.iter())
+        .copied()
+        .collect();
+    KEYBOARD_POINTER_JS
+        .replace("__KEYS__", &quoted(&keys))
+        .replace("__TYPING__", &quoted(&components::keys::TYPING_TAGS))
+}
+
 fn hint_focus_js() -> String {
     HINT_FOCUS_JS.replace("__STOPS__", components::deck_cursor::STOP_SELECTOR)
 }
@@ -423,6 +450,46 @@ mod tests {
             HEADER_HIDE_JS.contains("nav.style.overflow = pushed ? \"clip\" : \"\";"),
             "{HEADER_HIDE_JS}"
         );
+    }
+
+    #[test]
+    fn every_card_cursor_key_starts_keyboard_mode_and_only_a_real_mouse_move_ends_it() {
+        let script = keyboard_pointer_js();
+        for key in MOVE_KEYS.iter().chain(KEYBOARD_POINTER_JUMPS.iter()) {
+            assert!(script.contains(&format!("'{key}'")), "{key}: {script}");
+        }
+        assert!(
+            !script.contains("__KEYS__") && !script.contains("__TYPING__"),
+            "{script}"
+        );
+        // The move Chrome sends a still mouse when the page scrolls under it has no distance.
+        assert!(
+            script.contains("if (e.movementX || e.movementY) mouse();"),
+            "{script}"
+        );
+        assert!(
+            script.contains("root.classList.add('keyboard-nav');"),
+            "{script}"
+        );
+    }
+
+    #[test]
+    fn keyboard_mode_hides_the_pointer_and_lets_it_through_the_cards() {
+        let css = include_str!("../../../assets/web.css");
+        assert!(
+            css.contains(
+                ":root.keyboard-nav,\n:root.keyboard-nav * {\n    cursor: none !important;"
+            ),
+            "the pointer hides"
+        );
+        for card in components::deck_cursor::STOP_SELECTOR.split(", ") {
+            let class = card.split(['[', ':', ' ']).next().unwrap_or_default();
+            assert!(
+                css.lines()
+                    .any(|line| line.starts_with(":root.keyboard-nav :is(") && line.contains(class)),
+                "{class} lets the pointer through"
+            );
+        }
     }
 
     #[test]
