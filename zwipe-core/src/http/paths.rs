@@ -189,12 +189,26 @@ pub fn collection_page_route(
     offset: u32,
     limit: CollectionPageSize,
 ) -> String {
+    format!(
+        "{COLLECTION_ROUTE}?{}",
+        collection_page_query(name, offset, limit)
+    )
+}
+
+/// [`collection_page_route`]'s query, without the `?`, for an endpoint that sends its query
+/// apart from its path.
+#[must_use]
+pub fn collection_page_query(
+    name: &CollectionSearch,
+    offset: u32,
+    limit: CollectionPageSize,
+) -> String {
     let limit = limit.get();
     if name.is_empty() {
-        format!("{COLLECTION_ROUTE}?offset={offset}&limit={limit}")
+        format!("offset={offset}&limit={limit}")
     } else {
         let name = encode_segment(name.as_str());
-        format!("{COLLECTION_ROUTE}?name={name}&offset={offset}&limit={limit}")
+        format!("name={name}&offset={offset}&limit={limit}")
     }
 }
 
