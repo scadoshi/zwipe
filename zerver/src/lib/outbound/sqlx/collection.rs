@@ -33,19 +33,18 @@ fn name_matches(
     HashMap<(String, String), NameMatch>,
     HashMap<String, NameMatch>,
 ) {
-    let add = |held: Option<NameMatch>, printing: Printing| match held {
-        None => NameMatch::One(printing),
-        Some(NameMatch::One(_) | NameMatch::Many) => NameMatch::Many,
-    };
     let mut by_name_set: HashMap<(String, String), NameMatch> = HashMap::new();
     let mut by_name: HashMap<String, NameMatch> = HashMap::new();
     for (name, set, id, oracle_id) in rows {
         let printing = Printing { id, oracle_id };
-        let held = by_name.remove(&name);
-        by_name.insert(name.clone(), add(held, printing));
-        let key = (name, set);
-        let held = by_name_set.remove(&key);
-        by_name_set.insert(key, add(held, printing));
+        by_name
+            .entry(name.clone())
+            .and_modify(|held| *held = NameMatch::Many)
+            .or_insert(NameMatch::One(printing));
+        by_name_set
+            .entry((name, set))
+            .and_modify(|held| *held = NameMatch::Many)
+            .or_insert(NameMatch::One(printing));
     }
     (by_name_set, by_name)
 }
