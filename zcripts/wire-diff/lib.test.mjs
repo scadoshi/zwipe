@@ -251,3 +251,36 @@ test("a printings data change covers a bare printing id of a listed card, named 
   const other = judge([{ step, diffs, main, cand }], [printings(["o2"])]);
   assert.ok(other.unapproved.some((d) => d.path === "/deck_profile/commander_id"), "not for an unlisted card");
 });
+
+test("a printings data change never passes a change to a card's shape", () => {
+  const card = (data) => ({ scryfall_data: { oracle_id: "o1", ...data } });
+  const step = { name: "card", route: "/api/card/{scryfall_data_id}" };
+  const run = (main, cand) => {
+    const diffs = diff({ status: 200, body: main }, { status: 200, body: cand });
+    return judge([{ step, diffs, main, cand }], [printings("*")]);
+  };
+  const renamed = run(card({ id: "p1", foo: "x" }), card({ id: "p2", bar: "x" }));
+  assert.deepEqual(
+    renamed.unapproved.map((d) => [d.path, d.kind]),
+    [["/scryfall_data/bar", "added"], ["/scryfall_data/foo", "removed"]],
+    "a renamed field is a wire change, whatever printing",
+  );
+  assert.deepEqual(renamed.approved.map((d) => d.path), ["/scryfall_data/id"], "the new printing's id still passes");
+  const retyped = run(card({ cmc: 3 }), card({ cmc: "3" }));
+  assert.deepEqual(retyped.unapproved.map((d) => [d.path, d.kind]), [["/scryfall_data/cmc", "type"]]);
+  const nulled = run(card({ flavor_text: null, faces: [1] }), card({ flavor_text: "Hmm.", faces: [1, 2] }));
+  assert.deepEqual(nulled.unapproved, [], "a printing with or without flavor text, or another face, is the printing's");
+});
+
+test("a printings data change lets keys come and go only in Scryfall's untyped link maps", () => {
+  const card = (data) => ({ scryfall_data: { oracle_id: "o1", ...data } });
+  const step = { name: "card", route: "/api/card/{scryfall_data_id}" };
+  const run = (main, cand) => {
+    const diffs = diff({ status: 200, body: main }, { status: 200, body: cand });
+    return judge([{ step, diffs, main, cand }], [printings("*")]);
+  };
+  const links = run(card({ related_uris: { edhrec: "e" } }), card({ related_uris: { edhrec: "e", gatherer: "g" }, purchase_uris: {} }));
+  assert.deepEqual(links.unapproved.map((d) => d.path), ["/scryfall_data/purchase_uris"], "a link one printing has and another hasn't is the printing's; the map itself appearing is not");
+  const nested = run(card({ legalities: { modern: "legal" } }), card({ legalities: { modern: "legal", pioneer: "legal" } }));
+  assert.equal(nested.unapproved.length, 1, "a typed map's keys stay the contract's");
+});

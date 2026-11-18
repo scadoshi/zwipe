@@ -176,7 +176,11 @@ const cardOf = (main, cand, path) => {
   return undefined;
 };
 
-/** A printing id (a UUID), the first one in `value` when it's a string: an id, or a URL holding one. */
+/**
+ * A printing id (a UUID), the first one in `value` when it's a string: an id, or a URL holding
+ * one. A string holding two takes the first, which a URL keyed by something else first would get
+ * wrong; no reply has one today.
+ */
 const printingIn = (value) => (typeof value === "string" ? value.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/)?.[0] : undefined);
 
 /**
@@ -198,15 +202,39 @@ const printingsOf = (results) => {
 };
 
 /**
+ * The card fields zwipe passes through from Scryfall untyped (`serde_json::Value` in zwipe-core):
+ * which links they hold depends on the printing, so their keys are not zwipe's contract.
+ */
+const UNTYPED_MAPS = ["related_uris", "purchase_uris"];
+
+/**
+ * Whether difference `d` is one another printing of the same card can make: a value, a field null
+ * on one side only (no flavor text, no image on a double-faced printing), an item more or fewer
+ * in a list (another face, another tag), or a link more or fewer in an [`UNTYPED_MAPS`] field. A
+ * key added, dropped or renamed anywhere else, or a type that changes otherwise, is the card's
+ * shape changing, which no data change covers.
+ */
+const printingMayDiffer = (d) => {
+  if (d.kind === "value") return true;
+  if (d.kind === "type") return d.main === null || d.cand === null;
+  if (d.kind === "added" || d.kind === "removed") {
+    const parts = segments(d.path);
+    return /^\d+$/.test(parts.at(-1) ?? "") || UNTYPED_MAPS.includes(parts.at(-2) ?? "");
+  }
+  return false;
+};
+
+/**
  * Whether data change `entry` covers difference `d` on `route`, the replies `main` and `cand`:
- * inside a listed card, the same card on both sides, or a value outside any card that names a
- * printing of the same listed card on each side (`printings` maps printing ids to oracle ids).
+ * inside a listed card, the same card on both sides, a difference another printing may make
+ * ([`printingMayDiffer`]), or a value outside any card that names a printing of the same listed
+ * card on each side (`printings` maps printing ids to oracle ids).
  */
 const coversData = (entry, route, d, main, cand, printings) => {
   if (d.kind === "status" || (entry.route !== undefined && entry.route !== route)) return false;
   const listed = (card) => card !== undefined && (entry.oracle_ids === "*" || entry.oracle_ids.includes(card));
   const card = cardOf(main, cand, d.path);
-  if (card !== undefined) return listed(card);
+  if (card !== undefined) return listed(card) && printingMayDiffer(d);
   if (d.kind !== "value") return false;
   const was = printings.get(printingIn(d.main));
   return was !== undefined && was === printings.get(printingIn(d.cand)) && listed(was);
