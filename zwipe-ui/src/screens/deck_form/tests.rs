@@ -1354,3 +1354,31 @@ fn a_save_after_a_failed_one_sends_the_same_deck_id_until_the_form_changes() {
         "the id follows the last form sent, not every form ever sent"
     );
 }
+
+/// An unset land target shows the count the warnings use, the format's default, marked as one.
+#[test]
+fn an_unset_land_target_shows_the_format_s_default() {
+    assert_eq!(
+        land_target_label(None, Some(Format::Commander)),
+        "37 (default)"
+    );
+    assert_eq!(
+        land_target_label(None, Some(Format::Standard)),
+        "17 (default)"
+    );
+    assert_eq!(
+        land_target_label(None, None),
+        NOT_SET,
+        "no format, no default"
+    );
+    assert_eq!(
+        land_target_label(Some(36), Some(Format::Commander)),
+        "36",
+        "the user's own"
+    );
+    assert_eq!(
+        land_target_label(Some(37), Some(Format::Commander)),
+        "37",
+        "set to the default is still set"
+    );
+}

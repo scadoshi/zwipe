@@ -11,6 +11,7 @@ use zwipe_core::domain::deck::{
     DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_name, deck_tag_label,
 };
 use zwipe_ui::deck::form::{self, Slot, Step};
+use zwipe_ui::screens::deck_form;
 use zwipe_ui::text::sentence_case;
 
 use super::DeckForm;
@@ -241,11 +242,7 @@ fn BudgetFields(form: DeckForm) -> Element {
                             "-"
                         }
                         span { class: "stepper-value", style: "width: auto; min-width: 4rem;",
-                            if let Some(v) = land_target() {
-                                "{v}"
-                            } else {
-                                "Not set"
-                            }
+                            {deck_form::land_target_label(land_target(), *form.format.read())}
                         }
                         button {
                             class: "stepper-btn",
