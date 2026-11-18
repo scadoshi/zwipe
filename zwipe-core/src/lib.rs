@@ -11,3 +11,6 @@ pub mod version;
 
 #[cfg(test)]
 pub mod test_utils;
+
+#[cfg(test)]
+mod properties;

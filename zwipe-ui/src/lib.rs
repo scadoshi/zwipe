@@ -43,4 +43,6 @@ pub mod timing;
 pub mod toast;
 
 #[cfg(test)]
+mod properties;
+#[cfg(test)]
 mod test_support;
