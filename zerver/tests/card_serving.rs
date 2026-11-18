@@ -1046,12 +1046,14 @@ async fn a_card_with_tied_printings_shows_its_lowest_collector_number(pool: sqlx
     let mut want = Vec::new();
     for i in 0u128..8 {
         let oracle = Uuid::from_u128(0x578_2000 | i);
+        // The lower number has the higher id, so the id can't pick it, and "100" sorts before
+        // "99" as text.
         let low = card(&format!("Tied {i}"))
-            .with_ids(Uuid::from_u128(0x578_3000 | i), Some(oracle))
-            .collector_number("1");
-        let high = card(&format!("Tied {i}"))
             .with_ids(Uuid::from_u128(0x578_4000 | i), Some(oracle))
-            .collector_number("2");
+            .collector_number("99");
+        let high = card(&format!("Tied {i}"))
+            .with_ids(Uuid::from_u128(0x578_3000 | i), Some(oracle))
+            .collector_number("100");
         want.push((oracle, low.id()));
         if i % 2 == 0 {
             fixtures.extend([high, low]);
@@ -1066,6 +1068,59 @@ async fn a_card_with_tied_printings_shows_its_lowest_collector_number(pool: sqlx
             .fetch_one(&pool)
             .await
             .unwrap();
-        assert_eq!(picked, low, "the tie goes to collector number 1");
+        assert_eq!(picked, low, "the tie goes to collector number 99");
     }
+}
+
+#[sqlx::test]
+async fn a_promo_search_shows_the_lowest_collector_number_among_tied_promos(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("promotie").await;
+    app.verify_email(&uid).await;
+    let ring = Uuid::from_u128(0x578_5000);
+    // The lower number has the higher id, so the id can't pick it, and "100" sorts before "99"
+    // as text.
+    let low = card("Sol Ring")
+        .with_ids(Uuid::from_u128(0x578_5002), Some(ring))
+        .set("sld", "Secret Lair Drop")
+        .collector_number("99")
+        .promo(true);
+    let high = card("Sol Ring")
+        .with_ids(Uuid::from_u128(0x578_5001), Some(ring))
+        .set("sld", "Secret Lair Drop")
+        .collector_number("100")
+        .promo(true);
+    seed_cards(
+        &pool,
+        &[
+            card("Sol Ring")
+                .oracle(Some(ring))
+                .set("fdc", "Foundations Commander"),
+            high,
+            low.clone(),
+        ],
+    )
+    .await;
+    let (status, deck) = app
+        .post(DECK_ROUTE, json!({ "name": "No Format" }), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    let did: Uuid = deck["id"].as_str().unwrap().parse().unwrap();
+
+    let (status, body) = app
+        .post(
+            &search_deck_cards_route(did),
+            json!({ "name_contains": "Sol Ring", "promo": true }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "serve: {body}");
+    let served: Vec<&str> = body["cards"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["scryfall_data"]["id"].as_str().unwrap())
+        .collect();
+    let want = low.id().to_string();
+    assert_eq!(served, vec![want.as_str()], "the tie goes to 99: {body}");
 }

@@ -217,6 +217,12 @@ const DISMISSAL_TTL_DAYS: i32 = 7;
 /// other key come back in one fixed order, on any copy of the database and under any plan.
 const TIEBREAK: &str = ", latest_cards.id";
 
+/// The order of a card's printings tied on every other key, as `latest_cards` breaks the tie:
+/// the collector number's leading digits as a number (99 before 100), then the whole number as
+/// text, then the id.
+const PRINTING_TIEBREAK: &str = "substring(sd.collector_number FROM '^[0-9]+')::numeric NULLS LAST, \
+                                 sd.collector_number, sd.id";
+
 /// Base ranking for the commander-select ordering: decks-helmed popularity
 /// first (`commander_popularity`, written by the synergy worker), then
 /// `edhrec_rank` as the fallback for commanders the table doesn't cover, then
@@ -317,7 +323,7 @@ impl MyPostgres {
         if unfit.is_empty() {
             return Ok(cards);
         }
-        let db_rows: Vec<DatabaseScryfallData> = query_as(
+        let sql = format!(
             "SELECT DISTINCT ON (sd.oracle_id) sd.* FROM scryfall_data sd \
              JOIN card_profiles cp ON sd.id = cp.scryfall_data_id \
              WHERE sd.oracle_id = ANY($1) \
@@ -327,13 +333,15 @@ impl MyPostgres {
                       COALESCE(sd.content_warning, false), \
                       (sd.lang IS DISTINCT FROM 'en'), \
                       (sd.layout = 'reversible_card'), \
-                      sd.released_at DESC, sd.collector_number, sd.id",
-        )
-        .bind(&unfit)
-        .bind(wanted.set_names)
-        .bind(wanted.promo)
-        .fetch_all(&self.pool)
-        .await?;
+                      sd.released_at DESC, {PRINTING_TIEBREAK}"
+        );
+        // Built from string constants only; every value is bound.
+        let db_rows: Vec<DatabaseScryfallData> = query_as(sqlx::AssertSqlSafe(sql))
+            .bind(&unfit)
+            .bind(wanted.set_names)
+            .bind(wanted.promo)
+            .fetch_all(&self.pool)
+            .await?;
         let mut swaps: HashMap<uuid::Uuid, ScryfallData> = HashMap::new();
         for row in db_rows {
             let printing =
@@ -2182,7 +2190,7 @@ impl CardRepository for MyPostgres {
              WHERE sd.oracle_id = ANY($1) AND LOWER(sd.set) = ANY($2) \
                AND {IMPORTABLE_PRINTING} \
              ORDER BY (sd.lang IS DISTINCT FROM 'en'), sd.digital, sd.promo, \
-                      sd.collector_number, sd.id"
+                      {PRINTING_TIEBREAK}"
         );
         // Built from string constants only; every value is bound.
         let db_rows: Vec<DatabaseScryfallData> = query_as(sqlx::AssertSqlSafe(sql))

@@ -5,10 +5,10 @@
 -- date, language, frame and layout) were picked in no fixed order: a refresh
 -- or a restored copy of the database could show a different printing of the
 -- same card; on the full catalog, 6,633 cards have two or more printings
--- tied on every key. The ORDER BY now ends at the collector
--- number and the printing id, the tail the wanted-printing swap in the card
--- search already uses, so every pick is fixed. A card whose pick was not tied
--- keeps its printing.
+-- tied on every key. The ORDER BY now ends at the collector number, its
+-- leading digits compared as a number so 99 comes before 100, and the
+-- printing id, the tail the wanted-printing swap in the card search uses, so
+-- every pick is fixed. A card whose pick was not tied keeps its printing.
 --
 -- The view is built under a temporary name with every index while searches
 -- keep reading the old one, then swapped in one short transaction that takes
@@ -42,8 +42,10 @@ ORDER BY COALESCE(sd.oracle_id, sd.id),
           OR sd.set IN (SELECT code FROM oou_sets)) ASC,
          (sd.layout = 'reversible_card') ASC,
          sd.released_at DESC,
-         -- Only ties reach these two: they make the pick the same on every
-         -- refresh and every copy of the database.
+         -- Only ties reach these: they make the pick the same on every
+         -- refresh and every copy of the database. The collector number's
+         -- leading digits compare as a number, so 99 comes before 100.
+         substring(sd.collector_number FROM '^[0-9]+')::numeric ASC NULLS LAST,
          sd.collector_number ASC,
          sd.id ASC
 WITH DATA;
