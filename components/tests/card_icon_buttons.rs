@@ -225,3 +225,43 @@ fn the_image_icon_is_lucide_s_image_with_its_license_beside_it() {
         assert!(source.contains(part), "{part} named in card_icon_button.rs");
     }
 }
+
+#[test]
+fn send_to_is_the_paper_plane_named_send_to() {
+    fn app() -> Element {
+        use_context_provider(|| components::SendTo {
+            open: Signal::new(false),
+            card: Signal::new(None),
+        });
+        let card: zwipe_core::domain::card::Card =
+            serde_json::from_str(include_str!("../../zwipe-ui/src/test_support/card.json"))
+                .unwrap();
+        rsx! { components::SendToButton { card } }
+    }
+    let html = render(app);
+    for part in [
+        r#"class="card-action-btn card-action-icon""#,
+        r#"type="button""#,
+        r#"data-action="send-to""#,
+        r#"aria-label="Send to""#,
+        r#"title="Send to""#,
+        r#"class="action-dock-icon""#,
+        orangui::icons::SEND,
+    ] {
+        assert!(html.contains(part), "{part} in {html}");
+    }
+    assert!(
+        !html.contains(">Send to<"),
+        "no words on the button: {html}"
+    );
+}
+
+#[test]
+fn the_send_key_draws_the_same_paper_plane() {
+    let html = render(|| {
+        rsx! {
+            components::hint::KeyGlyph { icon: zwipe_ui::hint::KeyIcon::Send }
+        }
+    });
+    assert!(html.contains(orangui::icons::SEND), "{html}");
+}

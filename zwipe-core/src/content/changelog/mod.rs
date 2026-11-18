@@ -63,6 +63,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "After a dropped connection, Create deck and Clone open the new deck instead of showing an error",
         "A change that went through before your connection dropped no longer shows an error",
         "An unset land target shows your format's usual count, and + and - step from it",
+        "Send to is a paper-plane button",
     ],
 }];
 

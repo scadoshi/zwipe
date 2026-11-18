@@ -1018,6 +1018,15 @@ i.ms.ms-cost.ms-gp {
     }
 }
 
+/* The quantity stepper: `-`, the count and `+` wrap to the next line
+   together, spaced as the row spaces its buttons. */
+.card-action-stepper {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: inherit;
+}
+
 .card-action-count {
     font-size: 0.85rem;
     min-width: 1.2rem;
