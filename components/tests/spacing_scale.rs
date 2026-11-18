@@ -283,8 +283,9 @@ const DOCK: &str = "var(--space-2) + 2.4rem + 2 * var(--space-1) + 2px";
 fn the_room_kept_for_the_dock_is_the_kit_dock() {
     let kit = components::COMPONENTS_CSS;
     assert!(
-        kit.contains("--dock-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2));"),
-        "the kit's dock sits --space-2 off the bottom"
+        kit.contains("--corner-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2));")
+            && kit.contains("--dock-gap: var(--corner-gap);"),
+        "the kit's dock sits on the corner gap, --space-2 off the bottom"
     );
     assert!(
         kit.contains("--dock-inset: var(--space-1);"),

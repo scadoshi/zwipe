@@ -6,17 +6,18 @@
  * <div role="alertdialog" data-type="...">. `data-type` is part of
  * ToastProvider's documented stable contract. */
 
-/* Bottom left, as far from the window's left edge as from its bottom edge,
-   stacking upwards. --toast-inset sets both distances, and the banner stack
-   reads it too, so toasts and banners share the corner. Each side adds its
-   own safe-area inset, so neither sits under a notch or a home indicator. */
+/* Bottom left, stacking upwards, as the dock's [+] sits bottom right: one gap,
+   --corner-gap, from the screen's side and bottom edges, so both sit on the
+   same 45 degree line from their corners on a phone with a home indicator and
+   on the web alike. The banner stack shares it. Like the dock, the stack rides
+   the keyboard, so a toast shows over it. */
 .toast-container {
     position: fixed;
     z-index: 9999;
-    left: calc(var(--toast-inset, var(--space-4)) + env(safe-area-inset-left, 0px));
-    bottom: calc(var(--toast-inset, var(--space-4)) + env(safe-area-inset-bottom, 0px));
+    left: var(--corner-gap);
+    bottom: calc(var(--corner-gap) + var(--keyboard-inset, 0px));
     /* Never past the right edge, whatever the message. */
-    max-width: min(16rem, calc(100vw - 2 * var(--toast-inset, var(--space-4))));
+    max-width: min(16rem, calc(100vw - 2 * var(--corner-gap)));
 }
 
 /* The library renders newest first, so a reversed column puts the newest at
@@ -69,6 +70,18 @@
     margin-bottom: 0;
 }
 
+/* Collapsed, the older toasts line up behind the newest: each adds nothing to
+   the stack's width and takes the newest's, so a longer one wraps rather than
+   poking out to the right. */
+.toast-container:not(.expanded) li:not(:first-child) {
+    width: 0;
+    min-width: 100%;
+}
+
+.toast-container:not(.expanded) li:not(:first-child) [role="alertdialog"] {
+    width: 100%;
+}
+
 /* Newest is first in the DOM and has to paint over the ones behind it. */
 .toast-container li:nth-child(1) { z-index: 5; }
 .toast-container li:nth-child(2) { z-index: 4; }
@@ -102,7 +115,7 @@
     justify-content: flex-start;
     padding: var(--space-4);
     border: 1px solid var(--border-primary);
-    border-radius: 0.6rem;
+    border-radius: var(--corner-radius);
     background: var(--bg-primary);
     color: var(--text-primary);
     font-family: 'JetBrains Mono', monospace;
@@ -110,24 +123,29 @@
     box-shadow: var(--shadow-md);
     /* `both` holds the `from` state before the first frame paints, so the
        toast never flashes at its final position first. No `transition` on
-       opacity or transform here: a transition on the same properties the
-       animation drives fights it, which read as the toast arriving from the
-       wrong direction. */
-    animation: toast-rise-in 0.22s ease-out both;
+       transform here: a transition on the property the animation drives
+       fights it. */
+    animation: toast-rise-in var(--enter-duration, 280ms) var(--ease-enter, ease-out) both;
 }
 
-/* Rises in from below, matching the direction the stack grows. The slight
-   scale gives the motion a direction the eye reads even when the travel is
-   short. */
+/* Shoots up from below the screen's bottom edge into its spot, by transform
+   alone: its own height, the corner gap and the keyboard below its spot, and
+   its shadow's reach. Leaving, it drops back below the edge (toast-leave.js,
+   or the timed keyframes below). */
 @keyframes toast-rise-in {
     from {
-        opacity: 0;
-        transform: translateY(1.5rem) scale(0.96);
+        transform: translateY(calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4)));
     }
 
     to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
+    }
+}
+
+/* It is simply there under reduced motion, and simply gone. */
+@media (prefers-reduced-motion: reduce) {
+    .toast-container:not(.timed-fade) [role="alertdialog"] {
+        animation: none;
     }
 }
 
@@ -181,7 +199,9 @@
 /* Toast close button: ToastCloseButton renders a <button> with a ×. A
    2rem box, a squircle filled softly on hover and press, reaching into the
    toast's padding so the toast keeps its size; on touch its hit area
-   reaches 2.75rem around it without changing how it looks. */
+   reaches 2.75rem around it without changing how it looks. It sits
+   --space-2 in from the toast's edge, so its corner is the toast's less
+   the border and that inset. */
 .toast-container [role="alertdialog"] button {
     position: relative;
     display: inline-flex;
@@ -192,7 +212,7 @@
     height: 2rem;
     padding: 0;
     border: none;
-    border-radius: 0.6rem;
+    border-radius: max(0.15rem, calc(var(--corner-radius) - 1px - var(--space-2)));
     margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
     background: transparent;
     color: var(--text-primary);
@@ -229,68 +249,56 @@
 /* ---- Timed fade (ToastStack's `timed_fade`) ----
  *
  * Toasts are removed from the DOM outright, with no closing state to hook,
- * so a fade out has to happen before removal, and the stylesheet has to know
+ * so a drop out has to happen before removal, and the stylesheet has to know
  * how long each toast lives. It reads that off data-type: info lives 3s
  * (TOAST_QUICK), the rest 5s (TOAST_NORMAL, and the library's own default).
  * A host that opts in calls its toasts on those durations, or a toast pops
- * out while still opaque or sits invisible waiting its turn.
+ * out while still up or sits below the edge waiting its turn.
  *
  * Keyframe percentages are relative to the animation's duration, so one
  * keyframe cannot serve both lives: the stops that give a 3s toast a 200ms
  * fade give a 5s toast a 330ms one. Hence a keyframe per life, worked back
- * from the same wall-clock feel, about 200ms in and 250ms out either way. */
-
-.toast-container.timed-fade [role="alertdialog"] {
-    transition:
-        opacity 0.2s ease,
-        transform 0.2s ease;
-}
+ * from the same wall-clock feel, about 200ms up and 250ms down either way.
+ * Each rises from below the bottom edge and drops back below it, as an
+ * untimed toast does. */
 
 @keyframes toast-life-3000 {
     0% {
-        opacity: 0;
-        transform: translateY(-0.6rem);
+        transform: translateY(calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4)));
     }
 
     /* 200ms */
     7% {
-        opacity: 1;
         transform: translateY(0);
     }
 
-    /* 2750ms, so the fade out takes the last 250ms */
+    /* 2750ms, so the drop takes the last 250ms */
     92% {
-        opacity: 1;
         transform: translateY(0);
     }
 
     100% {
-        opacity: 0;
-        transform: translateY(-0.3rem);
+        transform: translateY(calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4)));
     }
 }
 
 @keyframes toast-life-5000 {
     0% {
-        opacity: 0;
-        transform: translateY(-0.6rem);
+        transform: translateY(calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4)));
     }
 
     /* 200ms */
     4% {
-        opacity: 1;
         transform: translateY(0);
     }
 
     /* 4750ms */
     95% {
-        opacity: 1;
         transform: translateY(0);
     }
 
     100% {
-        opacity: 0;
-        transform: translateY(-0.3rem);
+        transform: translateY(calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4)));
     }
 }
 

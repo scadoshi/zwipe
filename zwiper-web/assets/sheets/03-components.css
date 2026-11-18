@@ -20,6 +20,14 @@
     --space-6: 2rem;
     --space-7: 3rem;
     --panel-gap: var(--space-4);
+    /* A corner float's gap from the screen's side and bottom edges: the dock's [+], the toasts
+       and the banners. Half the home indicator's safe area plus a margin puts it over the
+       indicator's strip rather than stacked above it and clears the phone's rounded corner, so
+       the gap is the same from both physical edges and each float sits on a 45 degree line from
+       its corner. */
+    --corner-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2));
+    /* The corner floats' own corner: the dock's and a toast's. */
+    --corner-radius: 0.9rem;
     --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
     --enter-duration: 280ms;
 }
@@ -903,6 +911,55 @@ a.nav-dropdown-item.active:visited {
     margin-top: 0;
 }
 
+/* The theme sheets' search field, over the themes; the first group's chip
+   sits under it as it would under the title bar. */
+.theme-search {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--ink-text-muted, var(--text-muted));
+    border-radius: 0.4rem;
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1rem;
+    font-weight: 400;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Focus draws a 2px ring in the accent, which clears 3:1 on every panel,
+   in place of the browser's; a hover lifts the edge where the device
+   hovers. */
+.theme-search:focus {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    background-color: var(--border-muted);
+    border-color: var(--accent-primary);
+}
+
+@media (hover: hover) {
+    .theme-search:not(:focus):hover {
+        border-color: var(--text-primary);
+    }
+}
+
+.theme-search::placeholder {
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
+.theme-search + .theme-group-label,
+.theme-picker-sheet .theme-search + .nav-dropdown-label {
+    margin-top: 0;
+}
+
+.theme-search-empty {
+    margin: var(--space-2) 0;
+    text-align: center;
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
 .theme-picker-sheet .theme-dot {
     width: 0.6rem;
     height: 0.6rem;
@@ -1047,7 +1104,7 @@ a.nav-dropdown-item.active:visited {
     /* The dock's corner and the buttons' inset from its top and bottom: a
        button's corner is the dock's less the border and that inset, so the
        gap around each end button stays even. */
-    --dock-radius: 0.9rem;
+    --dock-radius: var(--corner-radius);
     --dock-inset: var(--space-1);
     gap: var(--space-1);
     padding: 0 var(--space-2);
@@ -1059,10 +1116,8 @@ a.nav-dropdown-item.active:visited {
     left: 0;
     right: 0;
     /* One gap from the bottom edge and from the side, so the bar sits on a
-       45 degree line from the corner: half the home indicator's safe area
-       plus a margin, which puts it over the indicator's strip rather than
-       stacked above it and clears the phone's rounded corner. */
-    --dock-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2));
+       45 degree line from the corner. */
+    --dock-gap: var(--corner-gap);
     bottom: calc(var(--dock-gap) + var(--keyboard-inset, 0px));
     z-index: 50;
     width: fit-content;
@@ -1705,12 +1760,13 @@ html:has(.bottom-sheet.show) body,
 /* ---- Banner (orangui::Banner) ---- */
 
 /* Fixed banner column in the toasts' corner: bottom left, as far from the
-   window's left edge as from its bottom edge (--toast-inset, as the toast
-   stack). Each site renders this wrapper and drops Banners inside. */
+   screen's left edge as from its bottom edge (--corner-gap, as the toast
+   stack and the dock), riding the keyboard as they do. Each site renders
+   this wrapper and drops Banners inside. */
 .banner-stack {
     position: fixed;
-    bottom: calc(var(--toast-inset, var(--space-4)) + env(safe-area-inset-bottom, 0px));
-    left: calc(var(--toast-inset, var(--space-4)) + env(safe-area-inset-left, 0px));
+    bottom: calc(var(--corner-gap) + var(--keyboard-inset, 0px));
+    left: var(--corner-gap);
     z-index: 100;
     display: flex;
     flex-direction: column;
@@ -1718,7 +1774,7 @@ html:has(.bottom-sheet.show) body,
     /* Viewport-aware cap: 420px on desktop, the viewport less an inset on each
        side on phones, so a long banner keeps the same margin on the right as on
        the left instead of running off the edge. */
-    max-width: min(420px, calc(100vw - 2 * var(--toast-inset, var(--space-4))));
+    max-width: min(420px, calc(100vw - 2 * var(--corner-gap)));
     transition: transform 0.25s ease;
 }
 
