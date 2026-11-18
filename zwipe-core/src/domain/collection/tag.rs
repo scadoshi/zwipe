@@ -4,6 +4,21 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
+/// Whether `c` is invisible in text yet changes how it reads: a control character, or a bidi or
+/// zero-width mark (U+200E, U+200F, U+202A to U+202E, U+2066 to U+2069) that can reorder or hide
+/// what's around it.
+#[must_use]
+pub fn is_unseen(c: char) -> bool {
+    c.is_control()
+        || matches!(c, '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
+}
+
+/// `text` without its [unseen](is_unseen) characters.
+#[must_use]
+pub fn strip_unseen(text: &str) -> String {
+    text.chars().filter(|c| !is_unseen(*c)).collect()
+}
+
 /// Why a row's tags were turned down.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum InvalidCollectionTags {
@@ -18,7 +33,7 @@ pub enum InvalidCollectionTags {
     Empty,
 }
 
-/// One tag: trimmed, control characters removed, 1 to [`CollectionTag::MAX_CHARS`] characters.
+/// One tag: trimmed, [unseen](is_unseen) characters removed, 1 to [`CollectionTag::MAX_CHARS`] characters.
 /// Clients show it as text.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
@@ -28,14 +43,14 @@ impl CollectionTag {
     /// The longest tag, in characters.
     pub const MAX_CHARS: usize = 40;
 
-    /// A tag from `raw`, control characters removed and trimmed.
+    /// A tag from `raw`, [unseen](is_unseen) characters removed and trimmed.
     ///
     /// # Errors
     ///
     /// Returns [`InvalidCollectionTags::Empty`] when nothing is left, and
     /// [`InvalidCollectionTags::TooLong`] past [`CollectionTag::MAX_CHARS`].
     pub fn new(raw: &str) -> Result<Self, InvalidCollectionTags> {
-        let kept: String = raw.chars().filter(|c| !c.is_control()).collect();
+        let kept = strip_unseen(raw);
         let tag = kept.trim();
         if tag.is_empty() {
             return Err(InvalidCollectionTags::Empty);
@@ -188,6 +203,15 @@ mod tests {
     fn control_characters_never_reach_a_tag() {
         let tags = CollectionTags::from_cell("bin\u{0}der,\u{1b}[31mred").unwrap();
         assert_eq!(strings(&tags), ["binder", "[31mred"]);
+    }
+
+    #[test]
+    fn bidi_and_zero_width_marks_never_reach_a_tag() {
+        let tags =
+            CollectionTags::from_cell("\u{202e}gnirt\u{202c},bin\u{200e}der\u{2066}x\u{2069}")
+                .unwrap();
+        assert_eq!(strings(&tags), ["gnirt", "binderx"]);
+        assert_eq!(strip_unseen("a\u{200f}b\u{202a}c\u{2067}d\u{0}e"), "abcde");
     }
 
     #[test]

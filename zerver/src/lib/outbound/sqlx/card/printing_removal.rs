@@ -301,8 +301,8 @@ async fn remap_collection(
     // One statement, so a row committed on a removed printing while it runs is either moved or
     // left for the next run, never deleted unmoved. Only rows whose replacement exists (`live`)
     // move; the rest stay on their printing, which counts them as references and keeps it. The
-    // replacement's card is a LEFT JOIN, so a gap there fails the insert instead of dropping rows. Built from string constants only; every
-    // value comes from the tables.
+    // replacement's card is a LEFT JOIN, so a gap there fails the insert instead of dropping
+    // rows. Built from string constants only; every value comes from the tables.
     let moved: i64 = query_scalar(sqlx::AssertSqlSafe(format!(
         "WITH moved AS ( \
              DELETE FROM collection_cards cc USING removed_printings rp \

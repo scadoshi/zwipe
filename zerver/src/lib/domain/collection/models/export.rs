@@ -1,9 +1,9 @@
 //! Reading a ManaBox or Archidekt collection export: the header row says whose it is, and each
 //! card row becomes an [`ExportRow`]. The reader goes a row at a time and keeps only the parsed
-//! fields. Every cell loses its control characters; a cell past the cap, a row past the cap or
-//! a tag list past its caps turns the whole file down. A value the reader doesn't know (a finish,
-//! condition, language, price or date) is not given rather than an error, so one odd cell never
-//! sinks a row.
+//! fields. Every cell loses its control characters and bidi or zero-width marks; a cell past the
+//! cap, a row past the cap or a tag list past its caps turns the whole file down. A value the
+//! reader doesn't know (a finish, condition, language, price or date) is not given rather than
+//! an error, so one odd cell never sinks a row.
 
 use chrono::{DateTime, NaiveDate, Utc};
 use csv::{ReaderBuilder, StringRecord};
@@ -11,7 +11,7 @@ use uuid::Uuid;
 use zwipe_core::domain::collection::limits::{MAX_CELL_CHARS, MAX_ROWS};
 use zwipe_core::domain::collection::{
     CardCondition, CardLanguage, CollectionQuantity, CollectionSource, CollectionTags, Finish,
-    ImportCollectionError, PurchaseCurrency, PurchasePrice,
+    ImportCollectionError, PurchaseCurrency, PurchasePrice, strip_unseen,
 };
 
 /// A read export: whose it is and its card rows, in file order.
@@ -118,9 +118,9 @@ impl Columns {
     }
 }
 
-/// `cell` without control characters.
+/// `cell` without control characters, bidi or zero-width marks.
 fn clean(cell: &str) -> String {
-    cell.chars().filter(|c| !c.is_control()).collect()
+    strip_unseen(cell)
 }
 
 /// Reads `csv`, a whole export with its header row first.
@@ -384,6 +384,17 @@ Meren of Clan Nel Toth,TDC,Tarkir: Dragonstorm Commander,297,foil,mythic,2,10463
         };
         assert_eq!(row.name.as_deref(), Some("Sol Ring"));
         assert_eq!(row.set_code.as_deref(), Some("c21"));
+    }
+
+    #[test]
+    fn bidi_and_zero_width_marks_never_reach_a_name() {
+        let csv =
+            "Name,Set code,Collector number,Quantity\n\u{202e}Sol\u{200f} Ring\u{2069},c21,1,1\n";
+        let export = read(csv).unwrap();
+        let [row] = export.rows.as_slice() else {
+            panic!("{export:?}")
+        };
+        assert_eq!(row.name.as_deref(), Some("Sol Ring"));
     }
 
     #[test]
