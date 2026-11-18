@@ -203,3 +203,31 @@ async fn one_slug_answers_at_most_fifty_cards(pool: sqlx::PgPool) {
         "the playable card is kept: {body}"
     );
 }
+
+#[sqlx::test]
+async fn reads_go_on_while_the_slug_indexes_build(pool: sqlx::PgPool) {
+    seed_cards(&pool, &[card("Sol Ring")]).await;
+    sqlx::query("DROP INDEX idx_scryfall_data_name_slug, idx_scryfall_data_front_slug")
+        .execute(&pool)
+        .await
+        .unwrap();
+    // The index migration, held open as a slow build would hold it.
+    let mut building = pool.begin().await.unwrap();
+    sqlx::raw_sql(include_str!(
+        "../migrations/20261119100050_card_slugs_index.sql"
+    ))
+    .execute(&mut *building)
+    .await
+    .unwrap();
+
+    let mut reader = pool.acquire().await.unwrap();
+    sqlx::query("SET statement_timeout = '1s'")
+        .execute(&mut *reader)
+        .await
+        .unwrap();
+    let read: Result<i64, _> = sqlx::query_scalar("SELECT count(*) FROM scryfall_data")
+        .fetch_one(&mut *reader)
+        .await;
+    building.commit().await.unwrap();
+    assert_eq!(read.unwrap(), 1, "a search reads while the indexes build");
+}
