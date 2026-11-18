@@ -410,7 +410,7 @@ mod tests {
                 "Themes",
                 "This page's hint",
                 "These shortcuts",
-                "Close the open sheet",
+                "Close the open sheet, or go back",
                 "Previous or next printing",
                 "Previous or next printing",
                 FLIP_ROW,

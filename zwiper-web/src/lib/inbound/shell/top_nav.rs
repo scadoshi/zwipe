@@ -10,6 +10,7 @@ use components::{BackArrow, Decode, InfoButton, NavBar, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_core::domain::logo;
 
+use crate::inbound::app::EscBack;
 use crate::inbound::chrome::leave_guard::LeaveDialog;
 use crate::inbound::router::Route;
 use crate::inbound::shell::deck_opener::DeckOpener;
@@ -286,7 +287,8 @@ fn NavLogo() -> Element {
 /// The back arrow in the left corner below the breakpoint, boxed like the
 /// hamburger, on every screen but Home and the auth screens, which hold its
 /// slot empty. It goes to the screen's fixed parent, or the screen before
-/// this one, or Home when the tab has no history.
+/// this one, or Home when the tab has no history. Esc with nothing open does
+/// the same ([`EscBack`]).
 ///
 /// While an overlay screen sits under the nav (see [`use_overlay_nav`]),
 /// the arrow closes it instead.
@@ -298,35 +300,44 @@ fn BackButton(
 ) -> Element {
     let navigator = use_navigator();
     let opener: DeckOpener = use_context();
-    if let Some(close) = page.read().as_ref().and_then(|p| p.on_back) {
-        return rsx! {
-            BackArrow {
-                onclick: move |()| {
-                    open.set(false);
-                    close.call(());
-                },
-            }
+    let on_back = page.read().as_ref().and_then(|p| p.on_back);
+    let has_back = on_back.is_some() || back.is_some();
+    let go_back = use_callback(move |()| {
+        open.set(false);
+        if let Some(close) = on_back {
+            close.call(());
+            return;
+        }
+        let Some(back) = &back else {
+            return;
         };
-    }
-    // A screen with no back keeps the box's slot, so the bar holds still
-    // between Home and the screens below it.
-    let Some(back) = back else {
+        let parent = match back {
+            Back::To(route) => route.clone(),
+            Back::Opener(deck_id) => opener.back_from(*deck_id),
+            Back::Previous => Route::Home {},
+        };
+        nav::back_or(navigator, parent);
+    });
+    let esc_back = try_use_context::<EscBack>();
+    use_effect(use_reactive!(|has_back| {
+        if let Some(EscBack(mut slot)) = esc_back {
+            slot.set(has_back.then_some(go_back));
+        }
+    }));
+    use_drop(move || {
+        if let Some(EscBack(mut slot)) = esc_back {
+            slot.set(None);
+        }
+    });
+    if !has_back {
+        // A screen with no back keeps the box's slot, so the bar holds still
+        // between Home and the screens below it.
         return rsx! {
             span { class: "nav-brand app-nav-back nav-back-held", "aria-hidden": "true" }
         };
-    };
+    }
     rsx! {
-        BackArrow {
-            onclick: move |()| {
-                open.set(false);
-                let parent = match &back {
-                    Back::To(route) => route.clone(),
-                    Back::Opener(deck_id) => opener.back_from(*deck_id),
-                    Back::Previous => Route::Home {},
-                };
-                nav::back_or(navigator, parent);
-            },
-        }
+        BackArrow { onclick: move |()| go_back.call(()) }
     }
 }
 

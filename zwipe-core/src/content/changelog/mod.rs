@@ -70,6 +70,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "A shared deck prices its header and link preview in the deck's own currency",
         "At phone width, the open menu has a rule under its header",
         "At phone width, the open menu's bottom row no longer sits on its edge",
+        "On the web, Esc goes back when nothing is open",
+        "On the web, Esc in a field only leaves the field",
     ],
 }];
 

@@ -175,7 +175,7 @@ pub fn sheet_groups(keys: ScreenKeys) -> Vec<SheetGroup> {
         page_keys::THEMES_ROW,
         HINT_ROW,
         page_keys::SHORTCUTS_ROW,
-        page_keys::CLOSE_ROW,
+        ESC_ROW,
     ]);
     [
         SheetGroup::new(page_keys::SWIPE, keys.swipe),
@@ -189,6 +189,10 @@ pub fn sheet_groups(keys: ScreenKeys) -> Vec<SheetGroup> {
     .filter(|group| !group.rows.is_empty())
     .collect()
 }
+
+/// Esc's row: it closes the open sheet, and with nothing open it does what the screen's Back
+/// button does.
+pub const ESC_ROW: SheetRow = (&["Esc"], "Close the open sheet, or go back");
 
 /// The groups of a screen with no keys of its own: the keys every page has, the steps on.
 #[must_use]
@@ -810,6 +814,21 @@ mod tests {
             !rows_of(&card_rows_groups(ListLayout::SideBySide)).contains(&FEATURED_ROW),
             "screens of card rows have no featured cards"
         );
+    }
+
+    #[test]
+    fn esc_closes_the_open_sheet_or_goes_back() {
+        for groups in [everywhere_groups(), deck_cards_groups(Editable::Yes)] {
+            let rows = rows_of(&groups);
+            assert!(
+                rows.contains(&(&["Esc"][..], "Close the open sheet, or go back")),
+                "{rows:?}"
+            );
+            assert!(
+                !rows.contains(&page_keys::CLOSE_ROW),
+                "one Esc row: {rows:?}"
+            );
+        }
     }
 
     #[test]
