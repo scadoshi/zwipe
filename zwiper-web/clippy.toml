@@ -22,3 +22,6 @@ await-holding-invalid-types = [
   # "dioxus_signals::Write",
   # { path = "dioxus_signals::Write", reason = "Write should not be held over an await point. This will cause any reads or writes to fail while the await is pending since the write borrow is still active." },
 ]
+
+# Brand names docs spell as the brands do.
+doc-valid-idents = ["ManaBox", "TCGplayer", ".."]

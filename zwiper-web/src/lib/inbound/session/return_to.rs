@@ -43,6 +43,7 @@ pub fn return_route(path: &str) -> Option<Route> {
         | Route::Activity {}
         | Route::DeckList {}
         | Route::CommanderMaybeboard {}
+        | Route::Collection {}
         | Route::Playstyle {}
         | Route::CreateDeck {}
         | Route::EditDeck { .. }
