@@ -1738,9 +1738,8 @@ body {
         min-width: 0;
     }
 
-    /* Suggested commanders and Staples each take their chip rows above the
-       panel, a panel gap over it, as the deck page keeps its controls. */
-    .web-playstyle-suggested,
+    /* Staples takes its chip rows above the panel, a panel gap over it, as
+       the deck page keeps its controls. */
     .web-playstyle-staples {
         display: flex;
         flex-direction: column;
@@ -1765,17 +1764,10 @@ body {
     .web-playstyle-colors { order: 2; }
     .web-playstyle-roles { order: 3; }
     .web-playstyle-tags { order: 4; }
-    .web-playstyle-suggested { order: 5; }
-    .web-playstyle-staples { order: 6; }
-    .web-playstyle-danger {
-        order: 7;
+    /* Staples is the last row, across the page, under the profile's pairs. */
+    .web-playstyle-staples {
+        order: 5;
         grid-column: 1 / -1;
-    }
-
-    .web-playstyle-danger > .settings-list {
-        width: 100%;
-        max-width: none;
-        margin: 0;
     }
 }
 

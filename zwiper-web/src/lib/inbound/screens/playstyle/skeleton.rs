@@ -116,15 +116,11 @@ fn ListGhost(title: u8, swipe: bool, filters: Option<Element>) -> Element {
 }
 
 /// The page while it loads, in the loaded page's layout: on a wide window
-/// Summary beside Colors, Card roles beside Oracle tags, then the
-/// suggestions beside Staples with their chip rows above them; below the
-/// breakpoint the accordion with Colors open, then the lists with their
-/// chip rows inside.
+/// Summary beside Colors, Card roles beside Oracle tags, then Staples across
+/// the page with its chip rows above it; below the breakpoint the accordion
+/// with Colors open, then Staples with its chip rows inside.
 #[component]
 pub fn PlaystyleSkeleton(wide: bool) -> Element {
-    let show = rsx! {
-        GhostShowRow { pips: 3 }
-    };
     let staples = rsx! {
         GhostChipRow { label: 4, chips: vec![3, 8, 4] }
         GhostShowRow { label: 5, pips: 3, art: false }
@@ -150,30 +146,11 @@ pub fn PlaystyleSkeleton(wide: bool) -> Element {
                     }
                 }
                 div { class: "web-playstyle-list",
-                    div { class: "web-playstyle-cell web-playstyle-suggested",
-                        if wide {
-                            div { class: "deck-controls", {show.clone()} }
-                        }
-                        ListGhost { title: 20, swipe: true, filters: (!wide).then_some(show) }
-                    }
                     div { class: "web-playstyle-cell web-playstyle-staples",
                         if wide {
                             div { class: "deck-controls", {staples.clone()} }
                         }
                         ListGhost { title: 7, swipe: false, filters: (!wide).then_some(staples) }
-                    }
-                    div { class: "web-playstyle-cell web-playstyle-danger",
-                        div { class: "settings-list danger-zone",
-                            div { class: "settings-list-header",
-                                span { class: "settings-list-title", GhostText { chars: 11 } }
-                            }
-                            div { class: "settings-row",
-                                span { class: "settings-row-label", GhostText { chars: 11 } }
-                                div { class: "settings-row-value",
-                                    span { class: "skeleton-bar skeleton-chip web-ghost-action" }
-                                }
-                            }
-                        }
                     }
                 }
             }
