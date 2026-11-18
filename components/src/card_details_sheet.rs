@@ -69,7 +69,6 @@ pub fn CardDetailsSheet(
             CardDetailsPanel {
                 card,
                 headless: true,
-                send_to: true,
                 face,
                 meld: Some(meld),
                 describe_tag,

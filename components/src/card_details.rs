@@ -446,9 +446,9 @@ pub fn CardDetailsPanel(
     /// the melded card too (a drawer). Left out, the panel keeps its own.
     #[props(default)]
     meld: Option<MeldToggle>,
-    /// A Send to button in the foot, where the client provides [`crate::SendTo`]: the drawer's
-    /// panel has one.
-    #[props(default)]
+    /// A Send to button in the foot, where the client provides [`crate::SendTo`]: on wherever
+    /// the panel shows, the drawers and the wide panes alike.
+    #[props(default = true)]
     send_to: bool,
 ) -> Element {
     let send_to = send_to && try_use_context::<crate::SendTo>().is_some();

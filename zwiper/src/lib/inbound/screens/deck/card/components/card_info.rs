@@ -85,7 +85,6 @@ pub(crate) fn CardDetailsSheet(
             CardDetailsPanel {
                 card,
                 headless: true,
-                send_to: true,
                 face,
                 meld: Some(meld),
                 describe_tag: Some(describe_tag),
