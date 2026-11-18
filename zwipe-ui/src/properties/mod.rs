@@ -3,4 +3,5 @@
 
 mod copies;
 mod deck_cards;
+mod filter_reset;
 mod strategies;

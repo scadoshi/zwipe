@@ -14,7 +14,7 @@ use crate::domain::card::scryfall_data::prices::Prices;
 use crate::domain::card::scryfall_data::rarity::Rarity;
 use crate::domain::deck::deck::DeckEntry;
 use crate::domain::deck::quantity::Quantity;
-use crate::domain::deck::{Board, DeckCard};
+use crate::domain::deck::{Board, DeckCard, DeckName, DeckProfile, Format};
 
 /// Creates a minimal test `DeckEntry` with the given card name and quantity.
 ///
@@ -37,6 +37,47 @@ pub fn make_entry(name: &str, qty: i32) -> DeckEntry {
             mvp_at: None,
             flagged: false,
         },
+    }
+}
+
+/// Creates an empty test `DeckProfile` named `name` in `format`: no command zone, tags,
+/// targets or prices, and a card count of 0.
+///
+/// # Panics
+///
+/// Panics if `name` is not a valid [`DeckName`].
+pub fn make_profile(name: &str, format: Option<Format>) -> DeckProfile {
+    DeckProfile {
+        id: Uuid::new_v4(),
+        name: DeckName::new(name).unwrap(),
+        commander_id: None,
+        partner_commander_id: None,
+        background_id: None,
+        signature_spell_id: None,
+        format,
+        tags: Vec::new(),
+        power_level: None,
+        other_tags: Vec::new(),
+        oracle_tags: Vec::new(),
+        land_target: None,
+        price_target: None,
+        price_target_currency: None,
+        share_token: None,
+        user_id: Uuid::new_v4(),
+        card_count: 0,
+        commander_name: None,
+        partner_commander_name: None,
+        background_name: None,
+        signature_spell_name: None,
+        color_identity: Vec::new(),
+        commander_art_url: None,
+        partner_commander_art_url: None,
+        background_art_url: None,
+        signature_spell_art_url: None,
+        updated_at: None,
+        total_price_usd: None,
+        total_price_eur: None,
+        total_price_tix: None,
     }
 }
 
