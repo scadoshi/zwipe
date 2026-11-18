@@ -149,12 +149,6 @@ async fn request_change(
     .await
 }
 
-/// Lets a background send that was going to happen land, so a test can say
-/// none did.
-async fn settle() {
-    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-}
-
 #[sqlx::test]
 async fn change_email_answers_the_same_for_a_taken_address(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
@@ -227,7 +221,7 @@ async fn change_email_free_address_switches_on_confirm(pool: sqlx::PgPool) {
 
     let (status, body) = request_change(&app, &token, "moved@test.local").await;
     assert_eq!(status, StatusCode::OK, "request: {body}");
-    app.emails.wait_for(before + 1).await;
+    app.wait_for_emails(before + 1).await;
     assert_eq!(app.emails.last_to().as_deref(), Some("moved@test.local"));
     let raw = app.emails.last_token("confirm-email").unwrap();
 
@@ -288,7 +282,7 @@ async fn change_email_taken_address_sends_nothing(pool: sqlx::PgPool) {
 
     let (status, _) = request_change(&app, &token, "holder@test.local").await;
     assert_eq!(status, StatusCode::OK);
-    settle().await;
+    app.settle_emails().await;
     assert_eq!(app.emails.count(), before, "no email to anyone");
 
     let owners: i64 =
@@ -312,11 +306,11 @@ async fn change_email_new_request_replaces_the_old(pool: sqlx::PgPool) {
 
     let before = app.emails.count();
     let _ = request_change(&app, &token, "first@test.local").await;
-    app.emails.wait_for(before + 1).await;
+    app.wait_for_emails(before + 1).await;
     let first = app.emails.last_token("confirm-email").unwrap();
 
     let _ = request_change(&app, &token, "second@test.local").await;
-    app.emails.wait_for(before + 2).await;
+    app.wait_for_emails(before + 2).await;
     let second = app.emails.last_token("confirm-email").unwrap();
 
     let (status, _) = app
@@ -343,7 +337,7 @@ async fn change_email_fails_when_the_address_was_taken_meanwhile(pool: sqlx::PgP
 
     let before = app.emails.count();
     let _ = request_change(&app, &token, "late@test.local").await;
-    app.emails.wait_for(before + 1).await;
+    app.wait_for_emails(before + 1).await;
     let raw = app.emails.last_token("confirm-email").unwrap();
 
     // someone registers the address before the link is clicked
@@ -378,7 +372,7 @@ async fn resend_verification_leaves_a_pending_change_alone(pool: sqlx::PgPool) {
 
     let before = app.emails.count();
     let _ = request_change(&app, &token, "juggled@test.local").await;
-    app.emails.wait_for(before + 1).await;
+    app.wait_for_emails(before + 1).await;
     let raw = app.emails.last_token("confirm-email").unwrap();
 
     let (status, body) = app
@@ -399,7 +393,7 @@ async fn resend_email_change_mails_a_fresh_link_that_replaces_the_old(pool: sqlx
 
     let before = app.emails.count();
     let _ = request_change(&app, &token, "fresh@test.local").await;
-    app.emails.wait_for(before + 1).await;
+    app.wait_for_emails(before + 1).await;
     let first = app.emails.last_token("confirm-email").unwrap();
     let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
     let first_expiry = me["pending_email_expires_at"].clone();
@@ -408,7 +402,7 @@ async fn resend_email_change_mails_a_fresh_link_that_replaces_the_old(pool: sqlx
         .post(RESEND_EMAIL_CHANGE_ROUTE, json!({}), Some(&token))
         .await;
     assert_eq!(status, StatusCode::OK, "resend: {body}");
-    app.emails.wait_for(before + 2).await;
+    app.wait_for_emails(before + 2).await;
     let second = app.emails.last_token("confirm-email").unwrap();
     assert_ne!(first, second, "a new link");
 
@@ -449,7 +443,7 @@ async fn resend_email_change_without_a_pending_change_is_not_found(pool: sqlx::P
         .post(RESEND_EMAIL_CHANGE_ROUTE, json!({}), Some(&token))
         .await;
     assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
-    settle().await;
+    app.settle_emails().await;
     assert_eq!(app.emails.count(), before, "nothing sent");
 }
 
@@ -461,7 +455,7 @@ async fn resend_email_change_to_a_taken_address_sends_nothing(pool: sqlx::PgPool
 
     let (status, _) = request_change(&app, &token, "keeper@test.local").await;
     assert_eq!(status, StatusCode::OK);
-    settle().await;
+    app.settle_emails().await;
     let before = app.emails.count();
 
     let (status, body) = app
@@ -472,7 +466,7 @@ async fn resend_email_change_to_a_taken_address_sends_nothing(pool: sqlx::PgPool
         StatusCode::OK,
         "answers as for a free address: {body}"
     );
-    settle().await;
+    app.settle_emails().await;
     assert_eq!(app.emails.count(), before, "no email to anyone");
 }
 
@@ -503,7 +497,7 @@ async fn cancel_email_change_drops_the_pending_change_and_kills_its_link(pool: s
 
     let before = app.emails.count();
     let _ = request_change(&app, &token, "second-thoughts@test.local").await;
-    app.emails.wait_for(before + 1).await;
+    app.wait_for_emails(before + 1).await;
     let link = app.emails.last_token("confirm-email").unwrap();
 
     let (status, body) = app

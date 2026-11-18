@@ -9190,6 +9190,7 @@ dependencies = [
  "sqlx-macros",
  "thiserror 2.0.19",
  "tokio",
+ "tokio-util",
  "tower",
  "tower-http",
  "tower_governor",

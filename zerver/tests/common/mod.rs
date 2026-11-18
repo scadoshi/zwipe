@@ -33,6 +33,7 @@ use http_body_util::BodyExt;
 use serde_json::{Value, json};
 use sqlx::types::Json;
 use sqlx::{PgPool, QueryBuilder};
+use tokio_util::task::TaskTracker;
 use tower::ServiceExt; // oneshot
 use uuid::Uuid;
 use zwipe::domain::auth::models::access_token::JwtSecret;
@@ -75,22 +76,6 @@ impl FakeEmailSender {
             .map(|e| e.html_body.clone())
     }
 
-    /// Waits for at least `count` captured emails, for sends that run in the
-    /// background after the response. Panics after two seconds.
-    pub(crate) async fn wait_for(&self, count: usize) {
-        for _ in 0..200 {
-            if self.count() >= count {
-                break;
-            }
-            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
-        }
-        assert!(
-            self.count() >= count,
-            "expected {count} emails, got {}",
-            self.count()
-        );
-    }
-
     /// Number of emails captured so far.
     pub(crate) fn count(&self) -> usize {
         self.sent.lock().unwrap().len()
@@ -125,6 +110,8 @@ pub(crate) struct TestApp {
     pub(crate) router: axum::Router,
     pub(crate) pool: PgPool,
     pub(crate) emails: FakeEmailSender,
+    /// The auth service's emails sent off the request path.
+    background_sends: TaskTracker,
     fake_ip: SocketAddr,
 }
 
@@ -145,6 +132,7 @@ impl TestApp {
             "http://localhost".to_string(),
             "support@test.local".to_string(),
         );
+        let background_sends = auth_service.background_sends().clone();
         let user_service = user::services::Service::new(db.clone());
         let health_service = health::services::Service::new(db.clone());
         let card_service = card::services::Service::new(db.clone());
@@ -185,8 +173,27 @@ impl TestApp {
             router,
             pool,
             emails,
+            background_sends,
             fake_ip,
         }
+    }
+
+    /// Waits until every email the requests so far sent off the request path has finished, so
+    /// the captured count is final.
+    pub(crate) async fn settle_emails(&self) {
+        self.background_sends.close();
+        self.background_sends.wait().await;
+        self.background_sends.reopen();
+    }
+
+    /// Waits for the background sends to finish, then checks at least `count` emails went out.
+    pub(crate) async fn wait_for_emails(&self, count: usize) {
+        self.settle_emails().await;
+        assert!(
+            self.emails.count() >= count,
+            "expected {count} emails, got {}",
+            self.emails.count()
+        );
     }
 
     pub(crate) async fn send(
@@ -412,7 +419,7 @@ impl TestApp {
         });
         let (status, v) = self.post("/api/auth/register", body, None).await;
         assert_eq!(status, StatusCode::ACCEPTED, "register failed: {v}");
-        self.emails.wait_for(emails_before + 1).await;
+        self.wait_for_emails(emails_before + 1).await;
 
         let n = IP_COUNTER.fetch_add(1, Ordering::Relaxed);
         let o = n.to_be_bytes();

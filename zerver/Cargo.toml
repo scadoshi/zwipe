@@ -37,6 +37,7 @@ tower = { version = "0.5" }
 tower-http = { version = "0.6", features = ["cors", "trace", "catch-panic", "limit", "timeout", "request-id", "util", "compression-gzip", "compression-br", "set-header"] }
 tower_governor = { version = "0.8" }
 tokio = { workspace = true }
+tokio-util = { version = "0.7", features = ["rt"] }
 sqlx = { version = "0.9", features = ["runtime-tokio", "tls-rustls", "postgres", "chrono", "uuid", "json"] }
 sqlx-macros = { version = "0.9" }
 jsonwebtoken = { version = "11", features = ["aws_lc_rs"] }
