@@ -51,6 +51,9 @@ expect refused "postgres://localhost/zwipe?%68ost=db.example.com"
 expect refused "postgres://localhost/zwipe?%68ostaddr=10.0.0.5"
 expect refused "postgres://localhost/zwipe?%73ervice=prod"
 expect refused "postgres://localhost/zwipe?host=*"
+expect refused "postgres://localhost/zwipe?a=b
+&host=db.example.com"
+expect refused "$(printf 'postgres://localhost/zwipe?a=b\t&host=db.example.com')"
 expect refused "postgres:///zwipe" PGHOST=db.example.com
 expect refused "postgres://localhost/zwipe" PGHOSTADDR=10.0.0.5
 expect refused "postgres://localhost/zwipe" PGSERVICE=prod

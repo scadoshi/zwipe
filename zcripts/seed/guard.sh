@@ -20,6 +20,9 @@ seed_guard_local_host() {
 
 seed_guard() {
   : "${DATABASE_URL:?set DATABASE_URL to the local database}"
+  # A newline or other control character would end the split below early
+  # while libpq still reads past it.
+  case "$DATABASE_URL" in *[[:cntrl:]]*) seed_guard_refuse "DATABASE_URL holds a control character" ;; esac
   case "$DATABASE_URL" in
     postgres://*|postgresql://*) ;;
     *) seed_guard_refuse "DATABASE_URL is not a postgres:// URL" ;;
