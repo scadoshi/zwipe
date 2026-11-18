@@ -86,18 +86,20 @@ pub fn DeckDialogsHost(
             ToastOptions::default().duration(TOAST_QUICK),
         );
     };
-    let create_link = use_callback(move |()| {
-        spawn(async move {
-            if let Some(shared) = authed
-                .run("share_deck", |c, s| async move {
-                    c.share_deck(deck_id, &s).await
-                })
-                .await
-            {
-                share_token.set(Some(shared.share_token));
-                copy_link(shared.share_token);
-            }
-        });
+    // The dialog stays open until the link lands, so it can't be reopened over a link still on
+    // its way; a failure keeps it open.
+    let create_link = ActionButton::new("Create link").busy("Creating link…", move || async move {
+        let Some(shared) = authed
+            .run("share_deck", |c, s| async move {
+                c.share_deck(deck_id, &s).await
+            })
+            .await
+        else {
+            return false;
+        };
+        share_token.set(Some(shared.share_token));
+        copy_link(shared.share_token);
+        true
     });
     let copy_shared = use_callback(move |()| {
         if let Some(token) = *share_token.peek() {
@@ -165,14 +167,7 @@ pub fn DeckDialogsHost(
     } else {
         (
             "Anyone with the link can view this deck. You can stop sharing at any time.",
-            vec![
-                DialogAction::Dismiss("Close".into()),
-                DialogAction::Confirm {
-                    label: "Create link".into(),
-                    danger: false,
-                    on_confirm: create_link,
-                },
-            ],
+            vec![DialogAction::Dismiss("Close".into()), create_link.into()],
         )
     };
 
