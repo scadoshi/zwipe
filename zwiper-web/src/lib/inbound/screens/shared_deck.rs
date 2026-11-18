@@ -276,6 +276,7 @@ fn SharedDeckView(
     let boards = use_signal(Boards::default);
     let show_zone = use_signal(|| true);
     let show_tokens = use_signal(|| false);
+    let flagged_only = use_signal(|| false);
     let show_art = use_signal(|| true);
     let view = use_signal(|| CardsView::List);
     let collapsed: Signal<HashSet<String>> = use_signal(HashSet::new);
@@ -308,6 +309,12 @@ fn SharedDeckView(
     // An unpriced card's chip opens its details.
     let open_unpriced = use_callback(move |id: Uuid| details.feature(id));
 
+    // The owner's flags, which the tiles mark; the shared page only reads them.
+    let flagged = use_memo(use_reactive!(|deck| {
+        deck.map_or_default(|d| deck_cards::flagged_ids(&d.entries))
+    }));
+    use_context_provider(|| components::Flagged(flagged.into()));
+
     // The rows as the owner's deck page lists them, from the same pass, with each card's
     // quantity, board and star.
     let listing_memo = use_memo(use_reactive!(|deck| {
@@ -319,8 +326,12 @@ fn SharedDeckView(
         zone.strip(&mut entries);
         let applied = card_filter();
         let meta = listing::meta_of(&entries);
-        let display = deck_cards::pass(&entries, &zone, &applied, group_by());
-        let tokens = if show_tokens() {
+        // Narrowed to the owner's flagged cards, the list holds only those, with no command zone.
+        let only = flagged_only();
+        let shown = deck_cards::shown_flagged(&entries, only);
+        let zone = if only { Zone::default() } else { zone };
+        let display = deck_cards::pass(&shown, &zone, &applied, group_by());
+        let tokens = if show_tokens() && !only {
             deck.tokens
         } else {
             Vec::new()
@@ -518,6 +529,7 @@ fn SharedDeckView(
             group_by,
             show_tokens: (!deck.tokens.is_empty()).then_some(show_tokens),
             show_zone: zone.offers_chip(deck.format).then_some(show_zone),
+            show_flagged: Some((flagged_only, flagged.read().len())),
             show_art,
             boards,
             has_maybe,

@@ -1,6 +1,6 @@
 //! A deck card's Flag through the real router: a patch sets and clears it, a board move and a
 //! quantity patch keep it, removing the card drops it, a clone copies it as off, and a shared
-//! deck never shows it.
+//! deck shows the owner's flags.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -198,7 +198,7 @@ async fn a_clone_copies_flags_as_off(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
-async fn a_shared_deck_never_shows_a_flag(pool: sqlx::PgPool) {
+async fn a_shared_deck_shows_the_owner_s_flags(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, deck_id, sid, _) = deck_with_a_card(&app, &pool, "sharer").await;
     let (status, body) = flag(&app, &token, deck_id, sid, json!(true)).await;
@@ -213,7 +213,7 @@ async fn a_shared_deck_never_shows_a_flag(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "shared: {shared}");
     assert_eq!(
         entry(&shared, sid)["flagged"],
-        false,
-        "a shared deck hides the flag: {shared}"
+        true,
+        "a shared deck shows the owner's flag: {shared}"
     );
 }

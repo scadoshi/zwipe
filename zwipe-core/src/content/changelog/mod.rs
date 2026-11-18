@@ -50,7 +50,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: None,
     entries: &[
         "Send to, a new action that adds a card to another of your decks",
-        "Flag, a private mark on your deck's cards that Remove deals first",
+        "Flag, a mark on your deck's cards that Remove deals first",
         "Theme search, which finds a theme by name or color",
         "On the web, t opens Themes ready to type",
         "On the web, q opens Quick add",

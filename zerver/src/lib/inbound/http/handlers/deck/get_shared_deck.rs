@@ -4,7 +4,6 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use uuid::Uuid;
-use zwipe_core::domain::deck::DeckEntry;
 use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::domain::user::theme::ThemeConfig;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
@@ -107,7 +106,7 @@ pub(crate) async fn shared_body(state: &AppState, token: Uuid) -> Result<HttpSha
         partner_commander: shared.partner_commander,
         background: shared.background,
         signature_spell: shared.signature_spell,
-        entries: unflagged(shared.deck.entries),
+        entries: shared.deck.entries,
         tokens: shared.tokens,
         land_target: profile.land_target,
         price_target: profile.price_target,
@@ -116,15 +115,4 @@ pub(crate) async fn shared_body(state: &AppState, token: Uuid) -> Result<HttpSha
         theme,
         owner,
     })
-}
-
-/// `entries` with every Flag off: a flag is private to the deck's owner.
-fn unflagged(entries: Vec<DeckEntry>) -> Vec<DeckEntry> {
-    entries
-        .into_iter()
-        .map(|mut entry| {
-            entry.deck_card.flagged = false;
-            entry
-        })
-        .collect()
 }
