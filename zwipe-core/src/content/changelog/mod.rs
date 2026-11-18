@@ -64,6 +64,9 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, Shift+P opens Send to wherever a card's details offer it",
         "On the web, Esc goes back only from Add, Remove and Edit deck",
         "Undoing a Send to takes the card back out of the deck it went to",
+        "Every search field has its Search chip on its left, on the same line",
+        "Send to's boards row starts with a Send to chip",
+        "Theme search highlights the theme Enter would pick as you type",
     ],
 }];
 
