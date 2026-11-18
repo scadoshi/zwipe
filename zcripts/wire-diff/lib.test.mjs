@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { diff, judge, normalize, shapeOf } from "./lib.mjs";
+import { diff, judge, normalize, shapeOf, shapes } from "./lib.mjs";
 
 test("the same reply has no differences", () => {
   const reply = { status: 200, body: { id: "a", cards: [{ n: 1 }, { n: 2 }] } };
@@ -133,4 +133,28 @@ test("a shape keeps field names and types, not values or how many items a list h
   ]);
   const retyped = { status: 200, body: shapeOf({ upcoming: [release(124, ["a"])], releases: [release("1.23.1", ["b"])] }) };
   assert.deepEqual(diff(main, retyped).map((d) => [d.path, d.kind]), [["/upcoming/0/version", "value"]]);
+});
+
+test("an empty list matches any list's shape", () => {
+  const [main, cand] = shapes(
+    { upcoming: [{ version: "1.24.0", entries: ["a"] }] },
+    { upcoming: [{ version: "1.25.0", entries: [] }] },
+  );
+  assert.deepEqual(diff({ status: 200, body: main }, { status: 200, body: cand }), [], "a cut's empty list isn't a change");
+  const [none, some] = shapes({ list: [] }, { list: [{ a: 1 }] });
+  assert.deepEqual(diff({ status: 200, body: none }, { status: 200, body: some }), []);
+  const [filled, renamed] = shapes(
+    { upcoming: [{ version: "1.24.0", entries: ["a"] }] },
+    { upcoming: [{ version: "1.24.0", changes: ["a"] }] },
+  );
+  assert.deepEqual(
+    diff({ status: 200, body: filled }, { status: 200, body: renamed }).map((d) => [d.path, d.kind]),
+    [["/upcoming/0/changes", "added"], ["/upcoming/0/entries", "removed"]],
+    "filled lists still compare their items",
+  );
+});
+
+test("items of mixed kinds merge by kind name", () => {
+  assert.deepEqual(shapeOf([{ a: 1 }, null]), ["null|object"]);
+  assert.deepEqual(shapeOf([1, "x", 2]), ["number|string"]);
 });

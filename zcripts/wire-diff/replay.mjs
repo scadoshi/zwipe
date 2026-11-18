@@ -21,7 +21,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { diff, judge, normalize, shapeOf } from "./lib.mjs";
+import { diff, judge, normalize, shapes } from "./lib.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const [, , mainUrl, candUrl, requestsFile, approvedFile, normalizeFile] = process.argv;
@@ -101,11 +101,10 @@ for (const [index, raw] of script.steps.entries()) {
     mask: [...(rules.mask ?? []), ...(step.mask ?? [])],
     sort: [...(rules.sort ?? []), ...(step.sort ?? [])],
   };
-  const view = (body) => (step.shape ? shapeOf(normalize(body, stepRules)) : normalize(body, stepRules));
-  const found = diff(
-    { status: replies.main.status, body: view(replies.main.body) },
-    { status: replies.cand.status, body: view(replies.cand.body) },
-  );
+  const [mainBody, candBody] = step.shape
+    ? shapes(normalize(replies.main.body, stepRules), normalize(replies.cand.body, stepRules))
+    : [normalize(replies.main.body, stepRules), normalize(replies.cand.body, stepRules)];
+  const found = diff({ status: replies.main.status, body: mainBody }, { status: replies.cand.status, body: candBody });
   results.push({ step: { name: step.name, route: step.route }, diffs: found });
   const mark = found.length === 0 ? "same" : `${found.length} difference(s)`;
   console.log(`${String(replies.main.status).padEnd(3)} ${step.method.padEnd(6)} ${step.route}  ${step.name}: ${mark}`);

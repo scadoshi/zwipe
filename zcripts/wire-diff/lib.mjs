@@ -64,7 +64,8 @@ const merge = (a, b) => {
     return Object.fromEntries([...new Set([...Object.keys(a), ...Object.keys(b)])].sort().map((k) => [k, merge(a[k], b[k])]));
   }
   if (JSON.stringify(a) === JSON.stringify(b)) return a;
-  return [...new Set(`${a}|${b}`.split("|"))].sort().join("|");
+  const names = (s) => (typeof s === "string" ? s.split("|") : [kindOf(s)]);
+  return [...new Set([...names(a), ...names(b)])].sort().join("|");
 };
 
 /**
@@ -78,6 +79,28 @@ export const shapeOf = (value) => {
     return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, shapeOf(v)]));
   }
   return kindOf(value);
+};
+
+/**
+ * The shapes of `main` and `cand` ([`shapeOf`]), with an empty list on either side taking the
+ * other side's list: an empty list says nothing about its items, so it matches any list.
+ */
+export const shapes = (main, cand) => {
+  const align = (a, b) => {
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length === 0 || b.length === 0) return a.length === 0 ? [b, b] : [a, a];
+      const [x, y] = align(a[0], b[0]);
+      return [[x], [y]];
+    }
+    if (kindOf(a) === "object" && kindOf(b) === "object") {
+      const x = { ...a };
+      const y = { ...b };
+      for (const k of Object.keys(a)) if (Object.hasOwn(b, k)) [x[k], y[k]] = align(a[k], b[k]);
+      return [x, y];
+    }
+    return [a, b];
+  };
+  return align(shapeOf(main), shapeOf(cand));
 };
 
 /**
