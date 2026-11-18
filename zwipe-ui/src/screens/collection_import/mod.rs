@@ -67,7 +67,7 @@ pub const IMPORTED: &str = "Imported";
 pub const NOT_MATCHED: &str = "Not matched";
 
 /// The toast for a file past the import's size cap; nothing is sent.
-pub const TOO_BIG: &str = "That file is over 4 MB";
+pub const TOO_BIG: &str = "That file is too big to import";
 
 /// The toast for a file the browser couldn't read.
 pub const UNREADABLE: &str = "Couldn't read that file";
@@ -77,8 +77,8 @@ pub const UNREADABLE: &str = "Couldn't read that file";
 pub enum Action {
     /// Picks whether the import adds or replaces.
     PickMode(ImportMode),
-    /// A file was picked and read: its name and its text. A file past the size cap is turned
-    /// down with a toast and the last pick stays.
+    /// A file was picked and read: its name and its text. A file whose request would pass the
+    /// size cap is turned down with a toast and the last pick stays.
     PickFile {
         /// The file's name, shown in the field.
         name: String,
@@ -171,7 +171,7 @@ impl State {
         match action {
             Action::PickMode(mode) => self.mode = mode,
             Action::PickFile { name, text } => {
-                if text.len() > MAX_BODY_BYTES {
+                if body_bytes(&text) > MAX_BODY_BYTES {
                     return vec![Effect::Toast(Toast::normal(ToastKind::Error, TOO_BIG))];
                 }
                 self.file = Some(Picked { name, text });
@@ -200,6 +200,8 @@ impl State {
                 if self.lands(ticket) {
                     let toast = outcome_toast(&summary);
                     self.phase = Phase::Done(summary);
+                    // The file went in; sending it again would add its copies twice.
+                    self.file = None;
                     return vec![Effect::Toast(toast)];
                 }
             }
@@ -240,7 +242,8 @@ impl State {
         self.file.as_ref().map(|f| f.name.as_str())
     }
 
-    /// Whether Submit would send: a file is picked and no import is out.
+    /// Whether Submit would send: a file is picked and no import is out. A finished import clears
+    /// the file, so each pick sends once.
     #[must_use]
     pub fn can_submit(&self) -> bool {
         self.file.is_some() && self.phase != Phase::Importing
@@ -282,6 +285,26 @@ impl State {
             Phase::Idle | Phase::Importing => None,
         }
     }
+}
+
+/// Room in the request for everything but the file's text: the braces, the field names and the
+/// mode.
+const BODY_OVERHEAD: usize = 64;
+
+/// The request body's size for a file of `text`: its bytes, one more for each character JSON
+/// escapes with a backslash, five more for any other control character, and [`BODY_OVERHEAD`].
+fn body_bytes(text: &str) -> usize {
+    let escapes: usize = text
+        .chars()
+        .map(|c| match c {
+            '"' | '\\' | '\n' | '\r' | '\t' | '\u{8}' | '\u{c}' => 1,
+            c if c.is_control() && u32::from(c) < 0x20 => 5,
+            _ => 0,
+        })
+        .sum();
+    text.len()
+        .saturating_add(escapes)
+        .saturating_add(BODY_OVERHEAD)
 }
 
 /// The toast after an import: a success when every row matched, news with the count when some

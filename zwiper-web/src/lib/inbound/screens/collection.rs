@@ -24,6 +24,10 @@ use crate::inbound::telemetry;
 /// The file input's id, which both labels point at.
 const FILE_ID: &str = "collection-file";
 
+/// Empties the file input once its file is read, so picking the same file again fires a change
+/// and reads it fresh.
+const CLEAR_FILE_JS: &str = "document.getElementById('collection-file').value = '';";
+
 /// The model and what its effects reach, `Copy` so handlers and tasks share it.
 #[derive(Clone, Copy)]
 struct Driver {
@@ -122,14 +126,16 @@ pub fn Collection() -> Element {
                                             let Some(file) = event.files().into_iter().next() else {
                                                 return;
                                             };
-                                            if u64::try_from(MAX_BODY_BYTES).is_ok_and(|cap| file.size() > cap) {
-                                                driver.dispatch(Action::PickedTooBig);
-                                                return;
-                                            }
-                                            match file.read_string().await {
-                                                Ok(text) => driver.dispatch(Action::PickFile { name: file.name(), text }),
-                                                Err(_) => driver.dispatch(Action::Unreadable),
-                                            }
+                                            let action = if u64::try_from(MAX_BODY_BYTES).is_ok_and(|cap| file.size() > cap) {
+                                                Action::PickedTooBig
+                                            } else {
+                                                match file.read_string().await {
+                                                    Ok(text) => Action::PickFile { name: file.name(), text },
+                                                    Err(_) => Action::Unreadable,
+                                                }
+                                            };
+                                            document::eval(CLEAR_FILE_JS);
+                                            driver.dispatch(action);
                                         },
                                     }
                                     if let Some(name) = file_name {
@@ -202,5 +208,18 @@ pub fn Collection() -> Element {
             ],
             {collection_import::REPLACE_BODY}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_reset_empties_the_file_input_itself() {
+        assert_eq!(
+            CLEAR_FILE_JS,
+            format!("document.getElementById('{FILE_ID}').value = '';")
+        );
     }
 }

@@ -171,3 +171,40 @@ fn the_copy_matches_the_app() {
     assert_eq!(REPLACE_TITLE, "Replace your collection?");
     assert_eq!(FILE_PLACEHOLDER, "Choose a .csv export");
 }
+
+#[test]
+fn a_finished_import_clears_the_file_so_a_second_click_sends_nothing() {
+    let mut state = State::new();
+    picked(&mut state);
+    let ticket = sent(&state.update(Action::Submit));
+    let _ = state.update(Action::Imported {
+        ticket,
+        summary: summary(Vec::new(), 0),
+    });
+    assert_eq!(state.file_name(), None, "the field reads as empty again");
+    assert!(!state.can_submit());
+    assert_eq!(
+        state.update(Action::Submit),
+        [],
+        "the same file isn't sent twice"
+    );
+    picked(&mut state);
+    assert!(state.can_submit(), "a new pick can go");
+}
+
+#[test]
+fn the_size_check_counts_the_escaped_body() {
+    let mut state = State::new();
+    // Under the cap as a file, over it once every quote and line break is escaped in the body.
+    let text = "\"\n".repeat(MAX_BODY_BYTES / 2 - 8);
+    assert!(text.len() < MAX_BODY_BYTES);
+    let effects = state.update(Action::PickFile {
+        name: "quoted.csv".into(),
+        text,
+    });
+    assert_eq!(
+        effects,
+        [Effect::Toast(Toast::normal(ToastKind::Error, TOO_BIG))]
+    );
+    assert_eq!(state.file_name(), None);
+}

@@ -2494,7 +2494,6 @@ body {
 
 /* ---- Import, Export ---- */
 
-
 /* Collection's file field: the File chip, then the field filling the rest of the row, on one
    line at every width; a long file name ends in an ellipsis. */
 .collection-file {
@@ -2514,12 +2513,6 @@ body {
 .collection-file > input[type="file"]:focus-visible + label.input {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
-}
-
-@media (min-width: 900px) {
-    .collection-file > label.input {
-        max-width: var(--web-field-max);
-    }
 }
 
 @media (min-width: 900px) {
@@ -2575,6 +2568,11 @@ body {
     .web-export-body textarea,
     .web-export-body .skeleton-export-textarea {
         min-height: calc(100vh - 26rem) !important;
+    }
+
+    /* Collection's file field stops at a field's width. */
+    .collection-file > label.input {
+        max-width: var(--web-field-max);
     }
 }
 
