@@ -340,6 +340,33 @@ fn an_asked_for_send_to_waits_on_a_session_and_a_single_card() {
 }
 
 #[test]
+fn an_asked_for_send_to_on_a_list_goes_with_the_picked_card() {
+    let (mut state, ticket, _) = by_name("rampant-growth", true, true);
+    let comma = card("Rampant, Growth");
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![card("Rampant Growth"), comma.clone()],
+    });
+    let id = comma.scryfall_data.id;
+    assert_eq!(
+        state.update(Action::Pick(id)),
+        vec![Effect::Navigate(Destination::Printing {
+            slug: "rampant-growth".to_owned(),
+            id,
+            send: true,
+        })],
+        "the printing opens with the sheet"
+    );
+    assert!(
+        matches!(
+            state.update(Action::Pick(id)).as_slice(),
+            [Effect::Navigate(Destination::Printing { send: false, .. })]
+        ),
+        "the ask goes with one pick only"
+    );
+}
+
+#[test]
 fn share_copies_the_name_s_link_or_the_printing_s() {
     let (mut state, ticket, _) = by_name("delver-of-secrets", false, true);
     let delver = card("Delver of Secrets // Insectile Aberration");

@@ -5,7 +5,8 @@
 //! printing link), and [`NOT_FOUND`] when none does. A printing link loads by its id alone, and a
 //! stale slug in it is swapped for the card's own. Send to signed out goes to Login and comes
 //! back to the card with the sheet asked for; the screen opens it once and drops the ask from
-//! the route, so Back or a reload never opens it again. Share copies the card's link: the name's
+//! the route, so Back or a reload never opens it again; on a list, the ask goes with the card
+//! picked from it. Share copies the card's link: the name's
 //! link for a card opened by name, the printing's link for a printing, which is where a name
 //! several cards share leads.
 //!
@@ -263,11 +264,9 @@ impl State {
                 let Some(picked) = self.cards().iter().find(|c| c.scryfall_data.id == id) else {
                     return Vec::new();
                 };
-                vec![Effect::Navigate(Destination::Printing {
-                    slug: own_printing_slug(picked),
-                    id,
-                    send: false,
-                })]
+                let slug = own_printing_slug(picked);
+                let send = std::mem::take(&mut self.send_pending);
+                vec![Effect::Navigate(Destination::Printing { slug, id, send })]
             }
             Action::SendTo { signed_in } => {
                 let Some(card) = self.card().cloned() else {
@@ -329,9 +328,10 @@ impl State {
         }
     }
 
-    /// Opens the asked-for Send to, once, when one card shows.
+    /// Opens the asked-for Send to, once, when one card shows. On a list the ask waits for the
+    /// pick ([`Action::Pick`]), which carries it to that card's printing.
     fn send_if_asked(&mut self) -> Vec<Effect> {
-        if !self.send_pending || self.shown == Shown::Loading {
+        if !self.send_pending || matches!(self.shown, Shown::Loading | Shown::Several(_)) {
             return Vec::new();
         }
         self.send_pending = false;
