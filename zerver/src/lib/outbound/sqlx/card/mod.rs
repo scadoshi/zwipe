@@ -214,9 +214,8 @@ const SUGGESTION_TAG_LIMIT: i64 = 5;
 /// again restarts the clock.
 const DISMISSAL_TTL_DAYS: i32 = 7;
 
-/// The most cards one name slug answers. The most any slug matches in the catalog is 34
-/// (`elemental`, every one a token), so this cuts nothing real and keeps a public, cached answer
-/// small.
+/// The most cards one name slug answers: well above the largest real collision, which is all
+/// tokens, so it cuts nothing real and keeps a public, cached answer small.
 const NAMED_CARDS_LIMIT: i64 = 50;
 
 /// Base ranking for the commander-select ordering: decks-helmed popularity
