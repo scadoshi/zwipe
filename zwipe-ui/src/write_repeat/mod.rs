@@ -179,3 +179,76 @@ pub fn landed_deck_card(deck: Uuid, sent: &HttpCreateDeckCard) -> Option<DeckCar
         flagged: false,
     })
 }
+
+/// How a form's submit ended (Register, Change password, Reset password, a link's confirm), as
+/// the client reads it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum FormAnswer {
+    /// It went through.
+    Done,
+    /// No answer came back: it may or may not have gone through.
+    Network,
+    /// The refusal a repeat gets once the first try went through: a username taken, a current
+    /// password that no longer matches, a link already used.
+    RepeatRefused,
+    /// Any other failure.
+    Other,
+}
+
+/// What a form says in place of its client's own line ([`FormRepeat::settle`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum FormNote {
+    /// The answer was lost: say the submit may have gone through.
+    Lost,
+    /// A repeat was refused after a lost answer: the first try likely went through.
+    Landed,
+}
+
+/// A form whose submit can land while its answer is lost, and whose repeat is then refused. The
+/// server can't say whether the first try landed, so the form says what to do next instead of a
+/// bare error.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct FormRepeat {
+    unconfirmed: bool,
+}
+
+impl FormRepeat {
+    /// Takes how a submit ended and answers with the note to show in place of the client's own
+    /// line, `None` to show the client's own (a success, or a failure that isn't a repeat's).
+    pub fn settle(&mut self, answer: FormAnswer) -> Option<FormNote> {
+        match answer {
+            FormAnswer::Done => {
+                self.unconfirmed = false;
+                None
+            }
+            FormAnswer::Network => {
+                self.unconfirmed = true;
+                Some(FormNote::Lost)
+            }
+            FormAnswer::RepeatRefused if self.unconfirmed => {
+                self.unconfirmed = false;
+                Some(FormNote::Landed)
+            }
+            FormAnswer::RepeatRefused | FormAnswer::Other => None,
+        }
+    }
+}
+
+/// Register, its answer lost.
+pub const REGISTER_LOST: &str = "We couldn't confirm your sign-up. Check your inbox for a verification email before trying again.";
+
+/// Register, its repeat answered that the username is taken after a lost answer.
+pub const REGISTER_LANDED: &str =
+    "This account may already exist. Check your email for a verification link, or log in.";
+
+/// Change password, its answer lost or its repeat refused as a wrong current password.
+pub const PASSWORD_UNCONFIRMED: &str = "We couldn't confirm the change. It may have gone through, so try your new password next time you log in.";
+
+/// Reset password, its answer lost or its repeat refused as a used link.
+pub const RESET_UNCONFIRMED: &str = "We couldn't confirm the reset. Try logging in with your new password, and if that fails, ask for a new link.";
+
+/// Verify email, its answer lost.
+pub const VERIFY_LOST: &str = "We couldn't confirm it. Reload the page: if it says the link was already used, your email is verified.";
+
+/// Confirm email change, its answer lost.
+pub const CONFIRM_EMAIL_LOST: &str = "We couldn't confirm it. Reload the page: if it says the link was already used, your new email is confirmed.";

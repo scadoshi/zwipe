@@ -206,10 +206,25 @@ fn a_registration_that_goes_through_prefills_login_toasts_and_goes_there() {
     assert!(!state.is_loading());
 }
 
+fn failed(ticket: Ticket, answer: FormAnswer, message: &str) -> Action {
+    Action::Failed {
+        ticket,
+        answer,
+        message: message.to_owned(),
+    }
+}
+
+fn error_toast(text: &str) -> Effect {
+    Effect::Toast(Toast::normal(ToastKind::Error, text))
+}
+
 #[test]
-fn a_failed_registration_frees_the_form() {
+fn a_failed_registration_says_why_and_frees_the_form() {
     let (mut state, ticket) = sending();
-    assert_eq!(state.update(Action::Failed { ticket }), []);
+    assert_eq!(
+        state.update(failed(ticket, FormAnswer::Other, "Server error")),
+        [error_toast("Server error")]
+    );
     assert!(!state.is_loading());
     assert!(matches!(
         state.update(Action::Submit).as_slice(),
@@ -220,7 +235,7 @@ fn a_failed_registration_frees_the_form() {
 #[test]
 fn a_late_reply_is_ignored() {
     let (mut state, first) = sending();
-    assert_eq!(state.update(Action::Failed { ticket: first }), []);
+    let _ = state.update(failed(first, FormAnswer::Other, "Server error"));
     let effects = state.update(Action::Submit);
     let [Effect::Register { ticket: second, .. }] = effects.as_slice() else {
         panic!("Submit sends: {effects:?}");
@@ -287,5 +302,41 @@ fn the_copy_matches_the_app() {
             "Creating…",
             "Check your inbox to verify your email, then log in"
         ]
+    );
+}
+
+/// A registration whose answer was lost may have made the account, so the screen says to check
+/// the inbox, and a retry the server turns down as a taken username says the account may exist.
+#[test]
+fn a_lost_registration_points_to_the_inbox_and_its_refused_retry_to_log_in() {
+    let (mut state, ticket) = sending();
+    assert_eq!(
+        state.update(failed(ticket, FormAnswer::Network, "Connection error")),
+        [error_toast(write_repeat::REGISTER_LOST)]
+    );
+    let effects = state.update(Action::Submit);
+    let [Effect::Register { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(
+        state.update(failed(
+            *ticket,
+            FormAnswer::RepeatRefused,
+            "Username already taken"
+        )),
+        [error_toast(write_repeat::REGISTER_LANDED)]
+    );
+}
+
+#[test]
+fn a_taken_username_with_no_lost_try_says_so() {
+    let (mut state, ticket) = sending();
+    assert_eq!(
+        state.update(failed(
+            ticket,
+            FormAnswer::RepeatRefused,
+            "Username already taken"
+        )),
+        [error_toast("Username already taken")]
     );
 }

@@ -8,6 +8,7 @@ mod tests;
 use crate::account::{self, Password};
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
+use crate::write_repeat::{self, FormAnswer, FormNote, FormRepeat};
 
 /// The screen's title.
 pub const TITLE: &str = "Create account";
@@ -91,10 +92,16 @@ pub enum Action {
         /// The ticket from the [`Effect::Register`] this answers.
         ticket: Ticket,
     },
-    /// The registration holding `ticket` failed. The client has already logged it and raised its error toast.
+    /// The registration holding `ticket` failed. The client has already logged it; the screen
+    /// raises the error toast.
     Failed {
         /// The ticket from the [`Effect::Register`] this answers.
         ticket: Ticket,
+        /// How it failed: [`FormAnswer::Network`] for a lost answer, [`FormAnswer::RepeatRefused`]
+        /// for a taken username.
+        answer: FormAnswer,
+        /// The client's own words for the error, shown unless the failure follows a lost answer.
+        message: String,
     },
     /// Presses Back to log in.
     Back,
@@ -142,6 +149,8 @@ pub struct State {
     attempted: bool,
     sending: Option<Sending>,
     tickets: Generation,
+    /// Whether an earlier registration's answer was lost.
+    repeat: FormRepeat,
 }
 
 impl State {
@@ -178,15 +187,28 @@ impl State {
                 let Some(username) = self.settle(ticket) else {
                     return Vec::new();
                 };
+                let _ = self.repeat.settle(FormAnswer::Done);
                 vec![
                     Effect::Prefill(username),
                     Effect::Toast(Toast::normal(ToastKind::Info, CHECK_INBOX)),
                     Effect::Navigate(Destination::Login),
                 ]
             }
-            Action::Failed { ticket } => {
-                self.settle(ticket);
-                Vec::new()
+            Action::Failed {
+                ticket,
+                answer,
+                message,
+            } => {
+                if self.settle(ticket).is_none() {
+                    return Vec::new();
+                }
+                // A lost answer may have made the account, so the line says what to do next.
+                let text = match self.repeat.settle(answer) {
+                    Some(FormNote::Lost) => write_repeat::REGISTER_LOST.to_owned(),
+                    Some(FormNote::Landed) => write_repeat::REGISTER_LANDED.to_owned(),
+                    None => message,
+                };
+                vec![Effect::Toast(Toast::normal(ToastKind::Error, &text))]
             }
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
         }
