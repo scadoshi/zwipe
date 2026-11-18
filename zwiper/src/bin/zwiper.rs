@@ -167,6 +167,8 @@ fn App() -> Element {
     let upgrade_required = session_upkeep::spawn_upkeeper();
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
+    // The session's writes whose answer was lost, for every screen's run_write.
+    use_context_provider(|| Signal::new(zwipe_ui::write_repeat::Unconfirmed::default()));
     // Closed until the splash starts to fade; the entrances wait on it.
     use_context_provider(|| components::SplashGate(Signal::new(false)));
     // The main menu's open state, above the router so it carries across

@@ -109,6 +109,18 @@ async fn lock_user_and_count_decks(
     Ok(count)
 }
 
+/// The owner of the deck with the client-picked `id`, when there is one. Read under the
+/// caller's lock from [`lock_user_and_count_decks`], so a repeat of a create or clone that
+/// waited on the first one finds the deck it made.
+async fn deck_owner(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    id: uuid::Uuid,
+) -> Result<Option<uuid::Uuid>, sqlx::Error> {
+    query_scalar!("SELECT user_id FROM decks WHERE id = $1", id)
+        .fetch_optional(&mut **tx)
+        .await
+}
+
 /// Marks the deck as changed now, inside a card write's transaction, so the
 /// deck list's last changed and Home's recent decks count card edits.
 async fn touch_deck(
@@ -129,7 +141,21 @@ impl DeckRepository for Postgres {
         deck_limit: i64,
     ) -> Result<DeckProfile, CreateDeckProfileError> {
         let mut tx = self.pool.begin().await?;
-        if lock_user_and_count_decks(&mut tx, request.user_id).await? >= deck_limit {
+        let deck_count = lock_user_and_count_decks(&mut tx, request.user_id).await?;
+        if let Some(id) = request.id
+            && let Some(owner) = deck_owner(&mut tx, id).await?
+        {
+            if owner != request.user_id {
+                return Err(CreateDeckProfileError::IdTaken);
+            }
+            tx.rollback().await?;
+            let made = GetDeckProfile::new(request.user_id, id);
+            return self
+                .fetch_deck_profile(&made)
+                .await
+                .map_err(|e| CreateDeckProfileError::Database(e.into()));
+        }
+        if deck_count >= deck_limit {
             return Err(if request.email_verified {
                 CreateDeckProfileError::LimitReached
             } else {
@@ -146,8 +172,8 @@ impl DeckRepository for Postgres {
             .map(|c| c.json_key().to_string());
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            r#"INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, oracle_tags, land_target, price_target, price_target_currency, user_id)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            r#"INSERT INTO decks (id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, oracle_tags, land_target, price_target, price_target_currency, user_id)
+               VALUES (COALESCE($15, gen_random_uuid()), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as "tags?", power_level, other_tags as "other_tags?", oracle_tags as "oracle_tags?", land_target, price_target, price_target_currency, share_token, user_id,
                          0::bigint as "card_count",
                          updated_at as "updated_at?",
@@ -179,7 +205,8 @@ impl DeckRepository for Postgres {
             request.land_target,
             request.price_target,
             price_target_currency,
-            request.user_id
+            request.user_id,
+            request.id
         )
         .fetch_one(&mut *tx)
         .await?;
@@ -1443,7 +1470,17 @@ impl DeckRepository for Postgres {
         deck_limit: i64,
     ) -> Result<uuid::Uuid, CloneDeckError> {
         let mut tx = self.pool.begin().await?;
-        if lock_user_and_count_decks(&mut tx, request.user_id).await? >= deck_limit {
+        let deck_count = lock_user_and_count_decks(&mut tx, request.user_id).await?;
+        if let Some(id) = request.id
+            && let Some(owner) = deck_owner(&mut tx, id).await?
+        {
+            if owner != request.user_id {
+                return Err(CloneDeckError::IdTaken);
+            }
+            tx.rollback().await?;
+            return Ok(id);
+        }
+        if deck_count >= deck_limit {
             return Err(if request.email_verified {
                 CloneDeckError::LimitReached
             } else {
@@ -1461,12 +1498,12 @@ impl DeckRepository for Postgres {
         let new_deck_id = sqlx::query_scalar!(
             r#"
             INSERT INTO decks (
-                name, commander_id, partner_commander_id, background_id,
+                id, name, commander_id, partner_commander_id, background_id,
                 signature_spell_id, format, tags, power_level, other_tags, oracle_tags,
                 land_target, price_target, price_target_currency, user_id
             )
             SELECT
-                $1, commander_id, partner_commander_id, background_id,
+                COALESCE($4, gen_random_uuid()), $1, commander_id, partner_commander_id, background_id,
                 signature_spell_id, format, tags, power_level, other_tags, oracle_tags,
                 land_target, price_target, price_target_currency, $2
             FROM decks
@@ -1476,6 +1513,7 @@ impl DeckRepository for Postgres {
             request.new_name.to_string(),
             request.user_id,
             request.source_deck_id,
+            request.id,
         )
         .fetch_one(&mut *tx)
         .await?;

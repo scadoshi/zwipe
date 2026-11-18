@@ -8,17 +8,14 @@
 
 #![expect(
     clippy::unwrap_used,
-    clippy::panic,
     clippy::indexing_slicing,
-    reason = "a test: helpers outside #[test] fns unwrap and index, and a panic is the failure report"
+    reason = "a test: helpers outside #[test] fns unwrap and index"
 )]
 
 mod common;
 
-use std::time::Duration;
-
 use axum::http::StatusCode;
-use common::{TestApp, card, seed_cards};
+use common::{TestApp, card, seed_cards, wait_for_lock_waiters};
 use serde_json::{Value, json};
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
@@ -27,24 +24,6 @@ use zwipe_core::http::paths::{DECK_ROUTE, RECORD_USAGE_ROUTE};
 /// Rows each test touches; with this many, a random order almost never
 /// starts on the lowest key.
 const KEYS: usize = 12;
-
-/// Waits until some backend in this database is waiting on a row lock.
-async fn wait_for_lock_waiter(pool: &PgPool) {
-    for _ in 0..200 {
-        let waiting: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM pg_stat_activity \
-             WHERE datname = current_database() AND wait_event_type = 'Lock'",
-        )
-        .fetch_one(pool)
-        .await
-        .unwrap();
-        if waiting > 0 {
-            return;
-        }
-        tokio::time::sleep(Duration::from_millis(25)).await;
-    }
-    panic!("the flush never queued behind the held row");
-}
 
 async fn create_deck(app: &TestApp, token: &str, format: &str) -> Uuid {
     let (status, deck) = app
@@ -132,7 +111,7 @@ async fn otag_context_rows_lock_in_key_order(pool: PgPool) {
         Some(&token),
     );
     let other = async {
-        wait_for_lock_waiter(&pool).await;
+        wait_for_lock_waiters(&pool, 1).await;
         for tag in &tags[1..] {
             upsert_otag(&mut held, context, tag).await;
         }
@@ -190,7 +169,7 @@ async fn commander_card_rows_lock_in_key_order(pool: PgPool) {
         .collect();
     let flush = app.post(RECORD_USAGE_ROUTE, usage(&signals), Some(&token));
     let other = async {
-        wait_for_lock_waiter(&pool).await;
+        wait_for_lock_waiters(&pool, 1).await;
         for oracle in &oracles[1..] {
             upsert_commander_card(&mut held, atraxa_oracle, *oracle).await;
         }

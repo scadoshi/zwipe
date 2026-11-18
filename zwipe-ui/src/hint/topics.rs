@@ -361,7 +361,9 @@ impl HintTopic {
                 bullet(vec![text(
                     "How many lands the deck should run. Running fewer warns on the deck",
                 )]),
-                bullet(vec![text("Not set uses the format's usual count")]),
+                bullet(vec![text(
+                    "Until you pick a number, it uses the format's usual count, marked (default)",
+                )]),
             ],
             Self::PriceTarget => vec![line(vec![text(
                 "A budget for the mainboard. Going over warns on the deck",

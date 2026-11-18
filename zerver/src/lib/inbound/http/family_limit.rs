@@ -4,7 +4,6 @@
 
 use std::sync::Arc;
 use std::task::{Context, Poll, ready};
-use std::time::Duration;
 
 use axum::body::Body;
 use axum::http::{Request, Response};
@@ -15,23 +14,7 @@ use tower_governor::{GovernorError, GovernorLayer};
 
 use crate::inbound::http::limiter_purge::{LIMITER_PURGE_EVERY, purging};
 use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, client_key};
-
-/// One family's allowance: `burst` requests at once, then one more each `period`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Allowance {
-    /// How long one request takes to come back.
-    pub period: Duration,
-    /// How many requests go at once.
-    pub burst: u32,
-}
-
-impl Allowance {
-    /// `burst` at once, then one each `period`.
-    #[must_use]
-    pub const fn new(period: Duration, burst: u32) -> Self {
-        Self { period, burst }
-    }
-}
+use crate::inbound::http::rate_limits::{Limit, PerFamily};
 
 /// A governor config keyed by client address.
 type AddressConfig = GovernorConfig<CfConnectingIpKeyExtractor, NoOpMiddleware>;
@@ -39,7 +22,7 @@ type AddressConfig = GovernorConfig<CfConnectingIpKeyExtractor, NoOpMiddleware>;
 /// A governor layer keyed by client address.
 type AddressLayer = GovernorLayer<CfConnectingIpKeyExtractor, NoOpMiddleware, Body>;
 
-/// The layer for an address-keyed limit with an `ipv4` and an `ipv6` allowance, each answering a
+/// The layer for an address-keyed limit with an IPv4 and an IPv6 bucket, each answering a
 /// refusal through `on_refuse`. Cloning it shares its counts, as a shared config does.
 #[derive(Clone)]
 pub struct FamilyLimitLayer {
@@ -54,36 +37,32 @@ impl std::fmt::Debug for FamilyLimitLayer {
 }
 
 impl FamilyLimitLayer {
-    /// The limit with `ipv4`'s allowance for an IPv4 client and `ipv6`'s for an IPv6 /64.
+    /// The limit with `limits.ipv4` for an IPv4 client and `limits.ipv6` for an IPv6 /64.
     ///
     /// # Panics
     ///
-    /// When an allowance has a zero period or burst, which governor can't build; every caller
-    /// passes non-zero constants.
+    /// When a limit has a zero period or burst, which governor can't build; the server's limits
+    /// are non-zero constants ([`RateLimits::default`](crate::inbound::http::rate_limits::RateLimits)).
     #[must_use]
-    pub fn new(
-        ipv4: Allowance,
-        ipv6: Allowance,
-        on_refuse: fn(GovernorError) -> Response<Body>,
-    ) -> Self {
+    pub fn new(limits: PerFamily, on_refuse: fn(GovernorError) -> Response<Body>) -> Self {
         Self {
-            ipv4: GovernorLayer::new(config(ipv4)).error_handler(on_refuse),
-            ipv6: GovernorLayer::new(config(ipv6)).error_handler(on_refuse),
+            ipv4: GovernorLayer::new(config(limits.ipv4)).error_handler(on_refuse),
+            ipv6: GovernorLayer::new(config(limits.ipv6)).error_handler(on_refuse),
         }
     }
 }
 
-/// `allowance` as a governor config keyed by client address, built through [`purging`] so the
+/// `limit` as a governor config keyed by client address, built through [`purging`] so the
 /// clients whose budget has refilled are let go.
 #[expect(
     clippy::expect_used,
     reason = "every allowance has a non-zero period and burst, so finish never returns None"
 )]
-fn config(allowance: Allowance) -> Arc<AddressConfig> {
+fn config(limit: Limit) -> Arc<AddressConfig> {
     purging(
         GovernorConfigBuilder::default()
-            .period(allowance.period)
-            .burst_size(allowance.burst)
+            .period(limit.period)
+            .burst_size(limit.burst)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),

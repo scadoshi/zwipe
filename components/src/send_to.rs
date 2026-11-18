@@ -13,7 +13,8 @@ use zwipe_ui::send_to::{
 };
 
 use crate::{
-    Chip, PickerChoice, PickerSearch, PickerSheet, use_overlay_back_action, use_picker_search,
+    CardIconButton, Chip, PickerChoice, PickerSearch, PickerSheet, use_overlay_back_action,
+    use_picker_search,
 };
 
 /// The open Send to: whether the sheet is open, and the card it sends. Provided by the client
@@ -47,22 +48,20 @@ const SEARCH_ID: &str = "send-to-search";
 /// The button's `data-action`.
 pub const SEND_TO_ACTION: &str = "send-to";
 
-/// The Send to button for `card`, in a row of the card's actions. Draws nothing where the
-/// client has not provided [`SendTo`].
+/// The Send to button for `card`, in a row of the card's actions: the kit's paper plane, named
+/// [`TITLE`] for a screen reader and a tooltip. Draws nothing where the client has not provided
+/// [`SendTo`].
 #[component]
 pub fn SendToButton(card: Card) -> Element {
     let Some(send_to) = try_use_context::<SendTo>() else {
         return rsx! {};
     };
     rsx! {
-        button {
-            class: "card-action-btn",
-            "data-action": SEND_TO_ACTION,
-            onclick: move |evt| {
-                evt.stop_propagation();
-                send_to.open_for(card.clone());
-            },
-            {TITLE}
+        CardIconButton {
+            label: TITLE,
+            path: orangui::icons::SEND,
+            action: SEND_TO_ACTION,
+            on_click: move |()| send_to.open_for(card.clone()),
         }
     }
 }

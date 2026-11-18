@@ -395,17 +395,15 @@ pub fn CardRow(
                                     }
                                 }
                             }
+                            if send_to {
+                                crate::SendToButton { card: card.clone() }
+                            }
                             CardEditButtons { qty, on_qty_change, mvp, on_toggle_mvp, flagged, on_toggle_flag }
                             {extra_actions}
                     },
                     action_rows: rsx! {
                         if let Some(handler) = on_move_to {
                             CardBoardMoves { current_board, on_move_to: handler }
-                        }
-                        if send_to {
-                            div { class: "card-action-row",
-                                crate::SendToButton { card: card.clone() }
-                            }
                         }
                     },
                 }

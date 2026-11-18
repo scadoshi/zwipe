@@ -32,6 +32,27 @@ fn add_tally(total: &mut i64, delta: i64) -> Result<(), MetricsError> {
     Ok(())
 }
 
+/// One card's summed Add-stack counts across a flush, for `card_swipe_signal`.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+struct CardTally {
+    shown: i64,
+    added: i64,
+    skipped: i64,
+    maybed: i64,
+    removed: i64,
+}
+
+impl CardTally {
+    /// Adds `signal`'s counts.
+    fn add(&mut self, signal: &CardSignalDelta) -> Result<(), MetricsError> {
+        add_tally(&mut self.shown, i64::from(signal.shown))?;
+        add_tally(&mut self.added, i64::from(signal.added))?;
+        add_tally(&mut self.skipped, i64::from(signal.skipped))?;
+        add_tally(&mut self.maybed, i64::from(signal.maybed))?;
+        add_tally(&mut self.removed, i64::from(signal.removed))
+    }
+}
+
 /// Converts a tally to the `INTEGER` a counter column holds.
 ///
 /// [`HttpUsageBatch::clamped`] keeps every tally far inside `i32`, so this
@@ -355,6 +376,40 @@ impl MetricsRepository for Postgres {
                 i64::from(sig.skipped),
                 i64::from(sig.maybed),
                 i64::from(sig.removed),
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(db)?;
+        }
+
+        // Every-format per-card signal: the same deltas from every deck the user owns, with or
+        // without a commander, summed per card and upserted in card order (the map's), like
+        // the pooled rows above. Pure aggregate, no user_id.
+        let mut per_card: BTreeMap<Uuid, CardTally> = BTreeMap::new();
+        for sig in signals
+            .iter()
+            .filter(|s| s.deck_id.is_some_and(|id| deck_ctx.contains_key(&id)))
+        {
+            per_card.entry(sig.card_oracle_id).or_default().add(sig)?;
+        }
+        for (card, tally) in &per_card {
+            query!(
+                r#"INSERT INTO card_swipe_signal
+                       (card_oracle_id, shown, added, skipped, maybed, removed, updated_at)
+                   VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                   ON CONFLICT (card_oracle_id) DO UPDATE SET
+                       shown      = card_swipe_signal.shown    + EXCLUDED.shown,
+                       added      = card_swipe_signal.added    + EXCLUDED.added,
+                       skipped    = card_swipe_signal.skipped  + EXCLUDED.skipped,
+                       maybed     = card_swipe_signal.maybed   + EXCLUDED.maybed,
+                       removed    = card_swipe_signal.removed  + EXCLUDED.removed,
+                       updated_at = NOW()"#,
+                card,
+                tally.shown,
+                tally.added,
+                tally.skipped,
+                tally.maybed,
+                tally.removed,
             )
             .execute(&mut *tx)
             .await
