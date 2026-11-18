@@ -31,7 +31,6 @@ use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::{self, Boards, Burst, Bursts, Write, Zone};
 use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossing};
 use zwipe_ui::screens;
-use zwipe_ui::send_to::{self, SendUndo};
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 use zwipe_ui::timing::QUANTITY_FLUSH;
@@ -41,6 +40,7 @@ use super::signal_toast;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlays, ShowRowArt};
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
+use crate::inbound::cards::send_to;
 use crate::inbound::cards::stack_view::StackDetails;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
@@ -883,25 +883,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 spawn_write(async move {
                     let took_back = authed
                         .run("undo", |c, s| async move {
-                            let deck = c.fetch_deck(target, &s).await?;
-                            let row = deck
-                                .entries
-                                .iter()
-                                .find(|e| e.deck_card.scryfall_data_id == card_id)
-                                .map(|e| &e.deck_card);
-                            match send_to::send_undo(row, board, copies) {
-                                None => Ok(false),
-                                Some(SendUndo::Remove) => c
-                                    .delete_undone_deck_card(target, card_id, &s)
-                                    .await
-                                    .map(|()| true),
-                                Some(SendUndo::Lower(quantity)) => {
-                                    let request = HttpPatchDeckCard::new(Some(*quantity), None);
-                                    c.update_deck_card(target, card_id, &request, &s)
-                                        .await
-                                        .map(|_| true)
-                                }
-                            }
+                            send_to::take_back(&c, &s, target, card_id, board, copies).await
                         })
                         .await;
                     match took_back {

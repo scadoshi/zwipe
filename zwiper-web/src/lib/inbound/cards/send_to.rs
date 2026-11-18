@@ -7,11 +7,12 @@ use components::{SendTo, SendToSheet, TOAST_NORMAL, TOAST_QUICK, spawn_write};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
-use zwipe_client::ClientError;
+use zwipe_client::{ClientError, ZwipeClient};
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::Board;
-use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
-use zwipe_ui::send_to::{self, Target};
+use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
+use zwipe_ui::send_to::{self, SendUndo, Target};
 use zwipe_ui::telemetry::vocabulary::component;
 
 use crate::inbound::card_stores::CardStores;
@@ -112,6 +113,43 @@ pub fn SendToHost(send_to: SendTo) -> Element {
                     }
                 });
             },
+        }
+    }
+}
+
+/// Takes back the `copies` a Send to put on `board` in the deck `deck_id`: reads the card's row
+/// there, then lowers it by that many or deletes it ([`send_to::send_undo`]). `Ok(false)` when
+/// the row moved boards or left, which it leaves alone.
+///
+/// # Errors
+///
+/// Returns the [`ClientError`] of the read, the lowering or the delete.
+pub(crate) async fn take_back(
+    client: &ZwipeClient,
+    session: &Session,
+    deck_id: Uuid,
+    card_id: Uuid,
+    board: Board,
+    copies: i32,
+) -> Result<bool, ClientError> {
+    let deck = client.fetch_deck(deck_id, session).await?;
+    let row = deck
+        .entries
+        .iter()
+        .find(|e| e.deck_card.scryfall_data_id == card_id)
+        .map(|e| &e.deck_card);
+    match send_to::send_undo(row, board, copies) {
+        None => Ok(false),
+        Some(SendUndo::Remove) => client
+            .delete_undone_deck_card(deck_id, card_id, session)
+            .await
+            .map(|()| true),
+        Some(SendUndo::Lower(quantity)) => {
+            let request = HttpPatchDeckCard::new(Some(*quantity), None);
+            client
+                .update_deck_card(deck_id, card_id, &request, session)
+                .await
+                .map(|_| true)
         }
     }
 }
