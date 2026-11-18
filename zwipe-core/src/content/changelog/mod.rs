@@ -53,6 +53,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "A shared deck's card prices and group totals follow the deck's own currency",
         "Starring or unstarring a card in Stacks no longer flies it in from the top of the page",
         "Starring a card pops its Star button",
+        "Toasts stamp as they land",
+        "A leaving toast no longer draws over a newer one in front of it",
     ],
 }];
 

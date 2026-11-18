@@ -357,3 +357,114 @@
         animation-name: toast-still-5000;
     }
 }
+
+/* ---- Keyed toasts (LiveToasts) ----
+ * A toast pushed under a key that is already showing changes that toast in
+ * place: it doesn't rise again, and its life starts over where it sits. The
+ * part of its text that changed crossfades, the old fading out over the new
+ * fading in, by opacity alone, while the rest holds still. */
+
+.toast-container:not(.timed-fade) .toast-tap[data-live-update] > [role="alertdialog"] {
+    animation: none;
+}
+
+.toast-container.timed-fade .toast-tap[data-live-update] > [data-type="info"] {
+    animation-name: toast-hold-3000;
+}
+
+.toast-container.timed-fade .toast-tap[data-live-update] > :is([data-type="success"], [data-type="warning"], [data-type="error"]) {
+    animation-name: toast-hold-5000;
+}
+
+/* A timed toast's life after an update: in its spot from the start, leaving
+   as the life keyframes do. */
+@keyframes toast-hold-3000 {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    92% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-0.75rem);
+        opacity: 0;
+    }
+}
+
+@keyframes toast-hold-5000 {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    95% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-0.75rem);
+        opacity: 0;
+    }
+}
+
+/* The changed part: the new text in the flow, the old laid over it. */
+.toast-live-change {
+    position: relative;
+    display: inline-block;
+}
+
+.toast-live-old {
+    position: absolute;
+    left: 0;
+    top: 0;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: toast-live-out 180ms ease-out both;
+}
+
+.toast-tap[data-live-update] .toast-live-new {
+    animation: toast-live-in 180ms ease-out both;
+}
+
+@keyframes toast-live-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes toast-live-out {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast-live-old {
+        display: none;
+    }
+
+    .toast-tap[data-live-update] .toast-live-new {
+        animation: none;
+    }
+
+    .toast-container.timed-fade .toast-tap[data-live-update] > [data-type="info"] {
+        animation-name: toast-still-3000;
+    }
+
+    .toast-container.timed-fade .toast-tap[data-live-update] > :is([data-type="success"], [data-type="warning"], [data-type="error"]) {
+        animation-name: toast-still-5000;
+    }
+}
