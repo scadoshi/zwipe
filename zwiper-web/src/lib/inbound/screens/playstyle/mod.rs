@@ -42,8 +42,9 @@ use zwipe_ui::telemetry::vocabulary::Screen;
 
 pub use self::chips::{IdentityPips, ShowIdentityChips};
 use self::profile::{BuilderProfileSections, ProfileSummary};
+use self::rows::StaplesPanel;
 pub use self::rows::SuggestionReasons;
-use self::rows::{StaplesPanel, SuggestionRow};
+pub(crate) use self::rows::SuggestionRow;
 use self::skeleton::PlaystyleSkeleton;
 use crate::inbound::caches::CreateDeckSeed;
 use crate::inbound::card_stores::CardStores;

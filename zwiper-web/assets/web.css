@@ -2177,11 +2177,12 @@ body {
     }
 }
 
-/* ---- Commander maybeboard ---- */
+/* ---- Commanders: the Maybeboard and Suggested columns ---- */
 
-/* The app's column: Quick add, Show and the list. A wide window gives it
-   the page's width, the list and Danger zone as full panels. */
-.web-maybeboard {
+/* The app's column: the list's controls and the list. A wide window gives
+   it the page's width, the list and Danger zone as full panels. */
+.web-maybeboard,
+.web-suggested {
     max-width: 40rem;
     width: 100%;
     padding: 0 var(--space-4);
@@ -2189,6 +2190,7 @@ body {
 }
 
 @media (min-width: 900px) {
+    .web-suggested,
     .web-maybeboard {
         max-width: var(--web-page-max);
         padding: 0 var(--space-5) var(--space-6);
@@ -2209,8 +2211,8 @@ body {
         contain: inline-size;
     }
 
-    .web-maybeboard > .settings-list,
-    .web-maybeboard > .card-group {
+    :is(.web-maybeboard, .web-suggested) > .settings-list,
+    :is(.web-maybeboard, .web-suggested) > .card-group {
         width: 100%;
         max-width: none;
         margin-left: 0;
@@ -2821,6 +2823,7 @@ body {
     .web-playstyle,
     .web-activity,
     .web-maybeboard,
+    .web-suggested,
     .web-deck-cards-controls,
     .web-deck-cards-list {
         max-width: none;

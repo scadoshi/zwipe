@@ -1,22 +1,21 @@
-//! Commander maybeboard: the commanders a user saved for later, with Quick
-//! add by name, the Show row's color pips, the Sort row, and Create deck or
-//! Remove on each.
+//! The Commanders screen's Maybeboard list: the commanders a user saved for
+//! later, with Quick add by name, the Show row's color pips, the Sort row,
+//! and Create deck or Remove on each. The screen's filter, which it shares
+//! with the Suggested list, narrows it too.
 //!
-//! On a wide window the Quick add, Show and list column sits on the left,
-//! `q` focuses Quick add, `/` opens the filter at its name, and ↑ and ↓
-//! move through Quick add's result chips with
-//! Enter adding the highlighted one. Below the breakpoint it is the app's
-//! screen. Swipe sits in the list's header, Filter floats in the dock and
-//! Clear maybeboard is the Danger zone panel under the list.
+//! `q` focuses Quick add, `/` opens the screen's filter at its name, and ↑
+//! and ↓ move through Quick add's result chips with Enter adding the
+//! highlighted one. Swipe sits in the list's header and Clear maybeboard is
+//! the Danger zone panel under the list.
 
 use std::collections::HashSet;
 
 use components::deck_cursor::use_card_list_cursor;
 use components::keys::focus_by_id;
 use components::{
-    ActionDock, AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap,
-    DangerZoneAction, DialogAction, DockFilter, HoverStackHost, TOAST_LONG, TOAST_QUICK,
-    spawn_write, use_hover_stack, use_mounted,
+    AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap, DangerZoneAction,
+    DialogAction, HoverStackHost, TOAST_LONG, TOAST_QUICK, spawn_write, use_hover_stack,
+    use_mounted,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -28,16 +27,12 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::commander::maybeboard::{self, Sort, SortBy, Step};
-use zwipe_ui::filter;
-use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::screens::deck_list;
-use zwipe_ui::telemetry::vocabulary::Screen;
 use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
 
 use crate::domain::commander_maybeboard;
 use crate::inbound::caches::CreateDeckSeed;
-use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlaysHost, CardRow, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
@@ -48,16 +43,14 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::{
     GhostActionRow, GhostButton, GhostChipRow, GhostList, GhostShowRow, GhostText,
 };
-use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
 use crate::inbound::router::Route;
-use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
 use crate::outbound::maybeboard_sort_store::MaybeboardSortStore;
 use crate::outbound::timer;
 
 /// The saved commanders' header.
-const LIST_TITLE: &str = "Commanders";
+const LIST_TITLE: &str = "Maybeboard";
 
 /// The Quick add input's id, for `q`.
 const QUICK_ADD_ID: &str = "commander-maybeboard-search";
@@ -152,14 +145,14 @@ fn screen_key(key: &str) -> Option<ScreenKey> {
     }
 }
 
-/// The commander maybeboard screen.
+/// The Maybeboard list, narrowed by the screen's `filter`, which `f` and `/`
+/// open through `filter_open`.
 #[component]
 #[expect(
     clippy::wildcard_enum_match_arm,
     reason = "keyboard_types::Key is a foreign enum of every key; only the keys handled act"
 )]
-pub fn CommanderMaybeboard() -> Element {
-    telemetry::use_telemetry_screen(Screen::CommanderMaybeboard);
+pub fn MaybeboardPanel(filter: Signal<CardQueryBuilder>, mut filter_open: Signal<bool>) -> Element {
     let navigator = use_navigator();
     let session: Signal<Option<Session>> = use_context();
     let seed: CreateDeckSeed = use_context();
@@ -169,7 +162,6 @@ pub fn CommanderMaybeboard() -> Element {
     let mounted = use_mounted();
     let authed = use_authed();
     let usage = telemetry::use_usage();
-    let hint_open = use_one_time_hint(OneTimeHint::CommanderMaybeboard);
     let mut show_clear_dialog = use_signal(|| false);
 
     let mut show_row_art = use_signal(|| true);
@@ -182,8 +174,6 @@ pub fn CommanderMaybeboard() -> Element {
 
     let mut query = use_signal(String::new);
     let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
-    let mut filter = use_signal(CardQueryBuilder::new);
-    let mut filter_open = use_signal(|| false);
     let mut highlight: Signal<Option<usize>> = use_signal(|| None);
     let mut sort: Signal<Sort> = use_signal(|| MaybeboardSortStore::browser().load());
 
@@ -446,14 +436,8 @@ pub fn CommanderMaybeboard() -> Element {
     let lit = highlight();
 
     rsx! {
-        ScreenFrame {
-            title: "Commander maybeboard",
-            on_hint: move |()| {
-                let mut hint_open = hint_open;
-                hint_open.set(true);
-            },
             div {
-                class: "screen-content",
+                class: "web-commanders-list",
                 onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
                 div { class: "flex-col web-maybeboard",
                     if is_loading() {
@@ -622,7 +606,7 @@ pub fn CommanderMaybeboard() -> Element {
                                 }
                             },
                             if load_failed() {
-                                div { class: "card-row card-row-note", "Couldn't load your commander maybeboard" }
+                                div { class: "card-row card-row-note", "Couldn't load your maybeboard" }
                             } else if !has_entries {
                                 div { class: "card-row card-row-note", "No commanders" }
                             } else if filtered.is_empty() {
@@ -647,17 +631,6 @@ pub fn CommanderMaybeboard() -> Element {
                     }
                 }
             }
-            // Filter, the screen's action, floats at the bottom right as the
-            // dock's funnel, its dot on while a filter is set.
-            ActionDock {
-                DockFilter {
-                    label: "Filter",
-                    dot: filter::shows_dot(&filter.read()),
-                    onclick: move |()| filter_open.set(true),
-                }
-            }
-        }
-        OneTimeHintDialog { hint: OneTimeHint::CommanderMaybeboard, open: hint_open }
         AlertDialog {
             open: show_clear_dialog,
             title: "Clear maybeboard",
@@ -674,13 +647,6 @@ pub fn CommanderMaybeboard() -> Element {
         HoverStackHost { stack: hover_stack }
         CardOverlaysHost { overlays, on_printing_save }
         OtagExamplesHost { examples }
-        CardFilterPanel {
-            open: filter_open,
-            filter,
-            config: SheetConfig::default(),
-            quiet_reset: true,
-            on_apply: move |applied: CardQueryBuilder| filter.set(applied),
-        }
         // Commanders not saved yet: up saves one here, right starts a deck
         // with it.
         SwipeSelect {
@@ -787,7 +753,7 @@ mod tests {
 
     #[test]
     fn a_pick_takes_focus_off_the_box_so_a_phone_s_keyboard_drops() {
-        let source = include_str!("commander_maybeboard.rs");
+        let source = include_str!("maybeboard.rs");
         let pick = source
             .split("let add_from_search = use_callback(move |card: Card| {")
             .nth(1)
