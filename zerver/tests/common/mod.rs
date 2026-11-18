@@ -738,6 +738,27 @@ impl CardFixture {
 /// refresh the `latest_cards` / `card_signal_rollup` materialized views (both
 /// start empty; the views must be refreshed before any card query, even with
 /// zero rows, or Postgres errors that they are unpopulated).
+/// Waits until `count` backends in this test's database are waiting on a lock,
+/// so a test that holds a lock knows the requests it races have queued behind
+/// it before it lets go. Panics after 30 seconds.
+pub(crate) async fn wait_for_lock_waiters(pool: &PgPool, count: i64) {
+    let mut waiting = 0;
+    for _ in 0..1200 {
+        waiting = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pg_stat_activity \
+             WHERE datname = current_database() AND wait_event_type = 'Lock'",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        if waiting >= count {
+            return;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+    }
+    panic!("{waiting} of {count} requests queued behind the held lock");
+}
+
 pub(crate) async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
     if !cards.is_empty() {
         let released = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
