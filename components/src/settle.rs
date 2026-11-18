@@ -115,7 +115,7 @@ const SETTLE_JS: &str = r"
           x -= pr.left; y -= pr.top;
           parent = s + '|' + keyOf(up);
         }
-        found.set(key, { el: box, x, y, ax, ay, rect: r, parent, group: groupKey });
+        found.set(key, { el: box, x, y, ax, ay, rect: r, parent, group: groupKey, scope });
       }
     });
     return found;
@@ -142,21 +142,33 @@ const SETTLE_JS: &str = r"
   };
   let prev = null, until = 0, observer = null, measured = false, queued = null;
   // `timing` is the check's, read once: reading the easing here would restyle the page once per
-  // copy, each copy just added to it.
-  const ghost = (old, timing) => {
+  // copy, each copy just added to it. `base` is where the scope's copies are placed from, also
+  // read once a check. The copy goes back into the scope it left, so it scrolls and stacks with the
+  // page and never rises over the nav or a drawer.
+  const ghost = (old, timing, base) => {
+    if (!base || !old.scope.isConnected) return;
     const copy = old.el.cloneNode(true);
     copy.setAttribute('data-settle-ghost', '');
     for (const keyed of [copy, ...copy.querySelectorAll(KEYED)]) {
       keyed.removeAttribute('data-row'); keyed.removeAttribute('data-fold'); keyed.removeAttribute('data-settle-key');
     }
     Object.assign(copy.style, {
-      position: 'fixed', left: old.rect.left + 'px', top: old.rect.top + 'px',
+      position: 'absolute', left: (old.rect.left - base.left) + 'px', top: (old.rect.top - base.top) + 'px',
       width: old.rect.width + 'px', height: old.rect.height + 'px', margin: '0',
-      pointerEvents: 'none', zIndex: '5', boxSizing: 'border-box', translate: 'none',
+      pointerEvents: 'none', boxSizing: 'border-box', translate: 'none',
     });
-    document.body.appendChild(copy);
+    old.scope.appendChild(copy);
     copy.animate([{ opacity: 1 }, { opacity: 0 }], timing)
       .finished.then(() => copy.remove(), () => copy.remove());
+  };
+  // The origin an absolute copy in `scope` is placed from: its containing block's padding box,
+  // scroll included, in the viewport's coordinates.
+  const baseOf = (scope) => {
+    let holder = scope;
+    while (holder && holder !== document.body && getComputedStyle(holder).position === 'static') holder = holder.parentElement;
+    if (!holder || holder === document.body) return { left: -window.scrollX, top: -window.scrollY };
+    const r = holder.getBoundingClientRect();
+    return { left: r.left + holder.clientLeft - holder.scrollLeft, top: r.top + holder.clientTop - holder.scrollTop };
   };
   // Measures what the change can have moved and moves what jumped.
   const check = (touched) => {
@@ -187,6 +199,7 @@ const SETTLE_JS: &str = r"
       gone.push(key);
     }
     const goneSet = new Set(gone);
+    const bases = new Map();
     // A gone thing whose keyed contents all still show moved apart, as a regroup moves every
     // card to a new group: its contents slide to their places, so it leaves no copy.
     const scattered = (key) => {
@@ -200,7 +213,10 @@ const SETTLE_JS: &str = r"
     };
     for (const key of gone) {
       const old = prev.get(key);
-      if (!(old.parent && goneSet.has(old.parent)) && !scattered(key)) ghost(old, timing);
+      if (!(old.parent && goneSet.has(old.parent)) && !scattered(key)) {
+        if (!bases.has(old.scope)) bases.set(old.scope, old.scope.isConnected ? baseOf(old.scope) : null);
+        ghost(old, timing, bases.get(old.scope));
+      }
       prev.delete(key);
     }
     for (const [key, cur] of now) prev.set(key, cur);
@@ -320,9 +336,27 @@ mod tests {
     /// The body of the script's `ghost`, the copy a gone thing leaves.
     fn ghost_body(script: &str) -> &str {
         script
-            .split_once("const ghost = (old, timing) => {")
+            .split_once("const ghost = (old, timing, base) => {")
             .and_then(|(_, rest)| rest.split_once("\n  };"))
             .map_or("", |(body, _)| body)
+    }
+
+    #[test]
+    fn a_ghost_stays_in_its_scope_s_stacking_never_over_the_nav_or_a_drawer() {
+        let script = script();
+        let body = ghost_body(&script);
+        assert!(
+            body.contains("old.scope.appendChild(copy);"),
+            "the copy goes back into the scope it left, so it scrolls and stacks with the page: {body}"
+        );
+        assert!(
+            body.contains("position: 'absolute', left: (old.rect.left - base.left) + 'px', top: (old.rect.top - base.top) + 'px',"),
+            "at its old spot within its new containing box: {body}"
+        );
+        assert!(
+            !body.contains("position: 'fixed'") && !body.contains("zIndex"),
+            "no fixed layer and no z-index lifting it over the nav or a drawer: {body}"
+        );
     }
 
     #[test]
@@ -349,7 +383,7 @@ mod tests {
     fn a_group_whose_cards_all_still_show_leaves_no_copy() {
         let script = script();
         assert!(
-            script.contains("if (!(old.parent && goneSet.has(old.parent)) && !scattered(key)) ghost(old, timing);"),
+            script.contains("if (!(old.parent && goneSet.has(old.parent)) && !scattered(key)) {"),
             "only a gone thing whose contents left with it is copied"
         );
         assert!(

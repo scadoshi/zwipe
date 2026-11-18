@@ -56,6 +56,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Toasts stamp as they land",
         "A leaving toast no longer draws over a newer one in front of it",
         "Remove says Nothing on this board when the picked board is empty",
+        "A card leaving the deck page's head fades out under the nav, not over it",
     ],
 }];
 
