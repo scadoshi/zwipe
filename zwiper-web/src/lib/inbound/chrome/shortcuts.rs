@@ -426,7 +426,7 @@ mod tests {
                 "To the top",
                 "To the bottom",
                 "Printings",
-                "Send to",
+                zwipe_ui::shortcuts::SEND_TO_ROW.1,
                 "Card details",
                 FLIP_ROW,
                 "Filter",
@@ -540,7 +540,7 @@ mod tests {
                 "To the bottom",
                 "Open the card",
                 "Printings",
-                "Send to",
+                zwipe_ui::shortcuts::SEND_TO_ROW.1,
                 zwipe_ui::shortcuts::card_read_rows()[1].1,
                 FLIP_ROW,
             ]
