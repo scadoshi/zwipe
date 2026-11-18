@@ -1,0 +1,8 @@
+[
+  { "eval": "document.getElementById('identity').focus()" },
+  { "type": "localcheck" },
+  { "eval": "document.getElementById('password').focus()" },
+  { "type": "Verify-local-pass-1!" },
+  { "key": "Enter", "after": 3000 },
+  { "eval": "location.pathname", "label": "signed in at" }
+]

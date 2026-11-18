@@ -1,0 +1,9 @@
+{
+  "mask": [
+    "/access_token",
+    "/refresh_token",
+    "/user/session_version",
+    "/timestamp"
+  ],
+  "sort": []
+}
