@@ -2118,13 +2118,17 @@ html.keyboard-up .web-dock-pair {
 
 /* A printing's own ghost in the card's shape, under its image from the
    start and for good, so the card is never empty, even while a phone has
-   yet to paint an image it has decoded. */
+   yet to paint an image it has decoded. It is a layer of its own from the
+   start, so its pulse stopping as its image shows changes no layers: a
+   change regroups the page's layers, and a phone redraws the sheet, showing
+   the page behind it through for a few frames. */
 .cover-flow-ghost {
     position: absolute;
     inset: 0;
     border-radius: 4.75% / 3.5%;
     background-color: var(--border-muted);
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    will-change: opacity;
 }
 
 /* The stage's frame, which holds the primer under the stage, under the
