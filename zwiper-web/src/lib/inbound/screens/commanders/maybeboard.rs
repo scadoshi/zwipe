@@ -383,6 +383,8 @@ pub(super) fn MaybeboardPanel(
     rsx! {
             div {
                 class: "web-commanders-list",
+                // One of the screen's two cursor lists, which h and l cross between.
+                "data-cursor-list": "",
                 // A touch or the keyboard cursor in the list makes it the one the filter keys act on.
                 onpointerdown: move |_| on_active.call(()),
                 onfocusin: move |_| on_active.call(()),
