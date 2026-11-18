@@ -160,7 +160,9 @@ mod tests {
         assert_eq!(error.unwrap_err(), "db down");
     }
 
-    #[tokio::test]
+    // Paused time ends the rebuild's sleep only once the runtime has nothing else to run, so
+    // every other caller is already waiting on the slot when it finishes.
+    #[tokio::test(start_paused = true)]
     async fn single_flight_on_concurrent_expiry() {
         let slot = std::sync::Arc::new(TtlSlot::new());
         let calls = std::sync::Arc::new(AtomicU32::new(0));
@@ -172,7 +174,7 @@ mod tests {
                     let value: Result<i32, String> = slot
                         .get_or_refresh(|| async {
                             calls.fetch_add(1, Ordering::SeqCst);
-                            // Hold the rebuild briefly so the herd piles up.
+                            // Hold the rebuild until the herd has piled up.
                             tokio::time::sleep(Duration::from_millis(20)).await;
                             Ok((42, far()))
                         })
