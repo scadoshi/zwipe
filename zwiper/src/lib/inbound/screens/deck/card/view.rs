@@ -519,20 +519,30 @@ impl Driver {
                 op,
             } => {
                 spawn(async move {
-                    let deleted = authed
-                        .try_run(op.name(), |c, s| async move {
-                            // An undone add goes back without a removal
-                            // suppression, so the card can serve in Add again.
-                            if op == Op::Undo {
+                    // An undone add goes back without a removal suppression, so the card can
+                    // serve in Add again. A removal's lost earlier try reads as removed.
+                    let deleted = if op == Op::Undo {
+                        authed
+                            .try_run(op.name(), |c, s| async move {
                                 c.delete_undone_deck_card(deck_id, card_id, &s).await
-                            } else {
-                                c.delete_deck_card(deck_id, card_id, &s).await
-                            }
-                        })
-                        .await;
-                    self.dispatch(match deleted {
-                        Ok(()) => Action::Deleted { ticket },
-                        Err(_) => Action::Failed { ticket },
+                            })
+                            .await
+                            .is_ok()
+                    } else {
+                        authed
+                            .run_write(
+                                op.name(),
+                                WriteKey::remove_card(deck_id, card_id),
+                                |c, s| async move { c.delete_deck_card(deck_id, card_id, &s).await },
+                            )
+                            .await
+                            .or_landed(|| ())
+                            .is_some()
+                    };
+                    self.dispatch(if deleted {
+                        Action::Deleted { ticket }
+                    } else {
+                        Action::Failed { ticket }
                     });
                 });
             }

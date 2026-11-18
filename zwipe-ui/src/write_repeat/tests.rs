@@ -7,7 +7,11 @@ fn add() -> WriteKey {
 }
 
 fn delete() -> WriteKey {
-    WriteKey::delete(Uuid::from_u128(1), Uuid::from_u128(3))
+    WriteKey::delete_deck(Uuid::from_u128(1))
+}
+
+fn remove() -> WriteKey {
+    WriteKey::remove_card(Uuid::from_u128(1), Uuid::from_u128(3))
 }
 
 #[test]
@@ -45,6 +49,21 @@ fn a_404_after_a_lost_delete_is_that_delete_landing() {
     let _ = writes.settle(delete(), Answer::Network);
     assert_eq!(
         writes.settle(delete(), Answer::Status(404)),
+        Verdict::LandedEarlier
+    );
+}
+
+/// The server answers a second removal of a deck card 422 "deck card not found".
+#[test]
+fn a_422_after_a_lost_card_removal_is_that_removal_landing() {
+    let mut writes = Unconfirmed::default();
+    let _ = writes.settle(remove(), Answer::Network);
+    assert_eq!(
+        writes.settle(remove(), Answer::Status(404)),
+        Verdict::Failed
+    );
+    assert_eq!(
+        writes.settle(remove(), Answer::Status(422)),
         Verdict::LandedEarlier
     );
 }
@@ -88,11 +107,11 @@ fn a_lost_write_is_keyed_by_what_it_acts_on() {
     );
     assert_eq!(
         writes.settle(
-            WriteKey::delete(Uuid::from_u128(1), Uuid::from_u128(2)),
-            Answer::Status(404)
+            WriteKey::remove_card(Uuid::from_u128(1), Uuid::from_u128(2)),
+            Answer::Status(422)
         ),
         Verdict::Failed,
-        "a lost add isn't a lost delete of the same card"
+        "a lost add isn't a lost removal of the same card"
     );
 }
 
@@ -134,4 +153,11 @@ fn a_landed_add_s_deck_card_is_the_one_its_request_made() {
         Board::Deck,
         "no board is the main deck"
     );
+}
+
+#[test]
+fn a_landed_write_reads_as_done_for_a_caller_that_needs_a_value() {
+    assert_eq!(Written::Done(3).or_landed(|| 7), Some(3));
+    assert_eq!(Written::LandedEarlier.or_landed(|| 7), Some(7));
+    assert_eq!(Written::<i32>::Failed.or_landed(|| 7), None);
 }

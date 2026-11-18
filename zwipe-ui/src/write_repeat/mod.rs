@@ -2,7 +2,8 @@
 //! network error, and the user's next try then answers as if it failed: an add says the card is
 //! already in the deck, a delete says there is nothing to delete. [`Unconfirmed`] remembers the
 //! writes that ended in a network error, so the client can read that repeat answer as the earlier
-//! try landing.
+//! try landing. The answers are the server's: 409 for an add, 422 "deck card not found" for a
+//! card's removal, 404 for a deck's deletion.
 //!
 //! Each client keeps one [`Unconfirmed`] for the session, above its screens, since a lost add can
 //! come back as a Quick add or a Send to on another screen. The client turns its error into an
@@ -20,10 +21,12 @@ use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 /// What a write does, which decides what its repeat answers once the first try landed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Kind {
-    /// Creates something unique, so a repeat answers 409 Conflict (a card already in the deck).
-    Create,
-    /// Deletes something, so a repeat answers 404 Not Found.
-    Delete,
+    /// Adds a card to a deck, so a repeat answers 409 Conflict (already in the deck).
+    AddCard,
+    /// Removes a card from a deck, so a repeat answers 422 "deck card not found".
+    RemoveCard,
+    /// Deletes a deck, so a repeat answers 404 Not Found.
+    DeleteDeck,
 }
 
 impl Kind {
@@ -31,8 +34,9 @@ impl Kind {
     #[must_use]
     pub const fn repeat_status(self) -> u16 {
         match self {
-            Self::Create => 409,
-            Self::Delete => 404,
+            Self::AddCard => 409,
+            Self::RemoveCard => 422,
+            Self::DeleteDeck => 404,
         }
     }
 }
@@ -51,20 +55,29 @@ impl WriteKey {
     #[must_use]
     pub const fn add(deck: Uuid, printing: Uuid) -> Self {
         Self {
-            kind: Kind::Create,
+            kind: Kind::AddCard,
             scope: deck,
             item: printing,
         }
     }
 
-    /// Deleting `item` from `scope`: a card from a deck, or a deck from the user's (`item` and
-    /// `scope` both the deck).
+    /// Removing the card `printing` from `deck`.
     #[must_use]
-    pub const fn delete(scope: Uuid, item: Uuid) -> Self {
+    pub const fn remove_card(deck: Uuid, printing: Uuid) -> Self {
         Self {
-            kind: Kind::Delete,
-            scope,
-            item,
+            kind: Kind::RemoveCard,
+            scope: deck,
+            item: printing,
+        }
+    }
+
+    /// Deleting `deck`.
+    #[must_use]
+    pub const fn delete_deck(deck: Uuid) -> Self {
+        Self {
+            kind: Kind::DeleteDeck,
+            scope: deck,
+            item: deck,
         }
     }
 }
@@ -103,6 +116,18 @@ pub enum Written<T> {
     LandedEarlier,
     /// It failed; the error toast is up.
     Failed,
+}
+
+impl<T> Written<T> {
+    /// The answer, `landed()` for a write an earlier try already made, `None` for a failure: for
+    /// a caller that goes on the same way either way it went through.
+    pub fn or_landed(self, landed: impl FnOnce() -> T) -> Option<T> {
+        match self {
+            Self::Done(value) => Some(value),
+            Self::LandedEarlier => Some(landed()),
+            Self::Failed => None,
+        }
+    }
 }
 
 /// The writes of this session whose last try ended in a network error.

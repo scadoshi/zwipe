@@ -77,6 +77,7 @@ fn screen_key(key: &str) -> Option<ScreenKey> {
 
 use zwipe_ui::deck_cards::keys::RowKind;
 pub(crate) use zwipe_ui::deck_cards::listing::{Listed, RowMeta as Meta, board_of, list_rows};
+use zwipe_ui::write_repeat::WriteKey;
 
 /// The engine's state and actions. `Copy`: every field is a signal, a memo
 /// or a callback, which compare by identity.
@@ -377,12 +378,16 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             match burst.write() {
                 Write::Nothing => landed(),
                 Write::Delete => {
+                    // A lost earlier try that removed it reads as removed.
                     let reply = authed
-                        .try_run("change_quantity", |c, s| async move {
-                            c.delete_deck_card(deck_id, card_id, &s).await
-                        })
-                        .await;
-                    if reply.is_ok() {
+                        .run_write(
+                            "change_quantity",
+                            WriteKey::remove_card(deck_id, card_id),
+                            |c, s| async move { c.delete_deck_card(deck_id, card_id, &s).await },
+                        )
+                        .await
+                        .or_landed(|| ());
+                    if reply.is_some() {
                         landed();
                         return;
                     }

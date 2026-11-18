@@ -29,6 +29,7 @@ use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_view::{
     self, Action, Destination, Dialog, DockItem, Effect, MoreItem, Section, State,
 };
+use zwipe_ui::write_repeat::WriteKey;
 
 use super::card::components::undo_log::{UndoAction, UndoStore};
 use super::components::clone_deck_dialog::CloneDeckDialog;
@@ -412,12 +413,16 @@ impl Driver {
 
     fn delete(self, ticket: Ticket, deck_id: Uuid) {
         spawn(async move {
+            // A lost earlier try that deleted it reads as deleted.
             let reply = self
                 .authed
-                .run("delete_deck", |c, s| async move {
-                    c.delete_deck(deck_id, &s).await
-                })
-                .await;
+                .run_write(
+                    "delete_deck",
+                    WriteKey::delete_deck(deck_id),
+                    |c, s| async move { c.delete_deck(deck_id, &s).await },
+                )
+                .await
+                .or_landed(|| ());
             self.settle(ticket, reply, |()| Action::Deleted { ticket });
         });
     }

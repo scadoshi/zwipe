@@ -12,6 +12,7 @@ use zwipe_core::domain::deck::deck_name;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
 use zwipe_ui::screens::deck_view;
 use zwipe_ui::telemetry::vocabulary::component;
+use zwipe_ui::write_repeat::WriteKey;
 
 use crate::domain::deck::share_link;
 use crate::inbound::chrome::authed::use_authed;
@@ -145,11 +146,15 @@ pub fn DeckDialogsHost(
     // Decks replaces the gone deck in history, so Back never reopens it.
     let delete = use_callback(move |()| {
         spawn(async move {
+            // A lost earlier try that deleted it reads as deleted.
             if authed
-                .run("delete_deck", |c, s| async move {
-                    c.delete_deck(deck_id, &s).await
-                })
+                .run_write(
+                    "delete_deck",
+                    WriteKey::delete_deck(deck_id),
+                    |c, s| async move { c.delete_deck(deck_id, &s).await },
+                )
                 .await
+                .or_landed(|| ())
                 .is_some()
             {
                 navigator.replace(Route::DeckList {});
