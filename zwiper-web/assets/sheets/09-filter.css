@@ -132,19 +132,6 @@
     box-shadow: var(--shadow-sm);
 }
 
-.chip-unselected {
-    display: inline-block;
-    padding: var(--space-1) var(--space-2);
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-muted);
-    border-radius: 0.6rem;
-    font-size: 0.75rem;
-    color: var(--ink-text-muted, var(--text-muted));
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: var(--shadow-sm);
-}
-
 /* `position: relative` after `all: unset` keeps the touch target's tap box
    on the ×. */
 /* A picked chip's ×. It stacks above the chip's own touch box (base.css),
