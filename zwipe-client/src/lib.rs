@@ -103,6 +103,8 @@ mod tests {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::TcpListener;
 
+    use zwipe_core::http::endpoint::Endpoint;
+
     use super::deck::search_deck_cards::SEARCH_TIMEOUT;
     use super::*;
 
@@ -258,6 +260,144 @@ mod tests {
             "a write fails rather than risk landing twice: {share:?}"
         );
         assert_eq!(server.await.unwrap(), 1, "and opens no second connection");
+    }
+
+    /// A server whose first request is read and then dropped without an answer, as when the
+    /// browser aborts a fetch after it went out or a phone network loses the reply; every later
+    /// request answers `204 No Content`. Answers with how many requests reached it.
+    #[expect(
+        clippy::unwrap_used,
+        reason = "a test helper: a socket error fails the test"
+    )]
+    async fn loses_the_first_reply(listener: TcpListener) -> usize {
+        const NO_CONTENT: &[u8] = b"HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n";
+        let mut buf = vec![0_u8; 8192];
+        let (mut first, _) = listener.accept().await.unwrap();
+        let _ = first.read(&mut buf).await.unwrap();
+        drop(first);
+        let mut seen: usize = 1;
+        while let Ok(Ok((mut next, _))) =
+            tokio::time::timeout(Duration::from_millis(500), listener.accept()).await
+        {
+            if next.read(&mut buf).await.unwrap_or(0) > 0 {
+                seen = seen.saturating_add(1);
+                next.write_all(NO_CONTENT).await.unwrap();
+            }
+        }
+        seen
+    }
+
+    /// Sends `endpoint` to a server that loses its first reply, and answers with what the call
+    /// returned and how many requests the server saw.
+    async fn sent_through_a_lost_reply<E: Endpoint>(endpoint: E) -> (Result<(), String>, usize) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(loses_the_first_reply(listener));
+        let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
+        let result = client
+            .call(endpoint, Some(&session()))
+            .await
+            .map(|_| ())
+            .map_err(|e| format!("{e:?}"));
+        (result, server.await.unwrap())
+    }
+
+    #[tokio::test]
+    async fn a_write_that_sets_a_value_goes_once_more_when_its_reply_is_lost() {
+        use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
+        use zwipe_core::http::endpoints::deck::UpdateDeckCard;
+
+        let patch = UpdateDeckCard(
+            uuid::Uuid::nil(),
+            uuid::Uuid::nil(),
+            HttpPatchDeckCard::new(Some(3), None),
+        );
+        let (result, seen) = sent_through_a_lost_reply(patch).await;
+        assert!(result.is_ok(), "the repeat's answer: {result:?}");
+        assert_eq!(seen, 2, "sent once more, and only once");
+    }
+
+    #[tokio::test]
+    async fn a_create_with_its_own_id_goes_once_more_and_one_without_goes_once() {
+        use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
+        use zwipe_core::http::endpoints::deck::CreateDeck;
+
+        let with_id = CreateDeck(
+            HttpCreateDeckProfile::builder("Krenko")
+                .id(Some(uuid::Uuid::from_u128(7)))
+                .build(),
+        );
+        let (_, seen) = sent_through_a_lost_reply(with_id).await;
+        assert_eq!(seen, 2, "a repeat answers the deck the first one made");
+
+        let without = CreateDeck(HttpCreateDeckProfile::builder("Krenko").build());
+        let (result, seen) = sent_through_a_lost_reply(without).await;
+        assert!(result.is_err(), "{result:?}");
+        assert_eq!(seen, 1, "a second send would make a second deck");
+    }
+
+    #[tokio::test]
+    async fn a_write_that_adds_goes_once_when_its_reply_is_lost() {
+        use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+        use zwipe_core::http::endpoints::deck::CreateDeckCard;
+
+        let add = CreateDeckCard(
+            uuid::Uuid::nil(),
+            HttpCreateDeckCard {
+                scryfall_data_id: uuid::Uuid::nil().to_string(),
+                oracle_id: uuid::Uuid::nil().to_string(),
+                quantity: 1,
+                board: None,
+                mvp_at: None,
+            },
+        );
+        let (result, seen) = sent_through_a_lost_reply(add).await;
+        assert!(
+            result.as_ref().is_err_and(|e| e.starts_with("Network")),
+            "{result:?}"
+        );
+        assert_eq!(seen, 1);
+    }
+
+    #[tokio::test]
+    async fn a_repeatable_write_that_times_out_is_not_sent_again() {
+        use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
+        use zwipe_core::http::endpoints::deck::UpdateDeckCard;
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        // Reads every request and never answers.
+        let server = tokio::spawn(async move {
+            let mut seen: usize = 0;
+            let mut held = Vec::new();
+            while let Ok(Ok((mut socket, _))) =
+                tokio::time::timeout(Duration::from_secs(2), listener.accept()).await
+            {
+                let mut buf = vec![0_u8; 8192];
+                if socket.read(&mut buf).await.unwrap_or(0) > 0 {
+                    seen = seen.saturating_add(1);
+                }
+                held.push(socket);
+            }
+            seen
+        });
+        let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
+        let patch = UpdateDeckCard(
+            uuid::Uuid::nil(),
+            uuid::Uuid::nil(),
+            HttpPatchDeckCard::new(Some(3), None),
+        );
+
+        let result = client
+            .call_within(patch, Some(&session()), Duration::from_millis(200))
+            .await;
+
+        assert!(matches!(result, Err(ClientError::Network(_))), "{result:?}");
+        assert_eq!(
+            server.await.unwrap(),
+            1,
+            "a call past its own time limit isn't doubled"
+        );
     }
 
     #[tokio::test(start_paused = true)]
