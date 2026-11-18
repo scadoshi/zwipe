@@ -17,25 +17,20 @@ template_url() {
   fi
 }
 
-# Refuses any database URL that isn't this machine, as zcripts/seed/activity.sh does.
+# Refuses any database URL that isn't this machine, through the seed scripts' shared guard
+# (zcripts/seed/guard.sh): its host, every host= and PGHOST must be local, and hostaddr=,
+# service=, PGHOSTADDR, PGSERVICE, percent-encoded keywords and control characters are refused.
 require_local() {
-  local url="$1" rest host
-  rest="${url#*://}"
-  rest="${rest#*@}"
-  case "$rest" in
-    \[*) host="${rest#[}"; host="${host%%]*}" ;;
-    *) host="${rest%%[:/?]*}" ;;
-  esac
-  case "$host" in
-    ""|localhost|127.0.0.1|::1) ;;
-    *) echo "refusing: $host is not this machine; verify only runs against a local database" >&2; exit 1 ;;
-  esac
-  if [[ "$url" =~ [?\&]host=([^\&]*) ]]; then
-    case "${BASH_REMATCH[1]}" in
-      localhost|127.0.0.1|::1|/*) ;;
-      *) echo "refusing: host=${BASH_REMATCH[1]} is not this machine" >&2; exit 1 ;;
-    esac
-  fi
+  [ -f "$ROOT/zcripts/seed/guard.sh" ] || {
+    echo "zcripts/seed/guard.sh is missing; this skill needs thinker's seed (feat/seed) merged" >&2
+    exit 1
+  }
+  (
+    export DATABASE_URL="$1"
+    # shellcheck source=../../../../zcripts/seed/guard.sh
+    . "$ROOT/zcripts/seed/guard.sh"
+    seed_guard
+  ) || exit 1
 }
 
 # The database name in a URL, and the same URL pointed at another database.

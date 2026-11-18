@@ -18,16 +18,14 @@ Run the cheap checks first: fmt, clippy and the crate tests. This skill comes af
 | Starts Postgres if it isn't answering | ~5s |
 | Copies the dev database to `zwipe_verify` (cards included, so no card sync) | 10–60s |
 | Runs the migrations on the copy | ~2s |
-| Runs `zcripts/seed/seed.sh small` when it exists (thinker's seed); otherwise says so and keeps the copy's data | seconds |
+| Seeds it: `zcripts/seed/seed.sh small --reset` (the test accounts and 40 users) | ~1s |
 | Builds and starts zerver on :3100 | 3–5 min cold, ~30s warm |
 | Registers `localcheck` / `Verify-local-pass-1!`, verified | ~1s |
 | Builds and serves the web app on :8100 | 3–5 min cold, ~1.5 min warm |
 
 It ends by printing the URLs, the login and where the logs are (`/tmp/zwipe-verify`).
 
-It needs Postgres, `sqlx` (the CLI), `dx`, `node` and Chrome, which the dev setup in `zcripts/dev-env/` installs.
-
-It refuses a database that isn't on this machine, as `zcripts/seed/activity.sh` does. The template is `VERIFY_TEMPLATE_URL`, else `zerver/.env`'s `DATABASE_URL`, else `postgres:///zerver`.
+It needs Postgres, `sqlx` (the CLI), `dx`, `node` and Chrome, which the dev setup in `zcripts/dev-env/` installs. It builds on thinker's seed (`feat/seed`): `zcripts/seed/seed.sh`, and the guard in `zcripts/seed/guard.sh`, which refuses any database that isn't on this machine. Until `feat/seed` merges, this skill lives on a branch stacked on it. The template is `VERIFY_TEMPLATE_URL`, else `zerver/.env`'s `DATABASE_URL`, else `postgres:///zerver`.
 
 Postgres can't copy a database while anything is connected to it. If your own zerver or a psql session is open on the dev database, up.sh names them and stops. Close them and run it again.
 
@@ -47,9 +45,9 @@ node $S/drive.mjs http://localhost:8100/login 1440 steps.json
 H=844 node $S/drive.mjs http://localhost:8100/login 390 steps.json
 ```
 
-The `localcheck` account starts empty. Until the seed lands, make what your check needs through the app or the API, or sign in as your own account, which the copy carries over from the dev database.
+Two kinds of account are ready. The seeded ones share the password `Seedling.Local.42`: `seed_tester` has 12 decks, `seed_newbie` none, and `seed_unverified` hasn't verified its email. `localcheck` is the empty one up.sh makes. Your own account comes over from the dev database too.
 
-Start `steps.json` with the login steps from `scripts/login.json`, then add yours. The step types are listed at the top of `drive.mjs`. Read state from the page (`eval` with a `label`) or from the database (`psql` on `zwipe_verify`), not only from screenshots. Run the same file on the old build and the new build for the before and after.
+Start `steps.json` with the login steps from `scripts/login.json` (they sign in as `localcheck`; change the name and password for another account), then add yours. Under 900 wide the driver emulates a phone: touch, no hover and a coarse pointer, so 390 is phone web, not a narrow desktop window. The step types are listed at the top of `drive.mjs`. Read state from the page (`eval` with a `label`) or from the database (`psql` on `zwipe_verify`), not only from screenshots. Run the same file on the old build and the new build for the before and after.
 
 For app work, build a debug APK with `BACKEND_URL=http://10.0.2.2:3100` and run it on your own emulator, never Droid's `emulator-5554`. The emulator reaches the Mac at 10.0.2.2. A debug build needs `android:usesCleartextTraffic="true"` in its manifest to talk to plain http; patch the generated manifest, never the checked-in one. A build takes 2–5 min.
 

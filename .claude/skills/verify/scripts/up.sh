@@ -47,12 +47,8 @@ PGOPTIONS="-c client_min_messages=warning" psql "$ADMIN" -v ON_ERROR_STOP=1 -qc 
 step "migrations"
 (cd "$ROOT" && DATABASE_URL="$VERIFY_URL" sqlx migrate run --source zerver/migrations >/dev/null)
 
-if [ -x "$ROOT/zcripts/seed/seed.sh" ]; then
-  step "seed (zcripts/seed/seed.sh small)"
-  DATABASE_URL="$VERIFY_URL" "$ROOT/zcripts/seed/seed.sh" small
-else
-  step "no zcripts/seed/seed.sh yet (thinker's feat/seed): the copy keeps the template's data"
-fi
+step "seed (zcripts/seed/seed.sh small --reset)"
+DATABASE_URL="$VERIFY_URL" "$ROOT/zcripts/seed/seed.sh" small --reset
 
 step "build zerver"
 (cd "$ROOT" && SQLX_OFFLINE=true cargo build -q --bin zerver)
@@ -71,6 +67,8 @@ for _ in $(seq 1 60); do curl -sf "http://127.0.0.1:$ZERVER_PORT/health" >/dev/n
 curl -sf "http://127.0.0.1:$ZERVER_PORT/health" >/dev/null || { echo "zerver didn't come up; see $RUN_DIR/zerver.out" >&2; exit 1; }
 
 step "check account"
+# A localcheck the dev database already holds has a password nobody here knows: it goes first.
+psql "$VERIFY_URL" -qc "delete from users where username = 'localcheck'"
 curl -s -o /dev/null -X POST "http://127.0.0.1:$ZERVER_PORT/api/auth/register" -H 'content-type: application/json' \
   -d '{"username":"localcheck","email":"localcheck@localhost.test","password":"Verify-local-pass-1!"}'
 verified="$(psql "$VERIFY_URL" -Atqc "update users set email_verified_at = coalesce(email_verified_at, now()) where username = 'localcheck' returning 1")"

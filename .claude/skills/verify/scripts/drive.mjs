@@ -3,11 +3,13 @@
 //
 //   node drive.mjs <url> <width> <steps.json>      (H=<height>, default 900)
 //
+// Under 900 wide it emulates a phone (touch, no hover, coarse pointer); at 900 and over, a desktop.
+//
 // Steps run in order, one object each:
 //   {"eval": "js", "label": "name"}   runs js in the page (awaits a promise); prints it if labeled
 //   {"click": "css selector"}         a real mouse click at the element's center
 //   {"type": "text"}                  types into the focused field
-//   {"key": "u"} / {"key": "Enter"}   a key press; add "shift": true for Shift
+//   {"key": "u"} / {"key": "Enter"}   a key press; add "shift": true for Shift (sends "U")
 //   {"nav": "url"}                    loads a url, then waits 6s (or "after": ms)
 //   {"wait": ms}                      pauses
 //   {"shot": "path.png"}              saves a screenshot
@@ -73,11 +75,20 @@ const evaluate = async (expression) => {
   return r.result?.result?.value ?? r.result?.exceptionDetails?.exception?.description ?? r.error;
 };
 
+// Under 900 wide it's a phone: touch, no hover and a coarse pointer, so the web app's
+// mouse-only rules (`hover: hover`) stop applying, as on a real phone's browser.
+const phone = Number(width) < 900;
 await send("Emulation.setDeviceMetricsOverride", {
   width: Number(width),
   height: Number(process.env.H ?? 900),
-  deviceScaleFactor: 1,
-  mobile: false,
+  deviceScaleFactor: phone ? 3 : 1,
+  mobile: phone,
+});
+await send("Emulation.setTouchEmulationEnabled", { enabled: phone, maxTouchPoints: phone ? 5 : 0 });
+await send("Emulation.setEmulatedMedia", {
+  features: phone
+    ? [{ name: "hover", value: "none" }, { name: "pointer", value: "coarse" }]
+    : [{ name: "hover", value: "hover" }, { name: "pointer", value: "fine" }],
 });
 await send("Page.navigate", { url });
 await sleep(7000);
@@ -98,7 +109,8 @@ for (const s of steps) {
   } else if (s.type !== undefined) {
     await send("Input.insertText", { text: s.type });
   } else if (s.key) {
-    const k = s.key;
+    // With Shift a letter is its capital, as the app reads it from the event's key.
+    const k = s.shift && s.key.length === 1 ? s.key.toUpperCase() : s.key;
     const vk = named[k] ?? k.toUpperCase().charCodeAt(0);
     const base = { key: k, code: k.length > 1 ? k : `Key${k.toUpperCase()}`, windowsVirtualKeyCode: vk, modifiers: s.shift ? 8 : 0 };
     const text = k === "Enter" ? "\r" : k.length === 1 ? k : undefined;
