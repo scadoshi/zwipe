@@ -46,21 +46,25 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 9);
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 21, 11),
+    version: Version::new(1, 22, 0),
     date: None,
     entries: &[
-        "On Android, the app no longer signs you out now and then after a restart",
-        "Warnings lists a deck's unpriced cards, each opening its details to pick a priced printing, in place of the unpriced count on Budget",
-        "Toasts rise from below the screen's bottom edge and drop back below it, sit as far from the side edge as from the bottom, and line up behind the newest when stacked",
-        "A card's details and an open deck row have Send to, which adds the card to another of your decks on its main, maybe or side board",
-        "On the web, / never opens the browser's find bar outside a text field",
-        "On the web, q opens Quick add and / opens Filter at its name field",
+        "Send to, a new action that adds a card to another of your decks",
+        "Flag, a private mark on your deck's cards that Remove deals first",
+        "Themes has a search by name or color",
+        "On the web, t opens Themes ready to type",
+        "On the web, q opens Quick add",
+        "On the web, / opens Filter at its name field",
         "On the web, Enter in a filter's text field applies the filter",
+        "Warnings lists a deck's unpriced cards in place of the count on Budget",
+        "Toasts rise from the bottom edge and drop back down",
+        "Toasts sit as far from the side as from the bottom",
+        "Stacked toasts line up behind the newest",
+        "On Android, the app no longer signs you out now and then after a restart",
+        "On the web, / and ' never open the browser's find bar outside a text field",
         "On the web at phone width, Themes from the menu opens fully on screen",
-        "Themes has a search by name or color, and on the web t opens it ready to type",
         "Activity's heatmap opens with no month name cut at its left edge",
         "On the web, Shift+H on the Commander maybeboard lists its filter and Quick add keys",
-        "Flag a card in your deck from its details or its open row, or with Shift+F on the web, to see it marked, narrow to it with Flagged and have Remove deal it first",
     ],
 }];
 
