@@ -9,8 +9,8 @@
 
 use components::hint::ContentHintDialog;
 use components::{
-    Button, ButtonVariant, Chip, DialogAction, DockAction, PickerChoice, PickerSearch,
-    enter_target, icons, use_overlay_back_action, use_picker_search,
+    Button, ButtonVariant, Chip, DialogAction, DockAction, PickerChoice, PickerSearch, icons,
+    use_overlay_back_action, use_picker_search,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -85,7 +85,11 @@ pub(crate) fn OracleTagSelect(
     } else {
         pickers::oracle_tag_results(tags, &sel, &q)
     };
-    let target = enter_target(&q, &results).cloned();
+    let target = if results.is_empty() {
+        None
+    } else {
+        pickers::oracle_tag_on_enter(tags, &sel, &q)
+    };
     let target_slug = target.as_ref().map(|t| t.slug.clone());
     let picked = sel.clone();
     // Enter adds the top match and keeps the picker open for the next.

@@ -9,8 +9,7 @@
 
 use components::hint::ContentHintDialog;
 use components::{
-    Chip, DockAction, PickerChoice, PickerSearch, enter_target, icons, use_overlay_back_action,
-    use_picker_search,
+    Chip, DockAction, PickerChoice, PickerSearch, icons, use_overlay_back_action, use_picker_search,
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
@@ -65,7 +64,7 @@ pub(crate) fn TagSelect(
     } else {
         Vec::new()
     };
-    let target = enter_target(&query(), &results).cloned();
+    let target = pickers::deck_tag_on_enter(&catalog, &query()).cloned();
     let target_slug = target.as_ref().map(|t| t.slug.clone());
     let picked = selected.clone();
     // Enter adds the top match and keeps the picker open for the next.

@@ -8,8 +8,7 @@
 
 use components::hint::ContentHintDialog;
 use components::{
-    Chip, DockAction, PickerChoice, PickerSearch, enter_target, icons, use_overlay_back_action,
-    use_picker_search,
+    Chip, DockAction, PickerChoice, PickerSearch, icons, use_overlay_back_action, use_picker_search,
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::format::Format;
@@ -60,7 +59,7 @@ pub(crate) fn FormatSelect(
     } else {
         Vec::new()
     };
-    let target = enter_target(&query(), &results).copied();
+    let target = pickers::format_on_enter(&query());
     // Enter picks the top match and saves, as a format is a single choice.
     let pick_target = move |typed: String| {
         if let Some(format) = pickers::format_on_enter(&typed) {
