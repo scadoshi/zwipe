@@ -12,8 +12,8 @@ use crate::http::contracts::collection::{
 };
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths::{
-    COLLECTION_CARDS_ROUTE, COLLECTION_SUMMARY_ROUTE, EXPORT_COLLECTION_ROUTE,
-    IMPORT_COLLECTION_ROUTE, collection_page_route, collection_printings_route,
+    COLLECTION_CARDS_ROUTE, COLLECTION_ROUTE, COLLECTION_SUMMARY_ROUTE, EXPORT_COLLECTION_ROUTE,
+    IMPORT_COLLECTION_ROUTE, collection_page_query, collection_printings_route,
 };
 
 /// Import a collection export. Answers 200 with what landed; 413 past the body cap, 422 for a
@@ -90,7 +90,10 @@ impl Endpoint for GetCollection {
     type Request = ();
     type Response = HttpCollectionPage;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(collection_page_route(&self.name, self.offset, self.limit))
+        Cow::Borrowed(COLLECTION_ROUTE)
+    }
+    fn query(&self) -> Option<String> {
+        Some(collection_page_query(&self.name, self.offset, self.limit))
     }
 }
 
