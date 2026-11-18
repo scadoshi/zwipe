@@ -1,5 +1,5 @@
 //! The Commanders screen's Maybeboard list: the commanders a user saved for
-//! later, with Quick add by name, the Show row (All and Art), the Sort row,
+//! later, with Quick add by name, the Show row's Art, the Sort row,
 //! and Create deck or Remove on each. The screen's one filter narrows it too.
 //!
 //! `q` focuses Quick add, `/` opens the screen's filter at its name, and ↑
@@ -471,12 +471,7 @@ pub(super) fn MaybeboardPanel(
                         }
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
-                            // Colors come from the screen's filter, so All is the one choice here.
-                            Chip {
-                                selected: true,
-                                onclick: move |_| {},
-                                "All"
-                            }
+                            // Art alone: colors come from the screen's filter.
                             Chip {
                                 selected: show_row_art(),
                                 onclick: move |_| show_row_art.toggle(),

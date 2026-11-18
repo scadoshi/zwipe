@@ -23,19 +23,13 @@ pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uui
         deck_count,
         is_loading,
         load_failed,
-        mut active_identity,
         ..
     } = list;
-    // The console's Show row: colors come from the screen's filter, so it has no identity chips.
+    // The console's Show row, Art alone: colors come from the screen's filter.
     let show_chips = rsx! {
         div { class: "web-list-console",
             div { class: "chip-row", "data-settle": "",
                 span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
-                Chip {
-                    selected: active_identity().is_none(),
-                    onclick: move |_| active_identity.set(None),
-                    "All"
-                }
                 Chip {
                     selected: show_row_art(),
                     onclick: move |_| show_row_art.toggle(),

@@ -1,5 +1,6 @@
-//! Commanders' two lists keep only All and Art in their Show rows: colors come from the screen's
-//! one shared filter, so neither list offers its own color-identity or color chips.
+//! Commanders' two lists keep only Art in their Show rows: colors come from the screen's one
+//! shared filter, so neither list offers its own color-identity or color chips, nor an All with
+//! nothing to choose between.
 
 /// The Suggested list's source.
 const SUGGESTED: &str = include_str!("../src/lib/inbound/screens/commanders/suggested.rs");
@@ -25,7 +26,7 @@ fn labels(row: &str) -> Vec<&str> {
 }
 
 #[test]
-fn suggested_shows_all_and_art_without_identity_chips() {
+fn suggested_shows_only_art() {
     assert!(
         !SUGGESTED.contains("ShowIdentityChips"),
         "no color-identity chips"
@@ -33,14 +34,14 @@ fn suggested_shows_all_and_art_without_identity_chips() {
     let row = show_row(SUGGESTED);
     assert!(!row.is_empty(), "a Show row");
     assert!(!row.contains("IdentityPips"), "{row}");
-    assert_eq!(labels(row), ["All", "Art"], "{row}");
+    assert_eq!(labels(row), ["Art"], "{row}");
 }
 
 #[test]
-fn maybeboard_shows_all_and_art_without_color_chips() {
+fn maybeboard_shows_only_art() {
     let row = show_row(MAYBEBOARD);
     assert!(!row.is_empty(), "a Show row");
     assert!(!row.contains("Color::all()"), "no color pips: {row}");
     assert!(!row.contains("ms-cost"), "no mana pips: {row}");
-    assert_eq!(labels(row), ["All", "Art"], "{row}");
+    assert_eq!(labels(row), ["Art"], "{row}");
 }
