@@ -3,9 +3,10 @@
 //! on the board picked, as a task of the sheet's host, so the write runs to its end even if the
 //! screen goes first.
 
-use components::{SendTo, SendToSheet, TOAST_QUICK, ToastOptions, use_toast};
+use components::{SendTo, SendToSheet, TOAST_NORMAL, TOAST_QUICK, ToastOptions, use_toast};
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_client::ClientError;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::Board;
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
@@ -74,19 +75,33 @@ pub(crate) fn SendToHost(send_to: SendTo) -> Element {
                 // end when the screen it opened over goes.
                 spawn(async move {
                     let added = authed
-                        .run_at(component::SEND_TO_SHEET, "send_to", |c, s| async move {
+                        .try_run_quiet_at(component::SEND_TO_SHEET, "send_to", |c, s| async move {
                             c.create_deck_card(target.id, &request, &s).await
                         })
                         .await;
-                    if added.is_some() {
-                        toast.info(
+                    match added {
+                        Ok(_) => toast.info(
                             send_to::sent(&target.name, board),
                             ToastOptions::default().duration(TOAST_QUICK),
-                        );
+                        ),
+                        Err(e) => toast.error(
+                            failure_message(&e, &target.name),
+                            ToastOptions::default().duration(TOAST_NORMAL),
+                        ),
                     }
                 });
             },
         }
+    }
+}
+
+/// What a failed send toasts: the deck by name when it already holds the card, else the
+/// error's own plain words.
+fn failure_message(error: &ClientError, deck: &str) -> String {
+    if matches!(error, ClientError::Conflict(_)) {
+        send_to::already_in(deck)
+    } else {
+        error.to_user_message()
     }
 }
 
@@ -132,6 +147,14 @@ const fn host_screen(route: &Router) -> Screen {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_duplicate_names_the_deck_it_went_to_and_other_errors_keep_their_words() {
+        let duplicate = ClientError::Conflict("That card is already in this deck".to_owned());
+        assert_eq!(failure_message(&duplicate, "Krenko"), "Already in Krenko");
+        let limit = ClientError::UnprocessableEntity("Card limit reached".to_owned());
+        assert_eq!(failure_message(&limit, "Krenko"), limit.to_user_message());
+    }
 
     #[test]
     fn a_deck_screen_names_its_deck_and_others_none() {

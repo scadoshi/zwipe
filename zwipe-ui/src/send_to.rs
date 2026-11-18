@@ -49,6 +49,13 @@ pub fn sent(deck: &str, board: Board) -> String {
     format!("Sent to {deck}, {}", board_name(board))
 }
 
+/// The toast when `deck` already holds the card, naming the deck it went to rather than the
+/// one the user is on.
+#[must_use]
+pub fn already_in(deck: &str) -> String {
+    format!("Already in {deck}")
+}
+
 /// A deck the card can go to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Target {
@@ -118,6 +125,14 @@ mod tests {
     #[test]
     fn the_chips_run_main_maybe_side() {
         assert_eq!(BOARDS.map(chip_label), ["Main", "Maybe", "Side"]);
+    }
+
+    #[test]
+    fn a_card_the_deck_already_holds_names_that_deck() {
+        assert_eq!(
+            already_in("Surfer 399 Isshin"),
+            "Already in Surfer 399 Isshin"
+        );
     }
 
     #[test]
