@@ -44,9 +44,7 @@ pub struct Wanted {
     pub ids: Vec<Uuid>,
     /// Set codes and collector numbers.
     pub set_numbers: Vec<(String, String)>,
-    /// Names within a set.
-    pub name_sets: Vec<(String, String)>,
-    /// Names.
+    /// Names; the printings found for them answer both a name within a set and a name alone.
     pub names: Vec<String>,
 }
 
@@ -64,16 +62,11 @@ impl Wanted {
                 wanted.set_numbers.push((set.clone(), number.clone()));
             }
             if let Some(name) = &row.name {
-                let name = name.to_lowercase();
-                if let Some(set) = &row.set_code {
-                    wanted.name_sets.push((name.clone(), set.clone()));
-                }
-                wanted.names.push(name);
+                wanted.names.push(name.to_lowercase());
             }
         }
         dedupe(&mut wanted.ids);
         dedupe(&mut wanted.set_numbers);
-        dedupe(&mut wanted.name_sets);
         dedupe(&mut wanted.names);
         wanted
     }
@@ -478,10 +471,6 @@ mod tests {
         let wanted = Wanted::of(&[a, b, skipped]);
         assert_eq!(wanted.ids, [Uuid::from_u128(1)]);
         assert_eq!(wanted.set_numbers, [("c21".to_owned(), "263".to_owned())]);
-        assert_eq!(
-            wanted.name_sets,
-            [("sol ring".to_owned(), "c21".to_owned())]
-        );
         assert_eq!(wanted.names, ["sol ring".to_owned()]);
     }
 }

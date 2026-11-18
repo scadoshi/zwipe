@@ -520,3 +520,35 @@ async fn an_import_doesnt_wait_on_the_user_s_row(pool: sqlx::PgPool) {
     let (status, body) = done.expect("the import finished while the user's row was being written");
     assert_eq!(status, StatusCode::OK, "{body}");
 }
+
+/// A name alone matches only when one printing has it; a name within a set narrows it to that
+/// set's printing.
+#[sqlx::test]
+async fn a_name_matches_within_its_set_or_alone_when_unique(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let c = seeded(&pool).await;
+    let (token, uid) = app.register("byname").await;
+    let csv = format!(
+        "{ARCHIDEKT_HEADER}
+1,Forest,Normal,NM,,EN,,,x,m10,,,
+2,Lightning Bolt,Normal,NM,,EN,,,x,,,,
+1,Forest,Normal,NM,,EN,,,x,,,,
+"
+    );
+
+    let (status, summary) = import(&app, Some(&token), &csv, "add").await;
+
+    assert_eq!(status, StatusCode::OK, "{summary}");
+    let held: Vec<(Uuid, i32)> = rows(&pool, &uid).await.iter().map(|r| (r.0, r.4)).collect();
+    let mut want = vec![(c.forest_a.id(), 1), (c.bolt.id(), 2)];
+    want.sort();
+    assert_eq!(
+        held, want,
+        "Forest in m10 is that printing; Bolt has one printing"
+    );
+    assert_eq!(
+        summary["unmatched"][0]["reason"],
+        json!("ambiguous_name"),
+        "Forest alone is two printings"
+    );
+}
