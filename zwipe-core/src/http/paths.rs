@@ -94,6 +94,11 @@ pub const GET_DECK_TAGS_ROUTE: &str = "/api/deck/tags";
 /// The user's deck count and color map.
 pub const PLAYSTYLE_ROUTE: &str = "/api/deck/playstyle";
 
+// == collection ==
+
+/// Imports a collection export.
+pub const IMPORT_COLLECTION_ROUTE: &str = "/api/collection/import";
+
 // == suggested commanders ==
 
 /// Ranked commander suggestions; the `limit` query caps how many.
