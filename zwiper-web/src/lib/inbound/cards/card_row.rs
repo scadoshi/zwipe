@@ -118,7 +118,8 @@ pub fn CardRow(
 ) -> Element {
     let overlays = try_use_context::<CardOverlays>();
     let mut own_face = use_signal(|| 0usize);
-    let card_id = card.scryfall_data.id;
+    // The row's key: its `data-row` for the keyboard, and what its face is kept under.
+    let card_id = row_key.unwrap_or(card.scryfall_data.id);
     // A row with no face of its own shows the screen's, when it keeps them,
     // so the `v` key and its stack turn the same face.
     let row_faces = try_use_context::<RowFaces>();
