@@ -39,7 +39,7 @@ Other ports: `ZERVER_PORT=3200 WEB_PORT=8200 up.sh`, and the same variables for 
 
 Use the issue's before steps, from a clean start, the same number of times as the before.
 
-To look and click: open http://localhost:8100/login with Claude in Chrome. Before signing in there by hand, confirm the page's API is this machine: DevTools' Network tab shows its `/api/` calls going to localhost, or `fetch('/api/client/min-version')` in the console answers from it. Nothing gates a manual sign-in. Size the window to 1440×900, then to 390×844, and check both.
+To look and click: open http://localhost:8100/login with Claude in Chrome. Before signing in there by hand, confirm the page's API is this machine: DevTools' Network tab shows its `/api/` calls going to localhost, or `performance.getEntriesByType('resource').map((e) => e.name).filter((n) => n.includes('/api/'))` in the console lists only localhost URLs. Nothing gates a manual sign-in. Size the window to 1440×900, then to 390×844, and check both.
 
 To repeat runs and keep the evidence, use the headless driver. It prints what each labeled step reads and saves screenshots:
 
