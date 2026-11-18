@@ -1037,3 +1037,35 @@ async fn tied_cards_come_back_in_printing_order_on_every_search(pool: sqlx::PgPo
         );
     }
 }
+
+#[sqlx::test]
+async fn a_card_with_tied_printings_shows_its_lowest_collector_number(pool: sqlx::PgPool) {
+    // Eight cards, each with two printings alike on every key the pick weighs, inserted in
+    // alternating order so no insertion order can pick right by chance.
+    let mut fixtures = Vec::new();
+    let mut want = Vec::new();
+    for i in 0u128..8 {
+        let oracle = Uuid::from_u128(0x578_2000 | i);
+        let low = card(&format!("Tied {i}"))
+            .with_ids(Uuid::from_u128(0x578_3000 | i), Some(oracle))
+            .collector_number("1");
+        let high = card(&format!("Tied {i}"))
+            .with_ids(Uuid::from_u128(0x578_4000 | i), Some(oracle))
+            .collector_number("2");
+        want.push((oracle, low.id()));
+        if i % 2 == 0 {
+            fixtures.extend([high, low]);
+        } else {
+            fixtures.extend([low, high]);
+        }
+    }
+    seed_cards(&pool, &fixtures).await;
+    for (oracle, low) in want {
+        let picked: Uuid = sqlx::query_scalar("SELECT id FROM latest_cards WHERE oracle_id = $1")
+            .bind(oracle)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(picked, low, "the tie goes to collector number 1");
+    }
+}
