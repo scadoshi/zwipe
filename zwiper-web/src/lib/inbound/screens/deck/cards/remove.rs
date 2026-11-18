@@ -29,7 +29,6 @@ use zwipe_core::domain::deck::deck_metrics::deck_price;
 use zwipe_core::domain::deck::{Board, DeckEntry, DeckProfile};
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossing};
-use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::hint::Role;
@@ -39,6 +38,7 @@ use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo;
 use zwipe_ui::stores::undo::{UndoAction, UndoStore, create_board_field};
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
+use zwipe_ui::{deck_cards, filter};
 
 use super::{OneLine, SwipeDetails};
 use crate::inbound::card_filter::CardFilterPanel;
@@ -115,7 +115,14 @@ impl Restorer {
             confirm,
             mounted,
         } = self;
-        let (card, board, quantity, mvp_at) = restore;
+        let Restore {
+            card,
+            board,
+            quantity,
+            mvp_at,
+            flagged,
+        } = restore;
+        let card_id = card.scryfall_data.id;
         spawn_write(async move {
             let fresh = match ensure_fresh(session, client).await {
                 Ok(fresh) => fresh,
@@ -135,10 +142,33 @@ impl Restorer {
                     .with_mvp_at(mvp_at);
             let http = client.peek().clone();
             match http.create_deck_card(deck_id, &request, &fresh).await {
-                Ok(_) if !mounted.get() => {}
-                Ok(deck_card) => {
-                    entries.write().push(DeckEntry { card, deck_card });
-                    confirm.success("Undid remove");
+                Ok(mut deck_card) => {
+                    // The create carries no flag: a flagged card comes back flagged and is
+                    // patched to match, even once Remove is gone.
+                    let reflag = deck_cards::needs_reflag(flagged, &deck_card);
+                    deck_card.flagged |= reflag;
+                    if mounted.get() {
+                        entries.write().push(DeckEntry { card, deck_card });
+                        confirm.success("Undid remove");
+                    }
+                    if reflag {
+                        let request = HttpPatchDeckCard::with_flagged(true);
+                        if let Err(e) = http
+                            .update_deck_card(deck_id, card_id, &request, &fresh)
+                            .await
+                        {
+                            tracing::warn!("undo flag (update deck card) failed: {e}");
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            if mounted.get()
+                                && let Some(entry) = entries
+                                    .write()
+                                    .iter_mut()
+                                    .find(|e| e.deck_card.scryfall_data_id == card_id)
+                            {
+                                entry.deck_card.flagged = false;
+                            }
+                        }
+                    }
                 }
                 Err(e) => {
                     tracing::warn!("undo failed: {e}");
@@ -315,6 +345,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 board,
                 quantity,
                 mvp_at,
+                flagged,
             } => {
                 let card = *card;
                 let card_id = card.scryfall_data.id;
@@ -333,9 +364,16 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 stack.write().insert_current(card.clone());
                 // With its delete still out, the restore waits for it to land, so
                 // the two never race; the root's store sends it even if Remove goes.
-                let parked = removes
-                    .write()
-                    .park(card_id, (card, board, quantity, mvp_at));
+                let parked = removes.write().park(
+                    card_id,
+                    Restore {
+                        card,
+                        board,
+                        quantity,
+                        mvp_at,
+                        flagged,
+                    },
+                );
                 if let Some(restore) = parked {
                     restorer.restore(restore, taken);
                 }
@@ -459,15 +497,21 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 stack.write().advance_wrapping();
             }
             Swipe::Right => {
-                let (board, quantity, mvp_at) =
-                    entry.as_ref().map_or((Board::Deck, 1, None), |e| {
-                        (e.deck_card.board, *e.deck_card.quantity, e.deck_card.mvp_at)
+                let (board, quantity, mvp_at, flagged) =
+                    entry.as_ref().map_or((Board::Deck, 1, None, false), |e| {
+                        (
+                            e.deck_card.board,
+                            *e.deck_card.quantity,
+                            e.deck_card.mvp_at,
+                            e.deck_card.flagged,
+                        )
                     });
                 stack.write().record(RemoveAction::Remove {
                     card: Box::new(card),
                     board,
                     quantity,
                     mvp_at,
+                    flagged,
                 });
                 if let Some(entry) = entry {
                     removes.write().begin(card_id);

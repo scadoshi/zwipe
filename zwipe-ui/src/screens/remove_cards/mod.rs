@@ -314,6 +314,15 @@ pub enum Effect {
         /// The card's printing ID.
         card_id: Uuid,
     },
+    /// Flags the card again (`HttpPatchDeckCard::with_flagged(true)`) once an undo has put a flagged card back, since the create carries no flag; answers with [`Action::Landed`] or [`Action::Failed`]. On a failure the client shows the server's word; the card stays back, unflagged.
+    RestoreFlag {
+        /// The ticket to hand back with the reply.
+        ticket: Ticket,
+        /// The deck.
+        deck_id: Uuid,
+        /// The card's printing ID.
+        card_id: Uuid,
+    },
     /// Undoes a move: sends the card back to `board` with [`board_request`] and answers with [`Action::Landed`] or [`Action::Failed`]. A failure here is the undo's own: the client words it as one.
     RestoreBoard {
         /// The ticket to hand back with the reply.
@@ -358,6 +367,7 @@ fn toast_line(effect: &Effect) -> Option<Line<'_>> {
         | Effect::TakeUndo { .. }
         | Effect::RestoreDeckCard { .. }
         | Effect::RestoreStar { .. }
+        | Effect::RestoreFlag { .. }
         | Effect::RestoreBoard { .. }
         | Effect::RecordUndo { .. }
         | Effect::Enter(_)
@@ -427,11 +437,14 @@ enum Pending {
     },
     /// An undo waiting for the client to take its log entry.
     Claim(RemoveAction),
-    /// An undone remove. `taken` goes back on the log if it fails.
+    /// An undone remove. `taken` goes back on the log if it fails; `flagged` is the removed row's flag, put back once the card is.
     UndoRemove {
         card: Box<Card>,
         taken: Option<UndoAction>,
+        flagged: bool,
     },
+    /// An undone remove's flag going back on.
+    Reflag { card_id: Uuid },
     /// An undone move. `taken` goes back on the log if it fails.
     UndoMove {
         card_id: Uuid,
@@ -451,6 +464,7 @@ struct HeldUndo {
     board: Board,
     quantity: i32,
     mvp_at: Option<DateTime<Utc>>,
+    flagged: bool,
 }
 
 /// Remove cards for one visit. Starts loading with no card; send [`Action::Load`] with the deck.
@@ -619,6 +633,16 @@ impl State {
                     ..
                 },
             ) => vec![Effect::RecordUndo { deck_id, action }],
+            Some(Pending::Reflag { card_id }) => {
+                if let Some(entry) = self
+                    .entries
+                    .iter_mut()
+                    .find(|e| e.card.scryfall_data.id == card_id)
+                {
+                    entry.deck_card.flagged = false;
+                }
+                Vec::new()
+            }
             _ => Vec::new(),
         }
     }
@@ -677,6 +701,7 @@ impl State {
             board,
             quantity,
             mvp_at,
+            flagged,
         }) = self.take_held_undo(card_id)
         {
             self.stack.record(RemoveAction::Remove {
@@ -684,19 +709,27 @@ impl State {
                 board,
                 quantity,
                 mvp_at,
+                flagged,
             });
             self.stack.remove_current();
             return vec![Effect::Confirm(Toast::quick(ToastKind::Success, REMOVED))];
         }
         let entry = self.entry(card_id).cloned();
-        let (board, quantity, mvp_at) = entry.as_ref().map_or((Board::Deck, 1, None), |e| {
-            (e.deck_card.board, *e.deck_card.quantity, e.deck_card.mvp_at)
-        });
+        let (board, quantity, mvp_at, flagged) =
+            entry.as_ref().map_or((Board::Deck, 1, None, false), |e| {
+                (
+                    e.deck_card.board,
+                    *e.deck_card.quantity,
+                    e.deck_card.mvp_at,
+                    e.deck_card.flagged,
+                )
+            });
         self.stack.record(RemoveAction::Remove {
             card: Box::new(card),
             board,
             quantity,
             mvp_at,
+            flagged,
         });
         let ticket = self.wait(Pending::Remove {
             card_id,
@@ -804,6 +837,7 @@ impl State {
                 board,
                 quantity,
                 mvp_at,
+                flagged,
             } = action
             else {
                 return Vec::new();
@@ -815,6 +849,7 @@ impl State {
                     board,
                     quantity,
                     mvp_at,
+                    flagged,
                 });
             }
             return vec![Effect::Enter(entered)];
@@ -861,6 +896,7 @@ impl State {
                 board,
                 quantity,
                 mvp_at,
+                flagged,
             } => {
                 let card_id = card.scryfall_data.id;
                 if taken.is_none() && self.entry(card_id).is_some() {
@@ -870,6 +906,7 @@ impl State {
                 let ticket = self.wait(Pending::UndoRemove {
                     card: card.clone(),
                     taken,
+                    flagged,
                 });
                 vec![
                     Effect::Enter(direction),
@@ -943,10 +980,12 @@ impl State {
                     board,
                     quantity,
                     mvp_at,
+                    flagged,
                 } = held;
                 let ticket = self.wait(Pending::UndoRemove {
                     card: card.clone(),
                     taken: None,
+                    flagged,
                 });
                 vec![Effect::RestoreDeckCard {
                     ticket,
@@ -1023,19 +1062,33 @@ impl State {
         }
     }
 
-    /// Puts an undone remove's card back in the entries.
-    fn restored(&mut self, ticket: Ticket, deck_card: DeckCard) -> Vec<Effect> {
-        let Some(Pending::UndoRemove { card, .. }) = self.take(ticket) else {
+    /// Puts an undone remove's card back in the entries, flagged at once when it was, with the flag's own write to follow.
+    fn restored(&mut self, ticket: Ticket, mut deck_card: DeckCard) -> Vec<Effect> {
+        let Some(Pending::UndoRemove { card, flagged, .. }) = self.take(ticket) else {
             return Vec::new();
         };
+        let card_id = card.scryfall_data.id;
+        let reflag = crate::deck_cards::needs_reflag(flagged, &deck_card);
+        deck_card.flagged |= reflag;
+        let deck_id = deck_card.deck_id;
         self.entries.push(DeckEntry {
             card: *card,
             deck_card,
         });
-        vec![Effect::Confirm(Toast::quick(
+        let flag = reflag.then(|| {
+            let ticket = self.wait(Pending::Reflag { card_id });
+            Effect::RestoreFlag {
+                ticket,
+                deck_id,
+                card_id,
+            }
+        });
+        std::iter::once(Effect::Confirm(Toast::quick(
             ToastKind::Success,
             UNDID_REMOVE,
-        ))]
+        )))
+        .chain(flag)
+        .collect()
     }
 
     /// The land and budget toasts for the change from `lands` lands and a `price` total.
@@ -1091,7 +1144,8 @@ impl State {
                 | Pending::Claim(_)
                 | Pending::UndoRemove { .. }
                 | Pending::UndoMove { .. }
-                | Pending::Restar { .. } => None,
+                | Pending::Restar { .. }
+                | Pending::Reflag { .. } => None,
             })
     }
 
@@ -1112,7 +1166,8 @@ impl State {
                 | Pending::Claim(_)
                 | Pending::UndoRemove { .. }
                 | Pending::UndoMove { .. }
-                | Pending::Restar { .. } => None,
+                | Pending::Restar { .. }
+                | Pending::Reflag { .. } => None,
             })
     }
 

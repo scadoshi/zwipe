@@ -172,11 +172,9 @@ impl Driver {
                 card_id,
                 board,
             } => self.restore_board(ticket, deck_id, card_id, board),
-            Effect::RestoreStar {
-                ticket,
-                deck_id,
-                card_id,
-            } => self.restore_star(ticket, deck_id, card_id),
+            mark @ (Effect::RestoreStar { .. } | Effect::RestoreFlag { .. }) => {
+                self.restore_mark(&mark);
+            }
             Effect::RecordUndo { deck_id, action } => {
                 undo_store.push(deck_id, from_shared(action));
             }
@@ -284,11 +282,33 @@ impl Driver {
         });
     }
 
-    /// Stars the card again once an undo has moved it back; a refusal shows the server's word and
-    /// the card stays back, unstarred.
-    fn restore_star(self, ticket: Ticket, deck_id: Uuid, card_id: Uuid) {
+    /// Stars ([`Effect::RestoreStar`]) or flags ([`Effect::RestoreFlag`]) the card again once an
+    /// undo has put it back; a refusal shows the server's word and the card stays back without the
+    /// mark. Any other effect does nothing.
+    fn restore_mark(self, effect: &Effect) {
+        let (ticket, deck_id, card_id, request) = if let Effect::RestoreStar {
+            ticket,
+            deck_id,
+            card_id,
+        } = *effect
+        {
+            (ticket, deck_id, card_id, HttpPatchDeckCard::with_mvp(true))
+        } else if let Effect::RestoreFlag {
+            ticket,
+            deck_id,
+            card_id,
+        } = *effect
+        {
+            (
+                ticket,
+                deck_id,
+                card_id,
+                HttpPatchDeckCard::with_flagged(true),
+            )
+        } else {
+            return;
+        };
         let Self { toast, client, .. } = self;
-        let request = HttpPatchDeckCard::with_mvp(true);
         spawn(async move {
             let Some(session) = self.fresh_session().await else {
                 self.dispatch(Action::Failed { ticket });
@@ -300,7 +320,7 @@ impl Driver {
             {
                 Ok(_) => self.dispatch(Action::Landed { ticket }),
                 Err(e) => {
-                    tracing::warn!("undo star (update deck card) failed: {e}");
+                    tracing::warn!("undo mark (update deck card) failed: {e}");
                     toast.error(e.to_user_message(), ToastOptions::default());
                     self.dispatch(Action::Failed { ticket });
                 }

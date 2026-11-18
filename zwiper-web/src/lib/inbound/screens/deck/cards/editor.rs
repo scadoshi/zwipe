@@ -882,6 +882,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                     create_board_field(entry.deck_card.board),
                 )
                 .with_mvp_at(entry.deck_card.mvp_at);
+                let flagged = entry.deck_card.flagged;
                 entries.write().push(entry);
                 spawn_write(async move {
                     let reply = authed
@@ -889,7 +890,21 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                             c.create_deck_card(deck_id, &request, &s).await
                         })
                         .await;
-                    if let Ok(saved) = reply {
+                    if let Ok(mut saved) = reply {
+                        // The create carries no flag: a flagged row stays flagged and is
+                        // patched to match.
+                        let reflag = deck_cards::needs_reflag(flagged, &saved);
+                        saved.flagged |= reflag;
+                        let mut set_flag = move |on: bool| {
+                            if mounted.get()
+                                && let Some(e) = entries
+                                    .write()
+                                    .iter_mut()
+                                    .find(|e| e.deck_card.scryfall_data_id == card_id)
+                            {
+                                e.deck_card.flagged = on;
+                            }
+                        };
                         if mounted.get()
                             && let Some(e) = entries
                                 .write()
@@ -899,6 +914,17 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                             e.deck_card = saved;
                         }
                         toast.info(message, quick);
+                        if reflag {
+                            let request = HttpPatchDeckCard::with_flagged(true);
+                            let flag = authed
+                                .try_run("undo", |c, s| async move {
+                                    c.update_deck_card(deck_id, card_id, &request, &s).await
+                                })
+                                .await;
+                            if flag.is_err() {
+                                set_flag(false);
+                            }
+                        }
                     } else {
                         if mounted.get() {
                             entries

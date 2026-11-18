@@ -701,8 +701,11 @@ enum Pending {
     },
     /// A Quick add pick waiting on its printings.
     QuickAddPrintings(Box<Card>),
-    /// Undo's re-create of a removed card.
-    Recreate(Uuid),
+    /// Undo's re-create of a removed card. `flagged` is the removed row's flag, which the create can't carry: a flagged row is flagged again by a patch once it lands.
+    Recreate {
+        card_id: Uuid,
+        flagged: bool,
+    },
     /// An undo call whose reply changes nothing.
     Quiet,
 }
@@ -1190,7 +1193,7 @@ impl State {
                 }
                 vec![Effect::Refilter]
             }
-            Pending::Recreate(card_id) => {
+            Pending::Recreate { card_id, .. } => {
                 self.entries.retain(|e| e.card.scryfall_data.id != card_id);
                 vec![Effect::Refilter]
             }
@@ -1329,11 +1332,33 @@ impl State {
                     Effect::Toast(Toast::quick(ToastKind::Info, added(&card_name))),
                 ]
             }
-            Some(Pending::Recreate(card_id)) => {
-                if let Some(entry) = self.entry_mut(card_id) {
-                    entry.deck_card = deck_card;
+            Some(Pending::Recreate { card_id, flagged }) => {
+                let Some(entry) = self.entry_mut(card_id) else {
+                    return Vec::new();
+                };
+                let deck_id = deck_card.deck_id;
+                let reflag = crate::deck_cards::needs_reflag(flagged, &deck_card);
+                entry.deck_card = deck_card;
+                if !reflag {
+                    return Vec::new();
                 }
-                Vec::new()
+                entry.deck_card.flagged = true;
+                let ticket = self.request(Pending::Flag {
+                    card_id,
+                    before: false,
+                    record: false,
+                    toast: None,
+                });
+                vec![
+                    Effect::Refilter,
+                    Effect::PatchCard {
+                        ticket,
+                        deck_id,
+                        card_id,
+                        request: Box::new(HttpPatchDeckCard::with_flagged(true)),
+                        op: Op::Undo,
+                    },
+                ]
             }
             _ => Vec::new(),
         }
@@ -1981,12 +2006,13 @@ impl State {
             create_board_field(entry.deck_card.board),
         )
         .with_mvp_at(entry.deck_card.mvp_at);
+        let flagged = entry.deck_card.flagged;
         let mut restored = entry;
         if let Ok(quantity) = Quantity::new(baseline) {
             restored.deck_card.quantity = quantity;
         }
         self.entries.push(restored);
-        let ticket = self.request(Pending::Recreate(card_id));
+        let ticket = self.request(Pending::Recreate { card_id, flagged });
         Effect::CreateCard {
             ticket,
             deck_id,

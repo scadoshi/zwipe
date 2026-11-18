@@ -121,6 +121,8 @@ pub enum RemoveAction {
         quantity: i32,
         /// When it was starred as an MVP, so undo restores the star.
         mvp_at: Option<DateTime<Utc>>,
+        /// Whether it was flagged, so undo restores the flag.
+        flagged: bool,
     },
     /// Up: moved between the main board and the maybeboard.
     MoveBoard {
