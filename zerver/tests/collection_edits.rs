@@ -18,6 +18,10 @@ use axum::http::StatusCode;
 use common::{CardFixture, TestApp, card, seed_cards};
 use serde_json::{Value, json};
 use uuid::Uuid;
+use zwipe::domain::card::models::zervice_metrics::ZerviceMetrics;
+use zwipe::domain::card::ports::CardRepository;
+use zwipe::domain::card::requests::get_scryfall_data::GetScryfallData;
+use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::collection::{CollectionPageSize, CollectionSearch, Finish, SetQuantity};
@@ -588,4 +592,41 @@ async fn a_page_after_a_cursor_holds_whatever_lands_before_it(pool: sqlx::PgPool
         .await;
     let second_names: Vec<String> = rows(&second).into_iter().map(|row| row.0).collect();
     assert_eq!(second_names, ["Dark Ritual", "Elves"], "no repeat, no skip");
+}
+
+/// A printing the nightly sync renames moves in the list and answers to its new name.
+#[sqlx::test]
+async fn a_renamed_printing_lists_and_searches_under_its_new_name(pool: sqlx::PgPool) {
+    let old = card("Llanowar Elves");
+    seed_cards(&pool, std::slice::from_ref(&old)).await;
+    let app = TestApp::new(pool.clone());
+    let (token, user) = app.register("renamed").await;
+    imported(&pool, &user, &old, "nonfoil", None, None, 1).await;
+
+    let repo = Postgres::from_pool(pool.clone());
+    let mut renamed = repo
+        .fetch_scryfall_data(&GetScryfallData::new(&old.id().to_string()).unwrap())
+        .await
+        .unwrap();
+    renamed.name = "Llanowar Lurkers".to_owned();
+    let mut metrics = ZerviceMetrics::new();
+    let _ = repo
+        .batch_delta_upsert(std::slice::from_ref(&renamed), 100, &mut metrics)
+        .await
+        .unwrap();
+
+    let (_, found) = app
+        .get(
+            &format!("{COLLECTION_ROUTE}?name=lurkers&limit=10"),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(found["total"], 1, "the new name finds it: {found}");
+    let (_, gone) = app
+        .get(
+            &format!("{COLLECTION_ROUTE}?name=elves&limit=10"),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(gone["total"], 0, "the old name doesn't: {gone}");
 }
