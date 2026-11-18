@@ -36,6 +36,7 @@ Read-only usage reports you run against the production database, then paste the 
 | `platforms.sql` | Who is on iOS, Android and the web: users, new users, usage and the signup funnel by platform | Weekly |
 | `zervice.sql` | Is the nightly job running, how long does it take, and what does it leave in the database? | Weekly, or after a sync looks off |
 | `totals_check.sql` | Why would the public lifetime totals on Home go down? The API's totals and their parts, the retire trigger, write statistics, the biggest accounts, and counter rows lower than their own records | When the totals look wrong |
+| `card_signal_size.sql` | What would per-card swipe numbers cost? The swipe signal tables' rows and sizes, rows per card, writes per day, timed rollup aggregates, and size estimates for a per-card table and a per-card index | Before building the card screen's metrics |
 
 All of them are **read-only** (no writes, no locks) and print `── header ──` sections so the output is self-describing. Run any of them the same way:
 
