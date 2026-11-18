@@ -434,6 +434,9 @@ pub enum Effect {
     Toast(Toast),
 }
 
+/// What a password change sends: the current password and the new one.
+type SentPassword = (Password, Password);
+
 /// A request out, waiting for its reply.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Request {
@@ -453,8 +456,8 @@ enum Request {
     Username,
     /// An email change to this address as typed.
     Email(String),
-    /// A password change.
-    Password,
+    /// A password change, with what it sent: the current password and the new one.
+    Password(SentPassword),
     /// The reset link to this email.
     Reset(String),
     /// The delete.
@@ -467,7 +470,7 @@ impl Request {
         match self {
             Self::Username => Some(Sheet::Username),
             Self::Email(_) => Some(Sheet::Email),
-            Self::Password => Some(Sheet::Password),
+            Self::Password(_) => Some(Sheet::Password),
             Self::Refresh
             | Self::Check
             | Self::Resend
@@ -571,7 +574,7 @@ pub struct State {
     hint: HintOffer,
     tickets: Generation,
     /// Whether an earlier password change's answer was lost.
-    password_repeat: FormRepeat,
+    password_repeat: FormRepeat<SentPassword>,
 }
 
 impl State {
@@ -734,10 +737,12 @@ impl State {
     }
 
     fn password_changed(&mut self, ticket: Ticket) -> Vec<Effect> {
-        if self.take(ticket, |r| *r == Request::Password).is_none() {
+        let Some(Request::Password(sent)) =
+            self.take(ticket, |r| matches!(r, Request::Password(_)))
+        else {
             return Vec::new();
-        }
-        let _ = self.password_repeat.settle(FormAnswer::Done);
+        };
+        let _ = self.password_repeat.settle(sent, FormAnswer::Done);
         let toast = Toast::quick(ToastKind::Success, PASSWORD_CHANGED);
         self.changed(Sheet::Password, toast)
     }
@@ -749,10 +754,12 @@ impl State {
         answer: FormAnswer,
         message: String,
     ) -> Vec<Effect> {
-        if self.take(ticket, |r| *r == Request::Password).is_none() {
+        let Some(Request::Password(sent)) =
+            self.take(ticket, |r| matches!(r, Request::Password(_)))
+        else {
             return Vec::new();
-        }
-        let text = match self.password_repeat.settle(answer) {
+        };
+        let text = match self.password_repeat.settle(sent, answer) {
             Some(FormNote::Lost | FormNote::Landed) => {
                 write_repeat::PASSWORD_UNCONFIRMED.to_owned()
             }
@@ -926,7 +933,7 @@ impl State {
         }
         let current = Password::new(form.value(Field::CurrentPassword));
         let new = Password::new(form.value(Field::NewPassword));
-        let ticket = self.send(Request::Password);
+        let ticket = self.send(Request::Password((current.clone(), new.clone())));
         vec![Effect::ChangePassword {
             ticket,
             current,

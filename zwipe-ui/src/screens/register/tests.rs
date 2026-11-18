@@ -340,3 +340,23 @@ fn a_taken_username_with_no_lost_try_says_so() {
         [error_toast("Username already taken")]
     );
 }
+
+/// After a lost sign-up, a retry under another username someone holds is turned down as itself.
+#[test]
+fn a_retry_under_another_username_is_its_own_refusal() {
+    let (mut state, ticket) = sending();
+    let _ = state.update(failed(ticket, FormAnswer::Network, "Connection error"));
+    type_in(&mut state, Field::Username, "someone_else");
+    let effects = state.update(Action::Submit);
+    let [Effect::Register { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(
+        state.update(failed(
+            *ticket,
+            FormAnswer::RepeatRefused,
+            "Username already taken"
+        )),
+        [error_toast("Username already taken")]
+    );
+}

@@ -1153,8 +1153,13 @@ fn the_cancel_copy_reads_as_the_app_s() {
 
 /// A password change sent with the sheet's fields, its effects drained.
 fn changing(state: &mut State) -> Ticket {
+    changing_from(state, "Old!pass1")
+}
+
+/// A password change from `current` to the same new password, its effects drained.
+fn changing_from(state: &mut State, current: &str) -> Ticket {
     let _ = state.update(Action::OpenSheet(Sheet::Password));
-    edit(state, Sheet::Password, Field::CurrentPassword, "Old!pass1");
+    edit(state, Sheet::Password, Field::CurrentPassword, current);
     edit(state, Sheet::Password, Field::NewPassword, "New!pass22");
     edit(state, Sheet::Password, Field::ConfirmPassword, "New!pass22");
     let _ = state.update(Action::Save(Sheet::Password));
@@ -1221,5 +1226,29 @@ fn a_wrong_current_password_with_no_lost_try_says_so() {
         )),
         none(),
         "a settled ticket's late answer"
+    );
+}
+
+/// After a lost change, a retry with a mistyped current password is turned down as itself.
+#[test]
+fn a_retry_with_another_current_password_is_its_own_refusal() {
+    let mut state = opened();
+    let ticket = changing(&mut state);
+    let _ = state.update(password_failed(
+        ticket,
+        FormAnswer::Network,
+        "Connection error",
+    ));
+    let ticket = changing_from(&mut state, "Old!pass2");
+    assert_eq!(
+        state.update(password_failed(
+            ticket,
+            FormAnswer::RepeatRefused,
+            "Invalid credentials"
+        )),
+        vec![Effect::Toast(Toast::normal(
+            ToastKind::Error,
+            "Invalid credentials"
+        ))]
     );
 }

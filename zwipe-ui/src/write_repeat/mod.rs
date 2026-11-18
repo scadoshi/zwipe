@@ -18,6 +18,8 @@ use uuid::Uuid;
 use zwipe_core::domain::deck::{Board, DeckCard, Quantity};
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 
+use crate::write_id::WriteId;
+
 /// What a write does, which decides what its repeat answers once the first try landed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Kind {
@@ -206,27 +208,53 @@ pub enum FormNote {
 
 /// A form whose submit can land while its answer is lost, and whose repeat is then refused. The
 /// server can't say whether the first try landed, so the form says what to do next instead of a
-/// bare error.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct FormRepeat {
-    unconfirmed: bool,
+/// bare error. `K` is what the submit sends: a refusal reads as the lost try landing only for the
+/// same `K`, so a retry with a mistyped field is refused as itself. Each send's identity comes
+/// from a [`WriteId`], as a create's does.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FormRepeat<K> {
+    ids: WriteId<K>,
+    /// The send whose answer was lost.
+    lost: Option<Uuid>,
+    /// How many sends took a fresh identity, which numbers the next one.
+    sends: u128,
 }
 
-impl FormRepeat {
-    /// Takes how a submit ended and answers with the note to show in place of the client's own
-    /// line, `None` to show the client's own (a success, or a failure that isn't a repeat's).
-    pub fn settle(&mut self, answer: FormAnswer) -> Option<FormNote> {
+impl<K> Default for FormRepeat<K> {
+    fn default() -> Self {
+        Self {
+            ids: WriteId::new(),
+            lost: None,
+            sends: 0,
+        }
+    }
+}
+
+// The comparison is whole: a held form and its identity, the lost send and the count.
+impl<K: Eq> Eq for FormRepeat<K> {}
+
+impl<K: PartialEq> FormRepeat<K> {
+    /// Takes how the submit of `sent` ended and answers with the note to show in place of the
+    /// client's own line, `None` to show the client's own (a success, or a failure that isn't
+    /// this form's repeat).
+    pub fn settle(&mut self, sent: K, answer: FormAnswer) -> Option<FormNote> {
+        let sends = &mut self.sends;
+        let id = self.ids.id_for(sent, || {
+            *sends = sends.wrapping_add(1);
+            Uuid::from_u128(*sends)
+        });
         match answer {
             FormAnswer::Done => {
-                self.unconfirmed = false;
+                self.ids.landed();
+                self.lost = None;
                 None
             }
             FormAnswer::Network => {
-                self.unconfirmed = true;
+                self.lost = Some(id);
                 Some(FormNote::Lost)
             }
-            FormAnswer::RepeatRefused if self.unconfirmed => {
-                self.unconfirmed = false;
+            FormAnswer::RepeatRefused if self.lost == Some(id) => {
+                self.lost = None;
                 Some(FormNote::Landed)
             }
             FormAnswer::RepeatRefused | FormAnswer::Other => None,

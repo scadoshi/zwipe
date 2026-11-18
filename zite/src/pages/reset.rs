@@ -3,6 +3,7 @@ use dioxus::prelude::*;
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_ui::account;
+use zwipe_ui::account::Password;
 use zwipe_ui::text::sentence_case;
 use zwipe_ui::write_repeat::{self, FormAnswer, FormNote, FormRepeat};
 
@@ -105,7 +106,7 @@ pub fn Reset(token: String) -> Element {
     let mut state = use_signal(|| ResetState::Form);
     let mut rules_open = use_signal(|| false);
     // Whether an earlier submit's answer was lost, so its retry's dead link may be that try.
-    let mut repeat = use_signal(FormRepeat::default);
+    let mut repeat = use_signal(FormRepeat::<Password>::default);
 
     // The link's token is checked once on load. Only the server's word that
     // it is dead (a 400) replaces the form; any other answer, a rate limit or
@@ -143,11 +144,12 @@ pub fn Reset(token: String) -> Element {
 
         state.set(ResetState::Loading);
 
+        let sent = Password::new(pw.as_str());
         spawn(async move {
             match api::client().reset_password(token, Secret::new(pw)).await {
                 Ok(()) => state.set(ResetState::Success),
                 Err(e) => {
-                    let note = repeat.write().settle(reset_answer(&e));
+                    let note = repeat.write().settle(sent, reset_answer(&e));
                     state.set(ResetState::Error(failure_message(&e, note)));
                 }
             }
@@ -366,22 +368,37 @@ mod tests {
         let dead = ClientError::Unauthorized("token not found or expired".to_owned());
         assert_eq!(reset_answer(&dead), FormAnswer::RepeatRefused);
         let mut repeat = FormRepeat::default();
-        let lost = repeat.settle(FormAnswer::Network);
+        let sent = || Password::new("Brand.New.Pass1");
+        let lost = repeat.settle(sent(), FormAnswer::Network);
         assert_eq!(
             failure_message(&dead, lost),
             write_repeat::RESET_UNCONFIRMED,
             "the lost answer's own line"
         );
-        let retry = repeat.settle(reset_answer(&dead));
+        let retry = repeat.settle(sent(), reset_answer(&dead));
         assert_eq!(
             failure_message(&dead, retry),
             write_repeat::RESET_UNCONFIRMED
         );
-        let again = repeat.settle(reset_answer(&dead));
+        let again = repeat.settle(sent(), reset_answer(&dead));
         assert_eq!(
             failure_message(&dead, again),
             "This link is invalid or has expired. Request a new one from the app.",
             "once said, a later refusal is the server's own"
+        );
+    }
+
+    /// After a lost reset, a retry with another new password still finds the link dead, but
+    /// that retry isn't the lost one: the line is the server's.
+    #[test]
+    fn a_retry_with_another_password_is_its_own_refusal() {
+        let dead = ClientError::Unauthorized("token not found or expired".to_owned());
+        let mut repeat = FormRepeat::default();
+        let _ = repeat.settle(Password::new("Brand.New.Pass1"), FormAnswer::Network);
+        let retry = repeat.settle(Password::new("Brand.New.Pass2"), reset_answer(&dead));
+        assert_eq!(
+            failure_message(&dead, retry),
+            "This link is invalid or has expired. Request a new one from the app."
         );
     }
 }

@@ -84,13 +84,17 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     };
 
     // Whether an earlier change's answer was lost, so the next failure says it may have gone through.
-    let mut repeat = use_signal(FormRepeat::default);
+    let mut repeat = use_signal(FormRepeat::<(account::Password, account::Password)>::default);
     let send = use_callback(move |()| {
         submit_attempted.set(true);
         if error_now(true).is_some() {
             return;
         }
         let request = HttpChangePassword::new(&current.peek(), &new_password.peek());
+        let sent = (
+            account::Password::new(current.peek().as_str()),
+            account::Password::new(new_password.peek().as_str()),
+        );
         is_loading.set(true);
         spawn(async move {
             let changed = authed
@@ -108,7 +112,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
             } else {
                 FormAnswer::Other
             };
-            let note = repeat.write().settle(answer);
+            let note = repeat.write().settle(sent, answer);
             if let Err(e) = &changed {
                 let text = note.map_or_else(
                     || e.to_user_message(),

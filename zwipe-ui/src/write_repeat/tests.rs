@@ -162,20 +162,20 @@ fn a_landed_write_reads_as_done_for_a_caller_that_needs_a_value() {
     assert_eq!(Written::<i32>::Failed.or_landed(|| 7), None);
 }
 
-fn form() -> FormRepeat {
+fn form() -> FormRepeat<&'static str> {
     FormRepeat::default()
 }
 
 #[test]
 fn a_form_s_lost_answer_says_so_and_its_refused_repeat_says_it_may_have_landed() {
     let mut form = form();
-    assert_eq!(form.settle(FormAnswer::Network), Some(FormNote::Lost));
+    assert_eq!(form.settle("a", FormAnswer::Network), Some(FormNote::Lost));
     assert_eq!(
-        form.settle(FormAnswer::RepeatRefused),
+        form.settle("a", FormAnswer::RepeatRefused),
         Some(FormNote::Landed)
     );
     assert_eq!(
-        form.settle(FormAnswer::RepeatRefused),
+        form.settle("a", FormAnswer::RepeatRefused),
         None,
         "once said, a later refusal is the server's own"
     );
@@ -184,28 +184,41 @@ fn a_form_s_lost_answer_says_so_and_its_refused_repeat_says_it_may_have_landed()
 #[test]
 fn a_refusal_with_no_lost_try_is_the_server_s_own() {
     let mut form = form();
-    assert_eq!(form.settle(FormAnswer::RepeatRefused), None);
-    assert_eq!(form.settle(FormAnswer::Other), None);
+    assert_eq!(form.settle("a", FormAnswer::RepeatRefused), None);
+    assert_eq!(form.settle("a", FormAnswer::Other), None);
+}
+
+/// A retry with a field typed differently, say a mistyped current password, isn't the lost try.
+#[test]
+fn a_changed_form_s_refusal_is_its_own() {
+    let mut form = form();
+    let _ = form.settle("a", FormAnswer::Network);
+    assert_eq!(form.settle("b", FormAnswer::RepeatRefused), None);
+    assert_eq!(
+        form.settle("a", FormAnswer::RepeatRefused),
+        None,
+        "only the last form sent is the lost one's repeat"
+    );
 }
 
 #[test]
 fn a_success_or_another_error_after_a_lost_try() {
     let mut form = form();
-    let _ = form.settle(FormAnswer::Network);
+    let _ = form.settle("a", FormAnswer::Network);
     assert_eq!(
-        form.settle(FormAnswer::Other),
+        form.settle("a", FormAnswer::Other),
         None,
         "another error is its own"
     );
     assert_eq!(
-        form.settle(FormAnswer::RepeatRefused),
+        form.settle("a", FormAnswer::RepeatRefused),
         Some(FormNote::Landed),
         "the lost try still may have landed"
     );
-    let _ = form.settle(FormAnswer::Network);
-    assert_eq!(form.settle(FormAnswer::Done), None);
+    let _ = form.settle("a", FormAnswer::Network);
+    assert_eq!(form.settle("a", FormAnswer::Done), None);
     assert_eq!(
-        form.settle(FormAnswer::RepeatRefused),
+        form.settle("a", FormAnswer::RepeatRefused),
         None,
         "a success clears it"
     );

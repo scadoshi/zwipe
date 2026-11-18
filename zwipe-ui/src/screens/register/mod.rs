@@ -129,11 +129,15 @@ pub enum Effect {
     Toast(Toast),
 }
 
-/// The registration out, with the username it carries for Login.
+/// What a registration sends: the username, the trimmed email and the password.
+type Sent = (String, String, Password);
+
+/// The registration out, with what it sent: the username for Login, and the whole of it for
+/// telling its repeat.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Sending {
     ticket: Ticket,
-    username: String,
+    sent: Sent,
 }
 
 /// Register for one visit: every field empty, nothing judged, nothing out.
@@ -150,7 +154,7 @@ pub struct State {
     sending: Option<Sending>,
     tickets: Generation,
     /// Whether an earlier registration's answer was lost.
-    repeat: FormRepeat,
+    repeat: FormRepeat<Sent>,
 }
 
 impl State {
@@ -184,10 +188,11 @@ impl State {
             }
             Action::Submit => self.submit(),
             Action::Registered { ticket } => {
-                let Some(username) = self.settle(ticket) else {
+                let Some(sent) = self.settle(ticket) else {
                     return Vec::new();
                 };
-                let _ = self.repeat.settle(FormAnswer::Done);
+                let username = sent.0.clone();
+                let _ = self.repeat.settle(sent, FormAnswer::Done);
                 vec![
                     Effect::Prefill(username),
                     Effect::Toast(Toast::normal(ToastKind::Info, CHECK_INBOX)),
@@ -199,11 +204,11 @@ impl State {
                 answer,
                 message,
             } => {
-                if self.settle(ticket).is_none() {
+                let Some(sent) = self.settle(ticket) else {
                     return Vec::new();
-                }
+                };
                 // A lost answer may have made the account, so the line says what to do next.
-                let text = match self.repeat.settle(answer) {
+                let text = match self.repeat.settle(sent, answer) {
                     Some(FormNote::Lost) => write_repeat::REGISTER_LOST.to_owned(),
                     Some(FormNote::Landed) => write_repeat::REGISTER_LANDED.to_owned(),
                     None => message,
@@ -271,23 +276,28 @@ impl State {
             return Vec::new();
         }
         let ticket = self.tickets.next_ticket();
+        let (username, email, password) = (
+            self.username.clone(),
+            self.email.trim().to_owned(),
+            self.password.clone(),
+        );
         self.sending = Some(Sending {
             ticket,
-            username: self.username.clone(),
+            sent: (username.clone(), email.clone(), password.clone()),
         });
         vec![Effect::Register {
             ticket,
-            username: self.username.clone(),
-            email: self.email.trim().to_owned(),
-            password: self.password.clone(),
+            username,
+            email,
+            password,
         }]
     }
 
-    /// Ends the registration holding `ticket`, and returns its username if it was the one out.
-    fn settle(&mut self, ticket: Ticket) -> Option<String> {
+    /// Ends the registration holding `ticket`, and returns what it sent if it was the one out.
+    fn settle(&mut self, ticket: Ticket) -> Option<Sent> {
         if self.sending.as_ref().is_none_or(|s| s.ticket != ticket) {
             return None;
         }
-        self.sending.take().map(|s| s.username)
+        self.sending.take().map(|s| s.sent)
     }
 }
