@@ -44,7 +44,7 @@ pub enum ResetNotice {
     /// "Filter reset", or "Filter already at default" when there is nothing to reset.
     #[default]
     Toast,
-    /// Stages the blank filter with no toast, whatever the host's Reset rule.
+    /// Stages the host's Reset with no toast.
     Quiet,
 }
 
@@ -380,7 +380,8 @@ impl State {
             return Vec::new();
         };
         if notice == ResetNotice::Quiet {
-            sheet.draft.clear();
+            // The toast is the one thing a quiet Reset leaves out.
+            let _ = sheet.reset();
             return Vec::new();
         }
         vec![Effect::Toast(sheet.reset())]

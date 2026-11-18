@@ -370,6 +370,44 @@ fn settle(mut keystrokes: Signal<u32>, commit: impl FnOnce() + 'static) {
     commit();
 }
 
+/// Clicks the open sheet's main action two frames on, once the sheet has drawn the value Enter
+/// wrote, so Apply is on when that value changed the draft. It finds the sheet from the focused
+/// element then, so focus that leaves the sheet in those two frames applies nothing.
+const APPLY_AFTER_DRAW_JS: &str = "requestAnimationFrame(() => requestAnimationFrame(() => { const sheet = document.activeElement && document.activeElement.closest('.bottom-sheet.show'); const action = sheet && sheet.querySelector('.sheet-enter'); if (action && !action.disabled) action.click(); }))";
+
+/// Enter in a number box: writes `typed` to the draft at once instead of when typing rests. A
+/// value that changes the draft applies it once the sheet has drawn; invalid text raises its
+/// toast and keeps the sheet open; a value already in the draft leaves Enter to the sheet.
+/// Returns whether the text was a number.
+fn enter_writes(
+    e: &Event<KeyboardData>,
+    mut draft: Signal<FilterDraft>,
+    field: NumberField,
+    typed: &str,
+    other: &str,
+    on_toast: Option<EventHandler<Toast>>,
+) -> bool {
+    if e.key() != Key::Enter || !e.modifiers().is_empty() {
+        return false;
+    }
+    let before = draft.peek().draft.clone();
+    let result = draft.write().set_number(field, typed, other);
+    match result {
+        Ok(()) => {
+            if draft.peek().draft != before {
+                e.prevent_default();
+                document::eval(APPLY_AFTER_DRAW_JS);
+            }
+            true
+        }
+        Err(t) => {
+            e.prevent_default();
+            raise(on_toast, t);
+            false
+        }
+    }
+}
+
 /// A number box for the exact mana value. It writes to the draft as typing
 /// rests, quietly passing over text that isn't a number yet, and on losing
 /// focus, where invalid text raises a toast and valid text is tidied.
@@ -391,6 +429,7 @@ fn NumberBox(
             autocapitalize: "none",
             autocorrect: "off",
             spellcheck: "false",
+            "data-enter-applies": "true",
             oninput: move |e| {
                 text.set(e.value());
                 settle(keystrokes, move || {
@@ -398,6 +437,12 @@ fn NumberBox(
                     // Text that isn't a number yet waits for the blur's toast.
                     draft.write().set_number(field, &typed, "").ok();
                 });
+            },
+            onkeydown: move |e: Event<KeyboardData>| {
+                let typed = text.peek().clone();
+                if enter_writes(&e, draft, field, &typed, "", on_toast) {
+                    text.set(field.text(&draft.peek().draft));
+                }
             },
             onblur: move |_| {
                 let typed = text.peek().clone();
@@ -456,9 +501,14 @@ fn NumberPair(
                 autocapitalize: "none",
                 autocorrect: "off",
                 spellcheck: "false",
+                "data-enter-applies": "true",
                 oninput: move |e| {
                     min_text.set(e.value());
                     quiet(min);
+                },
+                onkeydown: move |e: Event<KeyboardData>| {
+                    let (typed, other) = texts(min);
+                    enter_writes(&e, draft, min, &typed, &other, on_toast);
                 },
                 onblur: move |_| commit(min),
             }
@@ -472,9 +522,14 @@ fn NumberPair(
                 autocapitalize: "none",
                 autocorrect: "off",
                 spellcheck: "false",
+                "data-enter-applies": "true",
                 oninput: move |e| {
                     max_text.set(e.value());
                     quiet(max);
+                },
+                onkeydown: move |e: Event<KeyboardData>| {
+                    let (typed, other) = texts(max);
+                    enter_writes(&e, draft, max, &typed, &other, on_toast);
                 },
                 onblur: move |_| commit(max),
             }
@@ -599,9 +654,12 @@ fn result_delay(i: usize) -> String {
 
 #[cfg(test)]
 mod tests {
+    use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+    use zwipe_ui::filter::draft::SheetConfig;
     use zwipe_ui::filter::fields::MatchGroup;
 
     use super::*;
+    use crate::keys::ENTER_APPLIES;
 
     const ANY_ALL: ModeChip = ModeChip::Match(MatchGroup::BasicTypes);
 
@@ -629,6 +687,30 @@ mod tests {
         assert_eq!(
             mode_chip_class(None, Some(ANY_ALL)),
             "chip-xs label-chip label-chip-folded"
+        );
+    }
+
+    fn number_boxes() -> Element {
+        let draft =
+            use_signal(|| FilterDraft::new(&CardQueryBuilder::default(), SheetConfig::default()));
+        rsx! {
+            NumberBox { draft, field: NumberField::ManaValue, on_toast: None }
+            NumberPair { draft, min: NumberField::PriceMin, max: NumberField::PriceMax, on_toast: None }
+        }
+    }
+
+    /// Enter in a number box applies the filter, as it does in the name box.
+    #[test]
+    fn enter_in_a_number_box_reaches_the_sheet() {
+        let mut dom = VirtualDom::new(number_boxes);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        let inputs = html.matches("<input").count();
+        assert_eq!(inputs, 3, "{html}");
+        assert_eq!(
+            html.matches(&format!(r#"{ENTER_APPLIES}="true""#)).count(),
+            inputs,
+            "{html}"
         );
     }
 }
