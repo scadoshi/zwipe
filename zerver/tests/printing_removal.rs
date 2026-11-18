@@ -280,6 +280,7 @@ async fn an_applied_run_remaps_every_reference_then_removes(pool: sqlx::PgPool) 
             removed: 3,
             remapped_deck_cards: 2,
             remapped_slots: 2,
+            remapped_collection_cards: 0,
         })
     );
     assert_eq!(
@@ -433,5 +434,98 @@ async fn an_id_an_older_client_still_holds_lands_on_its_replacement(pool: sqlx::
             .iter()
             .any(|row| row.0 == p.regular.id()),
         "the card's row is gone"
+    );
+}
+
+/// Adds a collection row for the deck's owner: `copies` of `printing` in `finish`, near mint and
+/// English, tagged `tags`.
+async fn own(
+    pool: &sqlx::PgPool,
+    printing: &CardFixture,
+    finish: &str,
+    copies: i32,
+    tags: &[&str],
+) {
+    sqlx::query(
+        "INSERT INTO collection_cards \
+             (user_id, scryfall_data_id, oracle_id, finish, condition, language, quantity, tags) \
+         SELECT id, $1, $2, $3, 'near_mint', 'en', $4, $5 FROM users WHERE username = 'remover'",
+    )
+    .bind(printing.id())
+    .bind(printing.oracle_id())
+    .bind(finish)
+    .bind(copies)
+    .bind(tags.iter().map(ToString::to_string).collect::<Vec<_>>())
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
+/// The owner's collection as `(printing, finish, copies, tags sorted)`, by printing then finish.
+async fn collection(pool: &sqlx::PgPool) -> Vec<(Uuid, String, i32, Vec<String>)> {
+    let mut rows: Vec<(Uuid, String, i32, Vec<String>)> = sqlx::query_as(
+        "SELECT scryfall_data_id, finish, quantity, tags FROM collection_cards ORDER BY scryfall_data_id, finish",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap();
+    for row in &mut rows {
+        row.3.sort();
+    }
+    rows
+}
+
+#[sqlx::test]
+async fn an_owned_printing_moves_with_its_copies_and_an_owned_last_printing_stays(
+    pool: sqlx::PgPool,
+) {
+    let p = printings();
+    let (app, _, _) = seeded(pool, &p).await;
+    // Two copies of Ashling's promo, which merge into the one regular copy already owned, a foil
+    // promo that moves on its own, and the unheld card, whose card has no other printing.
+    own(&app.pool, &p.promo, "nonfoil", 2, &["trade"]).await;
+    own(&app.pool, &p.regular, "nonfoil", 1, &["binder", "trade"]).await;
+    own(&app.pool, &p.promo, "foil", 1, &[]).await;
+    own(&app.pool, &p.unheld, "nonfoil", 3, &[]).await;
+
+    let report = service(&app.pool)
+        .remove_deleted_printings(&p.bulk(), RemovalMode::Apply)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        report.counts,
+        Some(RemovalCounts {
+            removed: 2,
+            remapped_deck_cards: 2,
+            remapped_slots: 2,
+            remapped_collection_cards: 2,
+        }),
+        "the promo and the lone card go; the owned unheld card stays"
+    );
+    assert!(
+        report
+            .plan
+            .kept
+            .iter()
+            .any(|k| k.printing.id == p.unheld.id() && k.references.collection_cards == 1),
+        "the owned card with no other printing is kept: {:?}",
+        report.plan.kept
+    );
+    let mut want = vec![
+        (p.regular.id(), "foil".to_owned(), 1, Vec::new()),
+        (
+            p.regular.id(),
+            "nonfoil".to_owned(),
+            3,
+            vec!["binder".to_owned(), "trade".to_owned()],
+        ),
+        (p.unheld.id(), "nonfoil".to_owned(), 3, Vec::new()),
+    ];
+    want.sort();
+    assert_eq!(
+        collection(&app.pool).await,
+        want,
+        "every copy is still owned, merged where two rows met"
     );
 }

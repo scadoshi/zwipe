@@ -118,8 +118,8 @@ pub(super) async fn survivors(
     })
 }
 
-/// The deck card rows and command zone slots that point at each of `ids`; an id nothing
-/// references is left out.
+/// The deck card rows, command zone slots and collection rows that point at each of `ids`; an
+/// id nothing references is left out.
 pub(super) async fn references(
     pool: &PgPool,
     ids: &[Uuid],
@@ -127,7 +127,7 @@ pub(super) async fn references(
     if ids.is_empty() {
         return Ok(HashMap::new());
     }
-    let rows: Vec<(Uuid, i64, i64)> = query_as(
+    let rows: Vec<(Uuid, i64, i64, i64)> = query_as(
         "SELECT r.id, \
              (SELECT count(*) FROM deck_cards dc WHERE dc.scryfall_data_id = r.id), \
              (SELECT COALESCE(SUM( \
@@ -136,7 +136,8 @@ pub(super) async fn references(
                + (d.background_id IS NOT DISTINCT FROM r.id)::int \
                + (d.signature_spell_id IS NOT DISTINCT FROM r.id)::int), 0) \
               FROM decks d \
-              WHERE r.id IN (d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id)) \
+              WHERE r.id IN (d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id)), \
+             (SELECT count(*) FROM collection_cards cc WHERE cc.scryfall_data_id = r.id) \
          FROM unnest($1::uuid[]) AS r(id)",
     )
     .bind(ids)
@@ -145,12 +146,13 @@ pub(super) async fn references(
     let count = |n: i64| u32::try_from(n).unwrap_or(u32::MAX);
     Ok(rows
         .into_iter()
-        .map(|(id, deck_cards, slots)| {
+        .map(|(id, deck_cards, slots, collection_cards)| {
             (
                 id,
                 References {
                     deck_cards: count(deck_cards),
                     slots: count(slots),
+                    collection_cards: count(collection_cards),
                 },
             )
         })
@@ -176,6 +178,9 @@ pub(super) async fn apply(pool: &PgPool, plan: &RemovalPlan) -> Result<RemovalCo
             .remapped_deck_cards
             .saturating_add(counts.remapped_deck_cards);
         total.remapped_slots = total.remapped_slots.saturating_add(counts.remapped_slots);
+        total.remapped_collection_cards = total
+            .remapped_collection_cards
+            .saturating_add(counts.remapped_collection_cards);
     }
     Ok(total)
 }
@@ -241,9 +246,12 @@ async fn apply_batch(
         remapped_slots = remapped_slots.saturating_add(moved);
     }
 
+    let remapped_collection_cards = remap_collection(tx, live).await?;
+
     let unreferenced = |column: &str| {
         format!(
             "NOT EXISTS (SELECT 1 FROM deck_cards dc WHERE dc.scryfall_data_id = {column}) \
+             AND NOT EXISTS (SELECT 1 FROM collection_cards cc WHERE cc.scryfall_data_id = {column}) \
              AND NOT EXISTS (SELECT 1 FROM decks d WHERE {column} IN \
                  (d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id))"
         )
@@ -276,5 +284,67 @@ async fn apply_batch(
         removed,
         remapped_deck_cards,
         remapped_slots,
+        remapped_collection_cards,
     })
+}
+
+/// Moves every collection row on a removed printing with a live replacement onto that
+/// replacement. Rows that meet on the same printing, finish, condition and language merge: copies
+/// add up to the most a row holds, tags join up to the most a row carries, and the earliest date
+/// added stays, with the purchase price of the earliest row that has one. Returns how many rows
+/// moved.
+async fn remap_collection(
+    tx: &mut Transaction<'_, Postgres>,
+    live: &str,
+) -> Result<u64, sqlx::Error> {
+    // Built from string constants only; every value comes from the tables.
+    query(sqlx::AssertSqlSafe(format!(
+        "WITH moved AS ( \
+             SELECT cc.*, rp.replacement_id FROM collection_cards cc \
+             JOIN removed_printings rp ON cc.scryfall_data_id = rp.id AND {live} \
+         ), \
+         grouped AS ( \
+             SELECT user_id, replacement_id, finish, condition, language, \
+                    min(oracle_id::text)::uuid AS oracle_id, \
+                    LEAST(sum(quantity), 9999)::int AS quantity, \
+                    (array_agg(purchase_price ORDER BY added_at NULLS LAST) \
+                        FILTER (WHERE purchase_price IS NOT NULL))[1] AS purchase_price, \
+                    (array_agg(purchase_currency ORDER BY added_at NULLS LAST) \
+                        FILTER (WHERE purchase_price IS NOT NULL))[1] AS purchase_currency, \
+                    min(added_at) AS added_at \
+             FROM moved GROUP BY user_id, replacement_id, finish, condition, language \
+         ) \
+         INSERT INTO collection_cards AS cc \
+             (user_id, scryfall_data_id, oracle_id, finish, condition, language, quantity, tags, \
+              purchase_price, purchase_currency, added_at) \
+         SELECT g.user_id, g.replacement_id, g.oracle_id, g.finish, g.condition, g.language, \
+                g.quantity, \
+                COALESCE((SELECT (array_agg(DISTINCT tag ORDER BY tag))[1:20] \
+                          FROM moved m, unnest(m.tags) AS tag \
+                          WHERE m.user_id = g.user_id AND m.replacement_id = g.replacement_id \
+                            AND m.finish = g.finish \
+                            AND m.condition IS NOT DISTINCT FROM g.condition \
+                            AND m.language IS NOT DISTINCT FROM g.language), '{{}}'), \
+                g.purchase_price, g.purchase_currency, g.added_at \
+         FROM grouped g \
+         ON CONFLICT (user_id, scryfall_data_id, finish, condition, language) DO UPDATE SET \
+             quantity = LEAST(cc.quantity + EXCLUDED.quantity, 9999), \
+             tags = COALESCE((SELECT (array_agg(DISTINCT tag ORDER BY tag))[1:20] \
+                              FROM unnest(cc.tags || EXCLUDED.tags) AS tag), '{{}}'), \
+             purchase_price = COALESCE(cc.purchase_price, EXCLUDED.purchase_price), \
+             purchase_currency = CASE WHEN cc.purchase_price IS NULL \
+                 THEN EXCLUDED.purchase_currency ELSE cc.purchase_currency END, \
+             added_at = LEAST(cc.added_at, EXCLUDED.added_at), \
+             updated_at = now()"
+    )))
+    .execute(&mut **tx)
+    .await?;
+    let moved = query(sqlx::AssertSqlSafe(format!(
+        "DELETE FROM collection_cards cc USING removed_printings rp \
+         WHERE cc.scryfall_data_id = rp.id AND {live}"
+    )))
+    .execute(&mut **tx)
+    .await?
+    .rows_affected();
+    Ok(moved)
 }

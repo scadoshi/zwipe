@@ -24,20 +24,22 @@ pub struct Printing {
     pub collector_number: String,
 }
 
-/// How many deck references point at a printing.
+/// How many deck and collection references point at a printing.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct References {
     /// Deck card rows that hold it.
     pub deck_cards: u32,
     /// Command zone slots (commander, partner, background, signature spell) that name it.
     pub slots: u32,
+    /// Collection rows that hold it.
+    pub collection_cards: u32,
 }
 
 impl References {
     /// Whether anything points at the printing.
     #[must_use]
     pub fn any(self) -> bool {
-        self.deck_cards > 0 || self.slots > 0
+        self.deck_cards > 0 || self.slots > 0 || self.collection_cards > 0
     }
 }
 
@@ -62,7 +64,8 @@ pub struct Removal {
     pub references: References,
 }
 
-/// A removed printing the plan keeps: a deck holds it and its card has no other printing.
+/// A removed printing the plan keeps: a deck or a collection holds it and its card has no other
+/// printing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Kept {
     /// The printing.
@@ -139,9 +142,12 @@ impl Printing {
 }
 
 impl References {
-    /// `2 deck card(s), 1 slot(s)`.
+    /// `2 deck card(s), 1 slot(s), 0 collection card(s)`.
     fn label(self) -> String {
-        format!("{} deck card(s), {} slot(s)", self.deck_cards, self.slots)
+        format!(
+            "{} deck card(s), {} slot(s), {} collection card(s)",
+            self.deck_cards, self.slots, self.collection_cards
+        )
     }
 }
 
@@ -176,6 +182,8 @@ pub struct RemovalCounts {
     pub remapped_deck_cards: u64,
     /// Command zone slots moved to a replacement.
     pub remapped_slots: u64,
+    /// Collection rows moved to a replacement, merged into a row the replacement already had.
+    pub remapped_collection_cards: u64,
 }
 
 /// What a run did: its plan, and what it changed when it applied it.
@@ -201,7 +209,7 @@ pub fn gone<S: BuildHasher>(stored: &[Printing], bulk: &HashSet<Uuid, S>) -> Vec
 
 /// The plan for `gone`: each printing moves to its card's cheapest regular survivor, else the
 /// card's preferred survivor. A printing with no survivor is removed when nothing references it
-/// and kept when something does, so a deck never loses a card.
+/// and kept when something does, so a deck or a collection never loses a card.
 #[must_use]
 pub fn plan<S: BuildHasher>(
     gone: Vec<Printing>,
@@ -293,6 +301,7 @@ mod tests {
             References {
                 deck_cards: 2,
                 slots: 1,
+                collection_cards: 0,
             },
         )]);
         let plan = plan(vec![promo.clone()], &survivors, &held);
@@ -303,7 +312,8 @@ mod tests {
                 replacement: Some(printing(2, Some(ASHLING), "Ashling, Rekindled", "ecl")),
                 references: References {
                     deck_cards: 2,
-                    slots: 1
+                    slots: 1,
+                    collection_cards: 0,
                 },
             }],
             "the cheapest wins over the preferred printing"
@@ -337,6 +347,7 @@ mod tests {
                 References {
                     deck_cards: 1,
                     slots: 0,
+                    collection_cards: 0,
                 },
             ),
             (
@@ -344,6 +355,7 @@ mod tests {
                 References {
                     deck_cards: 0,
                     slots: 1,
+                    collection_cards: 0,
                 },
             ),
         ]);
@@ -385,6 +397,7 @@ mod tests {
             References {
                 deck_cards: 1,
                 slots: 0,
+                collection_cards: 0,
             },
         )]);
         let plan = plan(vec![promo.clone(), also_gone], &survivors, &held);
@@ -411,6 +424,7 @@ mod tests {
                 references: References {
                     deck_cards: 2,
                     slots: 1,
+                    collection_cards: 0,
                 },
             }],
             kept: vec![Kept {
@@ -418,6 +432,7 @@ mod tests {
                 references: References {
                     deck_cards: 1,
                     slots: 0,
+                    collection_cards: 0,
                 },
             }],
         };
@@ -426,12 +441,12 @@ mod tests {
             vec![
                 "1 printing(s) to remove, 1 kept because a deck holds a card with no other printing".to_owned(),
                 format!(
-                    "remove Ashling, Rekindled (pecl #124p, {}): moves to Ashling, Rekindled (ecl #2, {}); 2 deck card(s), 1 slot(s)",
+                    "remove Ashling, Rekindled (pecl #124p, {}): moves to Ashling, Rekindled (ecl #2, {}); 2 deck card(s), 1 slot(s), 0 collection card(s)",
                     Uuid::from_u128(1),
                     Uuid::from_u128(2)
                 ),
                 format!(
-                    "keep Held (pxyz #3, {}): no other printing; 1 deck card(s), 0 slot(s)",
+                    "keep Held (pxyz #3, {}): no other printing; 1 deck card(s), 0 slot(s), 0 collection card(s)",
                     Uuid::from_u128(3)
                 ),
             ]
