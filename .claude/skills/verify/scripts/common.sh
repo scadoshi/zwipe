@@ -40,3 +40,39 @@ with_db() {
   [ "$base" != "$1" ] && query="?${1#*\?}"
   echo "${base%/*}/$2$query"
 }
+
+# The URL with this machine's user added when it names none, in its user info or a user=
+# parameter: sqlx, unlike psql, doesn't fall back to the login name on every platform.
+with_user() {
+  local rest="${1#*://}" query=""
+  rest="${rest%%\?*}"
+  rest="${rest%%/*}"
+  case "$1" in *\?*) query="&${1#*\?}" ;; esac
+  case "$rest" in *@*) echo "$1"; return ;; esac
+  case "$query" in *"&user="*) echo "$1"; return ;; esac
+  local user="${USER:-$(whoami)}"
+  case "$1" in
+    *\?*) echo "$1&user=$user" ;;
+    *) echo "$1?user=$user" ;;
+  esac
+}
+
+# Exits unless $1, the API the web build calls, is an http:// URL on this machine: a check's
+# sign-in then never reaches a real server.
+require_local_backend() {
+  local rest host
+  case "$1" in
+    http://*) rest="${1#http://}" ;;
+    *) echo "refusing: BACKEND_URL=$1 is not an http:// URL on this machine" >&2; exit 1 ;;
+  esac
+  rest="${rest%%/*}"
+  case "$rest" in *@*) echo "refusing: BACKEND_URL=$1 carries user info" >&2; exit 1 ;; esac
+  case "$rest" in
+    \[*) host="${rest%%]*}]" ;;
+    *) host="${rest%%:*}" ;;
+  esac
+  case "$host" in
+    localhost|127.0.0.1|"[::1]") ;;
+    *) echo "refusing: BACKEND_URL=$1 is not this machine" >&2; exit 1 ;;
+  esac
+}

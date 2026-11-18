@@ -8,7 +8,8 @@
 // Steps run in order, one object each:
 //   {"eval": "js", "label": "name"}   runs js in the page (awaits a promise); prints it if labeled
 //   {"click": "css selector"}         a real mouse click at the element's center
-//   {"type": "text"}                  types into the focused field
+//   {"type": "text"}                  types into the focused field, once the page has called its
+//                                     API and every call went to this machine; else it stops
 //   {"key": "u"} / {"key": "Enter"}   a key press; add "shift": true for Shift (sends "U")
 //   {"nav": "url"}                    loads a url, then waits 6s (or "after": ms)
 //   {"wait": ms}                      pauses
@@ -80,6 +81,22 @@ const chrome = spawn(
   // Its own process group, so stopping it stops its helper processes too.
   { stdio: "ignore", detached: true },
 );
+// Closes the connection, stops Chrome and its helpers and removes the throwaway profile.
+async function stop() {
+  ws.close();
+  const exited = new Promise((r) => chrome.once("exit", r));
+  try {
+    process.kill(-chrome.pid);
+  } catch {
+    chrome.kill();
+  }
+  await exited;
+  try {
+    rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
+  } catch {
+    // A helper still finishing a write can hold the profile a moment; a leftover temp dir is harmless.
+  }
+}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let targets;
 for (let i = 0; i < 50 && !targets; i++) {
@@ -98,8 +115,11 @@ const ws = new WebSocket(targets.find((t) => t.type === "page").webSocketDebugge
 await new Promise((r) => ws.addEventListener("open", r));
 let id = 0;
 const pending = new Map();
+// Every URL the page asks for, so a sign-in is never typed into a page whose API is elsewhere.
+const requested = [];
 ws.addEventListener("message", (e) => {
   const m = JSON.parse(e.data);
+  if (m.method === "Network.requestWillBeSent") requested.push(m.params.request.url);
   if (pending.has(m.id)) {
     pending.get(m.id)(m);
     pending.delete(m.id);
@@ -114,6 +134,23 @@ const send = (method, params = {}) =>
 const evaluate = async (expression) => {
   const r = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
   return r.result?.result?.value ?? r.result?.exceptionDetails?.exception?.description ?? r.error;
+};
+
+await send("Network.enable");
+const apiPath = (address) => {
+  try {
+    return new URL(address).pathname.startsWith("/api/");
+  } catch {
+    return false;
+  }
+};
+// Why the page can't be typed into yet, or null: it has called no API, so its backend is unknown,
+// or it has called one that isn't this machine.
+const notLocalApi = () => {
+  const calls = requested.filter(apiPath);
+  if (calls.length === 0) return "the page has called no API yet, so its backend is unknown";
+  const away = [...new Set(calls.filter((u) => !local(u)).map((u) => new URL(u).origin))];
+  return away.length > 0 ? `the page's API is ${away.join(", ")}, not this machine` : null;
 };
 
 // Under 900 wide it's a phone: touch, no hover and a coarse pointer, so the web app's
@@ -148,6 +185,12 @@ for (const s of steps) {
       for (const type of ["mouseMoved", "mousePressed", "mouseReleased"])
         await send("Input.dispatchMouseEvent", { type, x: at[0], y: at[1], button: "left", clickCount: 1 });
   } else if (s.type !== undefined) {
+    const why = notLocalApi();
+    if (why) {
+      console.error(`refusing to type: ${why}`);
+      await stop();
+      process.exit(2);
+    }
     await send("Input.insertText", { text: s.type });
   } else if (s.key) {
     // With Shift a letter is its capital, as the app reads it from the event's key.
@@ -169,16 +212,4 @@ for (const s of steps) {
   }
   await sleep(s.after ?? (s.key || s.click ? 400 : 0));
 }
-ws.close();
-const exited = new Promise((r) => chrome.once("exit", r));
-try {
-  process.kill(-chrome.pid);
-} catch {
-  chrome.kill();
-}
-await exited;
-try {
-  rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
-} catch {
-  // A helper still finishing a write can hold the profile a moment; a leftover temp dir is harmless.
-}
+await stop();

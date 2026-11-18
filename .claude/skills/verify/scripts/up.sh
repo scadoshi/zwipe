@@ -8,7 +8,7 @@ mkdir -p "$RUN_DIR/logs"
 started=$SECONDS
 step() { echo "[$((SECONDS - started))s] $*"; }
 
-TEMPLATE="$(template_url)"
+TEMPLATE="$(with_user "$(template_url)")"
 require_local "$TEMPLATE"
 TEMPLATE_DB="$(db_name "$TEMPLATE")"
 ADMIN="$(with_db "$TEMPLATE" postgres)"
@@ -92,9 +92,12 @@ verified="$(psql "$VERIFY_URL" -Atqc "update users set email_verified_at = coale
 [ "$verified" = 1 ] || { echo "couldn't make the localcheck account; see $RUN_DIR/zerver.out" >&2; exit 1; }
 
 step "start the web app on :$WEB_PORT (dx serve)"
+# The build bakes this in, and the process env wins over zwiper-web/.env.
+BACKEND="http://localhost:$ZERVER_PORT"
+require_local_backend "$BACKEND"
 (
   cd "$ROOT/zwiper-web"
-  BACKEND_URL="http://localhost:$ZERVER_PORT" RUST_LOG=info RUST_BACKTRACE=1 \
+  BACKEND_URL="$BACKEND" RUST_LOG=info RUST_BACKTRACE=1 \
     nohup dx serve --port "$WEB_PORT" --hot-reload false --watch false --open false >"$RUN_DIR/dx.out" 2>&1 &
 )
 for _ in $(seq 1 180); do grep -aq "Build completed" "$RUN_DIR/dx.out" && break; sleep 5; done

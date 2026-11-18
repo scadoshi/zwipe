@@ -52,7 +52,8 @@ seed_guard() {
   local param key value params
   # read splits on & without glob expansion, so a * or ? stays as written.
   IFS='&' read -ra params <<< "$query"
-  for param in "${params[@]}"; do
+  # Bash 3.2 (macOS's) counts an empty array as unset under set -u.
+  for param in ${params[@]+"${params[@]}"}; do
     key="${param%%=*}"
     value="${param#*=}"
     # libpq percent-decodes keywords too, so an encoded key could be host or
