@@ -170,9 +170,9 @@ impl Preview {
         if let Some(power) = deck.power_level {
             tags.push(Tag::new(power.display_name(), Tone::Palette5));
         }
-        let price = deck.price_usd();
+        let price = deck.price();
         if price > 0.0 {
-            tags.push(Tag::new(format!("${price:.2}"), Tone::Money));
+            tags.push(Tag::new(deck.currency().format_amount(price), Tone::Money));
         }
         tags.extend(
             zone.iter()

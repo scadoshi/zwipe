@@ -65,6 +65,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web at phone width, Themes from the menu opens fully on screen",
         "Activity's heatmap opens with no month name cut at its left edge",
         "On the web, Shift+H on the Commander maybeboard lists its filter and Quick add keys",
+        "A shared deck prices its header and link preview in the deck's own currency",
     ],
 }];
 
