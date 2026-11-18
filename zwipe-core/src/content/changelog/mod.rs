@@ -67,6 +67,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Every search field has its Search chip on its left, on the same line",
         "Send to's boards row starts with a Send to chip",
         "Theme search highlights the theme Enter would pick as you type",
+        "The Getting started guide links the guides it mentions",
     ],
 }];
 
