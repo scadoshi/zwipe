@@ -108,14 +108,22 @@ fn PickerBody(search_id: &'static str, search_key: bool, children: Element) -> E
     }
 }
 
+/// Sends the text in the field with id `id` as typed, or nothing when the field is gone.
+fn field_value_js(id: &str) -> String {
+    format!("dioxus.send(document.getElementById({id:?})?.value ?? null);")
+}
+
 /// The search every picker leads with: its `Search` label chip on the left and the filter's
 /// compact field on the same line, as Quick add's row, the field's `×` easing in as text is
-/// typed.
+/// typed. Enter in the field calls `on_enter` with the field's text as it is at that moment,
+/// which the query takes on first: Go can land before the last keystroke reaches the query, so
+/// the picker reads its top match from that text, not the grid last drawn.
 #[component]
 pub fn PickerSearch(
     id: &'static str,
     placeholder: &'static str,
     mut query: Signal<String>,
+    #[props(default)] on_enter: Option<EventHandler<String>>,
 ) -> Element {
     rsx! {
         div { class: "chip-row",
@@ -133,8 +141,52 @@ pub fn PickerSearch(
                     autocorrect: "off",
                     spellcheck: "false",
                     oninput: move |event| query.set(event.value()),
+                    onkeydown: move |event| {
+                        if event.key() == Key::Enter && !event.is_composing()
+                            && let Some(on_enter) = on_enter
+                        {
+                            event.prevent_default();
+                            spawn(async move {
+                                let mut field = document::eval(&field_value_js(id));
+                                let typed = match field.recv::<Option<String>>().await {
+                                    Ok(Some(typed)) => typed,
+                                    _ => query.peek().clone(),
+                                };
+                                if *query.peek() != typed {
+                                    query.set(typed.clone());
+                                }
+                                on_enter.call(typed);
+                            });
+                        }
+                    },
                 }
             }
         }
+    }
+}
+
+/// One choice in a picker's grid, marked as the one Enter acts on while `target`, which the
+/// stylesheet shows while the search has focus. The wrapper takes no box of its own.
+#[component]
+pub fn PickerChoice(target: bool, children: Element) -> Element {
+    rsx! {
+        span { class: if target { "picker-choice enter-target" } else { "picker-choice" }, {children} }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Go can land in the same instant as the typing, before the field's text reaches the
+    /// query: Enter reads the field itself.
+    #[test]
+    fn enter_reads_the_field_s_text_as_typed() {
+        let js = field_value_js("send-to-search");
+        assert!(
+            js.contains(r#"document.getElementById("send-to-search")"#),
+            "{js}"
+        );
+        assert!(js.contains(".value"), "{js}");
     }
 }
