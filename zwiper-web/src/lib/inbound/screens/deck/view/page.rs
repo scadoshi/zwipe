@@ -52,6 +52,8 @@ pub fn DeckWidePage(
     cards_open: bool,
     on_cards: Callback<bool>,
     profile_dock: Element,
+    // Whether the deck's profile has loaded, which the Cards layer's Clone and Share wait for.
+    profile_loaded: bool,
 ) -> Element {
     let navigator = use_navigator();
     let DeckDialogs {
@@ -370,12 +372,14 @@ pub fn DeckWidePage(
                 button {
                     class: "action-dock-btn",
                     "aria-label": MoreItem::CloneDeck.short_label(),
+                    disabled: !profile_loaded,
                     onclick: move |_| clone.set(true),
                     CloneIcon {}
                 }
                 button {
                     class: "action-dock-btn",
                     "aria-label": MoreItem::ShareDeck.short_label(),
+                    disabled: !profile_loaded,
                     onclick: move |_| share.set(true),
                     ShareIcon {}
                 }

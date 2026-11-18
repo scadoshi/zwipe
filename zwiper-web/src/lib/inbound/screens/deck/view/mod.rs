@@ -281,6 +281,8 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
         .read()
         .as_ref()
         .map(|r| r.as_ref().cloned().map_err(|_| ()));
+    // Clone and Share wait for the deck: Clone's name and Share's link come from its profile.
+    let profile_loaded = matches!(loaded_profile, Some(Ok(_)));
     let clone_name = loaded_profile
         .as_ref()
         .and_then(|r| r.as_ref().ok())
@@ -323,6 +325,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                             rows,
                             dialogs,
                             cards_open: view.is_some(),
+                            profile_loaded,
                             on_cards,
                             // The deck's own actions, before the cart and Cards.
                             profile_dock: rsx! {
@@ -337,12 +340,14 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                                 button {
                                     class: "action-dock-btn",
                                     "aria-label": MoreItem::CloneDeck.short_label(),
+                                    disabled: !profile_loaded,
                                     onclick: move |_| clone_open.set(true),
                                     CloneIcon {}
                                 }
                                 button {
                                     class: "action-dock-btn",
                                     "aria-label": MoreItem::ShareDeck.short_label(),
+                                    disabled: !profile_loaded,
                                     onclick: move |_| share_open.set(true),
                                     ShareIcon {}
                                 }
