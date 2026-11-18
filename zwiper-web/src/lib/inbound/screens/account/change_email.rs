@@ -13,6 +13,7 @@ use zwipe_ui::telemetry::vocabulary::{ProfileScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::enter_submit::EnterSubmit;
 use crate::inbound::telemetry;
 
 /// New email and password. The answer is the same whether or not the
@@ -99,10 +100,12 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                 closable: true,
                 form {
                     class: "flex-col text-center",
+                    novalidate: true,
                     onsubmit: move |event| {
                         event.prevent_default();
                         attempt_submit();
                     },
+                    EnterSubmit {}
                     TextInput {
                         value: new_email,
                         id: "new_email",
@@ -122,7 +125,6 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                         input_type: "password",
                         error: password_error.as_deref().map(sentence_case),
                     }
-                    button { r#type: "submit", hidden: true }
                 }
                 // Save floats at the sheet's bottom right.
                 div { class: "action-dock action-dock-right sheet-dock",

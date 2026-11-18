@@ -21,6 +21,7 @@ use zwipe_ui::screens::forgot_password::{
 use zwipe_ui::telemetry::vocabulary::{AuthScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
+use crate::inbound::chrome::enter_submit::EnterSubmit;
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
@@ -127,10 +128,12 @@ pub fn ForgotPassword() -> Element {
                         }
                         form {
                             class: "flex-col",
+                            novalidate: true,
                             onsubmit: move |event| {
                                 event.prevent_default();
                                 driver.dispatch(Action::Submit);
                             },
+                            EnterSubmit {}
                             TextInput {
                                 value: driver.email,
                                 id: "email",
@@ -143,9 +146,7 @@ pub fn ForgotPassword() -> Element {
                             if is_loading {
                                 div { class: "spinner" }
                             }
-                            // The form's one button, so Return in the field
-                            // clicks it; the click submits itself, never the
-                            // page.
+                            // The click submits itself, never the page.
                             div { class: "form-submit",
                                 Button {
                                     disabled: is_loading || submit_held,

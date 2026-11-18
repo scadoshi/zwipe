@@ -100,7 +100,7 @@ pub fn CreateDeck() -> Element {
                 hint_open.set(true);
             },
             div { class: "screen-content content-enter",
-                DeckFields { form, on_enter: move |()| submit.call(()) }
+                DeckFields { form, on_submit: move |()| submit.call(()) }
             }
             // Create as the action dock's checkmark, pinned bottom right;
             // dimmed while the save is out.

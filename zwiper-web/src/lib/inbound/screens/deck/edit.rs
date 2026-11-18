@@ -162,7 +162,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             div { class: "screen-content content-enter",
                 match state {
                     Some(true) => rsx! {
-                        DeckFields { form, on_enter: move |()| submit.call(()) }
+                        DeckFields { form, on_submit: move |()| submit.call(()) }
                     },
                     Some(false) => rsx! {
                         p { class: "text-muted", "Couldn't load deck" }

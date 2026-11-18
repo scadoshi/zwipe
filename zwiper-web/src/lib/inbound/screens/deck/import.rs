@@ -18,6 +18,7 @@ use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::enter_submit::EnterSubmit;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
@@ -195,7 +196,17 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
                             }
-                            div { class: "web-form-fields",
+                            // Enter in the link submits; the decklist's Enter is a new line.
+                            form {
+                                class: "web-form-fields",
+                                novalidate: true,
+                                onsubmit: move |event| {
+                                    event.prevent_default();
+                                    if !disabled {
+                                        submit();
+                                    }
+                                },
+                                EnterSubmit {}
                                 if source() == Source::Text {
                                     textarea {
                                         id: "import-text",

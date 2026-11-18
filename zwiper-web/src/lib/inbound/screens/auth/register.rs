@@ -21,6 +21,7 @@ use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, Stat
 use zwipe_ui::telemetry::vocabulary::{AuthScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
+use crate::inbound::chrome::enter_submit::EnterSubmit;
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
@@ -164,10 +165,12 @@ pub fn Register() -> Element {
                         }
                         form {
                             class: "flex-col",
+                            novalidate: true,
                             onsubmit: move |event| {
                                 event.prevent_default();
                                 driver.dispatch(Action::Submit);
                             },
+                            EnterSubmit {}
                             TextInput {
                                 value: driver.username,
                                 id: "username",
@@ -205,9 +208,7 @@ pub fn Register() -> Element {
                                 label: Field::ConfirmPassword.label(),
                                 input_type: "password",
                             }
-                            // The form's one button, so Return in a field
-                            // clicks it; the click submits itself, never the
-                            // page.
+                            // The click submits itself, never the page.
                             div { class: "form-submit",
                                 Button {
                                     disabled: is_loading || submit_held,

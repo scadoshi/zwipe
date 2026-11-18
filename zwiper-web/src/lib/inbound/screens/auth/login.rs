@@ -18,6 +18,7 @@ use zwipe_ui::account::Password;
 use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
 use zwipe_ui::telemetry::vocabulary::{AuthScreen, Screen};
 
+use crate::inbound::chrome::enter_submit::EnterSubmit;
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
@@ -180,10 +181,12 @@ pub fn Login() -> Element {
                         }
                         form {
                             class: "flex-col",
+                            novalidate: true,
                             onsubmit: move |event| {
                                 event.prevent_default();
                                 driver.dispatch(Action::Submit);
                             },
+                            EnterSubmit {}
                             TextInput {
                                 value: driver.identifier,
                                 id: "identity",
@@ -199,9 +202,7 @@ pub fn Login() -> Element {
                                 label: Field::Password.label(),
                                 input_type: "password",
                             }
-                            // The form's one button, so Return in a field
-                            // clicks it; the click submits itself, never the
-                            // page.
+                            // The click submits itself, never the page.
                             div { class: "form-submit",
                                 Button {
                                     disabled: is_loading,
