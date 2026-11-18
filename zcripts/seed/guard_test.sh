@@ -7,11 +7,12 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 failures=0
 
 # Runs the guard in a clean subshell with DATABASE_URL=$1 and any extra
-# environment in the rest of the arguments; prints pass or refused.
+# environment in the rest of the arguments, under seed.sh's own `set -euo
+# pipefail`; prints pass or refused.
 verdict() {
   local url="$1"; shift
   if env -u PGHOST -u PGHOSTADDR -u PGSERVICE "$@" DATABASE_URL="$url" \
-    bash -c 'source "$0"; seed_guard' "$DIR/guard.sh" 2>/dev/null; then
+    bash -c 'set -euo pipefail; source "$0"; seed_guard' "$DIR/guard.sh" 2>/dev/null; then
     echo pass
   else
     echo refused
