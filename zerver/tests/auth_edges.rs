@@ -17,9 +17,12 @@ use zwipe_core::http::paths::{
 };
 mod common;
 
+use std::time::Duration;
+
 use axum::http::StatusCode;
 use common::TestApp;
 use serde_json::json;
+use zwipe::inbound::http::rate_limits::RateLimits;
 use zwipe_core::domain::auth::models::session::MAXIMUM_SESSION_COUNT;
 
 #[sqlx::test]
@@ -222,15 +225,19 @@ async fn lockout_is_per_address(pool: sqlx::PgPool) {
 
     use axum::http::Method;
 
-    let app = TestApp::new(pool);
+    // One login past the five wrong ones, so the locked address's last try reaches the lockout
+    // instead of a 429.
+    let mut limits = RateLimits::default().with_every_period(Duration::from_secs(3600));
+    limits.login.burst = 6;
+    let app = TestApp::with_limits(pool, &limits);
     let _ = app.register("victim").await;
     let attacker = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(203, 0, 113, 5)), 50001);
     let owner = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(198, 51, 100, 7)), 50002);
     let wrong = json!({ "identifier": "victim", "password": "WrongPass123!" });
     let right = json!({ "identifier": "victim", "password": "TestPass123!" });
 
-    // Five wrong passwords from one address: exactly the login limiter's
-    // burst, so every one reaches the service and counts.
+    // Five wrong passwords from one address, all inside the login burst, so
+    // every one reaches the service and counts.
     for n in 1..=5 {
         let (status, _) = app
             .send_from(
@@ -252,9 +259,7 @@ async fn lockout_is_per_address(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "owner logs in: {body}");
 
     // The guessing address is locked even with the right password, and gets
-    // the same answer as a wrong one. Wait out the limiter's burst first so
-    // the reply is the lockout's, not a 429.
-    tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+    // the same answer as a wrong one.
     // (Error bodies are plain text, so only the status is checked.)
     let (status, _) = app
         .send_from(attacker, Method::POST, LOGIN_ROUTE, Some(right), None)
