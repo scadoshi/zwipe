@@ -1,8 +1,12 @@
 //! A modal's own dock stays while a form drawer below it is open: the drawer
 //! slides the page's docks away, never the dock of a modal over it (an Oracle
-//! tag's examples opened from the filter's dictionary).
+//! tag's examples opened from the filter's dictionary, or from the deck form's
+//! Oracle tags picker, where no page screen holds it).
 
 const MAGIC: &str = include_str!("../assets/magic.css");
+
+/// The web's large modals: the Oracle tag dictionary and its examples.
+const LARGE_MODAL: &str = ".web-large-modal *";
 
 #[test]
 fn the_drawer_hides_only_the_page_s_docks() {
@@ -17,6 +21,10 @@ fn the_drawer_hides_only_the_page_s_docks() {
         assert!(
             rule.contains(".screen .screen *"),
             "a nested screen's dock is spared: {rule}"
+        );
+        assert!(
+            rule.contains(LARGE_MODAL),
+            "a large modal's dock is spared wherever it mounts: {rule}"
         );
     }
 }
