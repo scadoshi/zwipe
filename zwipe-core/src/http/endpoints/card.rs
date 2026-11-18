@@ -162,6 +162,8 @@ impl Endpoint for SearchCards {
 pub struct LookupCards(pub HttpCardLookup);
 impl Endpoint for LookupCards {
     const METHOD: Method = Method::Post;
+    const AUTH: bool = false;
+    const AUTH_OPTIONAL: bool = true;
     type Request = HttpCardLookup;
     type Response = Vec<Card>;
     fn path(&self) -> Cow<'static, str> {

@@ -33,6 +33,8 @@ pub mod fetch_printings;
 pub mod fetch_sets;
 /// Fetch the Universes Beyond franchise catalog.
 pub mod fetch_ub_franchises;
+/// Look cards up by name for the card search, signed in or out.
+pub mod lookup_cards;
 /// Search cards with filters.
 pub mod search_cards;
 /// Search commander candidates (popularity-ordered, banded, wildcarded).
