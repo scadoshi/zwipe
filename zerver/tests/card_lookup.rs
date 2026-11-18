@@ -240,3 +240,21 @@ async fn the_route_is_limited_per_address(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
     assert!(headers.contains_key(header::RETRY_AFTER), "{headers:?}");
 }
+
+#[sqlx::test]
+async fn a_body_over_4_kb_is_refused_before_it_is_read(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let padded = json!({ "name": "bolt", "pad": "x".repeat(5000) });
+    let (status, _, _) = app
+        .send_raw(Method::POST, CARD_LOOKUP_ROUTE, Some(padded), None, &[])
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::PAYLOAD_TOO_LARGE,
+        "a lookup body is at most about 1 KB"
+    );
+    let (status, _) = app
+        .post(CARD_LOOKUP_ROUTE, json!({ "name": "bolt" }), None)
+        .await;
+    assert_eq!(status, StatusCode::OK, "a real lookup still fits");
+}
