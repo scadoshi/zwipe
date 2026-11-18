@@ -92,7 +92,8 @@ verified="$(psql "$VERIFY_URL" -Atqc "update users set email_verified_at = coale
 [ "$verified" = 1 ] || { echo "couldn't make the localcheck account; see $RUN_DIR/zerver.out" >&2; exit 1; }
 
 step "start the web app on :$WEB_PORT (dx serve)"
-# The build bakes this in, and the process env wins over zwiper-web/.env.
+# The build bakes this in, and the process env wins over zwiper-web/.env. The check only trips on
+# a later edit to this line; drive.mjs's own check of the page's API is the one a sign-in relies on.
 BACKEND="http://localhost:$ZERVER_PORT"
 require_local_backend "$BACKEND"
 (
