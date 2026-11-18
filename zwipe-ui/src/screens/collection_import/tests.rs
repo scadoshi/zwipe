@@ -73,27 +73,37 @@ fn a_replace_asks_first_and_sends_only_on_confirm() {
 }
 
 #[test]
-fn a_file_past_the_cap_is_turned_down_and_the_last_pick_stays() {
-    let mut state = State::new();
-    picked(&mut state);
-    let effects = state.update(Action::PickFile {
-        name: "huge.csv".into(),
-        text: "x".repeat(MAX_BODY_BYTES + 1),
-    });
-    assert_eq!(
-        effects,
-        [Effect::Toast(Toast::normal(ToastKind::Error, TOO_BIG))]
-    );
-    assert_eq!(state.file_name(), Some("manabox.csv"));
-    assert_eq!(
-        state.update(Action::PickedTooBig),
-        [Effect::Toast(Toast::normal(ToastKind::Error, TOO_BIG))]
-    );
-    assert_eq!(
-        state.file_name(),
-        Some("manabox.csv"),
-        "a file the client turned down by size changes nothing"
-    );
+fn a_refused_pick_clears_the_last_one_so_import_sends_nothing() {
+    let refusals = [
+        (
+            "read over the cap",
+            Action::PickFile {
+                name: "huge.csv".into(),
+                text: "x".repeat(MAX_BODY_BYTES + 1),
+            },
+            TOO_BIG,
+        ),
+        ("too big to read", Action::PickedTooBig, TOO_BIG),
+        ("unreadable", Action::Unreadable, UNREADABLE),
+    ];
+    for (case, refused, line) in refusals {
+        let mut state = State::new();
+        picked(&mut state);
+        assert_eq!(
+            state.update(refused),
+            [Effect::Toast(Toast::normal(ToastKind::Error, line))],
+            "{case}"
+        );
+        assert_eq!(state.file_name(), None, "{case}: the field empties");
+        assert!(!state.can_submit(), "{case}: Import is off");
+        assert_eq!(
+            state.update(Action::Submit),
+            [],
+            "{case}: the old file stays unsent"
+        );
+        picked(&mut state);
+        assert!(state.can_submit(), "{case}: a good pick turns it back on");
+    }
 }
 
 #[test]

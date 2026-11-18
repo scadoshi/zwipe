@@ -78,16 +78,16 @@ pub enum Action {
     /// Picks whether the import adds or replaces.
     PickMode(ImportMode),
     /// A file was picked and read: its name and its text. A file whose request would pass the
-    /// size cap is turned down with a toast and the last pick stays.
+    /// size cap is turned down with a toast and clears the last pick.
     PickFile {
         /// The file's name, shown in the field.
         name: String,
         /// The file's text.
         text: String,
     },
-    /// A file past the size cap was picked; the client didn't read it. The last pick stays.
+    /// A file past the size cap was picked; the client didn't read it. It clears the last pick.
     PickedTooBig,
-    /// The browser couldn't read the picked file.
+    /// The browser couldn't read the picked file. It clears the last pick.
     Unreadable,
     /// Sends the import. Does nothing without a file or while one is out. In
     /// [`ImportMode::Replace`] it asks first, with [`Effect::ConfirmReplace`].
@@ -173,16 +173,21 @@ impl State {
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         match action {
             Action::PickMode(mode) => self.mode = mode,
+            // A refused pick replaces the last one too, so Import never sends a file the field
+            // no longer names.
             Action::PickFile { name, text } => {
                 if body_bytes(&text) > MAX_BODY_BYTES {
+                    self.file = None;
                     return vec![Effect::Toast(Toast::normal(ToastKind::Error, TOO_BIG))];
                 }
                 self.file = Some(Picked { name, text });
             }
             Action::PickedTooBig => {
+                self.file = None;
                 return vec![Effect::Toast(Toast::normal(ToastKind::Error, TOO_BIG))];
             }
             Action::Unreadable => {
+                self.file = None;
                 return vec![Effect::Toast(Toast::normal(ToastKind::Error, UNREADABLE))];
             }
             Action::Submit => {
