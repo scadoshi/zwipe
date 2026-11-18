@@ -25,6 +25,7 @@ use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::timeout::TimeoutLayer;
 use uuid::Uuid;
+use zwipe_core::domain::collection::limits::MAX_BODY_BYTES;
 use zwipe_core::http::paths::CHANGELOG_ROUTE;
 
 use crate::domain::auth::access_token::JwtSecret;
@@ -168,7 +169,7 @@ async fn public_changelog_cors(request: Request, next: Next) -> Response {
 
 // == server ==
 
-/// Largest request body accepted on any route, in bytes (2 MiB).
+/// Largest request body accepted on any route but the collection routes, in bytes (2 MiB).
 const REQUEST_BODY_LIMIT: usize = 2 * 1024 * 1024;
 
 /// How long a request may run before it is answered with 408.
@@ -277,7 +278,7 @@ pub fn build_router(
     // Layer order is innermost-first, outermost-last. Request flows outer→inner;
     // response flows inner→outer. Effective stack: SetRequestId → PropagateRequestId
     // → trace → CatchPanic → Compression → Cors → security_headers → Timeout(30s)
-    // → RequestBodyLimit(2 MiB, innermost).
+    // → RequestBodyLimit (innermost: 2 MiB, or the collection routes' own cap).
     let x_request_id = header::HeaderName::from_static("x-request-id");
     let cookie_origins =
         handlers::auth::cookie_session::CookieOrigins(allowed_origins.clone().into());
@@ -285,14 +286,23 @@ pub fn build_router(
         .merge(
             // last-active layer wraps private routes only: it peeks the Bearer
             // token, so it must sit where every request carries one
-            routes::private_routes(jwt_secret).layer(axum::middleware::from_fn_with_state(
-                state.clone(),
-                middleware::track_last_active,
-            )),
+            routes::private_routes(jwt_secret.clone())
+                .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
+                .layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    middleware::track_last_active,
+                )),
         )
-        .merge(routes::public_routes())
+        .merge(
+            routes::collection_routes(jwt_secret)
+                .layer(RequestBodyLimitLayer::new(MAX_BODY_BYTES))
+                .layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    middleware::track_last_active,
+                )),
+        )
+        .merge(routes::public_routes().layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT)))
         .layer(axum::Extension(cookie_origins))
-        .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
             REQUEST_TIMEOUT,

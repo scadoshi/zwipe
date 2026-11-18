@@ -582,29 +582,10 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(60))
             .burst_size(5)
-            .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
-    );
-    // burst 3, then 1 per 20 s, per account and per address: an import reads a whole file and
-    // writes up to 50,000 rows in one transaction.
-    let collection_import_user_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(20))
-            .burst_size(3)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    let collection_import_ip_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(20))
-            .burst_size(3)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
-    );
-
     Router::new()
         .nest(
             "/api",
@@ -724,22 +705,6 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                     ),
                 )
                 .nest(
-                    "/collection",
-                    Router::new()
-                        .route(
-                            "/import",
-                            post(collection::import_collection).layer(
-                                GovernorLayer::new(collection_import_user_config)
-                                    .error_handler(unauthorized_on_missing_key),
-                            ),
-                        )
-                        .layer(DefaultBodyLimit::max(MAX_BODY_BYTES))
-                        .layer(
-                            GovernorLayer::new(collection_import_ip_config)
-                                .error_handler(stable_rate_limit),
-                        ),
-                )
-                .nest(
                     "/deck",
                     Router::new()
                         .route(
@@ -792,6 +757,67 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                                         .delete(deck_card::delete_deck_card),
                                 ),
                         ),
+                ),
+        )
+        .layer(GovernorLayer::new(private_config).error_handler(unauthorized_on_missing_key))
+        .layer(private_no_store_layer())
+}
+
+/// The collection routes. They take bodies up to [`MAX_BODY_BYTES`], so they sit outside the
+/// 2 MiB cap the other routes share and carry their own; the private routes' per-account limit
+/// and no-store header apply here too.
+///
+/// # Panics
+///
+/// Never in practice: a governor config only fails to build on a zero period or burst, and every
+/// one here is a non-zero constant.
+#[expect(
+    clippy::expect_used,
+    reason = "every governor config has a non-zero period and burst, so finish never returns None"
+)]
+pub fn collection_routes(jwt_secret: JwtSecret) -> Router<AppState> {
+    let private_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_millis(600))
+            .burst_size(500)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
+    // burst 3, then 1 per 20 s, per account and per address: an import reads a whole file and
+    // writes up to 50,000 rows in one transaction.
+    let collection_import_user_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(20))
+            .burst_size(3)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret))
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
+    let collection_import_ip_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(20))
+            .burst_size(3)
+            .key_extractor(CfConnectingIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
+
+    Router::new()
+        .nest(
+            "/api/collection",
+            Router::new()
+                .route(
+                    "/import",
+                    post(collection::import_collection).layer(
+                        GovernorLayer::new(collection_import_user_config)
+                            .error_handler(unauthorized_on_missing_key),
+                    ),
+                )
+                .layer(DefaultBodyLimit::max(MAX_BODY_BYTES))
+                .layer(
+                    GovernorLayer::new(collection_import_ip_config)
+                        .error_handler(stable_rate_limit),
                 ),
         )
         .layer(GovernorLayer::new(private_config).error_handler(unauthorized_on_missing_key))

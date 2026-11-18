@@ -420,6 +420,16 @@ async fn a_utf16_file_read_as_text_imports_what_it_says(pool: sqlx::PgPool) {
     );
 }
 
+/// `csv` padded to about `bytes` with rows of long names that match nothing.
+fn sized(csv: &str, bytes: usize) -> String {
+    let filler = format!("1,{},,,,,,,,,,,\n", "x".repeat(MAX_CELL_CHARS - 12));
+    let mut out = csv.to_owned();
+    while out.len() < bytes {
+        out.push_str(&filler);
+    }
+    out
+}
+
 #[sqlx::test]
 async fn the_route_holds_its_caps(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
@@ -433,12 +443,15 @@ async fn the_route_holds_its_caps(pool: sqlx::PgPool) {
     let (status, _) = import(&app, None, &one, "add").await;
     assert_eq!(status, StatusCode::UNAUTHORIZED, "no session");
 
-    let huge = format!(
-        "{ARCHIDEKT_HEADER}\n{}",
-        "1,a,,,,,,,,,,,\n".repeat(MAX_BODY_BYTES / 14 + 1)
+    // Another account for the turned-down bodies, which spend its budget too.
+    let (other, _) = app.register("capped2").await;
+    let over = sized(&one, MAX_BODY_BYTES / 8 * 9);
+    let (status, _) = import(&app, Some(&other), &over, "add").await;
+    assert_eq!(
+        status,
+        StatusCode::PAYLOAD_TOO_LARGE,
+        "a 4.5 MiB body is past the cap"
     );
-    let (status, _) = import(&app, Some(&token), &huge, "add").await;
-    assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE, "a body past the cap");
 
     let (status, _) = app
         .send_from(
@@ -446,7 +459,7 @@ async fn the_route_holds_its_caps(pool: sqlx::PgPool) {
             Method::POST,
             IMPORT_COLLECTION_ROUTE,
             Some(json!({ "csv": one })),
-            Some(&token),
+            Some(&other),
         )
         .await;
     assert_eq!(
@@ -457,19 +470,23 @@ async fn the_route_holds_its_caps(pool: sqlx::PgPool) {
 
     let (status, _) = import(&app, Some(&token), &one, "add").await;
     assert_eq!(status, StatusCode::OK);
+    // Past the 2 MiB the other routes take, under the import's own cap.
+    let big = sized(&one, MAX_BODY_BYTES / 8 * 7);
+    assert!(big.len() > 2 * 1024 * 1024);
+    let (status, summary) = import(&app, Some(&token), &big, "add").await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "a 3.5 MiB file gets through: {summary}"
+    );
+    let (status, _) = import(&app, Some(&token), &one, "add").await;
+    assert_eq!(status, StatusCode::OK, "the third of the burst");
     let (status, _) = import(&app, Some(&token), &one, "add").await;
     assert_eq!(
         status,
         StatusCode::TOO_MANY_REQUESTS,
         "past the account's budget, from a new address"
     );
-    assert_eq!(
-        rows(&pool, &uid)
-            .await
-            .iter()
-            .map(|r| r.4)
-            .collect::<Vec<_>>(),
-        vec![1],
-        "only the one import landed"
-    );
+    let copies: Vec<i32> = rows(&pool, &uid).await.iter().map(|r| r.4).collect();
+    assert_eq!(copies, vec![3], "the three imports that got through landed");
 }
