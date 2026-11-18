@@ -7,6 +7,8 @@
 //! The screenshots are files served once, by zwipe.net ([`image_url`]); [`image_size`] gives each
 //! one's size so a page holds its place while it loads.
 
+use crate::content::Surface;
+
 /// A width and a height in pixels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Pixels {
@@ -43,15 +45,17 @@ pub fn image_url(file: &str) -> String {
     format!("{}/guide-images/{file}", crate::domain::site::WEB_BASE)
 }
 
-/// The files `guide`'s screenshots name, in order.
+/// The files `guide`'s screenshots name, in order, every surface's included: zwipe.net serves
+/// the images the web app's guides show too.
 #[must_use]
 pub fn screenshots(guide: &Guide) -> Vec<&'static str> {
     guide
-        .blocks
-        .iter()
+        .all_blocks()
+        .into_iter()
         .filter_map(|block| match block {
             Block::Image { file, .. } => Some(*file),
-            Block::Lead(_)
+            Block::Only(..)
+            | Block::Lead(_)
             | Block::H2(_)
             | Block::P(_)
             | Block::Steps(_)
@@ -67,6 +71,49 @@ pub fn screenshots(guide: &Guide) -> Vec<&'static str> {
 #[must_use]
 pub fn find(slug: &str) -> Option<&'static Guide> {
     GUIDES.iter().find(|guide| guide.slug == slug)
+}
+
+/// `blocks` as `surface` reads them, in order: a [`Block::Only`] for `surface` opens into its
+/// blocks and one for the other surface drops out.
+fn flatten_on(blocks: &'static [Block], surface: Option<Surface>, out: &mut Vec<&'static Block>) {
+    for block in blocks {
+        match block {
+            Block::Only(on, inner) => {
+                if surface.is_none_or(|surface| surface == *on) {
+                    flatten_on(inner, surface, out);
+                }
+            }
+            Block::Lead(_)
+            | Block::H2(_)
+            | Block::P(_)
+            | Block::Steps(_)
+            | Block::Bullets(_)
+            | Block::Swipe(_)
+            | Block::Note(_)
+            | Block::Diagram(_)
+            | Block::Image { .. } => out.push(block),
+        }
+    }
+}
+
+impl Guide {
+    /// The guide's blocks as `surface` shows them: shared ones, and its own [`Block::Only`]s in
+    /// their places. Never a [`Block::Only`] itself.
+    #[must_use]
+    pub fn blocks_on(&self, surface: Surface) -> Vec<&'static Block> {
+        let mut out = Vec::new();
+        flatten_on(self.blocks, Some(surface), &mut out);
+        out
+    }
+
+    /// Every block the guide has on any surface, each surface's own included: what zwipe.net
+    /// serves the images for and what checks read. Never a [`Block::Only`] itself.
+    #[must_use]
+    pub fn all_blocks(&self) -> Vec<&'static Block> {
+        let mut out = Vec::new();
+        flatten_on(self.blocks, None, &mut out);
+        out
+    }
 }
 
 /// A block of article content, drawn in order.
@@ -88,6 +135,10 @@ pub enum Block {
     Note(&'static str),
     /// Monospace flow diagram (whitespace preserved), for showing how steps connect.
     Diagram(&'static str),
+    /// Blocks that show on one [`Surface`] only, in this place: copy that differs while one client
+    /// has a screen the other lacks. Read a guide through [`Guide::blocks_on`], which keeps them
+    /// on their surface and drops them elsewhere.
+    Only(Surface, &'static [Block]),
     /// Screenshot with alt text and an optional caption. `file` is its path under the guides'
     /// image folder (e.g. `"getting-started/01-create-deck.webp"`), its size [`image_size`].
     Image {
@@ -530,68 +581,138 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "The pile advances and you keep swiping. A down swipe takes the save back. The list holds up to 50 commanders.",
             ),
-            Block::H2("The Commander maybeboard screen"),
-            Block::P(
-                "Open Commander maybeboard from the menu. Saves show newest first as card rows with art (the Art chip hides it). Expand a row for details and four actions:",
+            Block::Only(
+                Surface::App,
+                &[
+                    Block::H2("The Commander maybeboard screen"),
+                    Block::P(
+                        "Open Commander maybeboard from the menu. Saves show newest first as card rows with art (the Art chip hides it). Expand a row for details and four actions:",
+                    ),
+                    Block::Image {
+                        file: "commander-maybeboard/02-saved-commanders.webp",
+                        alt: "The Commander maybeboard screen: saved commanders with power level, price, and color pips",
+                        caption: None,
+                    },
+                    Block::Bullets(&[
+                        "[[image]] shows the card full size.",
+                        "`Printings` swaps the printing, and your pick carries into Create deck.",
+                        "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
+                        "`Remove` takes it off the list.",
+                    ]),
+                    Block::Image {
+                        file: "commander-maybeboard/03-expanded-row.webp",
+                        alt: "A saved commander expanded, with Image, Printings, Create deck, and Remove",
+                        caption: None,
+                    },
+                    Block::H2("Add without swiping"),
+                    Block::P(
+                        "Quick add searches commanders by name; tap a result to save it. The color pips and the [[funnel]] narrow the list of saves.",
+                    ),
+                    Block::Image {
+                        file: "commander-maybeboard/04-maybeboard-hint.webp",
+                        alt: "The Commander maybeboard hint: Swipe, Quick add, and Create deck",
+                        caption: None,
+                    },
+                    Block::H2("Swipe from the list"),
+                    Block::P(
+                        "The Swipe button sits on the Commanders panel, even with nothing saved yet, and deals commanders you haven't saved, most played first:",
+                    ),
+                    Block::Swipe(&[
+                        ("left", "skip it"),
+                        ("up", "save it to your commander maybeboard"),
+                        ("right", "start a new deck with it"),
+                        ("down", "undo your last swipe"),
+                    ]),
+                    Block::Note(
+                        "Clear the whole list from the Danger zone panel: tap `Clear` beside Clear maybeboard. It asks first; there's no undo.",
+                    ),
+                ],
             ),
-            Block::Image {
-                file: "commander-maybeboard/02-saved-commanders.webp",
-                alt: "The Commander maybeboard screen: saved commanders with power level, price, and color pips",
-                caption: None,
-            },
-            Block::Bullets(&[
-                "[[image]] shows the card full size.",
-                "`Printings` swaps the printing, and your pick carries into Create deck.",
-                "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
-                "`Remove` takes it off the list.",
-            ]),
-            Block::Image {
-                file: "commander-maybeboard/03-expanded-row.webp",
-                alt: "A saved commander expanded, with Image, Printings, Create deck, and Remove",
-                caption: None,
-            },
-            Block::H2("Add without swiping"),
-            Block::P(
-                "Quick add searches commanders by name; tap a result to save it. The color pips and the [[funnel]] narrow the list of saves.",
-            ),
-            Block::Image {
-                file: "commander-maybeboard/04-maybeboard-hint.webp",
-                alt: "The Commander maybeboard hint: Swipe, Quick add, and Create deck",
-                caption: None,
-            },
-            Block::H2("Swipe from the list"),
-            Block::P(
-                "The Swipe button sits on the Commanders panel, even with nothing saved yet, and deals commanders you haven't saved, most played first:",
-            ),
-            Block::Swipe(&[
-                ("left", "skip it"),
-                ("up", "save it to your commander maybeboard"),
-                ("right", "start a new deck with it"),
-                ("down", "undo your last swipe"),
-            ]),
-            Block::Note(
-                "Clear the whole list from the Danger zone panel: tap `Clear` beside Clear maybeboard. It asks first; there's no undo.",
+            Block::Only(
+                Surface::Web,
+                &[
+                    Block::H2("The Commanders screen"),
+                    Block::P(
+                        "Tap Commanders in the nav. It holds two lists side by side, stacked on a phone: Maybeboard, the commanders you save, and Suggested, the ones that fit your decks. Each has its own Show row, [[funnel]] and Swipe.",
+                    ),
+                    Block::H2("Maybeboard"),
+                    Block::P(
+                        "Saves show as card rows with art. Quick add saves a commander by name, and Sort changes the order. Expand a row for details and four actions:",
+                    ),
+                    Block::Bullets(&[
+                        "[[image]] shows the card full size.",
+                        "`Printings` swaps the printing, and your pick carries into Create deck.",
+                        "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
+                        "`Remove` takes it off the list.",
+                    ]),
+                    Block::H2("Suggested"),
+                    Block::P(
+                        "Your top 10 commanders, ranked against every deck you have in any format, best fit first. Its `?` explains the ranking.",
+                    ),
+                    Block::P(
+                        "Expand a row and tap Why this commander? for the Oracle tags it shares with your decks and the colors you keep building in. While you swipe, the card's details sheet shows the same reasons.",
+                    ),
+                    Block::Bullets(&[
+                        "`Create deck` starts a new deck with it as your commander.",
+                        "`Maybeboard` saves it to the Maybeboard list.",
+                        "`Remove` hides it for a week and pulls the next one up.",
+                    ]),
+                    Block::H2("Swipe from either list"),
+                    Block::P(
+                        "Each list's Swipe deals a stack. Suggested deals its ranking up to 100 deep; Maybeboard deals commanders you haven't saved, most played first.",
+                    ),
+                    Block::Swipe(&[
+                        ("right", "start a new deck with it"),
+                        ("left", "skip it"),
+                        ("up", "save it to your maybeboard"),
+                        ("down", "undo your last swipe"),
+                    ]),
+                    Block::Note(
+                        "Skipped commanders come back after seven days, or sooner with `Clear skips` under Suggested. `Clear maybeboard` empties the saved list; it asks first and there's no undo.",
+                    ),
+                ],
             ),
         ],
     },
     Guide {
         slug: "playstyle",
         title: "Playstyle",
-        summary: "What your decks say about how you play, and commanders ranked against them, with the reasons each one made the list.",
+        summary: "What your decks say about how you play: your colors, card roles, Oracle tags and staples.",
         tags: &["Commander"],
         related: &["commander-maybeboard", "synergy", "activity"],
         blocks: &[
-            Block::Lead(
-                "Playstyle reads every deck you have, in any format, and ranks commanders you haven't built yet.",
+            Block::Only(
+                Surface::App,
+                &[Block::Lead(
+                    "Playstyle reads every deck you have, in any format, and ranks commanders you haven't built yet.",
+                )],
+            ),
+            Block::Only(
+                Surface::Web,
+                &[Block::Lead(
+                    "Playstyle reads every deck you have, in any format, and shows what they have in common.",
+                )],
             ),
             Block::H2("Finding it"),
-            Block::Bullets(&[
-                "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
-                "Your colors, card roles and Oracle tags come first.",
-                "Under them, Suggested commanders lists your top 10 as card rows, best fit first. Its `?` explains the ranking.",
-                "Tap a color chip in the Show row to narrow to those colors; tap again to clear.",
-                "Staples, at the bottom, lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
-            ]),
+            Block::Only(
+                Surface::App,
+                &[Block::Bullets(&[
+                    "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
+                    "Your colors, card roles and Oracle tags come first.",
+                    "Under them, Suggested commanders lists your top 10 as card rows, best fit first. Its `?` explains the ranking.",
+                    "Tap a color chip in the Show row to narrow to those colors; tap again to clear.",
+                    "Staples, at the bottom, lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
+                ])],
+            ),
+            Block::Only(
+                Surface::Web,
+                &[Block::Bullets(&[
+                    "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
+                    "Your colors, card roles and Oracle tags come first.",
+                    "Staples, at the bottom, lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
+                    "Suggested commanders are on the Commanders screen.",
+                ])],
+            ),
             Block::H2("What your decks say"),
             Block::P(
                 "Colors opens first: a bar per color with its mana pip and how many of your cards are that color, colorless last. It's the same panel as on Home. Tap a section under it to open it.",
@@ -619,33 +740,38 @@ pub static GUIDES: &[Guide] = &[
                 alt: "Oracle tags: each tag's Decks, Cards and Impact, the top tag at 100",
                 caption: None,
             },
-            Block::H2("Why this commander"),
-            Block::P(
-                "Expand a row and tap Why this commander? for the Oracle tags it shares with your decks and the colors you keep building in. While you swipe, the card's details sheet shows the same reasons.",
-            ),
-            Block::Image {
-                file: "playstyle/03-why-this-commander.webp",
-                alt: "An expanded suggestion's Why this commander?: the Oracle tags it shares with your decks and a color you keep building in",
-                caption: None,
-            },
-            Block::H2("What you can do with one"),
-            Block::Bullets(&[
-                "Create deck starts a new deck with it as your commander.",
-                "Maybeboard saves it for later.",
-                "Remove hides it for a week and pulls the next one up.",
-            ]),
-            Block::H2("Swipe deeper"),
-            Block::P(
-                "Swipe deals the same ranking as a stack, up to 100 deep. Tap the [[funnel]] while you swipe to narrow it to one color identity.",
-            ),
-            Block::Swipe(&[
-                ("right", "start a new deck with this commander"),
-                ("left", "skip it for a week"),
-                ("up", "save it to your commander maybeboard"),
-                ("down", "undo your last swipe"),
-            ]),
-            Block::P(
-                "Skipped commanders come back after seven days, or sooner with `Clear` beside Clear skips in the Danger zone panel.",
+            Block::Only(
+                Surface::App,
+                &[
+                    Block::H2("Why this commander"),
+                    Block::P(
+                        "Expand a row and tap Why this commander? for the Oracle tags it shares with your decks and the colors you keep building in. While you swipe, the card's details sheet shows the same reasons.",
+                    ),
+                    Block::Image {
+                        file: "playstyle/03-why-this-commander.webp",
+                        alt: "An expanded suggestion's Why this commander?: the Oracle tags it shares with your decks and a color you keep building in",
+                        caption: None,
+                    },
+                    Block::H2("What you can do with one"),
+                    Block::Bullets(&[
+                        "Create deck starts a new deck with it as your commander.",
+                        "Maybeboard saves it for later.",
+                        "Remove hides it for a week and pulls the next one up.",
+                    ]),
+                    Block::H2("Swipe deeper"),
+                    Block::P(
+                        "Swipe deals the same ranking as a stack, up to 100 deep. Tap the [[funnel]] while you swipe to narrow it to one color identity.",
+                    ),
+                    Block::Swipe(&[
+                        ("right", "start a new deck with this commander"),
+                        ("left", "skip it for a week"),
+                        ("up", "save it to your commander maybeboard"),
+                        ("down", "undo your last swipe"),
+                    ]),
+                    Block::P(
+                        "Skipped commanders come back after seven days, or sooner with `Clear` beside Clear skips in the Danger zone panel.",
+                    ),
+                ],
             ),
             Block::Note(
                 "You need a deck with some cards in it before anything shows up. Any format counts.",

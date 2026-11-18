@@ -1,11 +1,13 @@
 //! The guides, open to everyone: the index at `/guides` and one guide at
 //! `/guides/<slug>`, under the signed-in nav or the public one. They are
 //! components' [`GuideIndex`] and [`GuideArticle`], the pages zwipe.net
-//! draws, with every guide link staying in the web app. Each page names its
+//! draws, read as the web app shows them ([`Surface::Web`]: the web's text where a guide's
+//! differs from the app's), with every guide link staying in the web app. Each page names its
 //! zwipe.net twin as canonical, so search engines credit zwipe.net.
 
 use components::{GuideArticle, GuideIndex, GuideMissing};
 use dioxus::prelude::*;
+use zwipe_core::content::Surface;
 use zwipe_core::content::guides::find;
 use zwipe_core::domain::site::WEB_BASE;
 
@@ -58,7 +60,7 @@ pub fn Guides() -> Element {
     rsx! {
         ScreenFrame { title: "Guides", titled: true,
             div { class: "screen-content content-enter",
-                div { class: "web-guides", GuideIndex { href: guide_href } }
+                div { class: "web-guides", GuideIndex { href: guide_href, surface: Surface::Web } }
             }
         }
     }
@@ -85,7 +87,12 @@ pub fn GuidePage(slug: String) -> Element {
         ScreenFrame { title: guide.title, titled: true,
             div { class: "screen-content content-enter",
                 div { class: "web-guides guide-page",
-                    GuideArticle { guide, href: guide_href, index: Route::Guides {}.to_string() }
+                    GuideArticle {
+                        guide,
+                        href: guide_href,
+                        index: Route::Guides {}.to_string(),
+                        surface: Surface::Web,
+                    }
                 }
             }
         }

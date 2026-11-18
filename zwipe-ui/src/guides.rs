@@ -4,6 +4,7 @@
 //! the screenshots a guide's gallery shows. The guides themselves are
 //! [`zwipe_core::content::guides`]; components draws them.
 
+use zwipe_core::content::Surface;
 use zwipe_core::content::guides::{Block, GUIDES, Guide};
 
 /// One run of a guide line: plain text, a `backtick` keyword, or an
@@ -73,13 +74,13 @@ pub struct Shot {
     pub caption: &'static str,
 }
 
-/// A guide's screenshots in order, for its gallery. The article's text
-/// leaves them out.
+/// A guide's screenshots in order as `surface` shows the guide, for its
+/// gallery. The article's text leaves them out.
 #[must_use]
-pub fn shots(guide: &Guide) -> Vec<Shot> {
+pub fn shots(guide: &Guide, surface: Surface) -> Vec<Shot> {
     guide
-        .blocks
-        .iter()
+        .blocks_on(surface)
+        .into_iter()
         .filter_map(|block| {
             if let Block::Image { file, alt, caption } = *block {
                 Some(Shot {
@@ -169,7 +170,7 @@ pub fn tag_color_class(tag: &str) -> &'static str {
 /// Built per keystroke over the compiled [`GUIDES`] (a couple dozen
 /// articles), cheap enough that caching would cost more than it saves.
 #[must_use]
-pub fn haystack(guide: &Guide) -> String {
+pub fn haystack(guide: &Guide, surface: Surface) -> String {
     let mut s = String::new();
     let mut push = |t: &str| {
         s.push_str(&prose(t));
@@ -180,7 +181,7 @@ pub fn haystack(guide: &Guide) -> String {
     for t in guide.tags.iter().copied() {
         push(t);
     }
-    for block in guide.blocks {
+    for block in guide.blocks_on(surface) {
         match block {
             Block::Lead(t) | Block::H2(t) | Block::P(t) | Block::Note(t) => push(t),
             Block::Steps(items) | Block::Bullets(items) => {
@@ -195,8 +196,9 @@ pub fn haystack(guide: &Guide) -> String {
                 }
             }
             // Diagrams are ASCII flow art and images live in the gallery;
-            // neither reads as prose a searcher would type.
-            Block::Diagram(_) | Block::Image { .. } => {}
+            // neither reads as prose a searcher would type. `blocks_on`
+            // never hands back an `Only`.
+            Block::Diagram(_) | Block::Image { .. } | Block::Only(..) => {}
         }
     }
     s.to_lowercase()
@@ -206,20 +208,21 @@ pub fn haystack(guide: &Guide) -> String {
 /// term appears somewhere in its [`haystack`], so extra words narrow the
 /// list.
 #[must_use]
-pub fn matches_query(guide: &Guide, query: &str) -> bool {
-    let hay = haystack(guide);
+pub fn matches_query(guide: &Guide, query: &str, surface: Surface) -> bool {
+    let hay = haystack(guide, surface);
     query.split_whitespace().all(|term| hay.contains(term))
 }
 
 /// The guides the index shows: those carrying `tag` (any, with none) that
-/// match `query`, trimmed and lowercased here, in [`GUIDES`] order.
+/// match `query`, trimmed and lowercased here, in [`GUIDES`] order, each
+/// read as `surface` shows it.
 #[must_use]
-pub fn hits(tag: Option<&str>, query: &str) -> Vec<&'static Guide> {
+pub fn hits(tag: Option<&str>, query: &str, surface: Surface) -> Vec<&'static Guide> {
     let query = query.trim().to_lowercase();
     GUIDES
         .iter()
         .filter(|g| tag.is_none_or(|t| g.tags.contains(&t)))
-        .filter(|g| query.is_empty() || matches_query(g, &query))
+        .filter(|g| query.is_empty() || matches_query(g, &query, surface))
         .collect()
 }
 
@@ -406,12 +409,12 @@ mod tests {
     fn every_icon_token_in_the_guides_names_a_real_icon() {
         let mut lines: Vec<&str> = Vec::new();
         for g in GUIDES {
-            for b in g.blocks {
+            for b in g.all_blocks() {
                 match b {
                     Block::Lead(t) | Block::H2(t) | Block::P(t) | Block::Note(t) => lines.push(t),
                     Block::Steps(items) | Block::Bullets(items) => lines.extend(items.iter()),
                     Block::Swipe(rows) => lines.extend(rows.iter().map(|(_, m)| m)),
-                    Block::Diagram(_) | Block::Image { .. } => {}
+                    Block::Diagram(_) | Block::Image { .. } | Block::Only(..) => {}
                 }
             }
         }
@@ -434,7 +437,7 @@ mod tests {
             "Tap the , then Apply."
         );
         let guide = find("swipe-to-build").expect("the swipe guide ships");
-        let hay = haystack(guide);
+        let hay = haystack(guide, Surface::App);
         assert!(!hay.contains("[["), "{hay}");
         assert!(!hay.contains('`'), "{hay}");
         assert!(hay.contains("synergy"), "{hay}");
@@ -442,24 +445,24 @@ mod tests {
 
     #[test]
     fn search_and_tag_narrow_the_same_list() {
-        assert_eq!(hits(None, "  ").len(), GUIDES.len());
-        let tagged = hits(Some("Commander"), "");
+        assert_eq!(hits(None, "  ", Surface::App).len(), GUIDES.len());
+        let tagged = hits(Some("Commander"), "", Surface::App);
         assert_ne!(tagged.len(), 0, "a guide is tagged Commander");
         assert!(tagged.iter().all(|g| g.tags.contains(&"Commander")));
-        let searched = hits(None, "  SYNERGY ");
+        let searched = hits(None, "  SYNERGY ", Surface::App);
         assert!(searched.iter().any(|g| g.slug == "swipe-to-build"));
         assert!(
-            hits(None, "synergy zzzznothing").is_empty(),
+            hits(None, "synergy zzzznothing", Surface::App).is_empty(),
             "every term must match"
         );
-        assert!(hits(Some("Commander"), "synergy").len() <= tagged.len());
+        assert!(hits(Some("Commander"), "synergy", Surface::App).len() <= tagged.len());
     }
 
     #[test]
     fn a_gallery_shot_captions_with_its_alt_when_it_has_no_caption() {
         let guide = GUIDES
             .iter()
-            .find(|g| !shots(g).is_empty())
+            .find(|g| !shots(g, Surface::App).is_empty())
             .expect("a guide has screenshots");
         let blocks: Vec<_> = guide
             .blocks
@@ -472,7 +475,7 @@ mod tests {
                 }
             })
             .collect();
-        let got = shots(guide);
+        let got = shots(guide, Surface::App);
         assert_eq!(got.len(), blocks.len());
         for (shot, (file, alt, caption)) in got.iter().zip(blocks) {
             assert_eq!(shot.file, file);
@@ -528,5 +531,24 @@ mod tests {
             "100%",
             "a broken escape stays"
         );
+    }
+
+    #[test]
+    fn the_web_reads_its_own_playstyle_and_the_app_today_s() {
+        let playstyle = GUIDES.iter().find(|g| g.slug == "playstyle").unwrap();
+        let app = haystack(playstyle, Surface::App);
+        let web = haystack(playstyle, Surface::Web);
+        assert!(app.contains("why this commander"), "{app}");
+        assert!(!web.contains("why this commander"), "{web}");
+        assert!(
+            web.contains("suggested commanders are on the commanders screen"),
+            "{web}"
+        );
+        assert!(!app.contains("commanders screen"), "{app}");
+        assert!(
+            web.contains("what your decks say"),
+            "shared blocks stay on both"
+        );
+        assert!(app.contains("what your decks say"));
     }
 }

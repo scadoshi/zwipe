@@ -4,6 +4,7 @@
 //! Whether a user has seen one is the server's to record, under
 //! [`OneTimeHint::key`]; this module only holds what the dialogs say.
 
+use zwipe_core::content::Surface;
 use zwipe_core::domain::user::hints::OneTimeHint;
 
 use super::{
@@ -590,6 +591,89 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
     content(title, blocks)
 }
 
+/// [`content_for_user`] as `surface` shows it: the web app's own text for the hints whose screens
+/// differ from the app's (the welcome, Playstyle and the Commanders screen, which the web has and
+/// the app doesn't yet). Every other hint, and every hint in the app, reads as
+/// [`content_for_user`] has it.
+#[must_use]
+pub fn content_on(
+    hint: OneTimeHint,
+    email_verified: bool,
+    surface: Surface,
+) -> Option<HintContent> {
+    if surface == Surface::Web
+        && let Some(web) = web_content(hint, email_verified)
+    {
+        return Some(web);
+    }
+    content_for_user(hint, email_verified)
+}
+
+/// The web app's text for `hint` where it differs from the app's, else `None`.
+fn web_content(hint: OneTimeHint, email_verified: bool) -> Option<HintContent> {
+    if hint == OneTimeHint::FirstLogin {
+        return Some(welcome_on(!email_verified, Surface::Web));
+    }
+    if hint == OneTimeHint::SuggestedCommanders {
+        return Some(content(
+            "Playstyle",
+            vec![
+                line(vec![text(
+                    "Your colors, card roles, top Oracle tags and staples from every deck you own in any format",
+                )]),
+                line(vec![
+                    text("Suggested commanders are on "),
+                    key("Commanders"),
+                ]),
+            ],
+        ));
+    }
+    if hint == OneTimeHint::CommanderMaybeboard {
+        return Some(content(
+            "Commanders",
+            vec![
+                line(vec![text(
+                    "Your saved commanders and the ones that fit your decks, side by side",
+                )]),
+                bullet(vec![
+                    key("Maybeboard"),
+                    text(" holds the commanders you save"),
+                ]),
+                bullet(vec![
+                    key("Suggested"),
+                    text(" ranks your top 10 against all your decks, best fit first"),
+                ]),
+                bullet(vec![
+                    key("Create deck"),
+                    text(" starts a deck with that commander"),
+                ]),
+                bullet(vec![
+                    key_in("Remove", Role::Error),
+                    text(" takes a save off Maybeboard, or hides a suggestion for a week"),
+                ]),
+                bullet(vec![
+                    key("Swipe"),
+                    text(" deals either list: "),
+                    emph("right", Role::Success),
+                    text(" starts a deck, "),
+                    emph("up", Role::Warning),
+                    text(" saves, "),
+                    emph("left", Role::Error),
+                    text(" skips"),
+                ]),
+                bullet(vec![key("Quick add"), text(" saves a commander by name")]),
+                bullet(vec![
+                    key("Show"),
+                    text(" and "),
+                    icon_key(KeyIcon::Funnel),
+                    text(" narrow each list on its own"),
+                ]),
+            ],
+        ));
+    }
+    None
+}
+
 /// [`content_for`] for an account whose email is verified (`email_verified`) or not: a verified
 /// account's welcome leaves out verifying it. Every other hint reads the same.
 #[must_use]
@@ -602,6 +686,25 @@ pub fn content_for_user(hint: OneTimeHint, email_verified: bool) -> Option<HintC
 
 /// Home's welcome, with the line that asks to verify the email when `ask_to_verify`.
 fn welcome(ask_to_verify: bool) -> HintContent {
+    welcome_on(ask_to_verify, Surface::App)
+}
+
+/// [`welcome`] as `surface` shows it: the web's Colors line points to Commanders for suggestions.
+fn welcome_on(ask_to_verify: bool, surface: Surface) -> HintContent {
+    let suggestions = match surface {
+        Surface::App => bullet(vec![
+            key("Colors"),
+            text(" counts your decks' cards by color. "),
+            key("Playstyle"),
+            text(" suggests commanders"),
+        ]),
+        Surface::Web => bullet(vec![
+            key("Colors"),
+            text(" counts your decks' cards by color. "),
+            key("Commanders"),
+            text(" suggests ones that fit your decks"),
+        ]),
+    };
     let mut blocks = vec![
         bullet(vec![
             key("Decks"),
@@ -611,12 +714,7 @@ fn welcome(ask_to_verify: bool) -> HintContent {
             key("All decks"),
             text(" opens the full list"),
         ]),
-        bullet(vec![
-            key("Colors"),
-            text(" counts your decks' cards by color. "),
-            key("Playstyle"),
-            text(" suggests commanders"),
-        ]),
+        suggestions,
         bullet(vec![
             key("Account"),
             text(", the "),
@@ -837,6 +935,41 @@ mod tests {
             swipe_select(SwipeSelectMode::Picking(Slot::SignatureSpell.noun(None))).blocks[0]
                 .plain(),
             "Swipe right picks that signature spell"
+        );
+    }
+
+    #[test]
+    fn the_web_reads_its_own_welcome_playstyle_and_commanders_hints() {
+        let plain = |c: HintContent| c.blocks.iter().map(Block::plain).collect::<Vec<String>>();
+        for hint in [
+            OneTimeHint::FirstLogin,
+            OneTimeHint::SuggestedCommanders,
+            OneTimeHint::CommanderMaybeboard,
+            OneTimeHint::Activity,
+        ] {
+            assert_eq!(
+                content_on(hint, false, Surface::App),
+                content_for_user(hint, false),
+                "the app reads today's text: {hint:?}"
+            );
+        }
+        let welcome = plain(content_on(OneTimeHint::FirstLogin, true, Surface::Web).unwrap());
+        assert!(welcome.contains(
+            &"Colors counts your decks' cards by color. Commanders suggests ones that fit your decks"
+                .to_owned()
+        ));
+        let playstyle = content_on(OneTimeHint::SuggestedCommanders, true, Surface::Web).unwrap();
+        assert_eq!(playstyle.title, "Playstyle");
+        assert_eq!(
+            plain(playstyle).last().map(String::as_str),
+            Some("Suggested commanders are on Commanders")
+        );
+        let commanders = content_on(OneTimeHint::CommanderMaybeboard, true, Surface::Web).unwrap();
+        assert_eq!(commanders.title, "Commanders");
+        assert_eq!(
+            content_on(OneTimeHint::Activity, true, Surface::Web),
+            content_for_user(OneTimeHint::Activity, true),
+            "a hint the web shares reads the same"
         );
     }
 }
