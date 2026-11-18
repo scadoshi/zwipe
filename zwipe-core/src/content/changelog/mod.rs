@@ -84,6 +84,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The filter's Reset keeps your price currency",
         "The filter's toasts say cleared, applied or already at default to match what changed",
         "On the web, Esc on a hint over a sheet closes only the hint",
+        "Enter or Go in the Format, Deck tags, Oracle tags and Send to searches picks the top match, highlighted as you type",
     ],
 }];
 

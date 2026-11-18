@@ -9,8 +9,8 @@
 
 use components::hint::ContentHintDialog;
 use components::{
-    Button, ButtonVariant, Chip, DialogAction, DockAction, icons, use_overlay_back_action,
-    use_picker_search,
+    Button, ButtonVariant, Chip, DialogAction, DockAction, PickerChoice, PickerSearch, icons,
+    use_overlay_back_action, use_picker_search,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -85,6 +85,29 @@ pub(crate) fn OracleTagSelect(
     } else {
         pickers::oracle_tag_results(tags, &sel, &q)
     };
+    let target = if results.is_empty() {
+        None
+    } else {
+        pickers::oracle_tag_on_enter(tags, &sel, &q)
+    };
+    let target_slug = target.as_ref().map(|t| t.slug.clone());
+    let picked = sel.clone();
+    // Enter adds the top match and keeps the picker open for the next.
+    let add_target = move |typed: String| {
+        let tag = {
+            let read = cell.read();
+            let all: &[OracleTag] = read.loaded().map_or(&[], Vec::as_slice);
+            pickers::oracle_tag_on_enter(all, &picked, &typed)
+        };
+        let Some(tag) = tag else {
+            return;
+        };
+        if pickers::enter_adds_tag(&picked, &tag.slug) {
+            on_toggle.call(tag.slug.clone());
+        }
+        focused.set(Some(tag));
+        query.set(String::new());
+    };
 
     rsx! {
         div { class: "{screen_class}", style: layer().map(|z| format!("--overlay-z: {z};")),
@@ -118,18 +141,11 @@ pub(crate) fn OracleTagSelect(
                             }
                         }
 
-                        div { class: "chip-row",
-                            label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: "oracle-tag-search", "Search" }
-                            input { class: "input input-compact",
-                                id: "oracle-tag-search",
-                                r#type: "text",
-                                placeholder: "Search all Oracle tags",
-                                value: "{query()}",
-                                autocapitalize: "none",
-                                autocorrect: "off",
-                                spellcheck: "false",
-                                oninput: move |event| query.set(event.value()),
-                            }
+                        PickerSearch {
+                            id: "oracle-tag-search",
+                            placeholder: "Search all Oracle tags",
+                            query,
+                            on_enter: add_target,
                         }
 
                         div { class: "tag-def-bar",
@@ -160,16 +176,17 @@ pub(crate) fn OracleTagSelect(
                                     let is_sel = sel.contains(&slug);
                                     let tag_for_focus = t.clone();
                                     rsx! {
-                                        Chip {
-                                            key: "{slug}",
-                                            selected: is_sel,
-                                            onclick: move |_| {
-                                                focused.set(Some(tag_for_focus.clone()));
-                                                // Clear the search so the curated grid returns after picking.
-                                                query.set(String::new());
-                                                on_toggle.call(slug.clone());
-                                            },
-                                            "{t.slug}"
+                                        PickerChoice { key: "{slug}", target: target_slug.as_deref() == Some(slug.as_str()),
+                                            Chip {
+                                                selected: is_sel,
+                                                onclick: move |_| {
+                                                    focused.set(Some(tag_for_focus.clone()));
+                                                    // Clear the search so the curated grid returns after picking.
+                                                    query.set(String::new());
+                                                    on_toggle.call(slug.clone());
+                                                },
+                                                "{t.slug}"
+                                            }
                                         }
                                     }
                                 }
