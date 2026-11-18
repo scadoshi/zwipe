@@ -103,7 +103,7 @@ fn any_hover_key(key: &str) -> Option<HoverKey> {
     match shortcuts::card_key(key) {
         Some(CardKey::Flip) => return Some(HoverKey::Flip),
         Some(CardKey::Details) => return Some(HoverKey::Details),
-        Some(CardKey::Filter) | None => {}
+        Some(CardKey::Filter | CardKey::FilterByName) | None => {}
     }
     match key {
         "p" | "P" => Some(HoverKey::Printings),

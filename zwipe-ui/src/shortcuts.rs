@@ -17,13 +17,15 @@ pub enum Editable {
     No,
 }
 
-/// A key that means the same on every screen: `f` opens the screen's filter where it has one, `v`
-/// flips the card on show or, a card with one face, shows its meld, and `d` opens or closes the
-/// card's details.
+/// A key that means the same on every screen: `f` opens the screen's filter where it has one and
+/// `/` opens it at its Name section with the name field focused, `v` flips the card on show or, a
+/// card with one face, shows its meld, and `d` opens or closes the card's details.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CardKey {
     /// Opens the screen's filter.
     Filter,
+    /// Opens the screen's filter at its Name section, the name field focused.
+    FilterByName,
     /// Flips the card on show, or toggles its meld.
     Flip,
     /// Opens or closes the card's details.
@@ -31,11 +33,12 @@ pub enum CardKey {
 }
 
 /// The [`CardKey`] `key` (a `KeyboardEvent.key`) stands for. Every screen's own key map defers to
-/// this one for `f`, `v` and `d`.
+/// this one for `f`, `/`, `v` and `d`.
 #[must_use]
 pub fn card_key(key: &str) -> Option<CardKey> {
     match key {
         "f" | "F" => Some(CardKey::Filter),
+        FILTER_NAME_KEY => Some(CardKey::FilterByName),
         "v" | "V" => Some(CardKey::Flip),
         "d" | "D" => Some(CardKey::Details),
         _ => None,
@@ -219,8 +222,15 @@ pub fn rows_of(groups: &[SheetGroup]) -> Vec<SheetRow> {
         .collect()
 }
 
-/// The key that puts the cursor in a page's Quick add.
-pub const QUICK_ADD_KEY: &str = "/";
+/// The key that puts the cursor in a page's Quick add. Lowercase only, so Shift+Q stays free.
+pub const QUICK_ADD_KEY: &str = "q";
+
+/// The key that opens a screen's filter at its Name section with the name field focused
+/// ([`CardKey::FilterByName`]).
+pub const FILTER_NAME_KEY: &str = "/";
+
+/// The sheet's row for [`FILTER_NAME_KEY`], on every screen with a filter.
+pub const FILTER_NAME_ROW: SheetRow = (&[FILTER_NAME_KEY], "Filter by name");
 
 /// A deck action the owner's deck page opens from the keyboard, as its dock button does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -271,7 +281,7 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
         (&["+"], "One more"),
         (&["u", UNDO_COMBO], "Undo"),
     ];
-    let filter: SheetRow = (&["f"], "Filter");
+    let filter: [SheetRow; 2] = [(&["f"], "Filter"), FILTER_NAME_ROW];
     let quick_add: SheetRow = (&[QUICK_ADD_KEY], "Quick add");
     let (edits, quick_add, actions) = match editable {
         Editable::Yes => (&edits[..], Some(quick_add), &DECK_ACTION_ROWS[..]),
@@ -282,7 +292,7 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
         .chain([open])
         .chain(reads)
         .chain(edits.iter().copied())
-        .chain([filter])
+        .chain(filter)
         .chain(quick_add)
         .chain(actions.iter().copied())
         .collect()
@@ -344,7 +354,7 @@ pub fn deck_cards_groups(editable: Editable) -> Vec<SheetGroup> {
             .collect(),
         open: find("Enter"),
         card: pick(&["p", "i", "v", "d", "m", "s", "Shift+S", "-", "+"]),
-        page: pick(&["u", "f", QUICK_ADD_KEY, "a", "r", "e"]),
+        page: pick(&["u", "f", FILTER_NAME_KEY, QUICK_ADD_KEY, "a", "r", "e"]),
         ..ScreenKeys::default()
     })
 }
@@ -521,7 +531,9 @@ mod tests {
                 ),
                 (
                     "Page",
-                    vec!["u", "f", "/", "a", "r", "e", "t", "?", "Shift+H", "Esc"]
+                    vec![
+                        "u", "f", "/", "q", "a", "r", "e", "t", "?", "Shift+H", "Esc"
+                    ]
                 ),
                 ("In printings", vec!["←", "h", "v", "Enter"]),
                 ("In themes", vec!["↑", "h", "gg", "Enter"]),
@@ -557,7 +569,7 @@ mod tests {
                     vec!["↑", "h", "Home", "↑", "gg", "Shift+G", "Enter"]
                 ),
                 ("Card", vec!["p", "i", "v", "d"]),
-                ("Page", vec!["f", "t", "?", "Shift+H", "Esc"]),
+                ("Page", vec!["f", "/", "t", "?", "Shift+H", "Esc"]),
                 ("In printings", vec!["←", "h", "v", "Enter"]),
                 ("In themes", vec!["↑", "h", "gg", "Enter"]),
             ]
@@ -657,9 +669,11 @@ mod tests {
             assert!(owner.contains(&key), "{key} on the owner's deck");
             assert!(shared.contains(&key), "{key} on a shared deck");
         }
-        // `/` focuses Quick add, which only the owner's page has.
+        // `q` focuses Quick add, which only the owner's page has; `/` filters on both.
+        assert!(owner.contains(&"q"), "q on the owner's deck: {owner:?}");
+        assert!(!shared.contains(&"q"), "a shared deck has no Quick add");
         assert!(owner.contains(&"/"), "/ on the owner's deck: {owner:?}");
-        assert!(!shared.contains(&"/"), "a shared deck has no Quick add");
+        assert!(shared.contains(&"/"), "/ on a shared deck: {shared:?}");
     }
 
     #[test]
@@ -672,7 +686,7 @@ mod tests {
             read_only,
             [
                 "↑", "↓", "←", "→", "h", "j", "k", "l", "Home", "End", "Enter", "p", "i", "v", "d",
-                "f"
+                "f", "/"
             ]
         );
         let editable = deck_cards_rows(Editable::Yes);
@@ -755,5 +769,29 @@ mod tests {
         assert_eq!(card_key("V"), Some(CardKey::Flip));
         assert_eq!(card_key("d"), Some(CardKey::Details));
         assert_eq!(card_key("x"), None);
+    }
+
+    #[test]
+    fn slash_opens_the_filter_at_its_name_and_q_opens_quick_add() {
+        assert_eq!(card_key("/"), Some(CardKey::FilterByName));
+        for key in ["q", "Q"] {
+            assert_eq!(
+                card_key(key),
+                None,
+                "{key} is Quick add's, not the filter's"
+            );
+        }
+        let owner = rows_of(&deck_cards_groups(Editable::Yes));
+        assert!(owner.contains(&(&["q"][..], "Quick add")), "{owner:?}");
+        assert!(owner.contains(&(&["/"][..], "Filter by name")), "{owner:?}");
+        let shared = rows_of(&deck_cards_groups(Editable::No));
+        assert!(
+            shared.contains(&(&["/"][..], "Filter by name")),
+            "{shared:?}"
+        );
+        assert!(
+            !shared.iter().any(|(_, does)| *does == "Quick add"),
+            "a shared deck has no Quick add: {shared:?}"
+        );
     }
 }

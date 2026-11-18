@@ -5,7 +5,7 @@
 use dioxus::prelude::*;
 use zwipe_ui::filter::chips as filter_chips;
 use zwipe_ui::filter::draft::FilterDraft;
-use zwipe_ui::filter::fields::{End, Stat};
+use zwipe_ui::filter::fields::{End, Stat, TextField};
 use zwipe_ui::filter::picker::{PickerField, Sources};
 use zwipe_ui::filter::sections::{
     self, ChipSet, Clear, ModeChip, NumberField, Row, Section, StepRow,
@@ -15,6 +15,11 @@ use zwipe_ui::toast::Toast;
 
 use super::raise;
 use crate::{Chip, ClearWrap};
+
+/// Whether `field` is the box `/` focuses as its section opens ([`super::open_at_name`]).
+fn takes_name_focus(field: TextField) -> bool {
+    field == TextField::NameContains
+}
 
 /// Moves `epoch` on, remounting the boxes that hold typed text.
 pub(super) fn bump(mut epoch: Signal<u32>) {
@@ -142,6 +147,8 @@ fn RowView(
                         autocapitalize: "none",
                         autocorrect: "off",
                         spellcheck: "false",
+                        "data-enter-applies": "true",
+                        "data-filter-name": takes_name_focus(field).then_some("true"),
                         oninput: move |e| field.set(&mut draft.write().draft, &e.value()),
                     }
                 }
@@ -597,6 +604,20 @@ mod tests {
     use super::*;
 
     const ANY_ALL: ModeChip = ModeChip::Match(MatchGroup::BasicTypes);
+
+    #[test]
+    fn slash_lands_on_name_contains_alone() {
+        assert!(takes_name_focus(TextField::NameContains));
+        for field in [
+            TextField::NameNotContains,
+            TextField::OracleContains,
+            TextField::OracleNotContains,
+            TextField::FlavorContains,
+            TextField::FlavorNotContains,
+        ] {
+            assert!(!takes_name_focus(field), "{field:?}");
+        }
+    }
 
     #[test]
     fn a_chip_that_comes_with_a_pick_folds_until_then() {

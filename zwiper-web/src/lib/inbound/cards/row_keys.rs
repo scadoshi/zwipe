@@ -42,7 +42,7 @@ pub(crate) fn row_key(key: &str) -> Option<RowKey> {
     match shortcuts::card_key(key) {
         Some(CardKey::Flip) => return Some(RowKey::Flip),
         Some(CardKey::Details) => return Some(RowKey::Details),
-        Some(CardKey::Filter) | None => {}
+        Some(CardKey::Filter | CardKey::FilterByName) | None => {}
     }
     match key {
         "p" | "P" => Some(RowKey::Printings),

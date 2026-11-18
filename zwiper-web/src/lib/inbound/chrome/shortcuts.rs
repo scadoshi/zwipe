@@ -11,8 +11,8 @@ pub use components::keys::{
 pub use components::swipe_stack::SWIPE_LETTERS;
 use components::swipe_stack::{Swipe, swipe_key};
 use zwipe_ui::shortcuts::{
-    self, Editable, FLIP_ROW, ListLayout, ScreenKeys, SheetGroup, SheetRow, card_rows_groups,
-    deck_cards_groups, examples_groups, rows_of,
+    self, Editable, FILTER_NAME_ROW, FLIP_ROW, ListLayout, ScreenKeys, SheetGroup, SheetRow,
+    card_rows_groups, deck_cards_groups, examples_groups, rows_of,
 };
 pub use zwipe_ui::shortcuts::{
     CardKey, DeckAction, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, QUICK_ADD_KEY, UNDO_COMBO,
@@ -33,6 +33,8 @@ pub enum Shortcut {
     Flip,
     /// Opens the filter.
     Filter,
+    /// Opens the filter at its Name section, the name field focused.
+    FilterByName,
     /// Deals the pile again.
     Refresh,
     /// Turns Synergy on or off.
@@ -45,6 +47,7 @@ pub enum Shortcut {
 pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
     match card_key(key) {
         Some(CardKey::Filter) => return Some(Shortcut::Filter),
+        Some(CardKey::FilterByName) => return Some(Shortcut::FilterByName),
         Some(CardKey::Flip) => return Some(Shortcut::Flip),
         Some(CardKey::Details) => return Some(Shortcut::Details),
         None => {}
@@ -158,7 +161,7 @@ pub fn sheet_groups(screen: &ShortcutsScreen) -> Vec<SheetGroup> {
                 (&["d"], "Card details"),
                 (&["v"], FLIP_ROW),
             ];
-            let tools: [SheetRow; 2] = [(&["f"], "Filter"), (&["r"], "Refresh")];
+            let tools: [SheetRow; 3] = [(&["f"], "Filter"), FILTER_NAME_ROW, (&["r"], "Refresh")];
             let synergy = labels.synergy.then_some((&["s"][..], "Synergy on or off"));
             shortcuts::sheet_groups(ScreenKeys {
                 swipe: swipe.into_iter().flatten().collect(),
@@ -224,6 +227,7 @@ mod tests {
             ("v", Shortcut::Flip),
             ("V", Shortcut::Flip),
             ("f", Shortcut::Filter),
+            ("/", Shortcut::FilterByName),
             ("r", Shortcut::Refresh),
             ("s", Shortcut::Synergy),
             ("P", Shortcut::Printings),
@@ -235,7 +239,7 @@ mod tests {
 
     #[test]
     fn other_keys_do_nothing_on_a_swipe_screen() {
-        for key in ["a", "x", "Enter", " ", "Escape", "?", "/", "Tab", "1"] {
+        for key in ["a", "x", "Enter", " ", "Escape", "?", "q", "Tab", "1"] {
             assert_eq!(swipe_screen_shortcut(key), None, "{key}");
         }
     }
@@ -395,6 +399,7 @@ mod tests {
                 "Card details",
                 FLIP_ROW,
                 "Filter",
+                "Filter by name",
                 "Refresh",
                 "Synergy on or off",
                 "Themes",
@@ -565,6 +570,11 @@ mod tests {
             assert_eq!(
                 shortcut == Some(Shortcut::Filter),
                 card_key(&key) == Some(CardKey::Filter),
+                "{key}"
+            );
+            assert_eq!(
+                shortcut == Some(Shortcut::FilterByName),
+                card_key(&key) == Some(CardKey::FilterByName),
                 "{key}"
             );
             assert_eq!(

@@ -55,15 +55,19 @@ enum ScreenKey {
     QuickAdd,
     /// Opens the filter.
     Filter,
+    /// Opens the filter at its Name section, the name field focused.
+    FilterByName,
 }
 
-/// The screen action `key` stands for: `/` Quick add, `f` the filter ([`shortcuts::card_key`]).
+/// The screen action `key` stands for: `q` Quick add, `f` the filter and `/` the filter at its name
+/// field ([`shortcuts::card_key`]).
 /// Flipping a card is `v`, a hover key.
 fn screen_key(key: &str) -> Option<ScreenKey> {
-    if shortcuts::card_key(key) == Some(CardKey::Filter) {
-        return Some(ScreenKey::Filter);
+    match shortcuts::card_key(key) {
+        Some(CardKey::Filter) => Some(ScreenKey::Filter),
+        Some(CardKey::FilterByName) => Some(ScreenKey::FilterByName),
+        _ => (key == shortcuts::QUICK_ADD_KEY).then_some(ScreenKey::QuickAdd),
     }
-    (key == shortcuts::QUICK_ADD_KEY).then_some(ScreenKey::QuickAdd)
 }
 
 use zwipe_ui::deck_cards::keys::RowKind;
@@ -975,6 +979,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                     let mut filter_open = filter_open;
                     filter_open.set(true);
                 }
+                Some(ScreenKey::FilterByName) => components::open_at_name(filter_open),
                 None => {}
             }
         })),
@@ -1067,13 +1072,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn slash_focuses_quick_add_and_f_opens_the_filter_as_everywhere() {
-        assert_eq!(screen_key("/"), Some(ScreenKey::QuickAdd));
+    fn q_focuses_quick_add_and_f_and_slash_open_the_filter_as_everywhere() {
+        assert_eq!(screen_key("q"), Some(ScreenKey::QuickAdd));
+        assert_eq!(screen_key("/"), Some(ScreenKey::FilterByName));
         for byte in b' '..=b'~' {
             let key = char::from(byte).to_string();
             assert_eq!(
                 screen_key(&key) == Some(ScreenKey::Filter),
                 shortcuts::card_key(&key) == Some(CardKey::Filter),
+                "{key}"
+            );
+            assert_eq!(
+                screen_key(&key) == Some(ScreenKey::FilterByName),
+                shortcuts::card_key(&key) == Some(CardKey::FilterByName),
                 "{key}"
             );
         }

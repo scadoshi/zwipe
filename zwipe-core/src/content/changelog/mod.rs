@@ -53,6 +53,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "Warnings lists a deck's unpriced cards, each opening its details to pick a priced printing, in place of the unpriced count on Budget",
         "A card's details and an open deck row have Send to, which adds the card to another of your decks on its main, maybe or side board",
         "On the web, / never opens the browser's find bar outside a text field",
+        "On the web, q opens Quick add and / opens Filter at its name field",
+        "On the web, Enter in a filter's text field applies the filter",
     ],
 }];
 

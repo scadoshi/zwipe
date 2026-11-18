@@ -624,6 +624,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
             }
             Some(Shortcut::Flip) => swipe_stack::flip_top_card(),
             Some(Shortcut::Filter) => filter_open.set(true),
+            Some(Shortcut::FilterByName) => components::open_at_name(filter_open),
             Some(Shortcut::Refresh) => refresh.call(()),
             Some(Shortcut::Synergy | Shortcut::Swipe(_)) | None => {}
         },

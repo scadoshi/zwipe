@@ -354,11 +354,13 @@ fn SharedDeckView(
             printing.set(Some(card));
         }),
         on_image: Callback::new(move |shown: (ScryfallData, usize)| preview.set(Some(shown))),
-        other_keys: Some(Callback::new(move |key: String| {
-            if shortcuts::card_key(&key) == Some(CardKey::Filter) {
-                filter_open.set(true);
-            }
-        })),
+        other_keys: Some(Callback::new(
+            move |key: String| match shortcuts::card_key(&key) {
+                Some(CardKey::Filter) => filter_open.set(true),
+                Some(CardKey::FilterByName) => components::open_at_name(filter_open),
+                _ => {}
+            },
+        )),
     });
 
     let host = DeckRowHost {

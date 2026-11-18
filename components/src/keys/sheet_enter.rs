@@ -5,8 +5,9 @@
 //!
 //! Enter reaches the sheet only while that sheet is the top open modal, no dialog is open, no
 //! modifier is held, and focus is on nothing that answers Enter itself (a field, a button, a link,
-//! a chip or another control). A sheet with no marked button, such as Printings, which keys its
-//! own body, or the theme sheet, where Enter picks, never sees it from here.
+//! a chip or another control). A text field marked [`ENTER_APPLIES`] has no Enter of its own, so
+//! Enter reaches the sheet from it too. A sheet with no marked button, such as Printings, which
+//! keys its own body, or the theme sheet, where Enter picks, never sees it from here.
 
 /// The class of a sheet's main action, which Enter clicks while it is on.
 pub const SHEET_ENTER: &str = "sheet-enter";
@@ -14,6 +15,10 @@ pub const SHEET_ENTER: &str = "sheet-enter";
 /// The classes of a sheet's main action that is off only while nothing changed (a filter's
 /// Apply, a picker's Save): Enter clicks it while it is on and closes the sheet while it is off.
 pub const SHEET_ENTER_OR_CLOSE: &str = "sheet-enter sheet-enter-closes";
+
+/// The attribute of a sheet's text field where Enter has no job of its own (a filter's name or
+/// oracle text box), so Enter runs the sheet's main action from it as from the sheet's body.
+pub const ENTER_APPLIES: &str = "data-enter-applies";
 
 /// The page-wide listener for [`SHEET_ENTER`]; see the module's doc. The top open modal is the
 /// one with the highest z-index, the later one in the page on a tie, as a sheet opened last sits
@@ -23,7 +28,7 @@ if (!window.__zwipeSheetEnter) {
     window.__zwipeSheetEnter = true;
     const MODALS = '.alert-dialog[data-state="open"], .bottom-sheet.show, .screen.web-large-modal, .swipe-select-screen.show';
     const CONTROLS = 'input, textarea, select, button, a[href], [contenteditable], [role="button"], [role="link"], [role="checkbox"], [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], [role="combobox"], [role="slider"], .chip';
-    const onControl = (el) => !!el && el !== document.body && !!el.closest(CONTROLS);
+    const onControl = (el) => !!el && el !== document.body && !!el.closest(CONTROLS) && !el.closest('[data-enter-applies]');
     const topModal = () => {
         let top = null;
         let topZ = -Infinity;
@@ -67,6 +72,14 @@ mod tests {
         assert!(
             SHEET_ENTER_JS.contains(&format!("classList.contains('{closes}')")),
             "{closes}"
+        );
+    }
+
+    #[test]
+    fn enter_in_a_field_marked_to_apply_runs_the_sheet_s_action() {
+        assert!(
+            SHEET_ENTER_JS.contains(&format!("!el.closest('[{ENTER_APPLIES}]')")),
+            "a marked field is not a control that answers Enter itself: {SHEET_ENTER_JS}"
         );
     }
 

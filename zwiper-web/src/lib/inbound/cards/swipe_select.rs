@@ -686,6 +686,11 @@ fn SwipeSelectBody(
                         filter_open.set(true);
                     }
                 }
+                Some(Shortcut::FilterByName) => {
+                    if *filter_offered.peek() {
+                        components::open_at_name(filter_open);
+                    }
+                }
                 Some(Shortcut::Flip) => {
                     if let Some(card) = stack.peek().current() {
                         turn_face(faces, card, melds);

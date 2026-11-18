@@ -1086,6 +1086,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     }
                 }
                 Some(Shortcut::Filter) => filter_open.set(true),
+                Some(Shortcut::FilterByName) => components::open_at_name(filter_open),
                 Some(Shortcut::Refresh) => refresh.call(()),
                 Some(Shortcut::Synergy) => toggle_synergy.call(()),
                 Some(Shortcut::Swipe(_)) | None => {}

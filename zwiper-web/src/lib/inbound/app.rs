@@ -330,7 +330,7 @@ document.addEventListener('keydown', (e) => {
 
 /// Holds back the browser's default for its quick find keys, `/` and Firefox's links-only `'`,
 /// while focus sits outside a text field and no modifier is held, so the find bar never opens over
-/// the app. The key still travels on to the app's own listeners, so `/` opens Quick add wherever
+/// the app. The key still travels on to the app's own listeners, so `/` opens the filter wherever
 /// it does.
 const FIND_KEYS_JS: &str = r#"window.addEventListener('keydown', (e) => {
     if (e.key !== '/' && e.key !== "'") return;

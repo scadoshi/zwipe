@@ -121,7 +121,7 @@ pub use card_details::{
     next_card_face, share_face, turn_face, use_shared_face,
 };
 pub use card_details_sheet::CardDetailsSheet;
-pub use card_filter::{CardFilterPanel, DictionarySlot, OPEN_SECTION_SCROLL_JS};
+pub use card_filter::{CardFilterPanel, DictionarySlot, OPEN_SECTION_SCROLL_JS, open_at_name};
 pub use card_group::{CardGroup, TailPlace, group_tail};
 pub use card_icon_button::{
     CardIconButton, IMAGE_ICON, IMAGE_LABEL, ImageButton, MELD, STAR, StarButton,

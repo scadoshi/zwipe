@@ -42,6 +42,31 @@ use crate::icons::{CHECK, ERASER};
 use crate::keys::SHEET_ENTER_OR_CLOSE;
 use crate::{DockAction, DrawerSheet, SheetDim, use_overlay_back};
 
+/// The attribute of the name field `/` focuses, the Name section's "Name contains" box.
+const NAME_FIELD: &str = "data-filter-name";
+
+/// Focuses the open filter's name field ([`NAME_FIELD`]) once its section has drawn, trying each
+/// frame for about half a second, with its text selected.
+fn focus_name_js() -> String {
+    format!(
+        "(() => {{ let tries = 30; const step = () => {{ const el = document.querySelector('.bottom-sheet.show.card-filter-sheet input[{NAME_FIELD}]'); if (el) {{ el.focus({{ preventScroll: true }}); if (el.select) el.select(); return; }} if (tries > 0) {{ tries -= 1; requestAnimationFrame(step); }} }}; step(); }})()"
+    )
+}
+
+/// Whether the next filter panel to open opens at its Name section with the name field focused
+/// ([`open_at_name`]).
+static NAME_ON_OPEN: GlobalSignal<bool> = Signal::global(|| false);
+
+/// Opens the filter panel `open` drives at its Name section with the name field focused, for `/`.
+/// A panel already open stays as it is.
+pub fn open_at_name(mut open: Signal<bool>) {
+    if *open.peek() {
+        return;
+    }
+    *NAME_ON_OPEN.write() = true;
+    open.set(true);
+}
+
 /// What the panel hands the host's dictionary: whether it is open, and
 /// where a tag the user picks in it goes.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -125,6 +150,11 @@ pub fn CardFilterPanel(
                 );
             }
             on_need.call(needs);
+            if *NAME_ON_OPEN.peek() {
+                *NAME_ON_OPEN.write() = false;
+                set_open(Some(Section::Name));
+                document::eval(&focus_name_js());
+            }
         } else if !live && *armed.peek() {
             armed.set(false);
             let dropped = draft.peek().back();
@@ -377,3 +407,19 @@ fn keep_while_closing(mut closing: Signal<Option<Section>>, section: Section) {
 /// Off the browser nothing is timed: the rows drop at once.
 #[cfg(not(target_arch = "wasm32"))]
 fn keep_while_closing(_closing: Signal<Option<Section>>, _section: Section) {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn slash_focuses_the_name_field_of_the_open_filter_alone() {
+        let js = focus_name_js();
+        assert!(
+            js.contains(&format!(
+                ".bottom-sheet.show.card-filter-sheet input[{NAME_FIELD}]"
+            )),
+            "{js}"
+        );
+    }
+}

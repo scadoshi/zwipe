@@ -17,7 +17,7 @@ pub use guard::{
 pub use page_keys::{
     focus_by_id, use_page_keys, use_page_keys_through, use_scoped_keys, use_undo_key,
 };
-pub use sheet_enter::{SHEET_ENTER, SHEET_ENTER_JS, SHEET_ENTER_OR_CLOSE};
+pub use sheet_enter::{ENTER_APPLIES, SHEET_ENTER, SHEET_ENTER_JS, SHEET_ENTER_OR_CLOSE};
 pub use sheet_focus::{SheetFocus, use_sheet_focus, use_sheet_focus_handing_back};
 pub use shortcuts_sheet::{
     SHORTCUTS_LABEL, ShortcutsList, ShortcutsOffered, ShortcutsOpen, ShortcutsSheet,
