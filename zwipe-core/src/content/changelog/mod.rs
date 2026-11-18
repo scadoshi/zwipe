@@ -55,6 +55,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Starring a card pops its Star button",
         "Toasts stamp as they land",
         "A leaving toast no longer draws over a newer one in front of it",
+        "Remove says Nothing on this board when the picked board is empty",
     ],
 }];
 

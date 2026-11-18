@@ -81,6 +81,9 @@ pub const NO_CARDS_ON_BOARDS: &str = "No cards on these boards";
 /// The toast when the filter matches no card on the picked boards.
 pub const NO_MATCHES: &str = "No cards match your filters";
 
+/// The empty card's line when the picked board holds no card.
+pub const NOTHING_ON_BOARD: &str = "Nothing on this board";
+
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
@@ -1130,9 +1133,8 @@ impl State {
         }
     }
 
-    /// The line the empty card shows in place of a card: [`NO_MATCHES`] when the filter hides
-    /// every card the picked board holds. `None` while cards show, and when the board itself is
-    /// empty.
+    /// The line the empty card shows in place of a card ([`filtered_empty_note`]): `None` while
+    /// cards show.
     #[must_use]
     pub fn empty_note(&self) -> Option<&'static str> {
         let board = self.board;
@@ -1204,16 +1206,23 @@ impl State {
     }
 }
 
-/// The line an empty pile shows in place of a card: [`NO_MATCHES`] when the pile is empty,
-/// `filter` narrows it, and the picked board still holds cards, so the filter hides every one.
-/// A board emptied by its own swipes, or with nothing on it, gets `None`.
+/// The line an empty pile shows in place of a card: [`NOTHING_ON_BOARD`] when the picked board
+/// holds no card, whatever the filter, else [`NO_MATCHES`] when `filter` narrows the pile and so
+/// hides every card the board holds. A non-empty pile, or one a board with cards emptied with no
+/// filter on, gets `None`.
 #[must_use]
 pub fn filtered_empty_note(
     pile_empty: bool,
     filter: &CardQueryBuilder,
     board_has_cards: bool,
 ) -> Option<&'static str> {
-    (pile_empty && !filter.is_empty() && board_has_cards).then_some(NO_MATCHES)
+    if !pile_empty {
+        return None;
+    }
+    if !board_has_cards {
+        return Some(NOTHING_ON_BOARD);
+    }
+    (!filter.is_empty()).then_some(NO_MATCHES)
 }
 
 /// The toast for an undo the deck cards view's Undo already did.

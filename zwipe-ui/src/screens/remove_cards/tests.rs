@@ -1118,7 +1118,7 @@ fn a_filter_that_matches_nothing_says_so_in_place_of_the_card() {
 }
 
 #[test]
-fn a_board_emptied_by_swipes_has_no_filter_note() {
+fn a_board_emptied_by_swipes_says_it_is_empty_not_that_the_filter_hides_it() {
     let mut state = loaded(deck_of(&["Opt"]));
     let mut opt = CardQueryBuilder::default();
     opt.set_name_contains("Opt");
@@ -1127,7 +1127,24 @@ fn a_board_emptied_by_swipes_has_no_filter_note() {
     assert_eq!(state.status(), Status::Empty);
     assert_eq!(
         state.empty_note(),
-        None,
+        Some(NOTHING_ON_BOARD),
         "the board is empty, not the filter's pick"
     );
+}
+
+#[test]
+fn a_board_with_nothing_on_it_says_so_in_place_of_the_card() {
+    let mut state = loaded(deck_of(&["Shock", "Opt"]));
+    let _ = state.update(Action::PickBoard(BoardFilter::Sideboard));
+    assert_eq!(state.status(), Status::Empty);
+    assert_eq!(state.empty_note(), Some(NOTHING_ON_BOARD));
+    let mut nothing = CardQueryBuilder::default();
+    nothing.set_name_contains("zzqx");
+    let _ = state.update(Action::Filter(nothing));
+    assert_eq!(
+        state.empty_note(),
+        Some(NOTHING_ON_BOARD),
+        "an empty board says so, filter or not"
+    );
+    assert_eq!(NOTHING_ON_BOARD, "Nothing on this board");
 }
