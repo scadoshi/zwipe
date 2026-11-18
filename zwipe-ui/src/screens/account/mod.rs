@@ -17,6 +17,7 @@ pub use self::form::{Field, SAVE, SAVING, Sheet, Typed};
 pub use crate::account::Password;
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
+use crate::write_repeat::{self, FormAnswer, FormNote, FormRepeat};
 use crate::{account, timing};
 
 /// The screen's title.
@@ -328,6 +329,17 @@ pub enum Action {
         /// The ticket from the [`Effect::ChangePassword`] this answers.
         ticket: Ticket,
     },
+    /// The password change holding `ticket` failed. The client has already logged it; the screen
+    /// raises the error toast.
+    PasswordFailed {
+        /// The ticket from the [`Effect::ChangePassword`] this answers.
+        ticket: Ticket,
+        /// How it failed: [`FormAnswer::Network`] for a lost answer,
+        /// [`FormAnswer::RepeatRefused`] for a current password that doesn't match.
+        answer: FormAnswer,
+        /// The client's own words for the error, shown unless the failure follows a lost answer.
+        message: String,
+    },
     /// Goes back to where the user came from.
     Back,
     /// Asks to log out.
@@ -558,6 +570,8 @@ pub struct State {
     forms: Forms,
     hint: HintOffer,
     tickets: Generation,
+    /// Whether an earlier password change's answer was lost.
+    password_repeat: FormRepeat,
 }
 
 impl State {
@@ -639,13 +653,12 @@ impl State {
                 );
                 self.changed(Sheet::Email, toast)
             }
-            Action::PasswordChanged { ticket } => {
-                if self.take(ticket, |r| *r == Request::Password).is_none() {
-                    return Vec::new();
-                }
-                let toast = Toast::quick(ToastKind::Success, PASSWORD_CHANGED);
-                self.changed(Sheet::Password, toast)
-            }
+            Action::PasswordChanged { ticket } => self.password_changed(ticket),
+            Action::PasswordFailed {
+                ticket,
+                answer,
+                message,
+            } => self.password_failed(ticket, answer, message),
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
             Action::LogOut => vec![Effect::OpenDialog(Dialog::LogOut)],
             Action::ConfirmLogOut => vec![Effect::LogOut],
@@ -718,6 +731,34 @@ impl State {
             }
             _ => Vec::new(),
         }
+    }
+
+    fn password_changed(&mut self, ticket: Ticket) -> Vec<Effect> {
+        if self.take(ticket, |r| *r == Request::Password).is_none() {
+            return Vec::new();
+        }
+        let _ = self.password_repeat.settle(FormAnswer::Done);
+        let toast = Toast::quick(ToastKind::Success, PASSWORD_CHANGED);
+        self.changed(Sheet::Password, toast)
+    }
+
+    /// A lost answer may have changed the password, so the line says the new one may work.
+    fn password_failed(
+        &mut self,
+        ticket: Ticket,
+        answer: FormAnswer,
+        message: String,
+    ) -> Vec<Effect> {
+        if self.take(ticket, |r| *r == Request::Password).is_none() {
+            return Vec::new();
+        }
+        let text = match self.password_repeat.settle(answer) {
+            Some(FormNote::Lost | FormNote::Landed) => {
+                write_repeat::PASSWORD_UNCONFIRMED.to_owned()
+            }
+            None => message,
+        };
+        vec![Effect::Toast(Toast::normal(ToastKind::Error, text))]
     }
 
     fn failed(&mut self, ticket: Ticket) {

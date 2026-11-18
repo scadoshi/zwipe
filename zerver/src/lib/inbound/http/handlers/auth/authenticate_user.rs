@@ -26,7 +26,7 @@ impl From<AuthenticateUserError> for ApiError {
             AuthenticateUserError::UserNotFound
             | AuthenticateUserError::InvalidPassword
             | AuthenticateUserError::AccountLocked => {
-                Self::Unauthorized("invalid credentials".to_string())
+                Self::Unauthorized(messages::INVALID_CREDENTIALS.to_string())
             }
             AuthenticateUserError::PasswordTooLong => {
                 Self::UnprocessableEntity(messages::PASSWORD_TOO_LONG.to_string())
@@ -45,7 +45,7 @@ impl From<InvalidAuthenticateUser> for ApiError {
         match value {
             InvalidAuthenticateUser::MissingIdentifier
             | InvalidAuthenticateUser::MissingPassword => {
-                Self::UnprocessableEntity("invalid credentials".to_string())
+                Self::UnprocessableEntity(messages::INVALID_CREDENTIALS.to_string())
             }
         }
     }

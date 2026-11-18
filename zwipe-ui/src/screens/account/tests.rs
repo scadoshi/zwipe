@@ -1150,3 +1150,76 @@ fn the_cancel_copy_reads_as_the_app_s() {
         )
     );
 }
+
+/// A password change sent with the sheet's fields, its effects drained.
+fn changing(state: &mut State) -> Ticket {
+    let _ = state.update(Action::OpenSheet(Sheet::Password));
+    edit(state, Sheet::Password, Field::CurrentPassword, "Old!pass1");
+    edit(state, Sheet::Password, Field::NewPassword, "New!pass22");
+    edit(state, Sheet::Password, Field::ConfirmPassword, "New!pass22");
+    let _ = state.update(Action::Save(Sheet::Password));
+    ticket_of(&state.update(Action::ConfirmPassword))
+}
+
+fn password_failed(ticket: Ticket, answer: FormAnswer, message: &str) -> Action {
+    Action::PasswordFailed {
+        ticket,
+        answer,
+        message: message.to_owned(),
+    }
+}
+
+/// A change whose answer was lost may have gone through, and its retry then sends a current
+/// password that no longer matches: both say the new password may be the one.
+#[test]
+fn a_lost_password_change_and_its_refused_retry_say_it_may_have_gone_through() {
+    let mut state = opened();
+    let ticket = changing(&mut state);
+    let unconfirmed = vec![Effect::Toast(Toast::normal(
+        ToastKind::Error,
+        write_repeat::PASSWORD_UNCONFIRMED,
+    ))];
+    assert_eq!(
+        state.update(password_failed(
+            ticket,
+            FormAnswer::Network,
+            "Connection error"
+        )),
+        unconfirmed
+    );
+    let ticket = changing(&mut state);
+    assert_eq!(
+        state.update(password_failed(
+            ticket,
+            FormAnswer::RepeatRefused,
+            "Invalid credentials"
+        )),
+        unconfirmed
+    );
+}
+
+#[test]
+fn a_wrong_current_password_with_no_lost_try_says_so() {
+    let mut state = opened();
+    let ticket = changing(&mut state);
+    assert_eq!(
+        state.update(password_failed(
+            ticket,
+            FormAnswer::RepeatRefused,
+            "Invalid credentials"
+        )),
+        vec![Effect::Toast(Toast::normal(
+            ToastKind::Error,
+            "Invalid credentials"
+        ))]
+    );
+    assert_eq!(
+        state.update(password_failed(
+            ticket,
+            FormAnswer::Network,
+            "Connection error"
+        )),
+        none(),
+        "a settled ticket's late answer"
+    );
+}

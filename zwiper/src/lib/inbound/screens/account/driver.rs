@@ -10,10 +10,12 @@ use zwipe_core::http::contracts::auth::{
     HttpChangeEmail, HttpChangePassword, HttpChangeUsername, HttpDeleteUser,
     HttpRequestPasswordReset,
 };
+use zwipe_core::http::messages;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::account::{
     Action, Destination, Dialog, Effect, Field, Password, Sheet, State, TICK, Typed,
 };
+use zwipe_ui::write_repeat::FormAnswer;
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
@@ -472,15 +474,18 @@ impl Driver {
         let authed = self.runners.password;
         spawn(async move {
             let changed = authed
-                .run("change_password", |c, s| async move {
+                .try_run_quiet("change_password", |c, s| async move {
                     c.change_password(request, &s).await
                 })
-                .await
-                .is_some();
-            self.dispatch(if changed {
-                Action::PasswordChanged { ticket }
-            } else {
-                Action::Failed { ticket }
+                .await;
+            self.dispatch(match changed {
+                Ok(()) => Action::PasswordChanged { ticket },
+                // The screen picks the line: a lost answer may have changed it.
+                Err(e) => Action::PasswordFailed {
+                    ticket,
+                    answer: password_answer(&e),
+                    message: e.to_user_message(),
+                },
             });
         });
     }
@@ -502,5 +507,17 @@ impl Link {
             Self::Verification => "resend_verification",
             Self::EmailChange => "resend_email_change",
         }
+    }
+}
+
+/// How a password change failed, for the screen: a current password that no longer matches is
+/// the refusal a repeat gets once an earlier, lost try changed it.
+fn password_answer(e: &ClientError) -> FormAnswer {
+    if matches!(e, ClientError::Network(_)) {
+        FormAnswer::Network
+    } else if matches!(e, ClientError::Unauthorized(m) if m == messages::INVALID_CREDENTIALS) {
+        FormAnswer::RepeatRefused
+    } else {
+        FormAnswer::Other
     }
 }

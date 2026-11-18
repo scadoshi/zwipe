@@ -158,7 +158,7 @@ impl Authed {
     }
 
     /// Runs a write `f` that acts on `key`, as [`run`](Self::run) does, except that the answer a
-    /// repeat gives once an earlier, lost try landed (an add's 409, a delete's 404) reads as
+    /// repeat gives once an earlier, lost try landed (an add's 409, a card removal's 422, a deck deletion's 404) reads as
     /// [`Written::LandedEarlier`] with no error toast. A network error is remembered for the
     /// session, so the next try of the same write can tell.
     pub async fn run_write<T, Fut>(
