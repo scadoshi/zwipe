@@ -121,11 +121,21 @@ fn field_value_js(id: &str) -> String {
     )
 }
 
+/// Sets the text of the field with id `id` to the text the app sends next, unless it holds it.
+fn write_field_js(id: &str) -> String {
+    format!(
+        "(async () => {{ const text = await dioxus.recv(); const el = document.getElementById({id:?}); if (el && el.value !== text) el.value = text; }})();"
+    )
+}
+
 /// The search every picker leads with: its `Search` label chip on the left and the filter's
 /// compact field on the same line, as Quick add's row, the field's `×` easing in as text is
-/// typed. Enter in the field calls `on_enter` with the field's text as it was when the key went
-/// down, which the query takes on first: Go can land before the last keystroke reaches the
-/// query, so the picker reads its top match from that text, not the grid last drawn.
+/// typed. The field's text is the DOM's: typing changes the query, and no draw writes the field
+/// back, so a draw of an older query can't take letters out of it. The app writes the field only
+/// when the query changes another way (a clear, or an opening that starts it with text). Enter
+/// in the field calls `on_enter` with the field's text as it was when the key went down, which
+/// the query takes on first: Go can land before the last keystroke reaches the query, so the
+/// picker reads its top match from that text, not the grid last drawn.
 #[component]
 pub fn PickerSearch(
     id: &'static str,
@@ -135,6 +145,17 @@ pub fn PickerSearch(
 ) -> Element {
     use_hook(|| {
         document::eval(ENTER_TEXT_JS);
+    });
+    // The text the field holds as far as the app knows: what it typed, or what the app last
+    // wrote. The field starts empty.
+    let mut shown = use_signal(String::new);
+    use_effect(move || {
+        let text = query();
+        if *shown.peek() != text {
+            shown.set(text.clone());
+            let field = document::eval(&write_field_js(id));
+            let _ = field.send(text);
+        }
     });
     rsx! {
         div { class: "chip-row",
@@ -147,11 +168,14 @@ pub fn PickerSearch(
                     id,
                     r#type: "text",
                     placeholder,
-                    value: "{query}",
                     autocapitalize: "none",
                     autocorrect: "off",
                     spellcheck: "false",
-                    oninput: move |event| query.set(event.value()),
+                    oninput: move |event| {
+                        let typed = event.value();
+                        shown.set(typed.clone());
+                        query.set(typed);
+                    },
                     onkeydown: move |event| {
                         if event.key() == Key::Enter && !event.is_composing()
                             && let Some(on_enter) = on_enter
@@ -164,6 +188,7 @@ pub fn PickerSearch(
                                     _ => query.peek().clone(),
                                 };
                                 if *query.peek() != typed {
+                                    shown.set(typed.clone());
                                     query.set(typed.clone());
                                 }
                                 on_enter.call(typed);
@@ -188,6 +213,28 @@ pub fn PickerChoice(target: bool, children: Element) -> Element {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[component]
+    fn Typed() -> Element {
+        let query = use_signal(|| "draw".to_owned());
+        rsx! {
+            PickerSearch { id: "test-search", placeholder: "Search", query }
+        }
+    }
+
+    /// The field's text is the DOM's: no draw writes it, so a draw of an older query that lands
+    /// while typing can't take letters back out of the field.
+    #[test]
+    fn no_draw_writes_the_field_s_text() {
+        let mut dom = VirtualDom::new(Typed);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(html.contains("id=\"test-search\""), "{html}");
+        assert!(
+            !html.contains("value="),
+            "the field carries no value attribute: {html}"
+        );
+    }
 
     /// Go can land in the same instant as the typing, before the field's text reaches the
     /// query: Enter reads the field itself.
