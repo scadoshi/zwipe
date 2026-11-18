@@ -176,3 +176,30 @@ async fn no_such_card_and_a_malformed_slug_answer_an_empty_list(pool: sqlx::PgPo
         "sol--ring"
     );
 }
+
+#[sqlx::test]
+async fn one_slug_answers_at_most_fifty_cards(pool: sqlx::PgPool) {
+    // Fifty tokens and one playable card, so the cap keeps the playable one.
+    let mut cards: Vec<_> = (0u128..50)
+        .map(|i| {
+            card("Goblin")
+                .oracle(Some(Uuid::from_u128(
+                    0x60b0_0000_u128.checked_add(i).unwrap(),
+                )))
+                .token()
+        })
+        .collect();
+    cards.push(card("Goblin").oracle(Some(Uuid::from_u128(0x60b1_0000))));
+    seed_cards(&pool, &cards).await;
+    let app = common::TestApp::new(pool);
+    let (names, _) = named(&app, "goblin").await;
+    assert_eq!(names.len(), 50);
+    let (status, body) = app
+        .send(Method::GET, "/api/card/named/goblin", None, None)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        body[0]["scryfall_data"]["layout"], "normal",
+        "the playable card is kept: {body}"
+    );
+}

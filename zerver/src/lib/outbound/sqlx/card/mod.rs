@@ -214,6 +214,11 @@ const SUGGESTION_TAG_LIMIT: i64 = 5;
 /// again restarts the clock.
 const DISMISSAL_TTL_DAYS: i32 = 7;
 
+/// The most cards one name slug answers. The most any slug matches in the catalog is 34
+/// (`elemental`, every one a token), so this cuts nothing real and keeps a public, cached answer
+/// small.
+const NAMED_CARDS_LIMIT: i64 = 50;
+
 /// Base ranking for the commander-select ordering: decks-helmed popularity
 /// first (`commander_popularity`, written by the synergy worker), then
 /// `edhrec_rank` as the fallback for commanders the table doesn't cover, then
@@ -1852,10 +1857,12 @@ impl CardRepository for MyPostgres {
                  SELECT oracle_id, bool_or(name_slug = $1) AS full_match FROM scryfall_data \
                  WHERE name_slug = $1 OR front_slug = $1 GROUP BY oracle_id \
              ) named JOIN latest_cards lc ON lc.oracle_id = named.oracle_id \
-             ORDER BY named.full_match DESC, (lc.layout = ANY($2)) DESC, lc.name, lc.id",
+             ORDER BY named.full_match DESC, (lc.layout = ANY($2)) DESC, lc.name, lc.id \
+             LIMIT $3",
         )
         .bind(slug.as_str())
         .bind(PLAYABLE_LAYOUTS)
+        .bind(NAMED_CARDS_LIMIT)
         .fetch_all(&self.pool)
         .await
         .map_err(|e| GetScryfallDataError::Database(e.into()))?;
