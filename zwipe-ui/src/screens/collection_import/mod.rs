@@ -127,6 +127,9 @@ pub enum Effect {
     ConfirmReplace,
     /// Raises this toast.
     Toast(Toast),
+    /// The collection changed: the client drops what it kept of it (the summary that decides
+    /// whether "In my collection" shows), so the next screen that needs it asks again.
+    CollectionChanged,
 }
 
 /// The picked file.
@@ -202,7 +205,7 @@ impl State {
                     self.phase = Phase::Done(summary);
                     // The file went in; sending it again would add its copies twice.
                     self.file = None;
-                    return vec![Effect::Toast(toast)];
+                    return vec![Effect::Toast(toast), Effect::CollectionChanged];
                 }
             }
             Action::Failed { ticket } => {

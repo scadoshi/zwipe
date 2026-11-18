@@ -117,10 +117,10 @@ fn the_summary_lands_and_a_late_reply_is_ignored() {
     });
     assert_eq!(
         effects,
-        [Effect::Toast(Toast::quick(
-            ToastKind::Success,
-            "Collection imported"
-        ))]
+        [
+            Effect::Toast(Toast::quick(ToastKind::Success, "Collection imported")),
+            Effect::CollectionChanged,
+        ]
     );
     assert_eq!(state.summary().map(|s| s.cards), Some(7));
     assert!(!state.importing());
@@ -207,4 +207,22 @@ fn the_size_check_counts_the_escaped_body() {
         [Effect::Toast(Toast::normal(ToastKind::Error, TOO_BIG))]
     );
     assert_eq!(state.file_name(), None);
+}
+
+#[test]
+fn a_landed_import_says_the_collection_changed_and_a_failed_one_does_not() {
+    let mut state = State::new();
+    picked(&mut state);
+    let ticket = sent(&state.update(Action::Submit));
+    let failed = state.update(Action::Failed { ticket });
+    assert!(!failed.contains(&Effect::CollectionChanged));
+    let ticket = sent(&state.update(Action::Submit));
+    let landed = state.update(Action::Imported {
+        ticket,
+        summary: summary(Vec::new(), 0),
+    });
+    assert!(
+        landed.contains(&Effect::CollectionChanged),
+        "the In my collection chip reads the new collection: {landed:?}"
+    );
 }

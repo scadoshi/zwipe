@@ -18,6 +18,7 @@ use zwipe_ui::telemetry::vocabulary::Screen;
 
 use crate::inbound::chrome::authed::{Authed, use_authed};
 use crate::inbound::chrome::toast::raise;
+use crate::inbound::collection::CollectionCache;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
 
@@ -35,6 +36,8 @@ struct Driver {
     confirm_open: Signal<bool>,
     authed: Authed,
     toast: Toasts,
+    /// What the root keeps of the collection, dropped when an import lands.
+    collection: CollectionCache,
 }
 
 impl Driver {
@@ -69,6 +72,10 @@ impl Driver {
                 open.set(true);
             }
             Effect::Toast(toast) => raise(self.toast, &toast),
+            Effect::CollectionChanged => {
+                let CollectionCache(mut cache) = self.collection;
+                cache.set(None);
+            }
         }
     }
 }
@@ -82,6 +89,7 @@ pub fn Collection() -> Element {
         confirm_open: use_signal(|| false),
         authed: use_authed(),
         toast: use_toast(),
+        collection: use_context(),
     };
     let confirm = use_callback(move |()| driver.dispatch(Action::ConfirmReplace));
 
