@@ -15,12 +15,14 @@
 //! server refuses those values.
 //!
 //! The model holds the list and the edits; the client fetches, saves, runs the timers, draws the
-//! rows and saves the export's file. Import is its own model, [`super::collection_import`].
+//! rows and saves the export's file, with [`EXPORTED`] as it starts. Import is its own model,
+//! [`super::collection_import`].
 
 #[cfg(test)]
 mod tests;
 
 use std::collections::HashMap;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::time::Duration;
 
 use uuid::Uuid;
@@ -50,6 +52,9 @@ pub const MORE_FAILED: &str = "Couldn't load more cards";
 
 /// The toast when a row's write fails and its count goes back.
 pub const SAVE_FAILED: &str = "Couldn't save that change";
+
+/// The toast when the export's file starts saving.
+pub const EXPORTED: &str = "Collection exported";
 
 /// The toast when the export fails.
 pub const EXPORT_FAILED: &str = "Couldn't export your collection";
@@ -94,6 +99,20 @@ impl RowKey {
             condition: card.condition,
             language: card.language,
         }
+    }
+
+    /// A stable id for the row, for a client that keys rows by id: the printing's own for a
+    /// nonfoil row with no condition or language given, else the printing's with its finish,
+    /// condition and language mixed into the top bits, so each row of one printing has its own.
+    #[must_use]
+    pub fn id(self) -> Uuid {
+        let mut hasher = DefaultHasher::new();
+        (self.finish, self.condition, self.language).hash(&mut hasher);
+        let plain = (Finish::Nonfoil, None::<CardCondition>, None::<CardLanguage>);
+        let mut plain_hasher = DefaultHasher::new();
+        plain.hash(&mut plain_hasher);
+        let mix = hasher.finish() ^ plain_hasher.finish();
+        Uuid::from_u128(self.printing.as_u128() ^ (u128::from(mix) << 64))
     }
 
     /// Whether every value is one the server takes back: none is this build's `Unknown`.
@@ -304,6 +323,12 @@ impl State {
         &self.text
     }
 
+    /// Whether a page follows the ones loaded, for the list's Show more.
+    #[must_use]
+    pub fn has_more(&self) -> bool {
+        self.next_offset.is_some()
+    }
+
     /// Whether an export is out, which disables Export.
     #[must_use]
     pub fn exporting(&self) -> bool {
@@ -368,10 +393,13 @@ impl State {
                     return Vec::new();
                 }
                 self.exporting = None;
-                vec![Effect::Download {
-                    file_name: export.file_name,
-                    text: export.csv,
-                }]
+                vec![
+                    Effect::Download {
+                        file_name: export.file_name,
+                        text: export.csv,
+                    },
+                    Effect::Toast(Toast::quick(ToastKind::Success, EXPORTED)),
+                ]
             }
             Action::ExportFailed { ticket } => {
                 if self.exporting != Some(ticket) {
@@ -613,4 +641,43 @@ impl State {
         }
         effects
     }
+}
+
+/// What a row shows in place of its count: the count first, then its finish, condition and
+/// language, leaving out nonfoil, English and anything not given or this build doesn't know.
+#[must_use]
+pub fn row_tags(row: &Row) -> Vec<String> {
+    let mut tags = vec![row.copies.to_string()];
+    match row.key.finish {
+        Finish::Foil => tags.push("Foil".to_owned()),
+        Finish::Etched => tags.push("Etched".to_owned()),
+        Finish::Nonfoil | Finish::Unknown => {}
+    }
+    if let Some(condition) = row.key.condition.and_then(condition_short) {
+        tags.push(condition.to_owned());
+    }
+    if let Some(language) = row.key.language
+        && !matches!(language, CardLanguage::En | CardLanguage::Unknown)
+    {
+        tags.push(language.as_str().to_uppercase());
+    }
+    tags
+}
+
+/// A condition's short grade, as collection apps print it; `None` for one this build doesn't
+/// know.
+fn condition_short(condition: CardCondition) -> Option<&'static str> {
+    Some(match condition {
+        CardCondition::Mint => "M",
+        CardCondition::NearMint => "NM",
+        CardCondition::Excellent => "EX",
+        CardCondition::Good => "GD",
+        CardCondition::LightlyPlayed => "LP",
+        CardCondition::ModeratelyPlayed => "MP",
+        CardCondition::Played => "PL",
+        CardCondition::HeavilyPlayed => "HP",
+        CardCondition::Poor => "PR",
+        CardCondition::Damaged => "DMG",
+        CardCondition::Unknown => return None,
+    })
 }

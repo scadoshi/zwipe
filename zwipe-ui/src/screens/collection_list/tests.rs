@@ -132,6 +132,7 @@ fn nearing_the_end_asks_for_the_next_page_once() {
         page: Box::new(page(vec![row("B", 1)], 2, None)),
     });
     assert_eq!(state.rows().len(), 2);
+    assert!(!state.has_more());
     assert_eq!(state.update(Action::NearEnd), [], "the last page is in");
 }
 
@@ -394,13 +395,12 @@ fn export_hands_the_file_to_the_client_once_at_a_time() {
             csv: "Name\nSol Ring\n".to_owned(),
         },
     });
-    assert_eq!(
-        effects,
-        [Effect::Download {
-            file_name: "zwipe-collection.csv".to_owned(),
-            text: "Name\nSol Ring\n".to_owned(),
-        }]
-    );
+    let [Effect::Download { file_name, text }, Effect::Toast(toast)] = effects.as_slice() else {
+        panic!("the file, then the toast that it's saving: {effects:?}");
+    };
+    assert_eq!(file_name, "zwipe-collection.csv");
+    assert_eq!(text, "Name\nSol Ring\n");
+    assert_eq!(toast.text, EXPORTED);
     assert!(!state.exporting());
 }
 
@@ -521,4 +521,54 @@ fn a_failed_write_with_a_step_still_resting_sends_on_its_flush() {
         panic!("{effects:?}");
     };
     assert_eq!(set.quantity.get(), 3);
+}
+
+#[test]
+fn a_row_id_is_the_printing_s_for_a_plain_row_and_differs_for_each_other_row_of_it() {
+    let printing = uuid::Uuid::from_u128(0x1234);
+    let key = |finish, condition, language| RowKey {
+        printing,
+        finish,
+        condition,
+        language,
+    };
+    let plain = key(Finish::Nonfoil, None, None);
+    let rows = [
+        plain,
+        key(Finish::Foil, None, None),
+        key(Finish::Nonfoil, Some(CardCondition::NearMint), None),
+        key(Finish::Nonfoil, None, Some(CardLanguage::Ja)),
+        key(
+            Finish::Etched,
+            Some(CardCondition::Played),
+            Some(CardLanguage::De),
+        ),
+    ];
+    let ids: std::collections::HashSet<uuid::Uuid> = rows.iter().map(|k| k.id()).collect();
+    assert_eq!(
+        ids.len(),
+        rows.len(),
+        "every row of one printing has its own id"
+    );
+    assert_eq!(
+        plain.id(),
+        printing,
+        "a nonfoil row with nothing given is the printing's id"
+    );
+    assert_eq!(rows[1].id(), rows[1].id(), "the same row, the same id");
+}
+
+#[test]
+fn a_row_s_tags_lead_with_its_count_then_what_sets_it_apart() {
+    let mut foil = row("Sol Ring", 4);
+    foil.finish = Finish::Foil;
+    foil.condition = Some(CardCondition::LightlyPlayed);
+    foil.language = Some(CardLanguage::Ja);
+    let state = opened(vec![foil, row("Bolt", 2)], None);
+    assert_eq!(row_tags(&state.rows()[0]), ["4", "Foil", "LP", "JA"]);
+    assert_eq!(
+        row_tags(&state.rows()[1]),
+        ["2", "NM"],
+        "nonfoil and English left out"
+    );
 }
