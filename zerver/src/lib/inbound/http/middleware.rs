@@ -22,6 +22,7 @@ use zwipe_core::domain::auth::models::access_token::{Jwt, UserClaims};
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::domain::user::username::Username;
 
+use crate::domain::auth::lockout;
 use crate::domain::auth::models::access_token::{JwtSecret, JwtValidate};
 use crate::domain::auth::ports::AuthService;
 use crate::domain::metrics::ports::MetricsService;
@@ -119,6 +120,9 @@ const CF_CONNECTING_IP: &str = "cf-connecting-ip";
 /// Falls back to the socket peer IP when the header is absent, i.e. for
 /// non-Cloudflare paths (localhost health checks, Tailscale admin access),
 /// which are trusted. Real internet traffic always carries the header.
+///
+/// The key is the address as [`lockout::address_key`] counts it: an IPv6
+/// client by its whole /64, so it can't take a fresh bucket per address.
 #[derive(Debug, Clone)]
 pub struct CfConnectingIpKeyExtractor;
 
@@ -144,7 +148,9 @@ impl KeyExtractor for CfConnectingIpKeyExtractor {
     type Key = IpAddr;
 
     fn extract<T>(&self, req: &axum::http::Request<T>) -> Result<Self::Key, GovernorError> {
-        client_ip(req.headers(), req.extensions()).ok_or(GovernorError::UnableToExtractKey)
+        client_ip(req.headers(), req.extensions())
+            .map(lockout::address_key)
+            .ok_or(GovernorError::UnableToExtractKey)
     }
 }
 
@@ -329,6 +335,35 @@ mod tests {
         let req = request(Some("  203.0.113.7  "), Some(peer([127, 0, 0, 1])));
         let key = CfConnectingIpKeyExtractor.extract(&req).unwrap();
         assert_eq!(key, ip("203.0.113.7"));
+    }
+
+    #[test]
+    fn an_ipv6_client_keys_by_its_64_so_rotating_inside_it_gains_nothing() {
+        let key = |h: &str| {
+            CfConnectingIpKeyExtractor
+                .extract(&request(Some(h), Some(peer([127, 0, 0, 1]))))
+                .unwrap()
+        };
+        assert_eq!(
+            key("2001:db8:1:2::1"),
+            key("2001:db8:1:2:ffff:ffff:ffff:ffff")
+        );
+        assert_eq!(key("2001:db8:1:2::1"), ip("2001:db8:1:2::"));
+        assert_ne!(
+            key("2001:db8:1:2::1"),
+            key("2001:db8:1:3::1"),
+            "the next /64 is another client"
+        );
+        assert_eq!(
+            key("203.0.113.7"),
+            ip("203.0.113.7"),
+            "an IPv4 address keys as itself"
+        );
+        assert_eq!(
+            key("::ffff:203.0.113.7"),
+            ip("203.0.113.7"),
+            "an IPv4 address written as IPv6 keys as itself"
+        );
     }
 
     #[test]
