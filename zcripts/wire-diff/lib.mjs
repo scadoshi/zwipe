@@ -55,6 +55,31 @@ export const normalize = (body, rules = {}) => {
   return walk(body, "");
 };
 
+/** Two shapes as one: objects take every key, lists merge their items, unlike kinds join. */
+const merge = (a, b) => {
+  if (a === undefined) return b;
+  if (b === undefined) return a;
+  if (Array.isArray(a) && Array.isArray(b)) return [merge(a[0], b[0])].filter((s) => s !== undefined);
+  if (kindOf(a) === "object" && kindOf(b) === "object") {
+    return Object.fromEntries([...new Set([...Object.keys(a), ...Object.keys(b)])].sort().map((k) => [k, merge(a[k], b[k])]));
+  }
+  if (JSON.stringify(a) === JSON.stringify(b)) return a;
+  return [...new Set(`${a}|${b}`.split("|"))].sort().join("|");
+};
+
+/**
+ * `value`'s shape: field names and JSON kinds, without the values or how many items a list holds.
+ * A list's items merge into one shape. For a reply whose values change on nearly every commit
+ * (the changelog) but whose fields must not.
+ */
+export const shapeOf = (value) => {
+  if (Array.isArray(value)) return [value.map(shapeOf).reduce(merge, undefined)].filter((s) => s !== undefined);
+  if (kindOf(value) === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, shapeOf(v)]));
+  }
+  return kindOf(value);
+};
+
 /**
  * Every difference between the main server's reply and the candidate's, `{status, body}` each,
  * sorted by path: "status", then per field "added", "removed", "type" (a different JSON type)

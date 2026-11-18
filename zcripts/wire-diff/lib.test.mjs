@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { diff, judge, normalize } from "./lib.mjs";
+import { diff, judge, normalize, shapeOf } from "./lib.mjs";
 
 test("the same reply has no differences", () => {
   const reply = { status: 200, body: { id: "a", cards: [{ n: 1 }, { n: 2 }] } };
@@ -119,4 +119,18 @@ test("an unordered array can sort by a nested field", () => {
   const rules = { sort: [{ path: "", by: "/scryfall_data/id" }] };
   const body = [{ scryfall_data: { id: "b" } }, { scryfall_data: { id: "a" } }];
   assert.deepEqual(normalize(body, rules), [{ scryfall_data: { id: "a" } }, { scryfall_data: { id: "b" } }]);
+});
+
+test("a shape keeps field names and types, not values or how many items a list holds", () => {
+  const release = (version, entries) => ({ version, date: "Nov 18", entries });
+  const main = { status: 200, body: shapeOf({ upcoming: [release("1.24.0", ["a"])], releases: [release("1.23.1", ["b", "c"])] }) };
+  const more = { status: 200, body: shapeOf({ upcoming: [release("1.24.0", ["a", "x"])], releases: [release("1.23.2", ["d"]), release("1.23.1", ["b", "c"])] }) };
+  assert.deepEqual(diff(main, more), [], "new lines and a new release compare equal");
+  const renamed = { status: 200, body: shapeOf({ upcoming: [{ version: "1.24.0", date: "Nov 18", changes: ["a"] }], releases: [release("1.23.1", ["b"])] }) };
+  assert.deepEqual(diff(main, renamed).map((d) => [d.path, d.kind]), [
+    ["/upcoming/0/changes", "added"],
+    ["/upcoming/0/entries", "removed"],
+  ]);
+  const retyped = { status: 200, body: shapeOf({ upcoming: [release(124, ["a"])], releases: [release("1.23.1", ["b"])] }) };
+  assert.deepEqual(diff(main, retyped).map((d) => [d.path, d.kind]), [["/upcoming/0/version", "value"]]);
 });

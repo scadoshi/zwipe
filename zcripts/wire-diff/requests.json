@@ -17,10 +17,7 @@
    "method": "GET",
    "route": "/api/changelog",
    "path": "/api/changelog",
-   "mask": [
-    "/releases",
-    "/upcoming"
-   ]
+   "shape": true
   },
   {
    "name": "public metrics",

@@ -14,12 +14,14 @@
 // earlier step captured on that same server. "mask" adds to normalize.json's masks for this
 // step: values that differ between the servers by design, such as a row the step creates.
 // "sort" sorts an array whose order the server doesn't fix (ties in a search) before comparing;
-// only for those, since an order that is the contract has to compare as it comes.
+// only for those, since an order that is the contract has to compare as it comes. "shape": true
+// compares the reply's field names and types only, for a reply whose values change on nearly
+// every commit (the changelog).
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { diff, judge, normalize } from "./lib.mjs";
+import { diff, judge, normalize, shapeOf } from "./lib.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const [, , mainUrl, candUrl, requestsFile, approvedFile, normalizeFile] = process.argv;
@@ -99,9 +101,10 @@ for (const [index, raw] of script.steps.entries()) {
     mask: [...(rules.mask ?? []), ...(step.mask ?? [])],
     sort: [...(rules.sort ?? []), ...(step.sort ?? [])],
   };
+  const view = (body) => (step.shape ? shapeOf(normalize(body, stepRules)) : normalize(body, stepRules));
   const found = diff(
-    { status: replies.main.status, body: normalize(replies.main.body, stepRules) },
-    { status: replies.cand.status, body: normalize(replies.cand.body, stepRules) },
+    { status: replies.main.status, body: view(replies.main.body) },
+    { status: replies.cand.status, body: view(replies.cand.body) },
   );
   results.push({ step: { name: step.name, route: step.route }, diffs: found });
   const mark = found.length === 0 ? "same" : `${found.length} difference(s)`;
