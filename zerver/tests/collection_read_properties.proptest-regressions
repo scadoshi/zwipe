@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 1de582a51aac4d30d8802244c13bcdb5b431be81d4d1107d7d3d34360d55cb9a # shrinks to (source, columns) = (ManaBox, ["Name", "Set code", "Set name", "Collector number", "Foil", "Rarity", "Quantity", "ManaBox ID", "Scryfall ID", "Purchase price", "Misprint", "Altered", "Signed", "Condition", "Language", "Proxy", "Purchase price currency", "Added"]), cards = [Card { name: "AA", set_code: "000", collector_number: "0", quantity: 1, finish: Nonfoil, condition: Mint, language: En, scryfall_id: None, price_cents: None, tags: [], added: 0 }, Card { name: "aa", set_code: "a0a", collector_number: "0", quantity: 1, finish: Nonfoil, condition: Mint, language: En, scryfall_id: None, price_cents: None, tags: [], added: 0 }], at = Index(0)
