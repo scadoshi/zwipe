@@ -61,7 +61,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, Share stays open after Create link until the link is ready",
         "On the web on Android, Esc during Create link no longer shows an error over a link that was made",
         "After a dropped connection, Create deck and Clone open the new deck instead of showing an error",
-        "A change that went through before your connection dropped no longer shows an error when you try again",
+        "A change that went through before your connection dropped no longer shows an error",
         "An unset land target shows your format's usual count, and + and - step from it",
     ],
 }];
