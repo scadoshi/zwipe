@@ -5,7 +5,7 @@
 //! its `open` signal. It stays mounted while closed, so a reopen picks up
 //! where the user left off. For the commander maybeboard:
 //!
-//! ```ignore
+//! ```text
 //! SwipeSelect {
 //!     open: swipe_open,
 //!     mode: SwipeMode::Commander(Format::Commander),

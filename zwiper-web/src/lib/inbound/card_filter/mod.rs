@@ -3,7 +3,7 @@
 //! Oracle tags info button and the oracle tag dictionary. A host mounts one
 //! beside its frame:
 //!
-//! ```ignore
+//! ```text
 //! CardFilterPanel {
 //!     open: filter_open,
 //!     filter,                        // the host's Signal<CardQueryBuilder>

@@ -15,7 +15,7 @@
 //! opened, a hint dialog and the oracle tag dictionary). No fetch happens
 //! here.
 //!
-//! ```ignore
+//! ```text
 //! CardFilterPanel {
 //!     open: filter_open,
 //!     filter,                        // the host's Signal<CardQueryBuilder>

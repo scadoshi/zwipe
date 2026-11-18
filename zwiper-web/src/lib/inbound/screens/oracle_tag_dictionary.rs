@@ -4,7 +4,7 @@
 //!
 //! A host mounts it while open and adopts the tag `Use` hands back:
 //!
-//! ```ignore
+//! ```text
 //! if dictionary_open() {
 //!     OracleTagDictionary { open: dictionary_open, on_use: move |slug: String| adopt(slug) }
 //! }
