@@ -33,8 +33,8 @@ use crate::deck_cards::{self, Boards, Display, Write, Zone};
 use crate::deck_signals::{self, Crossing, Level};
 use crate::generation::{Generation, Ticket};
 use crate::stores::undo::{UndoAction, create_board_field};
-use crate::timing;
 use crate::toast::{Line, Toast, ToastKind, keep_one};
+use crate::{send_to, timing};
 
 /// The screen's title.
 pub const TITLE: &str = "Cards";
@@ -556,7 +556,7 @@ pub enum Effect {
         op: Op,
     },
     /// Takes back what a Send to added to another deck: reads the card's row there, then lowers
-    /// it by `copies` or deletes it ([`crate::send_to::send_undo`]); answers with [`Action::Deleted`],
+    /// it by `copies` or deletes it ([`send_to::send_undo`]); answers with [`Action::Deleted`],
     /// [`Action::UndoLeftAlone`] when the row moved boards or left, or [`Action::Failed`].
     UndoSend {
         /// The ticket to hand back.
@@ -2026,13 +2026,30 @@ impl State {
         }
     }
 
-    /// Settles an undo whose card had moved on, with [`ALREADY_CHANGED`] and nothing to retry.
+    /// Settles a Send to's undo that found the card moved on in the deck it went to, naming that
+    /// deck ([`send_to::left_alone`]), with nothing to retry.
     fn undo_left_alone(&mut self, ticket: Ticket) -> Vec<Effect> {
         let _ = self.settle(ticket);
+        let deck = self
+            .undoing
+            .iter()
+            .find(|u| u.ticket == ticket)
+            .and_then(|u| match &u.action {
+                UndoAction::SentTo { deck_name, .. } => Some(deck_name.clone()),
+                UndoAction::Added { .. }
+                | UndoAction::Removed { .. }
+                | UndoAction::QuantityChanged { .. }
+                | UndoAction::MovedBoard { .. }
+                | UndoAction::MvpToggled { .. }
+                | UndoAction::FlagToggled { .. }
+                | UndoAction::PrintingChanged { .. }
+                | UndoAction::CommandZonePrintingChanged { .. } => None,
+            })
+            .unwrap_or_default();
         self.undoing.retain(|u| u.ticket != ticket);
         vec![Effect::Toast(Toast::quick(
             ToastKind::Info,
-            ALREADY_CHANGED,
+            send_to::left_alone(&deck),
         ))]
     }
 

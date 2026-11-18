@@ -1123,9 +1123,10 @@ fn undo_takes_a_sent_card_back_out_of_the_deck_it_went_to_leaving_this_one() {
     };
     let left = state.update(Action::UndoLeftAlone { ticket: *ticket });
     assert!(
-        left.iter()
-            .any(|e| matches!(e, Effect::Toast(t) if t.text == ALREADY_CHANGED)),
-        "a card that moved boards or left says so: {left:?}"
+        left.iter().any(
+            |e| matches!(e, Effect::Toast(t) if t.text == "Already changed in Krenko, left as is")
+        ),
+        "a card that moved boards or left says so, naming the deck: {left:?}"
     );
 }
 

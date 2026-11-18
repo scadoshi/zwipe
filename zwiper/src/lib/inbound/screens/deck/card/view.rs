@@ -561,10 +561,6 @@ impl Driver {
         }
     }
 
-    /// The whole load rides one facade call: only `fetch_deck`'s failure
-    /// aborts (reported and toasted); the profile and command zone fetches
-    /// keep their tolerant handling inside. The profile goes to the model as
-    /// soon as it lands, so the header draws before the cards.
     /// Takes back what a Send to added to the deck `deck_id`: reads the card's row there, then
     /// lowers it by `copies` or deletes it, or leaves a row that moved boards or left.
     fn undo_send(self, ticket: Ticket, deck_id: Uuid, card_id: Uuid, board: Board, copies: i32) {
@@ -601,6 +597,10 @@ impl Driver {
         });
     }
 
+    /// The whole load rides one facade call: only `fetch_deck`'s failure
+    /// aborts (reported and toasted); the profile and command zone fetches
+    /// keep their tolerant handling inside. The profile goes to the model as
+    /// soon as it lands, so the header draws before the cards.
     fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
         // The deck the route holds answers at once, with no fetch and no ghost.
         let held = self
