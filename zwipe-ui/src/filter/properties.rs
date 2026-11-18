@@ -1,6 +1,18 @@
 //! Property tests for the filter sheet's draft: what Apply and Reset do and what the toast says,
 //! for any filter on any host the clients open the sheet on, and the forms a filter is kept
 //! and sent in.
+//!
+//! The gate runs 256 cases from a fixed seed, the same run everywhere, which never looks past
+//! those cases. After any change to the draft rules (Apply, Reset, the toast, a host's default,
+//! what Reset keeps, `as_sent`), also run the stress, 20,000 cases from a random seed:
+//!
+//! ```text
+//! PROPTEST_CASES=20000 cargo test -p zwipe-ui --lib filter::properties
+//! ```
+//!
+//! Run it a few times; each run takes about ten seconds. A failure is shrunk, printed and saved
+//! to `proptest-regressions/filter/properties.txt`, which is committed with the fix so the gate
+//! replays it.
 
 use proptest::prelude::*;
 use proptest::test_runner::RngSeed;
@@ -19,8 +31,12 @@ use crate::screens::card_filter::as_sent;
 use crate::stores::filters::{FilterScope, FilterStore};
 
 /// 256 cases from a fixed seed, so a run is the same everywhere; failures are kept in
-/// `proptest-regressions/` and replayed first.
+/// `proptest-regressions/` and replayed first. With `PROPTEST_CASES` set, the stress in the
+/// module doc: that many cases from a random seed.
 fn config() -> ProptestConfig {
+    if std::env::var_os("PROPTEST_CASES").is_some() {
+        return ProptestConfig::default();
+    }
     ProptestConfig {
         cases: 256,
         rng_seed: RngSeed::Fixed(592),
