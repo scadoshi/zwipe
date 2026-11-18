@@ -1148,3 +1148,121 @@ fn a_board_with_nothing_on_it_says_so_in_place_of_the_card() {
     );
     assert_eq!(NOTHING_ON_BOARD, "Nothing on this board");
 }
+
+/// Whether the deck's entry for `card_id` is flagged.
+fn entry_flagged(state: &State, card_id: Uuid) -> bool {
+    state
+        .entries
+        .iter()
+        .any(|e| e.card.scryfall_data.id == card_id && e.deck_card.flagged)
+}
+
+/// The deck card the server creates for an undone remove: unflagged, as a create always is.
+fn created_unflagged(entry: &DeckEntry) -> DeckCard {
+    let mut deck_card = entry.deck_card.clone();
+    deck_card.flagged = false;
+    deck_card
+}
+
+#[test]
+fn undo_puts_a_removed_card_back_with_its_flag() {
+    let mut built = deck_of(&["Opt", "Shock"]);
+    built.entries[0].deck_card.flagged = true;
+    let opt = built.entries[0].clone();
+    let card_id = opt.card.scryfall_data.id;
+    let mut state = loaded(built);
+    let recorded = swipe_and_land(&mut state, Action::Remove);
+
+    let effects = undo_with(&mut state, Some(recorded));
+    let restore = ticket_of(&effects);
+    let effects = state.update(Action::Restored {
+        ticket: restore,
+        deck_card: Box::new(created_unflagged(&opt)),
+    });
+    let Some(Effect::RestoreFlag {
+        ticket,
+        card_id: flagged,
+        ..
+    }) = effects
+        .iter()
+        .find(|e| matches!(e, Effect::RestoreFlag { .. }))
+    else {
+        panic!("the flag follows the create: {effects:?}");
+    };
+    assert_eq!(*flagged, card_id);
+    assert!(entry_flagged(&state, card_id), "flagged at once");
+    assert_eq!(state.update(Action::Landed { ticket: *ticket }), Vec::new());
+    assert!(
+        entry_flagged(&state, card_id),
+        "and once the server takes it"
+    );
+}
+
+#[test]
+fn a_refused_flag_leaves_the_restored_card_unflagged() {
+    let mut built = deck_of(&["Opt", "Shock"]);
+    built.entries[0].deck_card.flagged = true;
+    let opt = built.entries[0].clone();
+    let card_id = opt.card.scryfall_data.id;
+    let mut state = loaded(built);
+    let recorded = swipe_and_land(&mut state, Action::Remove);
+    let effects = undo_with(&mut state, Some(recorded));
+    let effects = state.update(Action::Restored {
+        ticket: ticket_of(&effects),
+        deck_card: Box::new(created_unflagged(&opt)),
+    });
+    let Some(Effect::RestoreFlag { ticket, .. }) = effects
+        .iter()
+        .find(|e| matches!(e, Effect::RestoreFlag { .. }))
+    else {
+        panic!("{effects:?}");
+    };
+    let _ = state.update(Action::Failed { ticket: *ticket });
+    assert!(state.entry(card_id).is_some(), "the card stays back");
+    assert!(
+        !entry_flagged(&state, card_id),
+        "unflagged, as the server holds it"
+    );
+}
+
+#[test]
+fn an_undo_held_on_its_delete_puts_the_flag_back_too() {
+    let mut built = deck_of(&["Opt", "Shock"]);
+    built.entries[0].deck_card.flagged = true;
+    let opt = built.entries[0].clone();
+    let card_id = opt.card.scryfall_data.id;
+    let mut state = loaded(built);
+    let delete = ticket_of(&state.update(Action::Remove));
+    let _ = state.update(Action::Undo);
+    let effects = state.update(Action::Landed { ticket: delete });
+    let effects = state.update(Action::Restored {
+        ticket: ticket_of(&effects),
+        deck_card: Box::new(created_unflagged(&opt)),
+    });
+    assert!(
+        effects
+            .iter()
+            .any(|e| matches!(e, Effect::RestoreFlag { card_id: id, .. } if *id == card_id)),
+        "{effects:?}"
+    );
+    assert!(entry_flagged(&state, card_id));
+}
+
+#[test]
+fn undo_of_an_unflagged_remove_sends_no_flag() {
+    let built = deck_of(&["Opt", "Shock"]);
+    let opt = built.entries[0].clone();
+    let mut state = loaded(built);
+    let recorded = swipe_and_land(&mut state, Action::Remove);
+    let effects = undo_with(&mut state, Some(recorded));
+    let effects = state.update(Action::Restored {
+        ticket: ticket_of(&effects),
+        deck_card: Box::new(opt.deck_card),
+    });
+    assert!(
+        !effects
+            .iter()
+            .any(|e| matches!(e, Effect::RestoreFlag { .. })),
+        "{effects:?}"
+    );
+}

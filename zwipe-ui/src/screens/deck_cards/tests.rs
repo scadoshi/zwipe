@@ -2452,3 +2452,130 @@ fn flagged_turns_itself_off_when_the_last_flag_goes_and_an_undo_leaves_it_off() 
     );
     assert!(!state.flagged_only(), "and leaves Flagged off");
 }
+
+#[test]
+fn remove_then_undo_puts_the_flag_back_with_a_follow_up_patch() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    state.entries[0].deck_card.flagged = true;
+    let before = state.row(ring).unwrap();
+    let removal = state.update(Action::ChangeQuantity {
+        card_id: ring,
+        delta: -before.quantity,
+    });
+    let [recorded] = undo_records(&removal).try_into().unwrap();
+
+    let effects = state.update(Action::Undo(Box::new(recorded)));
+    let Some(Effect::CreateCard { ticket, .. }) = effects.last() else {
+        panic!("undo re-creates the card: {effects:?}");
+    };
+    // The server creates the row unflagged; the reply asks it to flag the row again.
+    let mut saved = state
+        .entries
+        .iter()
+        .find(|e| e.card.scryfall_data.id == ring)
+        .unwrap()
+        .deck_card
+        .clone();
+    saved.flagged = false;
+    let effects = state.update(Action::Created {
+        ticket: *ticket,
+        deck_card: Box::new(saved.clone()),
+    });
+    let [
+        Effect::PatchCard {
+            ticket: patch,
+            card_id,
+            request,
+            ..
+        },
+    ] = patches(&effects).as_slice()
+    else {
+        panic!("one flag patch follows the re-create: {effects:?}");
+    };
+    assert_eq!(*card_id, ring);
+    assert!(matches!(request.flagged, Patch::Set(Some(true))));
+    assert!(
+        matches!(request.quantity, Patch::Unchanged),
+        "only the flag"
+    );
+    assert!(is_flagged(&state, ring), "flagged at once");
+
+    saved.flagged = true;
+    let _ = state.update(Action::Patched {
+        ticket: *patch,
+        deck_card: Box::new(saved),
+    });
+    assert_eq!(state.row(ring), Some(before), "the row is back as it was");
+    assert!(is_flagged(&state, ring), "with its flag");
+}
+
+#[test]
+fn a_flag_patch_the_server_refuses_leaves_the_restored_card_unflagged() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    state.entries[0].deck_card.flagged = true;
+    let quantity = state.row(ring).unwrap().quantity;
+    let removal = state.update(Action::ChangeQuantity {
+        card_id: ring,
+        delta: -quantity,
+    });
+    let [recorded] = undo_records(&removal).try_into().unwrap();
+    let effects = state.update(Action::Undo(Box::new(recorded)));
+    let Some(Effect::CreateCard { ticket, .. }) = effects.last() else {
+        panic!("{effects:?}");
+    };
+    let mut saved = state.entries[0].deck_card.clone();
+    saved.flagged = false;
+    let effects = state.update(Action::Created {
+        ticket: *ticket,
+        deck_card: Box::new(saved),
+    });
+    let [Effect::PatchCard { ticket: patch, .. }] = patches(&effects).as_slice() else {
+        panic!("{effects:?}");
+    };
+    let _ = state.update(Action::Failed { ticket: *patch });
+    assert!(state.row(ring).is_some(), "the card stays restored");
+    assert!(
+        !is_flagged(&state, ring),
+        "unflagged, as the server holds it"
+    );
+}
+
+#[test]
+fn undo_of_an_unflagged_remove_sends_no_flag_patch() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let quantity = state.row(ring).unwrap().quantity;
+    let removal = state.update(Action::ChangeQuantity {
+        card_id: ring,
+        delta: -quantity,
+    });
+    let [recorded] = undo_records(&removal).try_into().unwrap();
+    let effects = state.update(Action::Undo(Box::new(recorded)));
+    let Some(Effect::CreateCard { ticket, .. }) = effects.last() else {
+        panic!("{effects:?}");
+    };
+    let saved = state.entries[0].deck_card.clone();
+    let effects = state.update(Action::Created {
+        ticket: *ticket,
+        deck_card: Box::new(saved),
+    });
+    assert!(patches(&effects).is_empty(), "{effects:?}");
+}
+
+/// Whether the deck's row for `card_id` is flagged.
+fn is_flagged(state: &State, card_id: Uuid) -> bool {
+    state
+        .entries
+        .iter()
+        .any(|e| e.card.scryfall_data.id == card_id && e.deck_card.flagged)
+}
+
+/// The card patches among `effects`.
+fn patches(effects: &[Effect]) -> Vec<&Effect> {
+    effects
+        .iter()
+        .filter(|e| matches!(e, Effect::PatchCard { .. }))
+        .collect()
+}

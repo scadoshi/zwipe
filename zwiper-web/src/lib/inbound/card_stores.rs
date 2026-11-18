@@ -22,8 +22,20 @@ use zwipe_ui::stores::undo::UndoStore;
 
 use crate::inbound::root_signal::use_root_signal;
 
-/// A removed card to put back: the card, its board, its copies and its star time.
-pub type Restore = (Card, Board, i32, Option<DateTime<Utc>>);
+/// A removed card to put back as it was.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Restore {
+    /// The card.
+    pub card: Card,
+    /// The board it sat on.
+    pub board: Board,
+    /// The copies it had.
+    pub quantity: i32,
+    /// When it was starred, if it was.
+    pub mvp_at: Option<DateTime<Utc>>,
+    /// Whether it was flagged.
+    pub flagged: bool,
+}
 
 /// The shared card stores. `Copy`; read with `stores.undo.read()`.
 #[derive(Debug, Clone, Copy, PartialEq)]

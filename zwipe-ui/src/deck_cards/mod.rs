@@ -11,7 +11,9 @@ use zwipe_core::domain::card::search_card::cards::{Cards, sort_deck_entries};
 use zwipe_core::domain::card::search_card::group_cards::{CardGroup, GroupByOption, GroupCards};
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::validate_deck::{DeckCommandZone, validate_deck};
-use zwipe_core::domain::deck::{Board, Deck, DeckEntry, DeckProfile, DeckWarning, Format};
+use zwipe_core::domain::deck::{
+    Board, Deck, DeckCard, DeckEntry, DeckProfile, DeckWarning, Format,
+};
 
 use crate::deck::form::Slot;
 use crate::stores::undo::UndoAction;
@@ -469,6 +471,12 @@ impl Bursts {
 
 /// How many main board cards a deck may star as MVPs; the server refuses a fourth.
 pub const MAX_MVPS: usize = 3;
+
+/// Whether an undone remove's row needs its flag put back: the removed row was flagged, and the server, whose create carries no flag, made it unflagged. The flag goes back with `HttpPatchDeckCard::with_flagged(true)` once the create lands.
+#[must_use]
+pub fn needs_reflag(removed_flagged: bool, created: &DeckCard) -> bool {
+    removed_flagged && !created.flagged
+}
 
 /// How many main board cards in `entries` are starred.
 #[must_use]
