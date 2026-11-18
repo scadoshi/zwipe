@@ -165,18 +165,7 @@ pub fn PickerSearch(
     }
 }
 
-/// The choice Enter in a picker's search acts on: the first of `shown` while `query` has text,
-/// else none, so an empty search leaves every choice plain and Enter does nothing.
-#[must_use]
-pub fn enter_target<'a, T>(query: &str, shown: &'a [T]) -> Option<&'a T> {
-    if query.trim().is_empty() {
-        None
-    } else {
-        shown.first()
-    }
-}
-
-/// One choice in a picker's grid, marked as the [`enter_target`] while `target`, which the
+/// One choice in a picker's grid, marked as the one Enter acts on while `target`, which the
 /// stylesheet shows while the search has focus. The wrapper takes no box of its own.
 #[component]
 pub fn PickerChoice(target: bool, children: Element) -> Element {

@@ -216,7 +216,7 @@ pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 #[cfg(feature = "toast")]
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use picker_search::use_picker_search;
-pub use picker_sheet::{PICKER_DRAWER_PX, PickerChoice, PickerSearch, PickerSheet, enter_target};
+pub use picker_sheet::{PICKER_DRAWER_PX, PickerChoice, PickerSearch, PickerSheet};
 pub use pressable::{Pressable, is_press};
 pub use printing_face::{
     FaceTurn, PrintingFace, PrintingFaceButton, PrintingsFace, hand_face_then, open_on_shown_face,

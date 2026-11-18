@@ -12,14 +12,14 @@
 use components::hint::{ContentHintDialog, HintBody, guide_for_screen};
 use components::{
     AlertDialog, Button, ButtonVariant, Chip, DialogAction, HintDialog, PICKER_DRAWER_PX,
-    PickerChoice, PickerSearch, PickerSheet, TOAST_NORMAL, TOAST_QUICK, enter_target,
-    use_min_width, use_overlay_back_action, use_picker_search,
+    PickerChoice, PickerSearch, PickerSheet, TOAST_NORMAL, TOAST_QUICK, use_min_width,
+    use_overlay_back_action, use_picker_search,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::oracle_tag::{self, OracleTag};
+use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::deck::{
     DeckTagView, Format, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, seed_oracle_tags_from_catalog,
 };
@@ -30,7 +30,6 @@ use zwipe_ui::deck::pickers::{
 };
 use zwipe_ui::filter::fields::same_set;
 use zwipe_ui::hint::HintTopic;
-use zwipe_ui::timing::ORACLE_TAG_PICKER_LIMIT;
 
 use super::{DeckForm, SlotState};
 use crate::inbound::catalog::CatalogCache;
@@ -199,13 +198,9 @@ pub fn FormatPicker(form: DeckForm) -> Element {
     let listening = use_memo(move || open() && !discard_open());
     let layer = use_overlay_back_action(listening.into(), back);
     let unchanged = (form.format)() == snapshot.read().format;
-    let typed = query().to_lowercase();
-    let results: Vec<Format> = Format::all()
-        .iter()
-        .copied()
-        .filter(|f| typed.is_empty() || f.display_name().to_lowercase().contains(&typed))
-        .collect();
-    let target = enter_target(&typed, &results).copied();
+    // The grid, its highlight and Enter all read the search through the same rules.
+    let results: Vec<Format> = pickers::formats_matching(&query());
+    let target = pickers::format_on_enter(&query());
     // Enter picks the top match and saves, as a format is a single choice.
     let pick_target = move |typed: String| {
         if let Some(format) = pickers::format_on_enter(&typed) {
@@ -368,12 +363,13 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
     let listening = use_memo(move || open() && !discard_open());
     let layer = use_overlay_back_action(listening.into(), back);
     let unchanged = same_set(&tags(), &snapshot.read().tags);
-    let typed = query().to_lowercase();
-    let results: Vec<DeckTagView> = catalog()
+    // The grid, its highlight and Enter all read the search through the same rules.
+    let tags_shown = catalog();
+    let results: Vec<DeckTagView> = pickers::deck_tags_matching(&tags_shown, &query())
         .into_iter()
-        .filter(|t| typed.is_empty() || t.display_name.to_lowercase().contains(&typed))
+        .cloned()
         .collect();
-    let target = enter_target(&typed, &results).cloned();
+    let target = pickers::deck_tag_on_enter(&tags_shown, &query()).cloned();
     let target_slug = target.as_ref().map(|t| t.slug.clone());
     // Enter adds the top match and keeps the picker open for the next.
     let add_target = move |typed: String| {
@@ -559,21 +555,16 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
     let loaded = !all.is_empty();
     let results: Vec<OracleTag> = if !open() || !loaded {
         Vec::new()
-    } else if typed.trim().is_empty() {
-        let mut curated: Vec<OracleTag> = all
-            .iter()
-            .filter(|t| t.curated || picked.contains(&t.slug))
-            .cloned()
-            .collect();
-        curated.sort_by(|a, b| a.slug.cmp(&b.slug));
-        curated
     } else {
-        let mut ranked = oracle_tag::search_oracle_tags(all, &typed);
-        ranked.truncate(ORACLE_TAG_PICKER_LIMIT);
-        ranked
+        // The grid, its highlight and Enter all read the search through the same rules.
+        pickers::oracle_tag_results(all, &picked, &typed)
+    };
+    let target = if results.is_empty() {
+        None
+    } else {
+        pickers::oracle_tag_on_enter(all, &picked, &typed)
     };
     drop(catalog);
-    let target = enter_target(&typed, &results).cloned();
     let target_slug = target.as_ref().map(|t| t.slug.clone());
     // Enter adds the top match and keeps the picker open for the next.
     let add_target = move |typed: String| {

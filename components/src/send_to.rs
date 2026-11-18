@@ -89,10 +89,10 @@ pub fn SendToSheet(
     let shown = decks
         .as_deref()
         .map(|decks| send_to::targets(decks, current, &query()));
-    let target = shown
+    // The list, its highlight and Enter all read the search through the same rules.
+    let target = decks
         .as_deref()
-        .and_then(|shown| crate::enter_target(&query(), shown))
-        .cloned();
+        .and_then(|decks| send_to::target_on_enter(decks, current, &query()));
     let target_id = target.as_ref().map(|t| t.id);
     // Enter sends to the first deck for the search as typed, which can be ahead of the list.
     let all_decks = decks.unwrap_or_default();
