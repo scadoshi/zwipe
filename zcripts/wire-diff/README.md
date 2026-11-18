@@ -50,6 +50,14 @@ Steps that send email answer 500 on both servers, since a local run has no Resen
 - main against itself must come out clean: `run.sh origin/main origin/main`. If it doesn't, something in a reply changes run to run and belongs in `normalize.json` (with a reason in the commit), not in `approved.json`.
 - A planted break must fail: a scratch commit that renames `min_version` on the wire fails with `/min_version` removed and `/minimum_version` added.
 
-## Later
+## In CI
 
-Run it in CI on pull requests that touch `zerver/`, `zwipe-core/` or `zwipe-client/`, with the dev database replaced by a fixture the job can build.
+`.github/workflows/wire-diff.yml` runs it on pushes to `release` and on pull requests into `main` that touch `zerver/`, `zwipe-core/`, `zwipe-client/`, the lockfile, `.sqlx/`, the seed or this folder. It runs on GitHub's runner against a throwaway `postgres:18.6` service: no secrets, no production database. The template is main's schema loaded with the card fixture, the candidate is the pushed commit (a pull request's merge commit), and the report and both zervers' logs upload as the `wire-diff-report` artifact. An unapproved difference fails the job.
+
+The runner has no synced catalog, so `fixture/cards.csv.gz` stands in for one: 406 cards, one printing each, with their profiles, oracle tags and the out-of-universe sets. `fixture/load.sh` puts it into a migrated database and refreshes the card views. Regenerate it from a local database with the full catalog after a migration changes a card table:
+
+```bash
+DATABASE_URL=postgres://you@localhost:5432/zwipe zcripts/wire-diff/fixture/generate.sh
+```
+
+The card data is Scryfall's bulk data, as the nightly sync stores it, used under Scryfall's data guidelines; images are links to Scryfall, never the images themselves. It leaves out the Commander tables the synergy worker fills, so commander suggestions and the commander ordering run without them on both sides. No user data is in it.
