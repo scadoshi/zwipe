@@ -15,10 +15,11 @@
 //   {"shot": "path.png"}              saves a screenshot
 // Any step takes "after": ms to pause once it's done.
 //
-// Env: CHROME (the browser binary), PORT (the DevTools port, default 9340), H (height).
-import { spawn } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+// Env: CHROME (the browser binary; found on its own otherwise), PORT (the DevTools port,
+// default 9340), H (height). Needs Node 22 or later, for its built-in WebSocket.
+import { execFileSync, spawn } from "node:child_process";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
 const [, , url, width, stepsFile] = process.argv;
@@ -27,17 +28,43 @@ if (!url || !width || !stepsFile) {
   process.exit(2);
 }
 const steps = JSON.parse(readFileSync(stepsFile, "utf8"));
-const chromePath =
-  process.env.CHROME ??
-  (process.platform === "darwin"
-    ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-    : "google-chrome");
+// The browser: CHROME, else Chrome on a Mac; on Linux the first of Chrome or Chromium on the
+// PATH, else the Chromium Playwright downloads.
+const findChrome = () => {
+  if (process.env.CHROME) return process.env.CHROME;
+  if (process.platform === "darwin") return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  for (const name of ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser"]) {
+    try {
+      return execFileSync("which", [name], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    } catch {}
+  }
+  const cache = join(homedir(), ".cache", "ms-playwright");
+  const builds = existsSync(cache) ? readdirSync(cache).filter((d) => /^chromium-\d+$/.test(d)).sort().reverse() : [];
+  for (const build of builds) {
+    for (const dir of ["chrome-linux64", "chrome-linux"]) {
+      const path = join(cache, build, dir, "chrome");
+      if (existsSync(path)) return path;
+    }
+  }
+  return "google-chrome";
+};
+const chromePath = findChrome();
 const port = process.env.PORT ?? "9340";
 const profile = mkdtempSync(join(tmpdir(), "zwipe-verify-"));
 const chrome = spawn(
   chromePath,
-  ["--headless=new", "--no-first-run", `--user-data-dir=${profile}`, `--remote-debugging-port=${port}`, "about:blank"],
-  { stdio: "ignore" },
+  [
+    "--headless=new",
+    "--no-first-run",
+    // Linux distributions that restrict unprivileged user namespaces (Ubuntu 24.04 and later)
+    // stop Chrome's sandbox from starting; the driver only opens the local app.
+    ...(process.platform === "linux" ? ["--no-sandbox"] : []),
+    `--user-data-dir=${profile}`,
+    `--remote-debugging-port=${port}`,
+    "about:blank",
+  ],
+  // Its own process group, so stopping it stops its helper processes too.
+  { stdio: "ignore", detached: true },
 );
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let targets;
@@ -130,6 +157,14 @@ for (const s of steps) {
 }
 ws.close();
 const exited = new Promise((r) => chrome.once("exit", r));
-chrome.kill();
+try {
+  process.kill(-chrome.pid);
+} catch {
+  chrome.kill();
+}
 await exited;
-rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+try {
+  rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
+} catch {
+  // A helper still finishing a write can hold the profile a moment; a leftover temp dir is harmless.
+}

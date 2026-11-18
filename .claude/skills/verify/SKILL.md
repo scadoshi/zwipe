@@ -23,11 +23,13 @@ Run the cheap checks first: fmt, clippy and the crate tests. This skill comes af
 | Registers `localcheck` / `Verify-local-pass-1!`, verified | ~1s |
 | Builds and serves the web app on :8100 | 3–5 min cold, ~1.5 min warm |
 
-It ends by printing the URLs, the login and where the logs are (`/tmp/zwipe-verify`).
+It ends by printing the URLs, the login and where the logs are (`/tmp/zwipe-verify`). On a Linux box (scotland, an x86 server) the same run took 6 min 14 s cold: about 6 s to copy, migrate and seed, 2 min for zerver and 4 min for the web build.
 
-It needs Postgres, `sqlx` (the CLI), `dx`, `node` and Chrome, which the dev setup in `zcripts/dev-env/` installs. It builds on thinker's seed (`feat/seed`): `zcripts/seed/seed.sh`, and the guard in `zcripts/seed/guard.sh`, which refuses any database that isn't on this machine. Until `feat/seed` merges, this skill lives on a branch stacked on it. The template is `VERIFY_TEMPLATE_URL`, else `zerver/.env`'s `DATABASE_URL`, else `postgres:///zerver`.
+It needs Postgres, `sqlx` (the CLI), `dx`, Node 22 or later (the driver uses its built-in WebSocket) and Chrome or Chromium. The macOS dev setup in `zcripts/dev-env/` installs them; the Linux one installs Postgres and `sqlx` but not Node or a browser, so add those yourself. On Linux the driver finds Chrome or Chromium on the PATH, or the Chromium Playwright downloads, and `CHROME` overrides it. It builds on thinker's seed (`feat/seed`): `zcripts/seed/seed.sh`, and the guard in `zcripts/seed/guard.sh`, which refuses any database that isn't on this machine. Until `feat/seed` merges, this skill lives on a branch stacked on it. The template is `VERIFY_TEMPLATE_URL`, else `zerver/.env`'s `DATABASE_URL`, else `postgres:///zerver`.
 
-Postgres can't copy a database while anything is connected to it. If your own zerver or a psql session is open on the dev database, up.sh names them and stops. Close them and run it again.
+Postgres can't copy a database while anything is connected to it. If your own zerver or a psql session is open on the dev database, up.sh names them and stops. Close them and run it again. An editor's rust-analyzer holds connections too, from expanding sqlx's `query!` macros; they show up unnamed, and `pkill -f rust-analyzer-proc-macro-srv` closes them (rust-analyzer starts it again when it needs it).
+
+The migrations skip ones the dev database ran from another branch (`--ignore-missing`), so a dev database a step ahead of your checkout still copies.
 
 Other ports: `ZERVER_PORT=3200 WEB_PORT=8200 up.sh`, and the same variables for down.sh.
 

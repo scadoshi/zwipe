@@ -29,7 +29,7 @@ if ! psql "$ADMIN" -Atqc 'select 1' >/dev/null 2>&1; then
     for _ in $(seq 1 20); do psql "$ADMIN" -Atqc 'select 1' >/dev/null 2>&1 && break; sleep 1; done
   fi
   psql "$ADMIN" -Atqc 'select 1' >/dev/null 2>&1 || {
-    echo "postgres isn't answering at $ADMIN; start it (brew services start postgresql@18, or systemctl start postgresql) and rerun" >&2
+    echo "postgres isn't answering at $ADMIN; start it (brew services start postgresql@18, sudo systemctl start postgresql, or docker start <container>) and rerun" >&2
     exit 1
   }
 fi
@@ -39,13 +39,21 @@ others="$(psql "$ADMIN" -Atqc "select count(*) from pg_stat_activity where datna
 if [ "$others" != "0" ]; then
   echo "can't copy $TEMPLATE_DB: $others connection(s) are open on it, and Postgres copies a database only while nothing is connected. Who:" >&2
   psql "$ADMIN" -Atqc "select coalesce(nullif(application_name, ''), 'unnamed') || ' (pid ' || pid || ')' from pg_stat_activity where datname = '$TEMPLATE_DB'" >&2
-  echo "Stop them (a local zerver: pkill -f target/debug/zerver; a psql session: quit it) and rerun." >&2
+  echo "Stop them (a local zerver: pkill -f target/debug/zerver; a psql session: quit it; an editor's" >&2
+  echo "rust-analyzer keeps sqlx's query! connections open: pkill -f rust-analyzer-proc-macro-srv," >&2
+  echo "which it restarts on demand) and rerun." >&2
   exit 1
 fi
 PGOPTIONS="-c client_min_messages=warning" psql "$ADMIN" -v ON_ERROR_STOP=1 -qc "drop database if exists $VERIFY_DB" -c "create database $VERIFY_DB template \"$TEMPLATE_DB\""
 
 step "migrations"
-(cd "$ROOT" && DATABASE_URL="$VERIFY_URL" sqlx migrate run --source zerver/migrations >/dev/null)
+# --ignore-missing: the dev database may hold migrations from a branch this checkout doesn't have.
+if ! (cd "$ROOT" && DATABASE_URL="$VERIFY_URL" sqlx migrate run --ignore-missing --source zerver/migrations) \
+  >"$RUN_DIR/migrate.out" 2>&1; then
+  echo "the migrations failed:" >&2
+  tail -5 "$RUN_DIR/migrate.out" >&2
+  exit 1
+fi
 
 step "seed (zcripts/seed/seed.sh small --reset)"
 DATABASE_URL="$VERIFY_URL" "$ROOT/zcripts/seed/seed.sh" small --reset
