@@ -46,7 +46,7 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 9);
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 23, 2),
+    version: Version::new(1, 24, 0),
     date: None,
     entries: &[
         "On Android, the app no longer signs you out now and then after a restart",
