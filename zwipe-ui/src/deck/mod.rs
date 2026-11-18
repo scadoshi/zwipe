@@ -1,6 +1,7 @@
 //! Deck rules the app keeps in its own crates: a deck row's count, price and pips here, and the command zone, list, form, pickers, export, buy, view and warning rules in the modules.
 
 pub mod command_zone;
+pub mod copies;
 mod create_gate;
 pub mod export;
 pub mod form;

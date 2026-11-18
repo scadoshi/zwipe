@@ -159,6 +159,23 @@ mod tests {
     }
 
     #[test]
+    fn patch_rejects_quantity_above_99() {
+        let (user_id, deck_id, card_id) = ids();
+        assert!(matches!(
+            UpdateDeckCard::patch(
+                user_id,
+                &deck_id,
+                &card_id,
+                Changes {
+                    quantity: Some(100),
+                    ..Changes::default()
+                }
+            ),
+            Err(InvalidUpdateDeckCard::Quantity(_))
+        ));
+    }
+
+    #[test]
     fn patch_rejects_quantity_below_one() {
         let (user_id, deck_id, card_id) = ids();
         assert!(matches!(

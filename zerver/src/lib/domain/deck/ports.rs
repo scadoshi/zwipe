@@ -121,10 +121,13 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &UpdateDeckProfile,
     ) -> impl Future<Output = Result<DeckProfile, UpdateDeckProfileError>> + Send;
 
-    /// Updates a card's quantity or category in a deck.
+    /// Updates a card's quantity or category in a deck. A raised quantity counts toward
+    /// `card_limit` under the deck row lock; `email_verified` picks the error that names it.
     fn update_deck_card(
         &self,
         request: &UpdateDeckCard,
+        card_limit: i64,
+        email_verified: bool,
     ) -> impl Future<Output = Result<DeckCard, UpdateDeckCardError>> + Send;
 
     // == delete ==
@@ -362,10 +365,12 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         request: &UpdateDeckProfile,
     ) -> impl Future<Output = Result<DeckProfile, UpdateDeckProfileError>> + Send;
 
-    /// Updates card quantity/category with authorization check.
+    /// Updates card quantity/category with authorization check. A raised quantity counts
+    /// toward the deck's card limit, the lower one when the email isn't verified.
     fn update_deck_card(
         &self,
         request: &UpdateDeckCard,
+        email_verified: bool,
     ) -> impl Future<Output = Result<DeckCard, UpdateDeckCardError>> + Send;
 
     // == delete ==

@@ -67,6 +67,20 @@ impl Zone {
         }
     }
 
+    /// How many slots hold a card, each counting toward the deck's card limit.
+    #[must_use]
+    pub fn filled(&self) -> usize {
+        [
+            &self.commander,
+            &self.partner,
+            &self.background,
+            &self.signature,
+        ]
+        .iter()
+        .filter(|card| card.is_some())
+        .count()
+    }
+
     /// The card in `slot`, to set or clear.
     pub fn slot_mut(&mut self, slot: Slot) -> &mut Option<Card> {
         match slot {
@@ -582,6 +596,17 @@ mod tests {
 
     use super::*;
     use crate::test_support::{card, deck, deck_profile};
+
+    #[test]
+    fn each_filled_command_zone_slot_counts() {
+        assert_eq!(Zone::default().filled(), 0);
+        let zone = Zone {
+            commander: Some(card("Isshin")),
+            signature: Some(card("Bolt")),
+            ..Zone::default()
+        };
+        assert_eq!(zone.filled(), 2);
+    }
 
     fn typed(name: &str, type_line: &str) -> Card {
         let mut c = card(name);

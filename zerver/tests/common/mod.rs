@@ -276,6 +276,31 @@ impl TestApp {
 
     /// A bodyless request, answered with the response's status, headers and
     /// raw body, for routes that don't answer JSON.
+    /// A JSON request, answered with the status and the body as JSON, or as a JSON string
+    /// when the body is plain text, as an error's message is.
+    pub(crate) async fn send_text(
+        &self,
+        method: Method,
+        path: &str,
+        json: Value,
+        token: &str,
+    ) -> (StatusCode, Value) {
+        let request = Request::builder()
+            .method(method)
+            .uri(path)
+            .header(header::AUTHORIZATION, format!("Bearer {token}"))
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(serde_json::to_vec(&json).unwrap()));
+        let mut request = request.unwrap();
+        request.extensions_mut().insert(ConnectInfo(self.fake_ip));
+        let response = self.router.clone().oneshot(request).await.unwrap();
+        let status = response.status();
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let body = serde_json::from_slice(&bytes)
+            .unwrap_or_else(|_| Value::String(String::from_utf8_lossy(&bytes).into_owned()));
+        (status, body)
+    }
+
     pub(crate) async fn send_bytes(
         &self,
         method: Method,

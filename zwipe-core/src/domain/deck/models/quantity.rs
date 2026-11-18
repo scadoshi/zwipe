@@ -1,32 +1,34 @@
 //! Card quantity validation for deck building.
 //!
-//! Ensures card quantities are valid (1-99).
+//! A deck card holds 1 to 99 copies of a card.
 
 use std::ops::Deref;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// Error when quantity is zero or negative.
+/// Error when a quantity is outside 1 to [`Quantity::MAX`].
 #[derive(Debug, Error)]
-#[error("must be greater than 0")]
+#[error("must be between 1 and 99")]
 pub struct InvalidQuantity;
 
-/// Validated card quantity (1-99 copies).
-///
-/// Used when creating deck cards. Ensures quantity is positive.
-/// Upper bound (deck copy limits) is enforced separately by service layer.
-#[derive(Debug, Clone, PartialEq)]
+/// Validated card quantity, 1 to [`Quantity::MAX`] copies: in a request, in a stored row (the
+/// database checks the same range) and in a reply. The deck's total card limit is the server's
+/// to enforce.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Quantity(i32);
 
 impl Quantity {
+    /// The most copies of one card a request may set.
+    pub const MAX: i32 = 99;
+
     /// Creates a new quantity with validation.
     ///
     /// # Errors
     ///
-    /// Returns [`InvalidQuantity`] if quantity is less than 1.
+    /// Returns [`InvalidQuantity`] if `quantity` is below 1 or above [`Quantity::MAX`].
     pub fn new(quantity: i32) -> Result<Self, InvalidQuantity> {
-        if quantity < 1 {
+        if !(1..=Self::MAX).contains(&quantity) {
             return Err(InvalidQuantity);
         }
         Ok(Self(quantity))
@@ -42,6 +44,14 @@ impl Quantity {
     #[must_use]
     pub fn four() -> Self {
         Self(4)
+    }
+}
+
+impl TryFrom<i32> for Quantity {
+    type Error = InvalidQuantity;
+
+    fn try_from(quantity: i32) -> Result<Self, Self::Error> {
+        Self::new(quantity)
     }
 }
 
@@ -95,6 +105,27 @@ mod tests {
     #[test]
     fn test_quantity_new_rejects_negative() {
         assert!(matches!(Quantity::new(-1), Err(InvalidQuantity)));
+    }
+
+    #[test]
+    fn a_request_holds_at_most_99_copies() {
+        assert_eq!(Quantity::MAX, 99);
+        assert!(Quantity::new(99).is_ok());
+        assert!(matches!(Quantity::new(100), Err(InvalidQuantity)));
+        assert_eq!(InvalidQuantity.to_string(), "must be between 1 and 99");
+    }
+
+    #[test]
+    fn a_raw_count_converts_through_the_same_check() {
+        assert_eq!(Quantity::try_from(99).map(|q| *q).ok(), Some(99));
+        assert!(Quantity::try_from(100).is_err());
+        assert!(Quantity::try_from(0).is_err());
+    }
+
+    #[test]
+    fn a_count_outside_1_to_99_does_not_parse() {
+        assert!(serde_json::from_value::<Quantity>(serde_json::json!(100)).is_err());
+        assert!(serde_json::from_value::<Quantity>(serde_json::json!(0)).is_err());
     }
 
     #[test]

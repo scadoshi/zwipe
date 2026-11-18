@@ -22,7 +22,7 @@ use zwipe_core::domain::deck::requests::import_deck_cards::{
 use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
-use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, ImportMode};
+use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, ImportMode, Quantity};
 use zwipe_core::http::contracts::suggestions::STAPLE_MIN_DECKS;
 
 use crate::domain::card::models::synergy::SynergyPayload;
@@ -576,9 +576,17 @@ where
     async fn update_deck_card(
         &self,
         request: &UpdateDeckCard,
+        email_verified: bool,
     ) -> Result<DeckCard, UpdateDeckCardError> {
         let _deck_profile = self.fetch_deck_profile(&request.into()).await?;
-        self.deck_repo.update_deck_card(request).await
+        let card_limit = if email_verified {
+            MAX_CARDS_PER_DECK
+        } else {
+            UNVERIFIED_MAX_CARDS_PER_DECK
+        };
+        self.deck_repo
+            .update_deck_card(request, card_limit, email_verified)
+            .await
     }
 
     // == delete ==
@@ -1024,6 +1032,18 @@ where
             }
         }
 
+        // A card whose lines come to more than a card may hold stays out, named in the
+        // unresolved list.
+        let mut over_cap: Vec<String> = Vec::new();
+        insert_map.retain(|_, (row, name)| {
+            let fits = row.quantity <= Quantity::MAX;
+            if !fits {
+                over_cap.push(name.clone());
+            }
+            fits
+        });
+        unresolved.extend(too_large(over_cap));
+
         let batch: Vec<ImportRow> = insert_map.values().map(|(row, _)| row.clone()).collect();
 
         // Ownership, the card-limit check, the upsert, and the replace-mode
@@ -1235,6 +1255,17 @@ where
             }
         }
 
+        // A card past what a card may hold stays out, named in the unresolved list.
+        let mut over_cap: Vec<String> = Vec::new();
+        insert_map.retain(|_, (_, qty, name)| {
+            let fits = *qty <= Quantity::MAX;
+            if !fits {
+                over_cap.push(name.clone());
+            }
+            fits
+        });
+        unresolved.extend(too_large(over_cap));
+
         // A card resolved by its Archidekt id carries the deck's printing; one
         // that fell back to its name carries the default printing.
         let batch: Vec<ImportRow> = insert_map
@@ -1432,4 +1463,12 @@ where
             tokens,
         })
     }
+}
+/// The unresolved entries for cards an import holds more copies of than a card may, by name.
+fn too_large(mut names: Vec<String>) -> impl Iterator<Item = UnresolvedCard> {
+    names.sort();
+    names.into_iter().map(|name| UnresolvedCard {
+        name,
+        reason: "quantity too large".to_string(),
+    })
 }

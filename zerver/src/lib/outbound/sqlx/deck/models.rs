@@ -144,7 +144,7 @@ impl TryFrom<DatabaseDeckCard> for DeckCard {
             Uuid::try_parse(&value.scryfall_data_id).map_err(IntoDeckCardError::InvalidCardId)?;
         let oracle_id =
             Uuid::try_parse(&value.oracle_id).map_err(IntoDeckCardError::InvalidOracleId)?;
-        let quantity = Quantity::new(value.quantity)?;
+        let quantity = Quantity::try_from(value.quantity)?;
         let board = Board::try_from(value.board.as_str())?;
         Ok(Self {
             deck_id,
@@ -227,5 +227,27 @@ mod tests {
         };
         let profile = DeckProfile::try_from(db).unwrap();
         assert_eq!(profile.color_identity, Vec::<String>::new());
+    }
+
+    fn row(quantity: i32) -> DatabaseDeckCard {
+        DatabaseDeckCard {
+            deck_id: Uuid::nil().to_string(),
+            scryfall_data_id: Uuid::nil().to_string(),
+            oracle_id: Uuid::nil().to_string(),
+            quantity,
+            board: "deck".to_string(),
+            mvp_at: None,
+            flagged: false,
+        }
+    }
+
+    #[test]
+    fn a_stored_row_converts_only_with_1_to_99_copies() {
+        assert_eq!(
+            DeckCard::try_from(row(99)).map(|c| *c.quantity).ok(),
+            Some(99)
+        );
+        assert!(DeckCard::try_from(row(100)).is_err());
+        assert!(DeckCard::try_from(row(0)).is_err());
     }
 }

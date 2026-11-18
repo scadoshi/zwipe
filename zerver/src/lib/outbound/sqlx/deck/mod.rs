@@ -19,7 +19,7 @@ use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
 use zwipe_core::domain::deck::tag_profile::PROFILE_EXCLUDED_TAG_PREFIX;
-use zwipe_core::domain::deck::{Board, DeckCard, DeckOtherTag, DeckTag};
+use zwipe_core::domain::deck::{Board, DeckCard, DeckOtherTag, DeckTag, Quantity};
 use zwipe_core::http::contracts::suggestions::{
     ACTIVITY_DAYS, ACTIVITY_MIN_SEEN, ACTIVITY_PASSES_SENT, ACTIVITY_TAGS_SENT,
 };
@@ -206,14 +206,8 @@ impl DeckRepository for Postgres {
         if owned.is_none() {
             return Err(CreateDeckCardError::Forbidden);
         }
-        // Card-limit check under the lock (all boards count toward the cap).
-        let card_count = sqlx::query_scalar!(
-            "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1",
-            request.deck_id
-        )
-        .fetch_one(&mut *tx)
-        .await?
-        .unwrap_or(0);
+        // Card-limit check under the lock.
+        let card_count = deck_total(&mut tx, request.deck_id).await?;
         if exceeds_card_limit(card_count, i64::from(*request.quantity), card_limit) {
             return Err(if request.email_verified {
                 CreateDeckCardError::LimitReached
@@ -555,6 +549,8 @@ impl DeckRepository for Postgres {
     async fn update_deck_card(
         &self,
         request: &UpdateDeckCard,
+        card_limit: i64,
+        email_verified: bool,
     ) -> Result<DeckCard, UpdateDeckCardError> {
         let mut tx = self.pool.begin().await?;
         // Ownership + deck row lock in one shot, as in create_deck_card: the
@@ -573,26 +569,11 @@ impl DeckRepository for Postgres {
         // stands for its replacement.
         let translated = current_card_request(&mut tx, request).await?;
         let request = &translated;
+        if let Some(quantity) = &request.set_quantity {
+            check_raise(&mut tx, request, quantity, card_limit, email_verified).await?;
+        }
         if let Some(new_id) = request.new_scryfall_data_id {
-            // A printing swap stays within the card: the row keeps its
-            // oracle_id, so a printing of another card would break the
-            // singleton and commander checks keyed on it.
-            let current = query_scalar!(
-                "SELECT oracle_id FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
-                request.deck_id,
-                request.scryfall_data_id
-            )
-            .fetch_optional(&mut *tx)
-            .await?
-            .ok_or(UpdateDeckCardError::NotFound)?;
-            let swapped =
-                query_scalar!("SELECT oracle_id FROM scryfall_data WHERE id = $1", new_id)
-                    .fetch_optional(&mut *tx)
-                    .await?
-                    .flatten();
-            if swapped != Some(current) {
-                return Err(UpdateDeckCardError::PrintingMismatch);
-            }
+            check_same_card(&mut tx, request, new_id).await?;
         }
         if request.mvp == Some(true) {
             // Board rule: the star lands on the mainboard; either the board
@@ -1347,15 +1328,8 @@ impl DeckRepository for Postgres {
             return Ok(vec![]);
         }
 
-        // Current all-boards quantity, read under the lock.
-        let card_count = sqlx::query_scalar!(
-            "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1",
-            deck_id
-        )
-        .fetch_one(&mut *tx)
-        .await
-        .map_err(db)?
-        .unwrap_or(0);
+        // The deck's current total, read under the lock.
+        let card_count = deck_total(&mut tx, deck_id).await.map_err(db)?;
 
         // Post-import total: in replace mode a deck board present in the import
         // becomes exactly the imported list; in add mode the upsert replaces
@@ -1584,6 +1558,85 @@ fn outcomes_of(added: i64, skipped: i64, maybed: i64, removed: i64) -> SwipeOutc
 /// A count from the database as a `u32`: 0 below zero and `u32::MAX` past it.
 fn saturating_u32(n: i64) -> u32 {
     u32::try_from(n.max(0)).unwrap_or(u32::MAX)
+}
+
+/// Refuses swapping `request`'s card to the printing `new_id` of another card: the row keeps
+/// its oracle id, so a printing of another card would break the singleton and commander checks
+/// keyed on it.
+async fn check_same_card(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    request: &UpdateDeckCard,
+    new_id: uuid::Uuid,
+) -> Result<(), UpdateDeckCardError> {
+    let current = query_scalar!(
+        "SELECT oracle_id FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
+        request.deck_id,
+        request.scryfall_data_id
+    )
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or(UpdateDeckCardError::NotFound)?;
+    let swapped = query_scalar!("SELECT oracle_id FROM scryfall_data WHERE id = $1", new_id)
+        .fetch_optional(&mut **tx)
+        .await?
+        .flatten();
+    if swapped == Some(current) {
+        Ok(())
+    } else {
+        Err(UpdateDeckCardError::PrintingMismatch)
+    }
+}
+
+/// Refuses raising `request`'s card to `quantity` past the deck's `card_limit`, under the deck
+/// row lock the caller holds, as an add is refused. A lowered or unchanged count always passes,
+/// so a deck already over its limit can come down; a card not in the deck is left to the update
+/// to report.
+async fn check_raise(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    request: &UpdateDeckCard,
+    quantity: &Quantity,
+    card_limit: i64,
+    email_verified: bool,
+) -> Result<(), UpdateDeckCardError> {
+    let current = query_scalar!(
+        "SELECT quantity FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
+        request.deck_id,
+        request.scryfall_data_id
+    )
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(current) = current.filter(|current| **quantity > *current) else {
+        return Ok(());
+    };
+    let others = deck_total(tx, request.deck_id)
+        .await?
+        .saturating_sub(i64::from(current));
+    if exceeds_card_limit(others, i64::from(**quantity), card_limit) {
+        return Err(if email_verified {
+            UpdateDeckCardError::LimitReached
+        } else {
+            UpdateDeckCardError::UnverifiedLimitReached
+        });
+    }
+    Ok(())
+}
+
+/// The cards a deck holds toward its limit: every copy on every board, plus one for each filled
+/// command zone slot (commander, partner, background, signature spell).
+async fn deck_total(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    deck_id: uuid::Uuid,
+) -> Result<i64, sqlx::Error> {
+    query_scalar!(
+        r#"SELECT (
+               (SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1)
+               + (SELECT num_nonnulls(commander_id, partner_commander_id, background_id, signature_spell_id)
+                  FROM decks WHERE id = $1)
+           )::BIGINT AS "total!""#,
+        deck_id
+    )
+    .fetch_one(&mut **tx)
+    .await
 }
 
 /// Whether adding `adding` cards to a deck holding `card_count` passes `card_limit`.

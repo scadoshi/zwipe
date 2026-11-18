@@ -27,6 +27,7 @@ use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCa
 
 use crate::card::default_printing;
 use crate::deck::command_zone::Slot;
+use crate::deck::copies;
 use crate::deck_cards::keys::{RowInfo, RowKind};
 use crate::deck_cards::{self, Boards, Display, Write, Zone};
 use crate::deck_signals::{self, Crossing, Level};
@@ -1462,6 +1463,11 @@ impl State {
             tracing::warn!(%card_id, current, delta, "quantity tap leaves i32, dropped");
             return Vec::new();
         };
+        // A card holds at most `Quantity::MAX` copies; `+` is disabled there, and its key
+        // does nothing.
+        if delta > 0 && target > Quantity::MAX {
+            return Vec::new();
+        }
         let before_lands = deck_signals::land_count(&self.entries);
         let before_price = self.total_price();
         let mut effects = Vec::new();
@@ -2121,6 +2127,13 @@ impl State {
     #[must_use]
     pub fn flagged_ids(&self) -> HashSet<Uuid> {
         deck_cards::flagged_ids(&self.entries)
+    }
+
+    /// The deck's total toward its card limit: every copy on every board, plus each filled
+    /// command zone slot.
+    #[must_use]
+    pub fn deck_total(&self) -> i64 {
+        copies::deck_total(&self.entries, self.zone.filled())
     }
 
     /// Whether the command zone's pinned groups show.

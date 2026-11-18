@@ -57,6 +57,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "A leaving toast no longer draws over a newer one in front of it",
         "Remove says Nothing on this board when the picked board is empty",
         "A card leaving the deck page's head fades out under the nav, not over it",
+        "A card's + stops at 99 copies",
+        "A card's + stops once the deck reaches its card limit, the commander counted",
     ],
 }];
 

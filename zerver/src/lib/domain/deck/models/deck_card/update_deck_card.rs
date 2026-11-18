@@ -24,6 +24,12 @@ pub enum UpdateDeckCardError {
     /// The new printing is missing or belongs to a different card.
     #[error("printing belongs to a different card")]
     PrintingMismatch,
+    /// A raised quantity would take the deck past its card limit.
+    #[error("card limit reached (mainboard, maybeboard, and sideboard all count toward it)")]
+    LimitReached,
+    /// [`UpdateDeckCardError::LimitReached`] for an account whose email isn't verified.
+    #[error("card limit reached across all boards, verify your email to unlock more")]
+    UnverifiedLimitReached,
     /// Database operation failed.
     #[error(transparent)]
     Database(anyhow::Error),

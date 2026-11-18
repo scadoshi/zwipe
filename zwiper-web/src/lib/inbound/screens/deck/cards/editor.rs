@@ -26,6 +26,7 @@ use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::deck_metrics::deck_price;
 use zwipe_core::domain::deck::{Board, Deck, DeckEntry, DeckProfile, Quantity};
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
+use zwipe_ui::deck::copies;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::{self, Boards, Burst, Bursts, Write, Zone};
 use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossing};
@@ -308,6 +309,16 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         }
     });
     use_context_provider(|| components::Flagged(flagged.into()));
+    let deck_total = use_memo(move || copies::deck_total(&entries.read(), zone.read().filled()));
+    let card_limit = use_memo(move || {
+        copies::card_limit(
+            session
+                .read()
+                .as_ref()
+                .is_none_or(|s| s.user.email_verified_at.is_some()),
+        )
+    });
+    use_context_provider(|| components::CopyRoom::new(deck_total.into(), card_limit.into()));
     let meta = use_memo(move || deck_cards::listing::meta_of(&entries.read()));
 
     // Raises the land and budget toasts for a change from `before`.
@@ -442,6 +453,11 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         let Some(target) = current.checked_add(delta) else {
             return;
         };
+        // A card holds at most `Quantity::MAX` copies; `+` is disabled there, and its key
+        // does nothing.
+        if delta > 0 && target > Quantity::MAX {
+            return;
+        }
         let before = entries.peek().clone();
         if target < 1 {
             let Some(entry) = before

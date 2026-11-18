@@ -8,10 +8,11 @@
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::Board;
 
+use crate::copy_room::can_add_copy;
 use crate::{FlagButton, StarButton};
 
 /// The quantity stepper (`-`, the count, `+`) when `on_qty_change` is
-/// given, then the [`StarButton`] when `mvp` and `on_toggle_mvp` are, then the
+/// given, its `+` disabled once the card can take no more copies ([`can_add_copy`]), then the [`StarButton`] when `mvp` and `on_toggle_mvp` are, then the
 /// [`FlagButton`] when `flagged` and `on_toggle_flag` are. Each is a
 /// `card-action-btn` that stops its click there, so a row under it stays
 /// as it is.
@@ -37,6 +38,7 @@ pub fn CardEditButtons(
             span { class: "card-action-count", "{qty}" }
             button {
                 class: "card-action-btn",
+                disabled: !can_add_copy(qty),
                 onclick: move |evt| {
                     evt.stop_propagation();
                     handler.call(1);

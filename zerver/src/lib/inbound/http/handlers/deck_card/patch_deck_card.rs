@@ -14,11 +14,14 @@ use zwipe_core::domain::deck::DeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::{
     Changes, InvalidUpdateDeckCard, UpdateDeckCard,
 };
+use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_core::http::helpers::Patch;
+use zwipe_core::http::messages;
 
 use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
 use crate::domain::deck::ports::DeckService;
+use crate::domain::user::ports::UserService;
 use crate::inbound::http::handlers::deck_card::parse_board;
 use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
@@ -42,6 +45,12 @@ impl From<UpdateDeckCardError> for ApiError {
             }
             UpdateDeckCardError::PrintingMismatch => {
                 Self::UnprocessableEntity(UpdateDeckCardError::PrintingMismatch.to_string())
+            }
+            UpdateDeckCardError::LimitReached => {
+                Self::UnprocessableEntity(messages::CARD_LIMIT.to_string())
+            }
+            UpdateDeckCardError::UnverifiedLimitReached => {
+                Self::UnprocessableEntity(messages::UNVERIFIED_CARD_LIMIT.to_string())
             }
             UpdateDeckCardError::Database(e) | UpdateDeckCardError::DeckCardFromDb(e) => e.to_500(),
             UpdateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
@@ -122,9 +131,20 @@ pub async fn patch_deck_card(
         },
     )?;
 
+    // Only a quantity change weighs the deck's limit, so only it looks the user up.
+    let email_verified = if request.set_quantity.is_some() {
+        state
+            .user_service
+            .fetch_user(&GetUser::from(user.id))
+            .await?
+            .email_verified_at
+            .is_some()
+    } else {
+        true
+    };
     let deck_card = state
         .deck_service
-        .update_deck_card(&request)
+        .update_deck_card(&request, email_verified)
         .await
         .map_err(ApiError::from)?;
 

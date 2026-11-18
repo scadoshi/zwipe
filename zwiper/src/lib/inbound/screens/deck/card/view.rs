@@ -24,6 +24,7 @@ use zwipe_core::domain::deck::{self, Board, Deck};
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::deck::command_zone::Slot;
+use zwipe_ui::deck::copies;
 use zwipe_ui::deck_cards::keys::RowInfo;
 use zwipe_ui::deck_cards::stacks::{
     CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
@@ -834,6 +835,16 @@ pub fn View(deck_id: Uuid) -> Element {
     // The owner's flags, which the rows, stacks and drawer mark and toggle.
     let flagged_ids = use_memo(move || driver.model.read().flagged_ids());
     use_context_provider(|| components::Flagged(flagged_ids.into()));
+    let deck_total = use_memo(move || driver.model.read().deck_total());
+    let card_limit = use_memo(move || {
+        copies::card_limit(
+            session
+                .read()
+                .as_ref()
+                .is_none_or(|s| s.user.email_verified_at.is_some()),
+        )
+    });
+    use_context_provider(|| components::CopyRoom::new(deck_total.into(), card_limit.into()));
     use_context_provider(|| {
         DeckFlagToggle(Callback::new(move |(card_id, _flagged): (Uuid, bool)| {
             driver.dispatch(Action::ToggleFlag { card_id });

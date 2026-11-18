@@ -61,6 +61,7 @@ mod card_stack;
 mod changelog;
 mod charts;
 mod color_bars;
+mod copy_room;
 mod cover_flow;
 mod danger_zone;
 pub mod data_action;
@@ -146,6 +147,7 @@ pub use charts::{
     ManaCurve, ManaFulfillment,
 };
 pub use color_bars::{ColorBars, ColorBarsGhost};
+pub use copy_room::{CopyRoom, can_add_copy};
 pub use cover_flow::CoverFlow;
 pub use danger_zone::DangerZoneAction;
 pub use deck_cards_view::{

@@ -35,6 +35,12 @@ async fn deck_for(app: &TestApp, username: &str) -> (String, String) {
     (token, deck["id"].as_str().unwrap().to_string())
 }
 
+/// An import's text: 99 copies, the most a card may hold, of each of `name 0` up to `count`.
+fn lines(name: &str, count: usize) -> String {
+    let lines: Vec<String> = (0..count).map(|n| format!("99 {name} {n}")).collect();
+    lines.join("\n")
+}
+
 /// Sum of all card quantities in the deck, straight from the DB.
 async fn total_quantity(pool: &sqlx::PgPool, deck_id: &str) -> i64 {
     let did: uuid::Uuid = deck_id.parse().unwrap();
@@ -54,14 +60,9 @@ async fn over_limit_import_writes_nothing(pool: sqlx::PgPool) {
     // could be reconciled, stranding a hybrid board on failure).
     let app = TestApp::new(pool.clone());
     let (token, did) = deck_for(&app, "overlimit").await;
-    seed_cards(
-        &pool,
-        &[
-            card("Lightning Bolt").mono("R").type_line("Instant"),
-            card("Island").type_line("Basic Land — Island"),
-        ],
-    )
-    .await;
+    let mut fixtures = vec![card("Lightning Bolt").mono("R").type_line("Instant")];
+    fixtures.extend((0..6).map(|n| card(&format!("Land {n}")).type_line("Land")));
+    seed_cards(&pool, &fixtures).await;
 
     let (status, r) = app
         .post(
@@ -75,13 +76,14 @@ async fn over_limit_import_writes_nothing(pool: sqlx::PgPool) {
     let (status, r) = app
         .post(
             &import_deck_cards_route(did.parse().unwrap()),
-            json!({ "text": "600 Island", "mode": "replace" }),
+            // 594 cards, 99 of each of six, the most a card may hold.
+            json!({ "text": lines("Land", 6), "mode": "replace" }),
             Some(&token),
         )
         .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "limit: {r}");
 
-    // Nothing changed: Bolt still there, no Islands, total untouched.
+    // Nothing changed: Bolt still there, no lands, total untouched.
     let (_, full) = app
         .get(&deck_route(did.parse().unwrap()), Some(&token))
         .await;
@@ -222,24 +224,20 @@ async fn foreign_deck_import_is_rejected_and_writes_nothing(pool: sqlx::PgPool) 
 
 #[sqlx::test]
 async fn concurrent_imports_cannot_race_past_the_limit(pool: sqlx::PgPool) {
-    // Two imports, each under the 500 cap alone (300 + 300), jointly over it.
+    // Two imports, each under the 500 cap alone (297 + 297), jointly over it.
     // The FOR UPDATE deck lock serializes them: exactly one succeeds, and the
-    // deck never exceeds the cap. Before this fix both could pass the pool-side
-    // count and land 600 cards.
+    // deck never exceeds the cap.
     let app = TestApp::new(pool.clone());
     let (token, did) = deck_for(&app, "racer").await;
-    seed_cards(
-        &pool,
-        &[
-            card("Island").type_line("Basic Land — Island"),
-            card("Mountain").type_line("Basic Land — Mountain"),
-        ],
-    )
-    .await;
+    let fixtures: Vec<_> = ["Isle", "Peak"]
+        .iter()
+        .flat_map(|name| (0..3).map(move |n| card(&format!("{name} {n}")).type_line("Land")))
+        .collect();
+    seed_cards(&pool, &fixtures).await;
 
     let path = import_deck_cards_route(did.parse().unwrap());
-    let a = app.post(&path, json!({ "text": "300 Island" }), Some(&token));
-    let b = app.post(&path, json!({ "text": "300 Mountain" }), Some(&token));
+    let a = app.post(&path, json!({ "text": lines("Isle", 3) }), Some(&token));
+    let b = app.post(&path, json!({ "text": lines("Peak", 3) }), Some(&token));
     let ((status_a, ra), (status_b, rb)) = tokio::join!(a, b);
 
     let oks = [status_a, status_b]
@@ -257,7 +255,7 @@ async fn concurrent_imports_cannot_race_past_the_limit(pool: sqlx::PgPool) {
     );
     assert_eq!(
         total_quantity(&pool, &did).await,
-        300,
+        297,
         "the deck never exceeds the cap"
     );
 }

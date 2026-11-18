@@ -589,6 +589,43 @@ fn a_quick_add_joins_the_deck_records_undo_and_toasts() {
 }
 
 #[test]
+fn the_deck_total_counts_every_board() {
+    let (state, _) = loaded();
+    assert_eq!(
+        state.deck_total(),
+        4,
+        "main, maybe and side copies all count"
+    );
+}
+
+#[test]
+fn a_card_at_99_copies_takes_no_more_and_still_goes_down() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    while state.quantity(ring) < 99 {
+        let _ = state.update(Action::ChangeQuantity {
+            card_id: ring,
+            delta: 1,
+        });
+    }
+    assert!(
+        state
+            .update(Action::ChangeQuantity {
+                card_id: ring,
+                delta: 1,
+            })
+            .is_empty(),
+        "a raise past 99 is dropped"
+    );
+    assert_eq!(state.quantity(ring), 99);
+    let _ = state.update(Action::ChangeQuantity {
+        card_id: ring,
+        delta: -1,
+    });
+    assert_eq!(state.quantity(ring), 98);
+}
+
+#[test]
 fn taps_fold_into_one_write_with_the_burst_net() {
     let (mut state, cards) = loaded();
     let ring = id(&cards[0]);
