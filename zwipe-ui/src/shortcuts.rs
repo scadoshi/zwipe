@@ -407,14 +407,14 @@ pub fn card_rows_groups(layout: ListLayout) -> Vec<SheetGroup> {
 }
 
 /// The web's Commanders screen's groups: two lists of card rows side by side
-/// ([`card_rows_groups`]), with the filter and the filter at its name, each for the list the
-/// user is in, and Quick add under Page.
+/// ([`card_rows_groups`]), with the one filter over both lists, that filter at its name and
+/// Quick add under Page.
 #[must_use]
 pub fn commander_maybeboard_groups() -> Vec<SheetGroup> {
     sheet_groups(ScreenKeys {
         page: vec![
-            (&["f"], "Filter the list you're in"),
-            (&[FILTER_NAME_KEY], "Filter the list you're in by name"),
+            (&["f"], "Filter both lists"),
+            (&[FILTER_NAME_KEY], "Filter both lists by name"),
             (&[QUICK_ADD_KEY], "Quick add"),
         ],
         ..card_rows_keys(ListLayout::SideBySide)
@@ -696,7 +696,7 @@ mod tests {
     }
 
     #[test]
-    fn the_commanders_screen_lists_its_two_lists_moves_and_filters_for_the_list_you_re_in() {
+    fn the_commanders_screen_lists_its_two_lists_moves_and_its_one_filter() {
         assert_eq!(
             outline(&commander_maybeboard_groups())
                 .get(..3)
@@ -713,8 +713,8 @@ mod tests {
         );
         let rows = rows_of(&commander_maybeboard_groups());
         for row in [
-            (&["f"][..], "Filter the list you're in"),
-            (&["/"][..], "Filter the list you're in by name"),
+            (&["f"][..], "Filter both lists"),
+            (&["/"][..], "Filter both lists by name"),
             (&["q"][..], "Quick add"),
         ] {
             assert!(rows.contains(&row), "{row:?}");

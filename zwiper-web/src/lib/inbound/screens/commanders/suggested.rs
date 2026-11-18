@@ -1,13 +1,11 @@
 //! The Commanders screen's Suggested list: the suggested commanders with their
-//! Swipe and Clear skips, the console (the Show row and the list's own
-//! filter) over the list at every width.
+//! Swipe and Clear skips, its Show row over the list at every width. The
+//! screen's one filter narrows it.
 
 use components::{Chip, DangerZoneAction};
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-use super::list_filter::ListFilterButton;
 use crate::inbound::cards::card_row::ShowRowArt;
 use crate::inbound::chrome::ghost::{GhostShowRow, GhostText};
 use crate::inbound::screens::playstyle::{
@@ -17,18 +15,10 @@ use crate::inbound::screens::playstyle::{
 /// The list's header.
 const LIST_TITLE: &str = "Suggested";
 
-/// The Suggested list over the screen's `list`, narrowed by its own `filter`, which its console's
-/// funnel opens through `filter_open`; its rows open into `expanded_card`. Its Show row's Art chip
-/// shows or hides this list's art only. A touch in the list, or the keyboard cursor moving into
-/// it, calls `on_active`.
+/// The Suggested list over the screen's `list`, which the screen's filter narrows; its rows open
+/// into `expanded_card`. Its Show row's Art chip shows or hides this list's art only.
 #[component]
-pub(super) fn SuggestedPanel(
-    list: Suggestions,
-    filter: Signal<CardQueryBuilder>,
-    filter_open: Signal<bool>,
-    expanded_card: Signal<Option<Uuid>>,
-    on_active: EventHandler<()>,
-) -> Element {
+pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uuid>>) -> Element {
     let mut show_row_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_row_art));
     let Suggestions {
@@ -39,7 +29,7 @@ pub(super) fn SuggestedPanel(
         identities,
         ..
     } = list;
-    // The console's Show row, then the list's own filter.
+    // The console's Show row.
     let show_chips = rsx! {
         div { class: "web-list-console",
             ShowIdentityChips { active_identity, identities: identities(),
@@ -49,16 +39,12 @@ pub(super) fn SuggestedPanel(
                     "Art"
                 }
             }
-            ListFilterButton { filter, filter_open }
         }
     };
     rsx! {
         div {
             class: "web-commanders-list web-commanders-suggested",
             "data-cursor-list": "",
-            // A touch or the keyboard cursor in the list makes it the one the filter keys act on.
-            onpointerdown: move |_| on_active.call(()),
-            onfocusin: move |_| on_active.call(()),
             div { class: "flex-col web-suggested",
                 if is_loading() {
                     GhostShowRow {}
