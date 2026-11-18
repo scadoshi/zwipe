@@ -299,7 +299,9 @@ async fn remap_collection(
     live: &str,
 ) -> Result<u64, sqlx::Error> {
     // One statement, so a row committed on a removed printing while it runs is either moved or
-    // left for the next run, never deleted unmoved. Built from string constants only; every
+    // left for the next run, never deleted unmoved. Only rows whose replacement exists (`live`)
+    // move; the rest stay on their printing, which counts them as references and keeps it. The
+    // replacement's card is a LEFT JOIN, so a gap there fails the insert instead of dropping rows. Built from string constants only; every
     // value comes from the tables.
     let moved: i64 = query_scalar(sqlx::AssertSqlSafe(format!(
         "WITH moved AS ( \
@@ -316,7 +318,7 @@ async fn remap_collection(
                     (array_agg(m.purchase_currency ORDER BY m.added_at NULLS LAST) \
                         FILTER (WHERE m.purchase_price IS NOT NULL))[1] AS purchase_currency, \
                     min(m.added_at) AS added_at \
-             FROM moved m JOIN scryfall_data rep ON rep.id = m.replacement_id \
+             FROM moved m LEFT JOIN scryfall_data rep ON rep.id = m.replacement_id \
              GROUP BY m.user_id, m.replacement_id, m.finish, m.condition, m.language, rep.oracle_id \
          ), \
          written AS ( \
