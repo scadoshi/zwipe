@@ -55,8 +55,8 @@ fn only_the_target_choice_is_marked() {
 fn the_target_wears_a_chip_s_hover_look_while_the_search_has_focus() {
     let css = include_str!("../assets/screens/screens-b.css");
     assert!(
-        css.contains(".picker-body:has(.chip-row > .input:focus, .chip-row .input-clear-wrap > .input:focus) .enter-target > .chip"),
-        "the highlight shows while Enter is the search's"
+        css.contains(":is(.picker-body, .tag-screen):has(.chip-row > .input:focus, .chip-row .input-clear-wrap > .input:focus) .enter-target > .chip"),
+        "the highlight shows while Enter is the search's, in the web's pickers and the app's"
     );
     assert!(
         css.contains(".picker-choice {\n    display: contents;\n}"),

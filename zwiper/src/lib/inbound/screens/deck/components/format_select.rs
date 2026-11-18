@@ -7,7 +7,10 @@
 //! command-zone cascade (clearing commander and signature spell on a change).
 
 use components::hint::ContentHintDialog;
-use components::{Chip, DockAction, icons, use_overlay_back_action, use_picker_search};
+use components::{
+    Chip, DockAction, PickerChoice, PickerSearch, enter_target, icons, use_overlay_back_action,
+    use_picker_search,
+};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::deck::form;
@@ -35,7 +38,7 @@ pub(crate) fn FormatSelect(
     let listening = use_memo(move || open() && !asking());
     let layer = use_overlay_back_action(listening.into(), back);
 
-    let mut query = use_picker_search(open);
+    let query = use_picker_search(open);
     let mut focused = use_signal(|| Option::<Format>::None);
     // Each opening starts the bar on its hint, not the last chip tapped.
     use_effect(move || {
@@ -57,6 +60,17 @@ pub(crate) fn FormatSelect(
     } else {
         Vec::new()
     };
+    let target = enter_target(&query(), &results).copied();
+    // Enter picks the top match and saves, as a format is a single choice.
+    let pick_target = move |()| {
+        if let Some(format) = target {
+            focused.set(Some(format));
+            if pickers::enter_picks_format(selected_format, format) {
+                on_tap.call(format);
+            }
+            on_save.call(());
+        }
+    };
 
     rsx! {
         div { class: "{screen_class}", style: layer().map(|z| format!("--overlay-z: {z};")),
@@ -70,18 +84,11 @@ pub(crate) fn FormatSelect(
 
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
-                        div { class: "chip-row",
-                            label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: "format-search", "Search" }
-                            input { class: "input input-compact",
-                                id: "format-search",
-                                r#type: "text",
-                                placeholder: "Search formats",
-                                value: "{query()}",
-                                autocapitalize: "none",
-                                autocorrect: "off",
-                                spellcheck: "false",
-                                oninput: move |event| query.set(event.value()),
-                            }
+                        PickerSearch {
+                            id: "format-search",
+                            placeholder: "Search formats",
+                            query,
+                            on_enter: pick_target,
                         }
 
                         div { class: "tag-def-bar format-def-bar",
@@ -106,14 +113,15 @@ pub(crate) fn FormatSelect(
                             div { class: "chip-unselected", "No results" }
                         } else {
                             for fmt in results {
-                                Chip {
-                                    key: "{fmt.display_name()}",
-                                    selected: selected_format == Some(fmt),
-                                    onclick: move |_| {
-                                        focused.set(Some(fmt));
-                                        on_tap.call(fmt);
-                                    },
-                                    "{fmt.display_name()}"
+                                PickerChoice { key: "{fmt.display_name()}", target: target == Some(fmt),
+                                    Chip {
+                                        selected: selected_format == Some(fmt),
+                                        onclick: move |_| {
+                                            focused.set(Some(fmt));
+                                            on_tap.call(fmt);
+                                        },
+                                        "{fmt.display_name()}"
+                                    }
                                 }
                             }
                         }

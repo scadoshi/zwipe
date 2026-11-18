@@ -243,6 +243,20 @@ impl<T: Selection> Draft<T> {
     }
 }
 
+/// Whether Enter in the format search picks its top match `top`: only when it isn't the format
+/// already `picked`, since a tap on the picked one would clear it and Enter never does.
+#[must_use]
+pub fn enter_picks_format(picked: Option<Format>, top: Format) -> bool {
+    picked != Some(top)
+}
+
+/// Whether Enter in a tag search adds its top match `slug` to `picked`: only when it isn't
+/// there, since a tap on a picked tag takes it off and Enter never does.
+#[must_use]
+pub fn enter_adds_tag(picked: &[String], slug: &str) -> bool {
+    !picked.iter().any(|s| s == slug)
+}
+
 /// The formats whose names hold `query`, ignoring case, in [`Format::all`]'s order. An empty query lists every format.
 #[must_use]
 pub fn formats_matching(query: &str) -> Vec<Format> {
@@ -629,6 +643,26 @@ mod tests {
                 "Partner found and selected: Toothy, Imaginary Friend",
                 NORMAL
             )
+        );
+    }
+
+    #[test]
+    fn enter_picks_the_top_format_unless_it_is_already_the_pick() {
+        assert!(enter_picks_format(None, Format::Modern));
+        assert!(enter_picks_format(Some(Format::Commander), Format::Modern));
+        assert!(
+            !enter_picks_format(Some(Format::Modern), Format::Modern),
+            "Enter never clears the format a tap would toggle off"
+        );
+    }
+
+    #[test]
+    fn enter_adds_the_top_tag_only_when_it_is_not_picked() {
+        let picked = vec!["aggro".to_owned()];
+        assert!(enter_adds_tag(&picked, "burn"));
+        assert!(
+            !enter_adds_tag(&picked, "aggro"),
+            "Enter never takes a tag off"
         );
     }
 }
