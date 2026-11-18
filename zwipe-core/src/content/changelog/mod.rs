@@ -67,6 +67,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, Shift+H on the Commander maybeboard lists its filter and Quick add keys",
         "On the web, the Decks loading ghost no longer runs under the footer",
         "A shared deck prices its header and link preview in the deck's own currency",
+        "On the web, Esc goes back when nothing is open",
+        "On the web, Esc in a field only leaves the field",
     ],
 }];
 

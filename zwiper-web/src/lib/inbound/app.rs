@@ -92,10 +92,14 @@ pub fn App() -> Element {
             }
         });
     });
+    let esc_back = use_context_provider(|| EscBack(Signal::new(None)));
     use_future(move || async move {
         let mut escapes = document::eval(KEYS_JS);
         while escapes.recv::<bool>().await.is_ok() {
-            overlay_back_stack.close_top();
+            let closed = overlay_back_stack.close_top();
+            if let Some(back) = back_after_escape(closed, *esc_back.0.peek()) {
+                back.call(());
+            }
         }
     });
     use_hook(|| {
@@ -295,12 +299,25 @@ if (!window.__zwipeDialogFocus) {
 }
 "#;
 
+/// What the screen's Back button does, which Esc does with nothing open: the
+/// nav's back arrow sets it while the screen has one.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct EscBack(pub Signal<Option<Callback<()>>>);
+
+/// The Back Esc runs after closing what it could: `back` when `closed` is
+/// false, so Esc closes one layer at a time and goes back only from a bare
+/// screen.
+fn back_after_escape<T>(closed: bool, back: Option<T>) -> Option<T> {
+    if closed { None } else { back }
+}
+
 /// The page-wide keys. While a dialog is open the kit's own listener runs
 /// Escape and Enter, and the kit's theme sheet handles its arrows and
-/// Enter, so this one steps aside. Otherwise Escape sends `true` to the
-/// root, which closes the top overlay, and Enter with nothing focused
-/// submits the page's form panel when it has exactly one, as Enter in one
-/// of its fields does.
+/// Enter, so this one steps aside. Otherwise Escape in a text field only
+/// leaves the field; anywhere else it sends `true` to the root, which closes
+/// the top overlay or, with none open, goes back as the screen's Back button
+/// does. Enter with nothing focused submits the page's form panel when it has
+/// exactly one, as Enter in one of its fields does.
 ///
 /// Escape is marked taken, so no later listener closes the same overlay
 /// again, and sends once the key's dispatch is over, so a dialog the close
@@ -309,14 +326,18 @@ if (!window.__zwipeDialogFocus) {
 const KEYS_JS: &str = r#"
 document.addEventListener('keydown', (e) => {
     if (document.querySelector('.alert-dialog[data-state="open"]')) return;
+    const focus = document.activeElement;
+    const inField = focus && focus.closest('input, textarea, select, [contenteditable="true"]');
     if (e.key === 'Escape') {
         e.preventDefault();
+        if (inField) {
+            focus.blur();
+            return;
+        }
         setTimeout(() => dioxus.send(true), 0);
         return;
     }
-    const focus = document.activeElement;
     const onControl = focus && (focus.tagName === 'BUTTON' || focus.tagName === 'A');
-    const inField = focus && focus.closest('input, textarea, select, [contenteditable="true"]');
     if (e.key === 'Enter' && !e.isComposing && !onControl && !inField) {
         const forms = Array.from(document.querySelectorAll('.web-form-panel form'))
             .filter((form) => form.offsetParent !== null);
@@ -437,6 +458,44 @@ mod tests {
         assert!(
             KEYS_JS.contains("if (e.key === 'Escape') {\n        e.preventDefault();"),
             "{KEYS_JS}"
+        );
+    }
+
+    #[test]
+    fn esc_in_quick_add_or_any_field_only_leaves_the_field() {
+        let esc = KEYS_JS
+            .split("if (e.key === 'Escape') {")
+            .nth(1)
+            .unwrap_or_default();
+        let blur =
+            esc.find("if (inField) {\n            focus.blur();\n            return;\n        }");
+        let send = esc.find("dioxus.send(true)");
+        assert!(
+            blur.is_some_and(|b| send.is_some_and(|s| b < s)),
+            "a focused field blurs and the key goes no further: {KEYS_JS}"
+        );
+        assert!(
+            KEYS_JS.contains("const inField = focus && focus.closest('input, textarea, select, [contenteditable=\"true\"]');"),
+            "Quick add is an input: {KEYS_JS}"
+        );
+    }
+
+    #[test]
+    fn esc_goes_back_only_when_nothing_closed() {
+        assert_eq!(
+            back_after_escape(/* closed */ true, Some(1)),
+            None,
+            "an overlay closed"
+        );
+        assert_eq!(
+            back_after_escape(false, Some(1)),
+            Some(1),
+            "nothing was open"
+        );
+        assert_eq!(
+            back_after_escape::<u8>(false, None),
+            None,
+            "a screen with no Back"
         );
     }
 
