@@ -25,9 +25,9 @@ pub enum ResetRule {
     /// commander maybeboard and Swipe select.
     #[default]
     Plain,
-    /// Add's search: back to the deck-context default, keeping synergy.
+    /// Add's search: back to the deck-context default, keeping synergy and the price currency.
     AddSearch(AddContext),
-    /// Add's maybeboard: back to blank, keeping synergy.
+    /// Add's maybeboard: back to blank, keeping synergy and the price currency.
     AddMaybeboard,
 }
 
