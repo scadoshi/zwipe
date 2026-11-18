@@ -18,8 +18,8 @@ use zwipe_core::http::paths::{DECK_ROUTE, RECORD_USAGE_ROUTE};
 
 mod common;
 
-/// The migration before the one that creates `card_swipe_signal`.
-const BEFORE_CARD_SWIPE_SIGNAL: i64 = 20_261_118_180_000;
+/// The version of the migration that creates `card_swipe_signal`.
+const CARD_SWIPE_SIGNAL: i64 = 20_261_119_150_000;
 
 /// A deck named `name` of `format` for the signed-in user, with `commander` set when given.
 async fn deck(
@@ -239,7 +239,7 @@ async fn a_flush_over_the_daily_budget_adds_nothing(pool: sqlx::PgPool) {
 async fn the_migration_carries_the_commander_history_over_per_card(pool: sqlx::PgPool) {
     let migrator = sqlx::migrate!("./migrations");
     migrator
-        .run_to(BEFORE_CARD_SWIPE_SIGNAL, &pool)
+        .run_to(CARD_SWIPE_SIGNAL.saturating_sub(1), &pool)
         .await
         .unwrap();
     let (atraxa, edgar) = (Uuid::from_u128(1), Uuid::from_u128(2));
