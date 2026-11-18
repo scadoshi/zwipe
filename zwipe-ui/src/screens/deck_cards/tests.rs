@@ -1084,22 +1084,28 @@ fn undo_takes_a_sent_card_back_out_of_the_deck_it_went_to_leaving_this_one() {
     let (mut state, cards) = loaded();
     let ring = id(&cards[0]);
     let target = Uuid::from_u128(77);
-    let effects = state.update(Action::Undo(Box::new(UndoAction::SentTo {
-        card_id: ring,
-        card_name: "Sol Ring".to_owned(),
-        deck_id: target,
-        deck_name: "Krenko".to_owned(),
-    })));
+    let sent = || {
+        Box::new(UndoAction::SentTo {
+            card_id: ring,
+            card_name: "Sol Ring".to_owned(),
+            deck_id: target,
+            deck_name: "Krenko".to_owned(),
+            board: Board::Maybeboard,
+            copies: 1,
+        })
+    };
+    let effects = state.update(Action::Undo(sent()));
     let [
-        Effect::DeleteCard {
+        Effect::UndoSend {
             ticket,
             deck_id,
             card_id,
-            op: Op::Undo,
+            board: Board::Maybeboard,
+            copies: 1,
         },
     ] = effects.as_slice()
     else {
-        panic!("one delete on the deck it went to: {effects:?}");
+        panic!("one undo on the deck it went to: {effects:?}");
     };
     assert_eq!((*deck_id, *card_id), (target, ring));
     assert!(state.row(ring).is_some(), "this deck's own copy stays");
@@ -1109,6 +1115,17 @@ fn undo_takes_a_sent_card_back_out_of_the_deck_it_went_to_leaving_this_one() {
             .iter()
             .any(|e| matches!(e, Effect::Toast(t) if t.text == "Removed Sol Ring from Krenko")),
         "its toast as the write lands: {landed:?}"
+    );
+
+    let effects = state.update(Action::Undo(sent()));
+    let [Effect::UndoSend { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let left = state.update(Action::UndoLeftAlone { ticket: *ticket });
+    assert!(
+        left.iter()
+            .any(|e| matches!(e, Effect::Toast(t) if t.text == ALREADY_CHANGED)),
+        "a card that moved boards or left says so: {left:?}"
     );
 }
 

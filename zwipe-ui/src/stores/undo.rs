@@ -101,6 +101,10 @@ pub enum UndoAction {
         deck_id: Uuid,
         /// That deck's name, for the undo toast.
         deck_name: String,
+        /// The board it went to.
+        board: Board,
+        /// The copies it sent, the most undo takes back.
+        copies: i32,
     },
 }
 

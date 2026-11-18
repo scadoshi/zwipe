@@ -67,12 +67,14 @@ pub(crate) enum UndoAction {
         new_id: Uuid,
     },
     /// A card went to another deck through Send to, recorded on the deck it was sent from;
-    /// undo takes it back out of `deck_id`.
+    /// undo takes the `copies` it sent back off `board` in `deck_id`.
     SentTo {
         card_id: Uuid,
         card_name: String,
         deck_id: Uuid,
         deck_name: String,
+        board: Board,
+        copies: i32,
     },
 }
 
@@ -142,11 +144,15 @@ impl From<UndoAction> for zwipe_ui::stores::undo::UndoAction {
                 card_name,
                 deck_id,
                 deck_name,
+                board,
+                copies,
             } => Self::SentTo {
                 card_id,
                 card_name,
                 deck_id,
                 deck_name,
+                board,
+                copies,
             },
         }
     }
@@ -219,11 +225,15 @@ impl From<zwipe_ui::stores::undo::UndoAction> for UndoAction {
                 card_name,
                 deck_id,
                 deck_name,
+                board,
+                copies,
             } => Self::SentTo {
                 card_id,
                 card_name,
                 deck_id,
                 deck_name,
+                board,
+                copies,
             },
         }
     }

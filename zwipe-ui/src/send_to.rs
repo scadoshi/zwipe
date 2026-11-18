@@ -3,7 +3,7 @@
 //! them; a tap on a deck sends the card there.
 
 use uuid::Uuid;
-use zwipe_core::domain::deck::{Board, DeckEntry, DeckProfile};
+use zwipe_core::domain::deck::{Board, DeckCard, DeckEntry, DeckProfile, Quantity};
 
 use crate::stores::undo::UndoAction;
 
@@ -71,12 +71,16 @@ pub fn holding_board(entries: &[DeckEntry], oracle_id: Uuid) -> Option<Board> {
         .map(|e| e.deck_card.board)
 }
 
-/// The undo entry for sending `card_name` (printing `card_id`) to `target` from the deck
-/// `from`, the deck whose history it goes on: `None` when the send came from outside a deck.
+/// The copies a send adds.
+pub const COPIES: i32 = 1;
+
+/// The undo entry for sending `card_name` (printing `card_id`) to `target`'s `board` from the
+/// deck `from`, the deck whose history it goes on: `None` when the send came from outside a deck.
 #[must_use]
 pub fn undo_entry(
     from: Option<Uuid>,
     target: &Target,
+    board: Board,
     card_id: Uuid,
     card_name: &str,
 ) -> Option<(Uuid, UndoAction)> {
@@ -88,9 +92,32 @@ pub fn undo_entry(
                 card_name: card_name.to_owned(),
                 deck_id: target.id,
                 deck_name: target.name.clone(),
+                board,
+                copies: COPIES,
             },
         )
     })
+}
+
+/// What undoing a send does to the card's row in the deck it went to.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SendUndo {
+    /// The row keeps more than the send added: it comes down to this many copies.
+    Lower(Quantity),
+    /// The row holds no more than the send added: it goes.
+    Remove,
+}
+
+/// How undo takes back the `copies` a send put on `board`, given the card's row there now:
+/// only those copies, and only while the row is still on that board. `None` when the row left
+/// or moved boards, which undo leaves alone.
+#[must_use]
+pub fn send_undo(row: Option<&DeckCard>, board: Board, copies: i32) -> Option<SendUndo> {
+    let row = row.filter(|row| row.board == board)?;
+    Some(
+        Quantity::new(row.quantity.saturating_sub(copies))
+            .map_or(SendUndo::Remove, SendUndo::Lower),
+    )
 }
 
 /// A deck the card can go to.
@@ -128,12 +155,48 @@ pub fn targets(decks: &[Target], current: Option<Uuid>, query: &str) -> Vec<Targ
 mod tests {
     use super::*;
 
+    fn row(board: Board, copies: i32) -> DeckCard {
+        DeckCard {
+            deck_id: Uuid::from_u128(2),
+            scryfall_data_id: Uuid::from_u128(9),
+            oracle_id: Uuid::from_u128(10),
+            quantity: Quantity::new(copies).unwrap(),
+            board,
+            mvp_at: None,
+            flagged: false,
+        }
+    }
+
+    #[test]
+    fn undo_takes_back_only_the_copy_it_sent() {
+        let raised = row(Board::Maybeboard, 3);
+        assert_eq!(
+            send_undo(Some(&raised), Board::Maybeboard, 1),
+            Some(SendUndo::Lower(Quantity::new(2).unwrap())),
+            "raised to 3 since, it ends at 2"
+        );
+        assert_eq!(
+            send_undo(Some(&row(Board::Maybeboard, 1)), Board::Maybeboard, 1),
+            Some(SendUndo::Remove),
+            "the copy it sent is all there is, so the row goes"
+        );
+    }
+
+    #[test]
+    fn undo_leaves_a_card_that_moved_boards_or_left() {
+        assert_eq!(
+            send_undo(Some(&row(Board::Deck, 3)), Board::Maybeboard, 1),
+            None
+        );
+        assert_eq!(send_undo(None, Board::Maybeboard, 1), None);
+    }
+
     #[test]
     fn a_send_from_a_deck_goes_on_that_deck_s_undo() {
         let (from, card) = (Uuid::from_u128(1), Uuid::from_u128(9));
         let target = deck(2, "Krenko");
         assert_eq!(
-            undo_entry(Some(from), &target, card, "Sol Ring"),
+            undo_entry(Some(from), &target, Board::Maybeboard, card, "Sol Ring"),
             Some((
                 from,
                 UndoAction::SentTo {
@@ -141,6 +204,8 @@ mod tests {
                     card_name: "Sol Ring".to_owned(),
                     deck_id: target.id,
                     deck_name: "Krenko".to_owned(),
+                    board: Board::Maybeboard,
+                    copies: 1,
                 }
             ))
         );
@@ -149,7 +214,13 @@ mod tests {
     #[test]
     fn a_send_from_outside_a_deck_records_no_undo() {
         assert_eq!(
-            undo_entry(None, &deck(2, "Krenko"), Uuid::from_u128(9), "Sol Ring"),
+            undo_entry(
+                None,
+                &deck(2, "Krenko"),
+                Board::Maybeboard,
+                Uuid::from_u128(9),
+                "Sol Ring"
+            ),
             None
         );
     }

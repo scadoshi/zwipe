@@ -31,6 +31,7 @@ use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::{self, Boards, Burst, Bursts, Write, Zone};
 use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossing};
 use zwipe_ui::screens;
+use zwipe_ui::send_to::{self, SendUndo};
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 use zwipe_ui::timing::QUANTITY_FLUSH;
@@ -873,18 +874,42 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             UndoAction::SentTo {
                 card_id,
                 deck_id: target,
+                board,
+                copies,
                 ..
             } => {
+                // Takes back only what the send added, from the board it went to; a card that
+                // moved boards or left the deck it went to is left alone.
                 spawn_write(async move {
-                    let deleted = authed
+                    let took_back = authed
                         .run("undo", |c, s| async move {
-                            c.delete_undone_deck_card(target, card_id, &s).await
+                            let deck = c.fetch_deck(target, &s).await?;
+                            let row = deck
+                                .entries
+                                .iter()
+                                .find(|e| e.deck_card.scryfall_data_id == card_id)
+                                .map(|e| &e.deck_card);
+                            match send_to::send_undo(row, board, copies) {
+                                None => Ok(false),
+                                Some(SendUndo::Remove) => c
+                                    .delete_undone_deck_card(target, card_id, &s)
+                                    .await
+                                    .map(|()| true),
+                                Some(SendUndo::Lower(quantity)) => {
+                                    let request = HttpPatchDeckCard::new(Some(*quantity), None);
+                                    c.update_deck_card(target, card_id, &request, &s)
+                                        .await
+                                        .map(|_| true)
+                                }
+                            }
                         })
                         .await;
-                    if deleted.is_some() {
-                        toast.info(message, quick);
-                    } else {
-                        put_back();
+                    match took_back {
+                        Some(true) => toast.info(message, quick),
+                        Some(false) => {
+                            toast.info(screens::deck_cards::ALREADY_CHANGED.to_string(), quick);
+                        }
+                        None => put_back(),
                     }
                 });
             }

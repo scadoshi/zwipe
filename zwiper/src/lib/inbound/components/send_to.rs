@@ -87,6 +87,7 @@ pub(crate) fn SendToHost(send_to: SendTo) -> Element {
                             if let Some((from, entry)) = send_to::undo_entry(
                                 current,
                                 &target,
+                                board,
                                 sent.scryfall_data.id,
                                 &sent.scryfall_data.name,
                             ) {
