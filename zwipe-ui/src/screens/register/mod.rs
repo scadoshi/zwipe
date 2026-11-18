@@ -8,6 +8,7 @@ mod tests;
 use crate::account::{self, Password};
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
+use crate::write_repeat::{self, FormAnswer, FormNote, FormRepeat};
 
 /// The screen's title.
 pub const TITLE: &str = "Create account";
@@ -91,10 +92,16 @@ pub enum Action {
         /// The ticket from the [`Effect::Register`] this answers.
         ticket: Ticket,
     },
-    /// The registration holding `ticket` failed. The client has already logged it and raised its error toast.
+    /// The registration holding `ticket` failed. The client has already logged it; the screen
+    /// raises the error toast.
     Failed {
         /// The ticket from the [`Effect::Register`] this answers.
         ticket: Ticket,
+        /// How it failed: [`FormAnswer::Network`] for a lost answer, [`FormAnswer::RepeatRefused`]
+        /// for a taken username.
+        answer: FormAnswer,
+        /// The client's own words for the error, shown unless the failure follows a lost answer.
+        message: String,
     },
     /// Presses Back to log in.
     Back,
@@ -122,11 +129,21 @@ pub enum Effect {
     Toast(Toast),
 }
 
-/// The registration out, with the username it carries for Login.
+/// What a registration sends: the username for Login, and the whole of it for telling its
+/// repeat.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Registration {
+    username: String,
+    /// Trimmed, as sent.
+    email: String,
+    password: Password,
+}
+
+/// The registration out, with what it sent.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Sending {
     ticket: Ticket,
-    username: String,
+    sent: Registration,
 }
 
 /// Register for one visit: every field empty, nothing judged, nothing out.
@@ -142,6 +159,8 @@ pub struct State {
     attempted: bool,
     sending: Option<Sending>,
     tickets: Generation,
+    /// Whether an earlier registration's answer was lost.
+    repeat: FormRepeat<Registration>,
 }
 
 impl State {
@@ -175,18 +194,32 @@ impl State {
             }
             Action::Submit => self.submit(),
             Action::Registered { ticket } => {
-                let Some(username) = self.settle(ticket) else {
+                let Some(sent) = self.settle(ticket) else {
                     return Vec::new();
                 };
+                let username = sent.username.clone();
+                let _ = self.repeat.settle(sent, FormAnswer::Done);
                 vec![
                     Effect::Prefill(username),
                     Effect::Toast(Toast::normal(ToastKind::Info, CHECK_INBOX)),
                     Effect::Navigate(Destination::Login),
                 ]
             }
-            Action::Failed { ticket } => {
-                self.settle(ticket);
-                Vec::new()
+            Action::Failed {
+                ticket,
+                answer,
+                message,
+            } => {
+                let Some(sent) = self.settle(ticket) else {
+                    return Vec::new();
+                };
+                // A lost answer may have made the account, so the line says what to do next.
+                let text = match self.repeat.settle(sent, answer) {
+                    Some(FormNote::Lost) => write_repeat::REGISTER_LOST.to_owned(),
+                    Some(FormNote::Landed) => write_repeat::REGISTER_LANDED.to_owned(),
+                    None => message,
+                };
+                vec![Effect::Toast(Toast::normal(ToastKind::Error, &text))]
             }
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
         }
@@ -249,23 +282,32 @@ impl State {
             return Vec::new();
         }
         let ticket = self.tickets.next_ticket();
+        let (username, email, password) = (
+            self.username.clone(),
+            self.email.trim().to_owned(),
+            self.password.clone(),
+        );
         self.sending = Some(Sending {
             ticket,
-            username: self.username.clone(),
+            sent: Registration {
+                username: username.clone(),
+                email: email.clone(),
+                password: password.clone(),
+            },
         });
         vec![Effect::Register {
             ticket,
-            username: self.username.clone(),
-            email: self.email.trim().to_owned(),
-            password: self.password.clone(),
+            username,
+            email,
+            password,
         }]
     }
 
-    /// Ends the registration holding `ticket`, and returns its username if it was the one out.
-    fn settle(&mut self, ticket: Ticket) -> Option<String> {
+    /// Ends the registration holding `ticket`, and returns what it sent if it was the one out.
+    fn settle(&mut self, ticket: Ticket) -> Option<Registration> {
         if self.sending.as_ref().is_none_or(|s| s.ticket != ticket) {
             return None;
         }
-        self.sending.take().map(|s| s.username)
+        self.sending.take().map(|s| s.sent)
     }
 }

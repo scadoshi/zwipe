@@ -35,6 +35,7 @@ use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_cards::{self, Action, Destination, Effect, Op, StackGroup, State};
 use zwipe_ui::send_to::{self, SendUndo};
 use zwipe_ui::stores::undo::UndoAction as SharedUndo;
+use zwipe_ui::write_repeat::{self, WriteKey, Written};
 
 use super::components::card_row::{
     CardRow, DeckFaces, DeckFlagToggle, OtagDescribe, OtagExamplesOpen, ShowRowArt,
@@ -457,12 +458,26 @@ impl Driver {
                 request,
                 op,
             } => {
+                let sent = request.clone();
                 spawn(async move {
                     let call = |c: ZwipeClient, s: Session| async move {
                         c.create_deck_card(deck_id, &request, &s).await
                     };
                     let created = if op == Op::QuickAddCard {
-                        authed.run_at(component::QUICK_ADD, op.name(), call).await
+                        let printing = sent.scryfall_data_id.parse().unwrap_or_default();
+                        let key = WriteKey::add(deck_id, printing);
+                        match authed
+                            .run_write_at(component::QUICK_ADD, op.name(), key, call)
+                            .await
+                        {
+                            Written::Done(deck_card) => Some(deck_card),
+                            // A lost earlier try added it: the deck holds the row that request
+                            // made.
+                            Written::LandedEarlier => {
+                                write_repeat::landed_deck_card(deck_id, &sent)
+                            }
+                            Written::Failed => None,
+                        }
                     } else {
                         authed.try_run(op.name(), call).await.ok()
                     };
@@ -504,20 +519,30 @@ impl Driver {
                 op,
             } => {
                 spawn(async move {
-                    let deleted = authed
-                        .try_run(op.name(), |c, s| async move {
-                            // An undone add goes back without a removal
-                            // suppression, so the card can serve in Add again.
-                            if op == Op::Undo {
+                    // An undone add goes back without a removal suppression, so the card can
+                    // serve in Add again. A removal's lost earlier try reads as removed.
+                    let deleted = if op == Op::Undo {
+                        authed
+                            .try_run(op.name(), |c, s| async move {
                                 c.delete_undone_deck_card(deck_id, card_id, &s).await
-                            } else {
-                                c.delete_deck_card(deck_id, card_id, &s).await
-                            }
-                        })
-                        .await;
-                    self.dispatch(match deleted {
-                        Ok(()) => Action::Deleted { ticket },
-                        Err(_) => Action::Failed { ticket },
+                            })
+                            .await
+                            .is_ok()
+                    } else {
+                        authed
+                            .run_write(
+                                op.name(),
+                                WriteKey::remove_card(deck_id, card_id),
+                                |c, s| async move { c.delete_deck_card(deck_id, card_id, &s).await },
+                            )
+                            .await
+                            .or_landed(|| ())
+                            .is_some()
+                    };
+                    self.dispatch(if deleted {
+                        Action::Deleted { ticket }
+                    } else {
+                        Action::Failed { ticket }
                     });
                 });
             }

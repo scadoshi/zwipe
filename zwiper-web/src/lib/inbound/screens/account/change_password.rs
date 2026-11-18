@@ -9,13 +9,15 @@ use components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_client::ZwipeClient;
+use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::{HttpChangePassword, HttpRequestPasswordReset};
+use zwipe_core::http::messages;
 use zwipe_ui::account;
 use zwipe_ui::screens::account::{FORGOT_PASSWORD, RESET_LINK_SENT};
 use zwipe_ui::telemetry::vocabulary::{ProfileScreen, Screen};
 use zwipe_ui::text::sentence_case;
+use zwipe_ui::write_repeat::{self, FormAnswer, FormRepeat};
 
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::enter_submit::EnterSubmit;
@@ -81,21 +83,43 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
         }
     };
 
+    // Whether an earlier change's answer was lost, so the next failure says it may have gone through.
+    let mut repeat = use_signal(FormRepeat::<account::PasswordChange>::new);
     let send = use_callback(move |()| {
         submit_attempted.set(true);
         if error_now(true).is_some() {
             return;
         }
         let request = HttpChangePassword::new(&current.peek(), &new_password.peek());
+        let sent = account::PasswordChange {
+            current: account::Password::new(current.peek().as_str()),
+            new: account::Password::new(new_password.peek().as_str()),
+        };
         is_loading.set(true);
         spawn(async move {
-            if authed
-                .run("change_password", |c, s| async move {
+            let changed = authed
+                .try_run_quiet("change_password", |c, s| async move {
                     c.change_password(request, &s).await
                 })
-                .await
-                .is_some()
+                .await;
+            let answer = if changed.is_ok() {
+                FormAnswer::Done
+            } else if matches!(changed, Err(ClientError::Network(_))) {
+                FormAnswer::Network
+            } else if matches!(&changed, Err(ClientError::Unauthorized(m)) if m == messages::INVALID_CREDENTIALS)
             {
+                FormAnswer::RepeatRefused
+            } else {
+                FormAnswer::Other
+            };
+            let note = repeat.write().settle(sent, answer);
+            if let Err(e) = &changed {
+                let text = note.map_or_else(
+                    || e.to_user_message(),
+                    |_| write_repeat::PASSWORD_UNCONFIRMED.to_owned(),
+                );
+                toast.error(text, ToastOptions::default().duration(TOAST_NORMAL));
+            } else {
                 toast.success(
                     "Password changed".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),

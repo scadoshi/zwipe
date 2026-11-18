@@ -10,6 +10,7 @@ workspace = true
 tower = { version = "0.5", features = ["util"] }   # ServiceExt::oneshot
 http-body-util = "0.1"                             # collect response bodies
 zwipe-client = { path = "../zwipe-client" }       # the reset check round trip
+tokio = { workspace = true, features = ["test-util"] } # paused time in unit tests
 
 [lib]
 name = "zwipe"
@@ -37,6 +38,7 @@ tower-http = { version = "0.6", features = ["cors", "trace", "catch-panic", "lim
 tower_governor = { version = "0.8" }
 governor = { version = "0.10" }
 tokio = { workspace = true }
+tokio-util = { version = "0.7", features = ["rt"] }
 sqlx = { version = "0.9", features = ["runtime-tokio", "tls-rustls", "postgres", "chrono", "uuid", "json"] }
 sqlx-macros = { version = "0.9" }
 jsonwebtoken = { version = "11", features = ["aws_lc_rs"] }

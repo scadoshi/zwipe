@@ -1319,3 +1319,38 @@ fn discarding_an_oracle_tag_change_leaves_edit_unchanged() {
     assert_eq!(state.values(), &before);
     assert!(!state.has_unsaved_changes());
 }
+
+/// The id `effects`' one create sends.
+fn create_id(effects: &[Effect]) -> (Ticket, Option<Uuid>) {
+    let [Effect::CreateDeck { ticket, request }] = effects else {
+        panic!("{effects:?}");
+    };
+    (*ticket, request.id)
+}
+
+#[test]
+fn a_save_after_a_failed_one_sends_the_same_deck_id_until_the_form_changes() {
+    let mut state = create();
+    let _ = state.update(Action::SetName("Burn".to_owned()));
+    let (ticket, first) = create_id(&state.update(Action::Save));
+    assert!(first.is_some(), "a create carries a deck id");
+    let _ = state.update(Action::Failed { ticket });
+
+    // The first may have landed: the same form goes again under the same id, and the server
+    // answers the deck it made.
+    let (ticket, again) = create_id(&state.update(Action::Save));
+    assert_eq!(again, first, "the same form, the same id");
+    let _ = state.update(Action::Failed { ticket });
+
+    let _ = state.update(Action::SetName("Burn 2".to_owned()));
+    let (ticket, changed) = create_id(&state.update(Action::Save));
+    assert!(changed.is_some());
+    assert_ne!(changed, first, "a changed form is a new deck");
+    let _ = state.update(Action::Failed { ticket });
+    let _ = state.update(Action::SetName("Burn".to_owned()));
+    let (_, back) = create_id(&state.update(Action::Save));
+    assert_ne!(
+        back, first,
+        "the id follows the last form sent, not every form ever sent"
+    );
+}

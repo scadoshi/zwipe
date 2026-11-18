@@ -2,16 +2,18 @@
 //! a panel headed with the screen's name, `Back to log in` as a chip along
 //! its foot, then the featured flavor card.
 
-use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
+use components::{Button, ButtonVariant, TextInput, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use zwipe_client::ZwipeClient;
+use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::user::{email, username};
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
+use zwipe_core::http::messages;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, State};
 use zwipe_ui::text::sentence_case;
+use zwipe_ui::write_repeat::FormAnswer;
 
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_flavor::PublicFlavor;
@@ -68,11 +70,21 @@ impl Driver {
                         Ok(_) => Action::Registered { ticket },
                         Err(e) => {
                             tracing::warn!("register failed: {e}");
-                            self.toast.error(
-                                e.to_user_message(),
-                                ToastOptions::default().duration(TOAST_NORMAL),
-                            );
-                            Action::Failed { ticket }
+                            // A taken username after a lost answer may be this account; the
+                            // screen picks the line.
+                            let answer = if matches!(e, ClientError::Network(_)) {
+                                FormAnswer::Network
+                            } else if matches!(&e, ClientError::Conflict(m) if m == messages::USERNAME_TAKEN)
+                            {
+                                FormAnswer::RepeatRefused
+                            } else {
+                                FormAnswer::Other
+                            };
+                            Action::Failed {
+                                ticket,
+                                answer,
+                                message: e.to_user_message(),
+                            }
                         }
                     };
                     self.dispatch(reply);
