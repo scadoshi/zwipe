@@ -19,6 +19,7 @@ use crate::inbound::screens::activity::Activity;
 use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
+use crate::inbound::screens::card_spike::{CardSpike, CardSpikePrinting};
 use crate::inbound::screens::commander_maybeboard::CommanderMaybeboard;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::deck::cards::add::AddDeckCard;
@@ -85,6 +86,12 @@ pub enum Route {
         #[route("/:owner/deck/:slug/:token/export")]
         SharedDeckExport { owner: String, slug: String, token: String },
         /// The guides, the pages zwipe.net draws.
+        #[route("/card/:slug?:look")]
+        CardSpike { slug: String, look: String },
+
+        #[route("/card/:slug/:id?:look")]
+        CardSpikePrinting { slug: String, id: Uuid, look: String },
+
         #[route("/guides")]
         Guides {},
         /// One guide.

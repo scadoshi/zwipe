@@ -54,6 +54,8 @@ impl Back {
             | Route::Config {}
             | Route::About {}
             | Route::Guides {}
+            | Route::CardSpike { .. }
+            | Route::CardSpikePrinting { .. }
             | Route::NotFound { .. } => Some(Back::Previous),
             Route::GuidePage { .. } => Some(Back::To(Route::Guides {})),
             Route::CreateDeck {} => Some(Back::To(Route::DeckList {})),
@@ -131,6 +133,8 @@ pub const fn section_of(route: &Route) -> Option<Section> {
         | Route::Register {}
         | Route::ForgotPassword {}
         | Route::SharedDeck { .. }
+        | Route::CardSpike { .. }
+        | Route::CardSpikePrinting { .. }
         | Route::SharedDeckExport { .. }
         | Route::Guides {}
         | Route::GuidePage { .. }

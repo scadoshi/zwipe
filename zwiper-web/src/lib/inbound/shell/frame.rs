@@ -60,6 +60,8 @@ fn is_open(route: &Route) -> bool {
         Route::PrivacyPolicy {}
             | Route::About {}
             | Route::SharedDeck { .. }
+            | Route::CardSpike { .. }
+            | Route::CardSpikePrinting { .. }
             | Route::SharedDeckExport { .. }
             | Route::Guides {}
             | Route::GuidePage { .. }
