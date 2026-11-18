@@ -1016,9 +1016,13 @@ fn the_plain_fields_follow_their_chips_and_buttons() {
 
     let _ = state.update(Action::TapFormat(Format::Commander));
     let _ = state.update(Action::StepLand(Step::Up));
-    assert_eq!(state.values().land_target, Some(37));
+    assert_eq!(
+        state.values().land_target,
+        Some(38),
+        "+ steps from 37 (default)"
+    );
     let _ = state.update(Action::StepLand(Step::Down));
-    assert_eq!(state.values().land_target, Some(36));
+    assert_eq!(state.values().land_target, Some(37));
     let _ = state.update(Action::ClearLand);
     assert_eq!(state.values().land_target, None);
 
@@ -1211,10 +1215,11 @@ fn a_format_switch_moves_an_untouched_land_target_and_discard_puts_it_back() {
     let _ = state.update(Action::TapFormat(Format::Commander));
     let _ = state.update(Action::SavePicker);
     let _ = state.update(Action::StepLand(Step::Up));
+    let _ = state.update(Action::StepLand(Step::Down));
     assert_eq!(
         state.values().land_target,
         Some(37),
-        "Commander's usual count"
+        "back on Commander's usual count"
     );
 
     let _ = state.update(Action::OpenPicker(Picker::Format));
@@ -1352,5 +1357,33 @@ fn a_save_after_a_failed_one_sends_the_same_deck_id_until_the_form_changes() {
     assert_ne!(
         back, first,
         "the id follows the last form sent, not every form ever sent"
+    );
+}
+
+/// An unset land target shows the count the warnings use, the format's default, marked as one.
+#[test]
+fn an_unset_land_target_shows_the_format_s_default() {
+    assert_eq!(
+        land_target_label(None, Some(Format::Commander)),
+        "37 (default)"
+    );
+    assert_eq!(
+        land_target_label(None, Some(Format::Standard)),
+        "17 (default)"
+    );
+    assert_eq!(
+        land_target_label(None, None),
+        NOT_SET,
+        "no format, no default"
+    );
+    assert_eq!(
+        land_target_label(Some(36), Some(Format::Commander)),
+        "36",
+        "the user's own"
+    );
+    assert_eq!(
+        land_target_label(Some(37), Some(Format::Commander)),
+        "37",
+        "set to the default is still set"
     );
 }

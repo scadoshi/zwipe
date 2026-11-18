@@ -5,13 +5,14 @@ ROOT="$(git rev-parse --show-toplevel)"
 . "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 if [ -f "$RUN_DIR/zerver.pid" ]; then
-  kill "$(cat "$RUN_DIR/zerver.pid")" 2>/dev/null || true
+  pid="$(cat "$RUN_DIR/zerver.pid")"
+  is_zerver_pid "$pid" && kill "$pid" 2>/dev/null || true
   rm -f "$RUN_DIR/zerver.pid"
 fi
 pkill -f "dx serve --port $WEB_PORT" 2>/dev/null || true
 
 if [ "${KEEP:-0}" != 1 ]; then
-  TEMPLATE="$(template_url)"
+  TEMPLATE="$(saved_template_url)"
   require_local "$TEMPLATE"
   PGOPTIONS="-c client_min_messages=warning" psql "$(with_db "$TEMPLATE" postgres)" -qc "drop database if exists $VERIFY_DB"
   echo "stopped; dropped $VERIFY_DB"

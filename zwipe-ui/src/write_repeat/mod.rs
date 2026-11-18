@@ -15,7 +15,7 @@ mod tests;
 use std::collections::HashSet;
 
 use uuid::Uuid;
-use zwipe_core::domain::deck::{Board, DeckCard, Quantity};
+use zwipe_core::domain::deck::{Board, Deck, DeckCard, Quantity};
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 
 use crate::write_id::WriteId;
@@ -163,15 +163,35 @@ impl Unconfirmed {
     }
 }
 
+/// The row `deck`, as the server reads it back, holds for an add sent as `sent`: the sent
+/// printing on the sent board, so an add whose answer was lost shows as landed with the server's
+/// own row. `None` when the deck doesn't hold it there, or the request doesn't read back.
+#[must_use]
+pub fn landed_in(deck: &Deck, sent: &HttpCreateDeckCard) -> Option<DeckCard> {
+    let printing: Uuid = sent.scryfall_data_id.parse().ok()?;
+    let board = sent_board(sent)?;
+    deck.entries
+        .iter()
+        .map(|entry| &entry.deck_card)
+        .find(|row| row.scryfall_data_id == printing && row.board == board)
+        .cloned()
+}
+
+/// The board an add's request names, the main deck when it names none; `None` for a name that
+/// isn't a board.
+fn sent_board(sent: &HttpCreateDeckCard) -> Option<Board> {
+    match sent.board.as_deref() {
+        Some(board) => Board::try_from(board).ok(),
+        None => Some(Board::Deck),
+    }
+}
+
 /// The deck card an add's request made in `deck`, for an add that [`Verdict::LandedEarlier`]: its
 /// repeat's 409 carries no body, so the client builds what the server made from what it sent, a
 /// fresh row with no star or flag. `None` when the request doesn't read back as one.
 #[must_use]
 pub fn landed_deck_card(deck: Uuid, sent: &HttpCreateDeckCard) -> Option<DeckCard> {
-    let board = match sent.board.as_deref() {
-        Some(board) => Board::try_from(board).ok()?,
-        None => Board::Deck,
-    };
+    let board = sent_board(sent)?;
     Some(DeckCard {
         deck_id: deck,
         scryfall_data_id: sent.scryfall_data_id.parse().ok()?,
