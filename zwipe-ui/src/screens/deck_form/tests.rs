@@ -1016,9 +1016,13 @@ fn the_plain_fields_follow_their_chips_and_buttons() {
 
     let _ = state.update(Action::TapFormat(Format::Commander));
     let _ = state.update(Action::StepLand(Step::Up));
-    assert_eq!(state.values().land_target, Some(37));
+    assert_eq!(
+        state.values().land_target,
+        Some(38),
+        "+ steps from 37 (default)"
+    );
     let _ = state.update(Action::StepLand(Step::Down));
-    assert_eq!(state.values().land_target, Some(36));
+    assert_eq!(state.values().land_target, Some(37));
     let _ = state.update(Action::ClearLand);
     assert_eq!(state.values().land_target, None);
 
@@ -1211,10 +1215,11 @@ fn a_format_switch_moves_an_untouched_land_target_and_discard_puts_it_back() {
     let _ = state.update(Action::TapFormat(Format::Commander));
     let _ = state.update(Action::SavePicker);
     let _ = state.update(Action::StepLand(Step::Up));
+    let _ = state.update(Action::StepLand(Step::Down));
     assert_eq!(
         state.values().land_target,
         Some(37),
-        "Commander's usual count"
+        "back on Commander's usual count"
     );
 
     let _ = state.update(Action::OpenPicker(Picker::Format));
