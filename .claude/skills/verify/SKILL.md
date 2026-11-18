@@ -29,7 +29,9 @@ It needs Postgres, `sqlx` (the CLI), `dx`, Node 22 or later (the driver uses its
 
 Postgres can't copy a database while anything is connected to it. If your own zerver or a psql session is open on the dev database, up.sh names them and stops. Close them and run it again. An editor's rust-analyzer holds connections too, from expanding sqlx's `query!` macros; they show up unnamed, and `pkill -f rust-analyzer-proc-macro-srv` closes them (rust-analyzer starts it again when it needs it).
 
-The migrations skip ones the dev database ran from another branch (`--ignore-missing`), so a dev database a step ahead of your checkout still copies.
+A dev database that ran migrations from another branch carries tables this branch has never seen, so a check could pass against a schema the branch won't ship with. up.sh refuses that copy and names the migrations; rebuild the dev database from your branch, or point `VERIFY_TEMPLATE_URL` at one that matches, and run it again.
+
+On Linux the driver runs Chrome without its sandbox, so it opens only localhost and 127.0.0.1, and refuses any other URL.
 
 Other ports: `ZERVER_PORT=3200 WEB_PORT=8200 up.sh`, and the same variables for down.sh.
 

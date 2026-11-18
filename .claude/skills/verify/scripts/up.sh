@@ -47,8 +47,17 @@ fi
 PGOPTIONS="-c client_min_messages=warning" psql "$ADMIN" -v ON_ERROR_STOP=1 -qc "drop database if exists $VERIFY_DB" -c "create database $VERIFY_DB template \"$TEMPLATE_DB\""
 
 step "migrations"
-# --ignore-missing: the dev database may hold migrations from a branch this checkout doesn't have.
-if ! (cd "$ROOT" && DATABASE_URL="$VERIFY_URL" sqlx migrate run --ignore-missing --source zerver/migrations) \
+# A dev database that ran another branch's migrations carries tables this branch has never seen,
+# so a check could pass against a schema the branch won't ship with: refuse it, naming them.
+extra="$(psql "$VERIFY_URL" -Atqc "select version from _sqlx_migrations order by version" |
+  grep -vxF -f <(ls "$ROOT/zerver/migrations" | cut -d_ -f1) || true)"
+if [ -n "$extra" ]; then
+  PGOPTIONS="-c client_min_messages=warning" psql "$ADMIN" -qc "drop database if exists $VERIFY_DB"
+  echo "$TEMPLATE_DB ran migrations this branch doesn't have: $(echo $extra | tr ' ' ',')." >&2
+  echo "They come from another branch; rebuild the dev database from this one (or point VERIFY_TEMPLATE_URL at one that matches) and rerun." >&2
+  exit 1
+fi
+if ! (cd "$ROOT" && DATABASE_URL="$VERIFY_URL" sqlx migrate run --source zerver/migrations) \
   >"$RUN_DIR/migrate.out" 2>&1; then
   echo "the migrations failed:" >&2
   tail -5 "$RUN_DIR/migrate.out" >&2

@@ -49,6 +49,20 @@ const findChrome = () => {
   return "google-chrome";
 };
 const chromePath = findChrome();
+// Linux runs it without Chrome's sandbox (see below), so it only opens this machine.
+const sandboxed = process.platform !== "linux";
+const local = (address) => {
+  try {
+    return ["localhost", "127.0.0.1", "[::1]"].includes(new URL(address).hostname);
+  } catch {
+    return false;
+  }
+};
+const outside = [url, ...steps.filter((s) => s.nav).map((s) => s.nav)].filter((u) => !local(u));
+if (!sandboxed && outside.length > 0) {
+  console.error(`refusing: without Chrome's sandbox the driver only opens localhost, not ${outside.join(", ")}`);
+  process.exit(2);
+}
 const port = process.env.PORT ?? "9340";
 const profile = mkdtempSync(join(tmpdir(), "zwipe-verify-"));
 const chrome = spawn(
@@ -58,7 +72,7 @@ const chrome = spawn(
     "--no-first-run",
     // Linux distributions that restrict unprivileged user namespaces (Ubuntu 24.04 and later)
     // stop Chrome's sandbox from starting; the driver only opens the local app.
-    ...(process.platform === "linux" ? ["--no-sandbox"] : []),
+    ...(sandboxed ? [] : ["--no-sandbox"]),
     `--user-data-dir=${profile}`,
     `--remote-debugging-port=${port}`,
     "about:blank",
