@@ -1423,7 +1423,7 @@ impl State {
         self.maybeboard.record(MaybeboardAction::Promote {
             card: Box::new(card),
         });
-        self.maybeboard.remove_current();
+        self.maybeboard.remove_current_wrapping();
         let ticket = self.wait(Pending::Promote {
             card_id,
             card_name,
