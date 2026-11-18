@@ -108,16 +108,24 @@ fn PickerBody(search_id: &'static str, search_key: bool, children: Element) -> E
     }
 }
 
-/// Sends the text in the field with id `id` as typed, or nothing when the field is gone.
+/// Records on a text field the text it holds as Enter goes down, in the capture phase, ahead of
+/// every handler: in the app the field's events reach the app one at a time, and a draw of an
+/// older query can land in the field between the key and the read. Installed once per page.
+const ENTER_TEXT_JS: &str = "if (!window.__zwipeEnterText) { window.__zwipeEnterText = true; document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target instanceof HTMLInputElement) { e.target.dataset.enterText = e.target.value; } }, true); }";
+
+/// Sends the text the field with id `id` held as Enter went down ([`ENTER_TEXT_JS`]), once, else
+/// its text now, or nothing when the field is gone.
 fn field_value_js(id: &str) -> String {
-    format!("dioxus.send(document.getElementById({id:?})?.value ?? null);")
+    format!(
+        "(() => {{ const el = document.getElementById({id:?}); if (!el) {{ dioxus.send(null); return; }} const text = el.dataset.enterText ?? el.value; delete el.dataset.enterText; dioxus.send(text); }})();"
+    )
 }
 
 /// The search every picker leads with: its `Search` label chip on the left and the filter's
 /// compact field on the same line, as Quick add's row, the field's `×` easing in as text is
-/// typed. Enter in the field calls `on_enter` with the field's text as it is at that moment,
-/// which the query takes on first: Go can land before the last keystroke reaches the query, so
-/// the picker reads its top match from that text, not the grid last drawn.
+/// typed. Enter in the field calls `on_enter` with the field's text as it was when the key went
+/// down, which the query takes on first: Go can land before the last keystroke reaches the
+/// query, so the picker reads its top match from that text, not the grid last drawn.
 #[component]
 pub fn PickerSearch(
     id: &'static str,
@@ -125,6 +133,9 @@ pub fn PickerSearch(
     mut query: Signal<String>,
     #[props(default)] on_enter: Option<EventHandler<String>>,
 ) -> Element {
+    use_hook(|| {
+        document::eval(ENTER_TEXT_JS);
+    });
     rsx! {
         div { class: "chip-row",
             label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: id, "Search" }
@@ -188,5 +199,28 @@ mod tests {
             "{js}"
         );
         assert!(js.contains(".value"), "{js}");
+    }
+
+    /// In the app the field can be drawn back to an older query between the key and the read:
+    /// Enter takes the text the field held as the key went down, recorded before any handler.
+    #[test]
+    fn enter_takes_the_text_recorded_as_the_key_went_down() {
+        let record = ENTER_TEXT_JS;
+        assert!(record.contains("addEventListener('keydown'"), "{record}");
+        assert!(
+            record.contains("}, true);"),
+            "a capture listener, ahead of the app's: {record}"
+        );
+        assert!(
+            record.contains("dataset.enterText = e.target.value"),
+            "{record}"
+        );
+        let read = field_value_js("format-search");
+        let recorded = read
+            .find("dataset.enterText")
+            .expect("reads the recorded text");
+        let live = read.find(".value").expect("falls back to the field");
+        assert!(recorded < live, "the recorded text comes first: {read}");
+        assert!(read.contains("delete"), "a recording is read once: {read}");
     }
 }
