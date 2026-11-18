@@ -1,0 +1,129 @@
+name: Wire diff
+
+# Replays every call the shipped clients make against main's zerver and this commit's, and fails
+# on any difference in their replies that zcripts/wire-diff/approved.json doesn't list. Both run
+# on a throwaway Postgres in GitHub's runner, seeded from the committed card fixture
+# (zcripts/wire-diff/fixture). It uses no secrets and reaches no production database.
+
+on:
+  push:
+    branches: [release]
+    paths:
+      - 'zerver/**'
+      - 'zwipe-core/**'
+      - 'zwipe-client/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.sqlx/**'
+      - 'zcripts/wire-diff/**'
+      - 'zcripts/seed/**'
+      - '.github/workflows/wire-diff.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'zerver/**'
+      - 'zwipe-core/**'
+      - 'zwipe-client/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.sqlx/**'
+      - 'zcripts/wire-diff/**'
+      - 'zcripts/seed/**'
+      - '.github/workflows/wire-diff.yml'
+
+permissions:
+  contents: read
+
+# A newer push to the same ref replaces a run still going.
+concurrency:
+  group: wire-diff-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wire-diff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: postgres:18.6 # the VPS version; a tag that moves is not a pin
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # The service database's own throwaway credentials; the seed guard accepts only this machine.
+      VERIFY_TEMPLATE_URL: postgres://postgres:postgres@localhost:5432/zwipe_wire_template
+      SQLX_OFFLINE: "true"
+      # One version for the install and the cache key, so a bump can't leave a stale binary cached.
+      SQLX_CLI_VERSION: "0.8.6"
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # run.sh exports main and the candidate with git archive, so it needs origin/main.
+          fetch-depth: 0
+      # The runner's temp dir, outside the checkout: the artifact upload takes no path with `..`,
+      # and job-level env can't read the runner context.
+      - name: Set the work dir
+        run: echo "WIRE_DIR=$RUNNER_TEMP/wire-diff" >>"$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: stable
+      # run.sh builds each side into its own target dir under WIRE_DIR; caching both keeps the
+      # dependencies warm, and run.sh rebuilds the workspace crates whenever a side's commit moves.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          cache-directories: |
+            ${{ env.WIRE_DIR }}/target-main
+            ${{ env.WIRE_DIR }}/target-cand
+      # sqlx-cli has no prebuilt binary, so install-action compiles it (about 2 minutes) and
+      # rust-cache doesn't keep it; the binary is cached on its own, by version.
+      - name: Restore sqlx-cli
+        id: sqlx-cli
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/bin/sqlx
+            ~/.cargo/bin/cargo-sqlx
+          key: sqlx-cli-${{ env.SQLX_CLI_VERSION }}-${{ runner.os }}
+      - name: Install sqlx-cli
+        if: steps.sqlx-cli.outputs.cache-hit != 'true'
+        uses: taiki-e/install-action@3a3daafd3b7f23b8f65d9f5ba2db203fb59b79e2 # v2
+        with:
+          tool: sqlx-cli@${{ env.SQLX_CLI_VERSION }}
+
+      # The template main's seed and both copies start from: main's schema, then the card fixture.
+      - name: Build the template database
+        run: |
+          set -euo pipefail
+          admin="${VERIFY_TEMPLATE_URL%/*}/postgres"
+          psql "$admin" -v ON_ERROR_STOP=1 -qc "create database zwipe_wire_template"
+          mkdir -p "$RUNNER_TEMP/main-migrations"
+          git archive origin/main zerver/migrations | tar -x -C "$RUNNER_TEMP/main-migrations"
+          DATABASE_URL="$VERIFY_TEMPLATE_URL" sqlx migrate run --source "$RUNNER_TEMP/main-migrations/zerver/migrations"
+          DATABASE_URL="$VERIFY_TEMPLATE_URL" zcripts/wire-diff/fixture/load.sh
+
+      # On a pull request HEAD is the merge commit, what lands; on a release push, the pushed commit.
+      - name: Wire diff
+        run: |
+          set -o pipefail
+          mkdir -p "$WIRE_DIR"
+          zcripts/wire-diff/run.sh HEAD origin/main 2>&1 | tee "$WIRE_DIR/report.txt"
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: wire-diff-report
+          path: |
+            ${{ env.WIRE_DIR }}/report.txt
+            ${{ env.WIRE_DIR }}/main.out
+            ${{ env.WIRE_DIR }}/cand.out
+          if-no-files-found: warn
+          retention-days: 14
