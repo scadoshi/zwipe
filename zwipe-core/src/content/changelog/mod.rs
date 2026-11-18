@@ -87,6 +87,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Enter or Go in the Format, Deck tags, Oracle tags and Send to searches picks the top match, highlighted as you type",
         "A lone toast no longer blocks the buttons under it",
         "Closing a toast leaves the others where they were",
+        "A card keeps the same art from one refresh to the next",
     ],
 }];
 
