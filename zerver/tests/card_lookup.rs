@@ -240,3 +240,38 @@ async fn the_route_is_limited_per_address(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
     assert!(headers.contains_key(header::RETRY_AFTER), "{headers:?}");
 }
+
+/// A browser reads a 429's `Retry-After` only when CORS exposes it, so the web's search can wait
+/// the server's time instead of guessing.
+#[sqlx::test]
+async fn a_browser_can_read_a_429_s_retry_after(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    seed_cards(&pool, &[card("Lightning Bolt").mono("R")]).await;
+    let body = json!({ "name": "bolt" });
+    let origin = [(header::ORIGIN, common::TEST_ORIGIN.to_owned())];
+    for _ in 0..20 {
+        let _ = app
+            .send_raw(
+                Method::POST,
+                CARD_LOOKUP_ROUTE,
+                Some(body.clone()),
+                None,
+                &origin,
+            )
+            .await;
+    }
+    let (status, headers, _) = app
+        .send_raw(Method::POST, CARD_LOOKUP_ROUTE, Some(body), None, &origin)
+        .await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+    assert!(headers.contains_key(header::RETRY_AFTER), "{headers:?}");
+    let exposed = headers
+        .get(header::ACCESS_CONTROL_EXPOSE_HEADERS)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    assert!(
+        exposed.split(',').any(|name| name.trim() == "retry-after"),
+        "exposed: {exposed:?}"
+    );
+}
