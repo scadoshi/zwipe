@@ -9,7 +9,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::collection::{
-    CardCondition, CardLanguage, CollectionPageSize, CollectionSearch, Finish,
+    CardCondition, CardLanguage, CollectionCursor, CollectionPageSize, CollectionSearch, Finish,
     ImportCollectionError,
 };
 use zwipe_core::http::contracts::collection::{
@@ -21,7 +21,9 @@ use crate::domain::card::ports::CardService;
 use crate::domain::card::requests::get_scryfall_data::ScryfallDataIds;
 use crate::domain::collection::models::export;
 use crate::domain::collection::models::import::{ImportCollection, ImportCollectionFailure};
-use crate::domain::collection::models::rows::{ExportFailure, SetRow, SetRowFailure, StoredRow};
+use crate::domain::collection::models::rows::{
+    ExportFailure, SetRow, SetRowFailure, SortKey, StoredRow,
+};
 use crate::domain::collection::ports::CollectionService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
@@ -219,16 +221,17 @@ pub async fn set_collection_card(
 #[derive(Debug, Deserialize)]
 pub struct PageQuery {
     name: Option<String>,
-    offset: Option<String>,
+    after: Option<String>,
     limit: Option<String>,
 }
 
 /// One page of the caller's collection, sorted by card name, then set, collector number and
-/// finish, searchable by card name ignoring case and accents.
+/// finish, searchable by card name ignoring case and accents. A page starts after the cursor a
+/// reply's `next` gave, so rows added or removed before it never move what follows.
 ///
 /// # Errors
 ///
-/// Returns 422 for a search past 100 characters, an offset that isn't a whole number, or a page
+/// Returns 422 for a search past 100 characters, a cursor this server didn't write, or a page
 /// size outside 1 to 100; 401 without a session; and 500 on a database failure.
 pub async fn collection_page(
     user: AuthenticatedUser,
@@ -238,11 +241,15 @@ pub async fn collection_page(
     let unprocessable = |e: &dyn std::fmt::Display| ApiError::UnprocessableEntity(e.to_string());
     let name = CollectionSearch::new(query.name.as_deref().unwrap_or_default())
         .map_err(|e| unprocessable(&e))?;
-    let offset: u32 = match query.offset.as_deref() {
-        None | Some("") => 0,
-        Some(text) => text
-            .parse()
-            .map_err(|_| ApiError::UnprocessableEntity("offset is a whole number".to_owned()))?,
+    let after = match query.after.as_deref() {
+        None | Some("") => None,
+        Some(text) => {
+            let cursor = CollectionCursor::new(text).map_err(|e| unprocessable(&e))?;
+            let key = SortKey::of_cursor(&cursor).ok_or_else(|| {
+                ApiError::UnprocessableEntity("not a collection cursor".to_owned())
+            })?;
+            Some(key)
+        }
     };
     let limit = match query.limit.as_deref() {
         None | Some("") => CollectionPageSize::default(),
@@ -255,22 +262,17 @@ pub async fn collection_page(
     };
     let page = state
         .collection_service
-        .fetch_page(user.id, &name, offset, limit)
+        .fetch_page(user.id, &name, after.as_ref(), limit)
         .await
         .map_err(|e| e.to_500())?;
-    let after = i64::from(offset).saturating_add(i64::from(limit.get()));
-    let next_offset = if after < page.total {
-        u32::try_from(after).ok()
-    } else {
-        None
-    };
+    let next = page.next.as_ref().and_then(SortKey::cursor);
     let cards = with_cards(&state, page.rows).await?;
     Ok((
         StatusCode::OK,
         Json(HttpCollectionPage {
             cards,
             total: page.total,
-            next_offset,
+            next,
         }),
     ))
 }

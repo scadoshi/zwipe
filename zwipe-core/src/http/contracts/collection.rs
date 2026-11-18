@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::domain::card::Card;
 use crate::domain::collection::{
-    CardCondition, CardLanguage, CollectionQuantity, CollectionSource, CollectionTags, Finish,
-    SetQuantity,
+    CardCondition, CardLanguage, CollectionCursor, CollectionQuantity, CollectionSource,
+    CollectionTags, Finish, SetQuantity,
 };
 use crate::domain::deck::ImportMode;
 
@@ -138,8 +138,8 @@ pub struct HttpCollectionPage {
     pub cards: Vec<CollectionCard>,
     /// Rows the search matches across every page.
     pub total: i64,
-    /// The offset of the next page, `None` on the last.
-    pub next_offset: Option<u32>,
+    /// Where the next page starts, handed back as `after`; `None` on the last page.
+    pub next: Option<CollectionCursor>,
 }
 
 /// The caller's collection as a ManaBox export: its header row and one line per row.

@@ -5,7 +5,7 @@ use std::borrow::Cow;
 use uuid::Uuid;
 
 use crate::domain::card::Card;
-use crate::domain::collection::{CollectionPageSize, CollectionSearch};
+use crate::domain::collection::{CollectionCursor, CollectionPageSize, CollectionSearch};
 use crate::http::contracts::collection::{
     HttpCollectionExport, HttpCollectionImportSummary, HttpCollectionPage, HttpCollectionSummary,
     HttpImportCollection, HttpSetCollectionCard, HttpSetCollectionCardReply,
@@ -80,8 +80,8 @@ impl Endpoint for SetCollectionCard {
 pub struct GetCollection {
     /// Card names to match; empty lists every row.
     pub name: CollectionSearch,
-    /// Rows before this page.
-    pub offset: u32,
+    /// The page after this cursor, a reply's `next`; `None` for the first page.
+    pub after: Option<CollectionCursor>,
     /// Rows on this page.
     pub limit: CollectionPageSize,
 }
@@ -93,7 +93,11 @@ impl Endpoint for GetCollection {
         Cow::Borrowed(COLLECTION_ROUTE)
     }
     fn query(&self) -> Option<String> {
-        Some(collection_page_query(&self.name, self.offset, self.limit))
+        Some(collection_page_query(
+            &self.name,
+            self.after.as_ref(),
+            self.limit,
+        ))
     }
 }
 

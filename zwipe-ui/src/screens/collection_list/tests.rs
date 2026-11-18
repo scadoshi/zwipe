@@ -1,5 +1,5 @@
 use zwipe_core::domain::collection::{
-    CardCondition, CardLanguage, CollectionQuantity, CollectionTags, Finish,
+    CardCondition, CardLanguage, CollectionCursor, CollectionQuantity, CollectionTags, Finish,
 };
 use zwipe_core::http::contracts::collection::{
     CollectionCard, HttpCollectionExport, HttpCollectionPage, HttpSetCollectionCardReply,
@@ -20,22 +20,27 @@ fn row(name: &str, copies: i32) -> CollectionCard {
     }
 }
 
-fn page(cards: Vec<CollectionCard>, total: i64, next_offset: Option<u32>) -> HttpCollectionPage {
+/// The cursor of the page after `page`, opaque hex as the server sends it.
+fn cursor(page: &str) -> CollectionCursor {
+    CollectionCursor::new(page).unwrap()
+}
+
+fn page(cards: Vec<CollectionCard>, total: i64, next: Option<&str>) -> HttpCollectionPage {
     HttpCollectionPage {
         cards,
         total,
-        next_offset,
+        next: next.map(cursor),
     }
 }
 
 /// Opens the screen and answers its first page with `cards`.
-fn opened(cards: Vec<CollectionCard>, next_offset: Option<u32>) -> State {
+fn opened(cards: Vec<CollectionCard>, next: Option<&str>) -> State {
     let mut state = State::new();
     let effects = state.update(Action::Open);
     let [
         Effect::FetchPage {
             ticket,
-            offset: 0,
+            after: None,
             search,
         },
     ] = effects.as_slice()
@@ -46,7 +51,7 @@ fn opened(cards: Vec<CollectionCard>, next_offset: Option<u32>) -> State {
     let total = i64::try_from(cards.len()).unwrap();
     let _ = state.update(Action::PageLoaded {
         ticket: *ticket,
-        page: Box::new(page(cards, total, next_offset)),
+        page: Box::new(page(cards, total, next)),
     });
     state
 }
@@ -107,7 +112,7 @@ fn the_first_page_failing_offers_retry() {
     assert_eq!(state.status(), Status::Failed);
     let effects = state.update(Action::Retry);
     assert!(
-        matches!(effects.as_slice(), [Effect::FetchPage { offset: 0, .. }]),
+        matches!(effects.as_slice(), [Effect::FetchPage { after: None, .. }]),
         "{effects:?}"
     );
     assert_eq!(state.status(), Status::Loading);
@@ -115,16 +120,19 @@ fn the_first_page_failing_offers_retry() {
 
 #[test]
 fn nearing_the_end_asks_for_the_next_page_once() {
-    let mut state = opened(vec![row("A", 1)], Some(50));
+    let mut state = opened(vec![row("A", 1)], Some("a1"));
     let effects = state.update(Action::NearEnd);
     let [
         Effect::FetchPage {
-            ticket, offset: 50, ..
+            ticket,
+            after: Some(after),
+            ..
         },
     ] = effects.as_slice()
     else {
         panic!("{effects:?}");
     };
+    assert_eq!(*after, cursor("a1"), "the last page's next");
     let ticket = *ticket;
     assert_eq!(state.update(Action::NearEnd), [], "one page out at a time");
     let _ = state.update(Action::PageLoaded {
@@ -138,7 +146,7 @@ fn nearing_the_end_asks_for_the_next_page_once() {
 
 #[test]
 fn a_later_page_failing_keeps_the_list_and_tries_again_on_the_next_scroll() {
-    let mut state = opened(vec![row("A", 1)], Some(50));
+    let mut state = opened(vec![row("A", 1)], Some("a1"));
     let effects = state.update(Action::NearEnd);
     let [Effect::FetchPage { ticket, .. }] = effects.as_slice() else {
         panic!("{effects:?}");
@@ -151,13 +159,13 @@ fn a_later_page_failing_keeps_the_list_and_tries_again_on_the_next_scroll() {
     assert_eq!(state.status(), Status::List);
     assert!(matches!(
         state.update(Action::NearEnd).as_slice(),
-        [Effect::FetchPage { offset: 50, .. }]
+        [Effect::FetchPage { after: Some(after), .. }] if *after == cursor("a1")
     ));
 }
 
 #[test]
 fn typing_searches_after_a_rest_from_the_first_page() {
-    let mut state = opened(vec![row("Sol Ring", 1)], Some(50));
+    let mut state = opened(vec![row("Sol Ring", 1)], Some("a1"));
     let effects = state.update(Action::Type("bolt".to_owned()));
     let [Effect::SearchAfter { ticket, wait }] = effects.as_slice() else {
         panic!("{effects:?}");
@@ -167,7 +175,7 @@ fn typing_searches_after_a_rest_from_the_first_page() {
     let [
         Effect::FetchPage {
             ticket,
-            offset: 0,
+            after: None,
             search,
         },
     ] = effects.as_slice()
@@ -189,7 +197,7 @@ fn typing_searches_after_a_rest_from_the_first_page() {
 
 #[test]
 fn a_page_for_an_older_search_is_dropped() {
-    let mut state = opened(vec![row("Sol Ring", 1)], Some(50));
+    let mut state = opened(vec![row("Sol Ring", 1)], Some("a1"));
     let effects = state.update(Action::NearEnd);
     let [Effect::FetchPage { ticket: old, .. }] = effects.as_slice() else {
         panic!("{effects:?}");
@@ -285,8 +293,8 @@ fn copies_stay_between_zero_and_the_most() {
 }
 
 #[test]
-fn zero_removes_the_row_once_saved_and_the_next_page_starts_one_earlier() {
-    let mut state = opened(vec![row("Sol Ring", 1), row("Bolt", 1)], Some(50));
+fn zero_removes_the_row_once_saved_and_the_next_page_keeps_its_cursor() {
+    let mut state = opened(vec![row("Sol Ring", 1), row("Bolt", 1)], Some("a1"));
     let key = key_of(&state, "Sol Ring");
     let (ticket, set) = stepped(&mut state, key, -1);
     assert_eq!(set.quantity.get(), 0);
@@ -298,10 +306,13 @@ fn zero_removes_the_row_once_saved_and_the_next_page_starts_one_earlier() {
     assert_eq!(effects, [Effect::CollectionChanged]);
     assert_eq!(state.rows().len(), 1);
     assert_eq!(state.total(), 1);
-    assert!(matches!(
-        state.update(Action::NearEnd).as_slice(),
-        [Effect::FetchPage { offset: 49, .. }]
-    ));
+    assert!(
+        matches!(
+            state.update(Action::NearEnd).as_slice(),
+            [Effect::FetchPage { after: Some(after), .. }] if *after == cursor("a1")
+        ),
+        "a removal doesn't move the cursor"
+    );
 }
 
 #[test]
@@ -419,23 +430,15 @@ fn a_failed_export_toasts() {
     assert!(!state.exporting());
 }
 
-/// A row removed while the next page is out: the server may have cut that page before or after
-/// the removal, so it is asked again from the offset the removal leaves, and no row repeats or
-/// goes missing at the seam.
+/// A row removed while the next page is out: the page lands as sent, since a cursor doesn't move
+/// with a removal, and a row already listed isn't listed twice.
 #[test]
-fn a_removal_while_a_page_is_out_asks_for_that_page_again_one_earlier() {
-    let mut state = opened(vec![row("A", 1), row("B", 1)], Some(2));
+fn a_removal_while_a_page_is_out_lands_that_page_without_repeating_a_row() {
+    let mut state = opened(vec![row("A", 1), row("B", 1)], Some("a1"));
     let key = key_of(&state, "A");
     let (write, _) = stepped(&mut state, key, -1);
     let effects = state.update(Action::NearEnd);
-    let [
-        Effect::FetchPage {
-            ticket: out,
-            offset: 2,
-            ..
-        },
-    ] = effects.as_slice()
-    else {
+    let [Effect::FetchPage { ticket: out, .. }] = effects.as_slice() else {
         panic!("{effects:?}");
     };
     let out = *out;
@@ -446,22 +449,9 @@ fn a_removal_while_a_page_is_out_asks_for_that_page_again_one_earlier() {
     let b = state.rows()[0].card.clone();
     let effects = state.update(Action::PageLoaded {
         ticket: out,
-        page: Box::new(page(vec![b, row("C", 1)], 3, None)),
-    });
-    let [
-        Effect::FetchPage {
-            ticket, offset: 1, ..
-        },
-    ] = effects.as_slice()
-    else {
-        panic!("the page is asked again one earlier: {effects:?}");
-    };
-    assert_eq!(state.rows().len(), 1, "the cut page doesn't land");
-    let b = state.rows()[0].card.clone();
-    let _ = state.update(Action::PageLoaded {
-        ticket: *ticket,
         page: Box::new(page(vec![b, row("C", 1)], 2, None)),
     });
+    assert_eq!(effects, [], "nothing asked again");
     let names: Vec<&str> = state
         .rows()
         .iter()

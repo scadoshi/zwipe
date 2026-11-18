@@ -59,7 +59,7 @@ impl Driver {
             Effect::FetchPage {
                 ticket,
                 search,
-                offset,
+                after,
             } => {
                 spawn(async move {
                     let page = self
@@ -68,7 +68,7 @@ impl Driver {
                             c.fetch_collection_page(
                                 &s,
                                 &search,
-                                offset,
+                                after.as_ref(),
                                 CollectionPageSize::DEFAULT,
                             )
                             .await

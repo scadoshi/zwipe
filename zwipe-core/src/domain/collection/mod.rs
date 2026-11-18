@@ -18,7 +18,8 @@ pub use finish::Finish;
 pub use import::ImportCollectionError;
 pub use language::CardLanguage;
 pub use page::{
-    CollectionPageSize, CollectionSearch, InvalidCollectionPageSize, InvalidCollectionSearch,
+    CollectionCursor, CollectionPageSize, CollectionSearch, InvalidCollectionCursor,
+    InvalidCollectionPageSize, InvalidCollectionSearch,
 };
 pub use purchase::{InvalidPurchasePrice, PurchaseCurrency, PurchasePrice};
 pub use quantity::{

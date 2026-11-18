@@ -9,7 +9,7 @@ use crate::domain::collection::models::import::{
     self, ImportCollection, ImportCollectionFailure, Wanted,
 };
 use crate::domain::collection::models::rows::{
-    ExportFailure, SetRow, SetRowFailure, StoredPage, StoredRow,
+    ExportFailure, SetRow, SetRowFailure, SortKey, StoredPage, StoredRow,
 };
 use crate::domain::collection::ports::{CollectionRepository, CollectionService};
 
@@ -70,10 +70,10 @@ impl<R: CollectionRepository> CollectionService for Service<R> {
         &self,
         user_id: Uuid,
         name: &CollectionSearch,
-        offset: u32,
+        after: Option<&SortKey>,
         limit: CollectionPageSize,
     ) -> Result<StoredPage, anyhow::Error> {
-        self.repo.fetch_page(user_id, name, offset, limit).await
+        self.repo.fetch_page(user_id, name, after, limit).await
     }
 
     async fn export(&self, user_id: Uuid) -> Result<String, ExportFailure> {

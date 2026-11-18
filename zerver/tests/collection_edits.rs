@@ -64,10 +64,7 @@ fn rows(page: &Value) -> Vec<(String, String, Value, Value, i64)> {
 /// The caller's whole collection, one page of up to 100.
 async fn list(app: &TestApp, token: &str) -> Value {
     let (status, page) = app
-        .get(
-            &format!("{COLLECTION_ROUTE}?offset=0&limit=100"),
-            Some(token),
-        )
+        .get(&format!("{COLLECTION_ROUTE}?limit=100"), Some(token))
         .await;
     assert_eq!(status, StatusCode::OK, "{page}");
     page
@@ -99,6 +96,30 @@ async fn imported(
     .execute(pool)
     .await
     .unwrap();
+}
+
+/// Every page of the caller's list for the search `name`, 2 rows a page, following each reply's
+/// `next` until there is none.
+async fn walk(app: &TestApp, token: &str, name: &str) -> Vec<Value> {
+    let mut pages = Vec::new();
+    let mut after: Option<String> = None;
+    loop {
+        let mut parts = vec!["limit=2".to_owned()];
+        if !name.is_empty() {
+            parts.push(format!("name={name}"));
+        }
+        if let Some(cursor) = &after {
+            parts.push(format!("after={cursor}"));
+        }
+        let query = format!("{COLLECTION_ROUTE}?{}", parts.join("&"));
+        let (status, page) = app.get(&query, Some(token)).await;
+        assert_eq!(status, StatusCode::OK, "{query}: {page}");
+        after = page["next"].as_str().map(str::to_owned);
+        pages.push(page);
+        if after.is_none() || pages.len() > 20 {
+            return pages;
+        }
+    }
 }
 
 #[sqlx::test]
@@ -371,28 +392,13 @@ async fn the_list_pages_by_name_and_searches_names_as_text(pool: sqlx::PgPool) {
         imported(&pool, &user, printing, "nonfoil", None, None, 1).await;
     }
 
-    let (status, first) = app
-        .get(
-            &format!("{COLLECTION_ROUTE}?offset=0&limit=2"),
-            Some(&token),
-        )
-        .await;
-    assert_eq!(status, StatusCode::OK, "{first}");
-    assert_eq!(first["total"], 5);
-    assert_eq!(first["next_offset"], 2);
-    let (_, second) = app
-        .get(
-            &format!("{COLLECTION_ROUTE}?offset=2&limit=2"),
-            Some(&token),
-        )
-        .await;
-    let (_, last) = app
-        .get(
-            &format!("{COLLECTION_ROUTE}?offset=4&limit=2"),
-            Some(&token),
-        )
-        .await;
-    assert_eq!(last["next_offset"], Value::Null, "the last page");
+    let pages = walk(&app, &token, "").await;
+    assert_eq!(pages.len(), 3, "5 rows, 2 a page");
+    for page in &pages {
+        assert_eq!(page["total"], 5);
+    }
+    assert_eq!(pages[2]["next"], Value::Null, "the last page");
+    let [first, second, last] = [pages[0].clone(), pages[1].clone(), pages[2].clone()];
     let names: Vec<String> = [first, second, last]
         .iter()
         .flat_map(|page| rows(page).into_iter().map(|row| row.0))
@@ -409,7 +415,7 @@ async fn the_list_pages_by_name_and_searches_names_as_text(pool: sqlx::PgPool) {
         "sorted by name"
     );
 
-    let search = |name: &str| format!("{COLLECTION_ROUTE}?name={name}&offset=0&limit=100");
+    let search = |name: &str| format!("{COLLECTION_ROUTE}?name={name}&limit=100");
     let (_, sol_rows) = app.get(&search("ring"), Some(&token)).await;
     assert_eq!(
         sol_rows["total"], 3,
@@ -440,10 +446,12 @@ async fn the_list_pages_by_name_and_searches_names_as_text(pool: sqlx::PgPool) {
     );
 
     for query in [
-        format!("name={}&offset=0&limit=10", "a".repeat(101)),
-        "offset=0&limit=0".to_owned(),
-        "offset=0&limit=101".to_owned(),
-        "offset=-1&limit=10".to_owned(),
+        format!("name={}&limit=10", "a".repeat(101)),
+        "limit=0".to_owned(),
+        "limit=101".to_owned(),
+        "after=ZZ&limit=10".to_owned(),
+        "after=0a1b&limit=10".to_owned(),
+        format!("after={}&limit=10", hex::encode("[\"x\"]")),
     ] {
         let (status, body) = app
             .get(&format!("{COLLECTION_ROUTE}?{query}"), Some(&token))
@@ -499,7 +507,7 @@ async fn the_client_s_calls_reach_the_routes(pool: sqlx::PgPool) {
         .call(
             GetCollection {
                 name: CollectionSearch::new("dûl's vault & co").unwrap(),
-                offset: 0,
+                after: None,
                 limit: CollectionPageSize::new(1).unwrap(),
             },
             Some(&session),
@@ -514,11 +522,23 @@ async fn the_client_s_calls_reach_the_routes(pool: sqlx::PgPool) {
         .collect();
     assert_eq!(names, ["Lim-Dûl's Vault & Co"]);
 
+    let first = client
+        .call(
+            GetCollection {
+                name: CollectionSearch::default(),
+                after: None,
+                limit: CollectionPageSize::new(1).unwrap(),
+            },
+            Some(&session),
+        )
+        .await
+        .unwrap();
+    assert!(first.next.is_some(), "1 of 2 with 1 a page has a next");
     let every = client
         .call(
             GetCollection {
                 name: CollectionSearch::default(),
-                offset: 1,
+                after: first.next,
                 limit: CollectionPageSize::new(1).unwrap(),
             },
             Some(&session),
@@ -526,16 +546,46 @@ async fn the_client_s_calls_reach_the_routes(pool: sqlx::PgPool) {
         .await
         .unwrap();
     assert_eq!(every.total, 2);
-    assert_eq!(
-        every.next_offset, None,
-        "offset 1 of 2 with 1 a page is the last"
-    );
+    assert_eq!(every.next, None, "the second of 2 is the last");
     assert_eq!(
         every
             .cards
             .first()
             .map(|row| row.card.scryfall_data.name.as_str()),
         Some("Lim-Dûl's Vault & Co"),
-        "the offset reached the route too"
+        "the cursor reached the route too"
     );
+}
+
+/// A row added before the cursor between two pages moves nothing after it: the next page starts
+/// right after the last row sent, with no row repeated or skipped.
+#[sqlx::test]
+async fn a_page_after_a_cursor_holds_whatever_lands_before_it(pool: sqlx::PgPool) {
+    let printings: Vec<CardFixture> = ["Bolt", "Counterspell", "Dark Ritual", "Elves"]
+        .iter()
+        .map(|name| card(name))
+        .collect();
+    let early = card("Ancestral Recall");
+    seed_cards(&pool, &[printings.clone(), vec![early.clone()]].concat()).await;
+    let app = TestApp::new(pool.clone());
+    let (token, user) = app.register("cursor").await;
+    for printing in &printings {
+        imported(&pool, &user, printing, "nonfoil", None, None, 1).await;
+    }
+
+    let (_, first) = app
+        .get(&format!("{COLLECTION_ROUTE}?limit=2"), Some(&token))
+        .await;
+    let first_names: Vec<String> = rows(&first).into_iter().map(|row| row.0).collect();
+    assert_eq!(first_names, ["Bolt", "Counterspell"]);
+    imported(&pool, &user, &early, "nonfoil", None, None, 1).await;
+    let after = first["next"].as_str().unwrap();
+    let (_, second) = app
+        .get(
+            &format!("{COLLECTION_ROUTE}?after={after}&limit=2"),
+            Some(&token),
+        )
+        .await;
+    let second_names: Vec<String> = rows(&second).into_iter().map(|row| row.0).collect();
+    assert_eq!(second_names, ["Dark Ritual", "Elves"], "no repeat, no skip");
 }

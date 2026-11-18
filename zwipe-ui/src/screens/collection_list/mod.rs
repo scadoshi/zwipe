@@ -1,15 +1,15 @@
 //! Collection's list: the user's collection a page at a time, searched by card name, each row's
 //! copies changed with a stepper, and the whole collection exported as a ManaBox file.
 //!
-//! Pages come in order, one out at a time, the next asked for as the list nears its end; a
-//! newer search starts over from the first page and drops any page still out. Typing searches
+//! Pages come in order by cursor, one out at a time, the next asked for as the list nears its end;
+//! a newer search starts over from the first page and drops any page still out. Typing searches
 //! once it rests for [`timing::QUICK_ADD_DEBOUNCE`].
 //!
 //! A step shows the new count at once and saves the row once steps rest for
 //! [`timing::QUANTITY_FLUSH`], so a burst of taps is one write. A row has one write out at a
-//! time; a step made meanwhile goes when it lands. 0 removes the row once the write lands, and the
-//! next page starts one row earlier for it; a page already out when a row goes is asked again
-//! from there. A failed write puts the saved count back and replays the steps made since. Edits
+//! time; a step made meanwhile goes when it lands. 0 removes the row once the write lands; the
+//! next page follows its cursor, which a removal doesn't move, and a row already listed isn't
+//! listed twice. A failed write puts the saved count back and replays the steps made since. Edits
 //! are kept apart from the pages, so a new search never drops one still waiting to save. A row
 //! holding a finish, condition or language this build doesn't know can't be edited, since the
 //! server refuses those values.
@@ -27,7 +27,8 @@ use std::time::Duration;
 
 use uuid::Uuid;
 use zwipe_core::domain::collection::{
-    CardCondition, CardLanguage, CollectionQuantity, CollectionSearch, Finish, SetQuantity,
+    CardCondition, CardLanguage, CollectionCursor, CollectionQuantity, CollectionSearch, Finish,
+    SetQuantity,
 };
 use zwipe_core::http::contracts::collection::{
     CollectionCard, HttpCollectionExport, HttpCollectionPage, HttpSetCollectionCard,
@@ -202,15 +203,15 @@ pub enum Action {
 /// What an action asks the client to do, in order.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Effect {
-    /// Fetches the page from `offset` for `search`; answers with [`Action::PageLoaded`] or
+    /// Fetches the page after `after` for `search`; answers with [`Action::PageLoaded`] or
     /// [`Action::PageFailed`] carrying `ticket`.
     FetchPage {
         /// The ticket to hand back.
         ticket: Ticket,
         /// The search, empty for every row.
         search: CollectionSearch,
-        /// Rows before the page.
-        offset: u32,
+        /// The last page's `next`; `None` for the first page.
+        after: Option<CollectionCursor>,
     },
     /// Waits `wait`, then answers with [`Action::Search`] carrying `ticket`.
     SearchAfter {
@@ -275,13 +276,9 @@ pub struct State {
     status: Status,
     rows: Vec<Row>,
     total: i64,
-    next_offset: Option<u32>,
+    next: Option<CollectionCursor>,
     /// The page out, with nothing else asked until it settles.
     page_out: Option<Ticket>,
-    /// The offset the page out was asked from.
-    page_offset: u32,
-    /// Rows removed since the page out was asked for, which shift its rows on the server.
-    removed_while_out: u32,
     /// The box's text.
     text: String,
     /// The search the pages are for.
@@ -326,7 +323,7 @@ impl State {
     /// Whether a page follows the ones loaded, for the list's Show more.
     #[must_use]
     pub fn has_more(&self) -> bool {
-        self.next_offset.is_some()
+        self.next.is_some()
     }
 
     /// Whether an export is out, which disables Export.
@@ -343,19 +340,13 @@ impl State {
                 if self.page_out != Some(ticket) {
                     return Vec::new();
                 }
-                if self.removed_while_out > 0 {
-                    // The server may have cut the page before or after a removal; asked again
-                    // now, from where the removals leave it, it can't skip or repeat a row.
-                    let offset = self.page_offset.saturating_sub(self.removed_while_out);
-                    return vec![self.fetch(offset)];
-                }
                 self.land(*page);
                 Vec::new()
             }
             Action::PageFailed { ticket } => self.page_failed(ticket),
-            Action::NearEnd => match self.next_offset {
-                Some(offset) if self.page_out.is_none() && self.status == Status::List => {
-                    vec![self.fetch(offset)]
+            Action::NearEnd => match self.next.clone() {
+                Some(after) if self.page_out.is_none() && self.status == Status::List => {
+                    vec![self.fetch(Some(after))]
                 }
                 Some(_) | None => Vec::new(),
             },
@@ -418,20 +409,18 @@ impl State {
     fn restart(&mut self) -> Vec<Effect> {
         self.rows.clear();
         self.total = 0;
-        self.next_offset = None;
+        self.next = None;
         self.status = Status::Loading;
-        vec![self.fetch(0)]
+        vec![self.fetch(None)]
     }
 
-    fn fetch(&mut self, offset: u32) -> Effect {
+    fn fetch(&mut self, after: Option<CollectionCursor>) -> Effect {
         let ticket = self.tickets.next_ticket();
         self.page_out = Some(ticket);
-        self.page_offset = offset;
-        self.removed_while_out = 0;
         Effect::FetchPage {
             ticket,
             search: self.search.clone(),
-            offset,
+            after,
         }
     }
 
@@ -439,7 +428,7 @@ impl State {
     fn land(&mut self, page: HttpCollectionPage) {
         self.page_out = None;
         self.total = page.total;
-        self.next_offset = page.next_offset;
+        self.next = page.next;
         for card in page.cards {
             let key = RowKey::of(&card);
             if self.rows.iter().any(|r| r.key == key) {
@@ -488,7 +477,7 @@ impl State {
         } else {
             self.rows.clear();
             self.total = 0;
-            self.next_offset = None;
+            self.next = None;
             self.page_out = None;
             self.status = Status::NoMatch;
             Vec::new()
@@ -589,18 +578,13 @@ impl State {
         effects
     }
 
-    /// Takes a removed row out of the list; the rows after it each sit one earlier on the
-    /// server, so the next page starts one earlier too.
+    /// Takes a removed row out of the list.
     fn remove_row(&mut self, key: RowKey) {
         let before = self.rows.len();
         self.rows.retain(|r| r.key != key);
         if self.rows.len() < before {
-            if self.page_out.is_some() {
-                self.removed_while_out = self.removed_while_out.saturating_add(1);
-            }
             self.total = self.total.saturating_sub(1);
-            self.next_offset = self.next_offset.map(|n| n.saturating_sub(1));
-            if self.rows.is_empty() && self.next_offset.is_none() {
+            if self.rows.is_empty() && self.next.is_none() {
                 self.status = if self.search.is_empty() {
                     Status::Empty
                 } else {
