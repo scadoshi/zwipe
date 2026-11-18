@@ -34,7 +34,7 @@ fn the_flag_and_the_quantity_share_one_holder_at_the_top_right() {
     ] {
         assert!(holder.contains(declaration), "{declaration} in {holder:?}");
     }
-    let badges = rule(".card-stack-qty,\n.card-stack-flag");
+    let badges = rule(".card-stack-qty,\n.card-stack-flag,\n.card-stack-star");
     assert!(
         !badges.contains("position: absolute"),
         "neither badge places itself, so they cannot overlap: {badges:?}"
@@ -54,7 +54,7 @@ fn the_flag_and_the_quantity_share_one_holder_at_the_top_right() {
 
 #[test]
 fn the_flag_wears_the_quantity_badge_s_box() {
-    let badges = rule(".card-stack-qty,\n.card-stack-flag");
+    let badges = rule(".card-stack-qty,\n.card-stack-flag,\n.card-stack-star");
     for declaration in [
         "padding: 0.05rem var(--space-2);",
         "border: 1px solid var(--border-secondary);",
@@ -68,5 +68,32 @@ fn the_flag_wears_the_quantity_badge_s_box() {
     assert!(
         icon.contains("width: 1em;") && icon.contains("height: 1em;"),
         "the flag's icon is the badge's text size: {icon:?}"
+    );
+}
+
+#[test]
+fn a_starred_card_s_star_leads_the_badge_row_in_the_badges_box_and_its_star_color() {
+    let (_, after_holder) = CARD_STACK
+        .split_once("div { class: \"card-stack-badges\",")
+        .unwrap_or_default();
+    let at = |class: &str| after_holder.find(&format!("class: \"{class}\""));
+    let (star, flag, qty) = (
+        at("card-stack-star"),
+        at("card-stack-flag"),
+        at("card-stack-qty"),
+    );
+    assert!(
+        star.is_some() && star < flag && flag < qty,
+        "star, then flag, then quantity: {star:?} {flag:?} {qty:?}"
+    );
+    let badges = rule(".card-stack-qty,\n.card-stack-flag,\n.card-stack-star");
+    assert!(
+        badges
+            .contains("background-color: color-mix(in srgb, var(--bg-primary) 85%, transparent);"),
+        "the star wears the badges' box: {badges:?}"
+    );
+    assert!(
+        MAGIC.contains("*/\n.card-stack-star {\n    color: var(--ink-color-star, var(--color-star));\n    line-height: 1.36;\n}"),
+        "in the star color List's star uses"
     );
 }

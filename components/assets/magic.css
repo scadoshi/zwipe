@@ -3400,7 +3400,8 @@ footer.site-footer .site-footer-note {
 }
 
 .card-stack-qty,
-.card-stack-flag {
+.card-stack-flag,
+.card-stack-star {
     padding: 0.05rem var(--space-2);
     border: 1px solid var(--border-secondary);
     border-radius: 0.5rem;
@@ -3408,6 +3409,14 @@ footer.site-footer .site-footer-note {
     font-weight: 700;
     color: var(--text-primary);
     background-color: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+}
+
+/* A starred stack card's star, in the star color List's star wears. The
+   star comes from a fallback font with a taller line, so it takes the
+   badge text's own line height and stands as tall as the other badges. */
+.card-stack-star {
+    color: var(--ink-color-star, var(--color-star));
+    line-height: 1.36;
 }
 
 /* Dealing in, on entering the Stacks view: each card rises from below into

@@ -51,6 +51,9 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "Send to, a new action that adds a card to another of your decks",
         "Flag, a mark on your deck's cards that Remove deals first",
+        "A starred card shows its star on its stack card",
+        "A stack card's badges ease in and out",
+        "A card's count and flag pop when they change",
         "Theme search, which finds a theme by name or color",
         "On the web, t opens Themes ready to type",
         "On the web, q opens Quick add",

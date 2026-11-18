@@ -719,6 +719,8 @@ pub fn DeckStacks(
     #[props(default)] touch: bool,
     #[props(default)] on_fold: Option<EventHandler<String>>,
 ) -> Element {
+    // The badges ease in and out and pop on each change.
+    crate::badge_ease::use_badge_ease();
     let mut reveal = details.reveal;
     let width = use_stacks_width(touch);
     // A fold reweighs the stacks and can move some to another column, so it starts the settle,
@@ -788,6 +790,7 @@ pub fn DeckStacks(
                             RowKind::Board(board) => Some(board),
                             RowKind::Main { .. } | RowKind::Zone(_) | RowKind::Token => None,
                         },
+                        starred: matches!(row.kind, RowKind::Main { mvp: true }),
                         card: row.card,
                         qty: row.qty,
                         face,
@@ -934,6 +937,8 @@ pub fn DeckStackDrawer(
     actions: Option<DeckEditActions>,
     #[props(default)] host: DeckRowHost,
 ) -> Element {
+    // The badges ease in and out and pop on each change.
+    crate::badge_ease::use_badge_ease();
     let DeckRowHost {
         on_image,
         on_printing,

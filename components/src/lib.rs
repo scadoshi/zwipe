@@ -44,6 +44,7 @@ mod activity_heat;
 mod architecture;
 mod back_arrow;
 mod back_online;
+mod badge_ease;
 mod buy;
 mod card_actions;
 mod card_details;
@@ -117,6 +118,7 @@ pub use activity_heat::{ACTIVITY_HEAT_PARTS, HeatMonths};
 pub use architecture::ZwipeArchitecture;
 pub use back_arrow::BackArrow;
 pub use back_online::use_back_online;
+pub use badge_ease::BADGE_EASE_JS;
 pub use buy::{CART, CartButton, StoreDialog, store_actions};
 pub use card_actions::{CardBoardMoves, CardEditButtons};
 pub use card_details::{

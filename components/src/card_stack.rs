@@ -32,6 +32,8 @@ pub struct StackCard {
     pub face: usize,
     /// Its board, where it isn't the main deck, named in its accessible name.
     pub board: Option<Board>,
+    /// Whether it is starred (an MVP), which shows a star badge.
+    pub starred: bool,
 }
 
 /// The stack of `cards`, top to bottom. `revealed` shows in full, the cards
@@ -96,7 +98,7 @@ pub fn CardStack(
     }
     rsx! {
         div { class: "{stack_class}", role: "list",
-            for (index, (((StackCard { card, qty, face, board }, tucked), shifted), exposed)) in cards.into_iter().zip(tucks).zip(shifts).zip(full).enumerate() {
+            for (index, (((StackCard { card, qty, face, board, starred }, tucked), shifted), exposed)) in cards.into_iter().zip(tucks).zip(shifts).zip(full).enumerate() {
                 {
                     let id = card.scryfall_data.id;
                     let name = card.scryfall_data.name.clone();
@@ -164,9 +166,12 @@ pub fn CardStack(
                                         class: if exposed { String::new() } else { STRIP_CLASS.to_owned() },
                                     }
                                 }
-                                // The flag and the copies sit side by side at the top right.
-                                if crate::is_flagged(id) || qty > 1 {
+                                // The star, the flag and the copies sit side by side at the top right.
+                                if starred || crate::is_flagged(id) || qty > 1 {
                                     div { class: "card-stack-badges",
+                                        if starred {
+                                            span { class: "card-stack-star", "aria-label": "Starred", role: "img", "\u{2605}" }
+                                        }
                                         if crate::is_flagged(id) {
                                             crate::FlagMark { class: "card-stack-flag" }
                                         }
