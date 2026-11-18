@@ -1,5 +1,5 @@
 //! The Commanders screen's Maybeboard list: the commanders a user saved for
-//! later, with Quick add by name, the Show row's color pips, the Sort row,
+//! later, with Quick add by name, the Show row (All and Art), the Sort row,
 //! and Create deck or Remove on each. The screen's one filter narrows it too.
 //!
 //! `q` focuses Quick add, `/` opens the screen's filter at its name, and ↑
@@ -18,7 +18,6 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
@@ -144,7 +143,6 @@ pub(super) fn MaybeboardPanel(
     use_context_provider(|| ShowRowArt(show_row_art));
 
     let mut query = use_signal(String::new);
-    let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
     let mut highlight: Signal<Option<usize>> = use_signal(|| None);
     let mut sort: Signal<Sort> = use_signal(|| MaybeboardSortStore::browser().load());
 
@@ -348,17 +346,11 @@ pub(super) fn MaybeboardPanel(
         });
     });
 
-    // The Show pips narrow in memory, every picked color in the identity,
-    // then the applied filter, then its sort; saved order stands without
-    // one. The quick add input never narrows the list.
+    // The applied filter narrows the list, then its sort; saved order stands
+    // without one. The quick add input never narrows the list.
     let filtered = use_memo(move || -> Vec<Card> {
-        let colors = selected_colors();
-        let shown: Vec<Card> = entries()
-            .into_iter()
-            .filter(|c| commander_maybeboard::passes_pips(&c.scryfall_data.color_identity, &colors))
-            .collect();
         let applied = filter();
-        let mut shown = Cards::from(shown);
+        let mut shown = Cards::from(entries());
         if !applied.is_empty()
             && let Ok(criteria) = applied.build_criteria()
         {
@@ -368,7 +360,6 @@ pub(super) fn MaybeboardPanel(
         shown.sorted(applied.sort(), applied.direction()).into()
     });
     let filtered = filtered();
-    let colors = selected_colors();
     let has_entries = !entries().is_empty();
     let searching_catalog = query().trim().len() >= QUICK_ADD_MIN_CHARS;
     let results = shown_results();
@@ -480,27 +471,11 @@ pub(super) fn MaybeboardPanel(
                         }
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
+                            // Colors come from the screen's filter, so All is the one choice here.
                             Chip {
-                                selected: colors.is_empty(),
-                                onclick: move |_| selected_colors.write().clear(),
+                                selected: true,
+                                onclick: move |_| {},
                                 "All"
-                            }
-                            for color in Color::all() {
-                                Chip {
-                                    key: "{color.to_short_name()}",
-                                    selected: colors.contains(&color),
-                                    onclick: move |_| {
-                                        let mut picked = selected_colors.write();
-                                        if !picked.remove(&color) {
-                                            picked.insert(color);
-                                        }
-                                    },
-                                    i {
-                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                                        "aria-hidden": "true",
-                                    }
-                                    span { class: "sr-only", "{color.to_long_name()}" }
-                                }
                             }
                             Chip {
                                 selected: show_row_art(),

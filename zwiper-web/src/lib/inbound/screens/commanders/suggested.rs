@@ -8,9 +8,7 @@ use uuid::Uuid;
 
 use crate::inbound::cards::card_row::ShowRowArt;
 use crate::inbound::chrome::ghost::{GhostShowRow, GhostText};
-use crate::inbound::screens::playstyle::{
-    ShowIdentityChips, SuggestedFold, SuggestedOverlays, Suggestions,
-};
+use crate::inbound::screens::playstyle::{SuggestedFold, SuggestedOverlays, Suggestions};
 
 /// The list's header.
 const LIST_TITLE: &str = "Suggested";
@@ -25,14 +23,19 @@ pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uui
         deck_count,
         is_loading,
         load_failed,
-        active_identity,
-        identities,
+        mut active_identity,
         ..
     } = list;
-    // The console's Show row.
+    // The console's Show row: colors come from the screen's filter, so it has no identity chips.
     let show_chips = rsx! {
         div { class: "web-list-console",
-            ShowIdentityChips { active_identity, identities: identities(),
+            div { class: "chip-row", "data-settle": "",
+                span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
+                Chip {
+                    selected: active_identity().is_none(),
+                    onclick: move |_| active_identity.set(None),
+                    "All"
+                }
                 Chip {
                     selected: show_row_art(),
                     onclick: move |_| show_row_art.toggle(),
