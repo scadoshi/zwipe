@@ -25,6 +25,7 @@ use crate::generation::{Generation, Ticket};
 use crate::hint::HintTopic;
 use crate::timing;
 use crate::toast::{Line, Toast, ToastKind, keep_one};
+use crate::write_id::WriteId;
 
 /// Create's title.
 pub const CREATE_TITLE: &str = "Create deck";
@@ -571,6 +572,8 @@ pub struct State {
     left_zones: LeftZones<ZoneSnapshot>,
     catalog: Vec<DeckTagView>,
     saving: bool,
+    /// The deck id Create sends, kept while the same form is saved again after a failure.
+    create_id: WriteId<HttpCreateDeckProfile>,
     waiting: Vec<(Ticket, Request)>,
     tickets: Generation,
 }
@@ -599,6 +602,7 @@ impl State {
             left_zones: LeftZones::default(),
             catalog: Vec::new(),
             saving: false,
+            create_id: WriteId::new(),
             waiting: Vec::new(),
             tickets: Generation::default(),
         }
@@ -666,13 +670,7 @@ impl State {
             Action::KeepPicker => self.keep_picker(),
             Action::DiscardPicker => self.revert_picker(),
             Action::Save => self.save(),
-            Action::Created { ticket, deck_id } => {
-                if self.take(ticket) != Some(Request::Save) {
-                    return Vec::new();
-                }
-                self.saved = self.values.clone();
-                vec![Effect::Replace(Destination::Deck(deck_id))]
-            }
+            Action::Created { ticket, deck_id } => self.created(ticket, deck_id),
             Action::Updated { ticket } => {
                 if self.take(ticket) != Some(Request::Save) {
                     return Vec::new();
@@ -1501,6 +1499,17 @@ impl State {
         }
     }
 
+    /// The create holding `ticket` went through as the deck `deck_id`: the new deck takes the
+    /// form's place, and the next Save is a new deck.
+    fn created(&mut self, ticket: Ticket, deck_id: Uuid) -> Vec<Effect> {
+        if self.take(ticket) != Some(Request::Save) {
+            return Vec::new();
+        }
+        self.saved = self.values.clone();
+        self.create_id.landed();
+        vec![Effect::Replace(Destination::Deck(deck_id))]
+    }
+
     fn save(&mut self) -> Vec<Effect> {
         if self.saving || self.status != Status::Ready {
             return Vec::new();
@@ -1512,7 +1521,8 @@ impl State {
         self.saving = true;
         match self.mode {
             Mode::Create => {
-                let request = Box::new(self.values.create_request());
+                let mut request = Box::new(self.values.create_request());
+                request.id = Some(self.create_id.id_for((*request).clone(), Uuid::new_v4));
                 let ticket = self.request(Request::Save);
                 vec![Effect::CreateDeck { ticket, request }]
             }

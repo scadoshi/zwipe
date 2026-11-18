@@ -25,6 +25,7 @@ impl From<CreateDeckProfileError> for ApiError {
             CreateDeckProfileError::Duplicate => {
                 Self::Conflict(messages::DECK_NAME_TAKEN.to_string())
             }
+            CreateDeckProfileError::IdTaken => Self::Conflict(DECK_ID_TAKEN.to_string()),
             CreateDeckProfileError::LimitReached => {
                 Self::UnprocessableEntity("deck limit reached".to_string())
             }
@@ -72,11 +73,15 @@ impl From<InvalidCreateDeckProfile> for ApiError {
     }
 }
 
-/// Creates a new deck for the authenticated user.
+/// The answer to a create or clone whose client-picked id another user's deck holds.
+pub(super) const DECK_ID_TAKEN: &str = "deck id taken";
+
+/// Creates a new deck for the authenticated user. A body with the id of a deck the caller
+/// already owns is a repeat of the request that made it, and answers that deck as created.
 ///
 /// # Errors
 ///
-/// Returns 422 for an invalid field or the deck limit, 409 when the name is
+/// Returns 422 for an invalid field or the deck limit, 409 when the name or the id is
 /// taken, 404 when the user is gone, and 500 on a database failure.
 pub async fn create_deck_profile(
     user: AuthenticatedUser,
@@ -101,6 +106,7 @@ pub async fn create_deck_profile(
         .land_target(body.land_target)
         .price_target(body.price_target)
         .price_target_currency(body.price_target_currency)
+        .id(body.id)
         .build()?;
 
     let deck_profile = state

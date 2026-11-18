@@ -6,6 +6,7 @@
 use thiserror::Error;
 
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
+use crate::outbound::sqlx::deck::error::DECKS_PKEY;
 use crate::outbound::sqlx::postgres::IsConstraintViolation;
 
 /// Errors that can occur during deck cloning execution.
@@ -20,6 +21,9 @@ pub enum CloneDeckError {
     /// A deck owned by the caller already has this name.
     #[error("a deck with that name already exists")]
     Duplicate,
+    /// The client-picked id belongs to another user's deck.
+    #[error("deck id belongs to another user's deck")]
+    IdTaken,
     /// Caller has reached their deck-count limit (verified user, true cap).
     #[error("deck count limit reached")]
     LimitReached,
@@ -43,6 +47,7 @@ pub enum CloneDeckError {
 impl From<sqlx::Error> for CloneDeckError {
     fn from(value: sqlx::Error) -> Self {
         match value {
+            e if e.violates(DECKS_PKEY) => Self::IdTaken,
             e if e.is_unique_constraint_violation() => Self::Duplicate,
             e => Self::Database(e.into()),
         }
