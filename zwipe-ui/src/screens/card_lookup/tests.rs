@@ -159,6 +159,44 @@ fn only_playable_cards_make_a_list() {
 }
 
 #[test]
+fn a_full_name_match_wins_over_front_faces() {
+    let (mut state, ticket, _) = by_name("bind", false, true);
+    let bind = laid_out("Bind", "normal");
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![bind.clone(), laid_out("Bind // Liberate", "split")],
+    });
+    assert_eq!(state.status(), Status::One, "Bind is Bind");
+    assert_eq!(state.card(), Some(&bind));
+
+    let (mut state, ticket, _) = by_name("delver-of-secrets", false, true);
+    let delver = laid_out("Delver of Secrets // Insectile Aberration", "transform");
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![delver.clone()],
+    });
+    assert_eq!(
+        state.card(),
+        Some(&delver),
+        "a front face still opens its card"
+    );
+
+    let (mut state, ticket, _) = by_name("shared-front", false, true);
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![
+            laid_out("Shared Front // One Back", "modal_dfc"),
+            laid_out("Shared Front // Other Back", "modal_dfc"),
+        ],
+    });
+    assert_eq!(
+        state.status(),
+        Status::Several,
+        "two fronts and no full name: both list"
+    );
+}
+
+#[test]
 fn a_route_that_is_not_a_slug_finds_nothing_without_asking() {
     let mut state = State::new();
     for slug in ["Sol Ring", "", "sol--ring"] {

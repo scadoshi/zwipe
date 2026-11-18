@@ -3,7 +3,8 @@
 //!
 //! A name opens the card when one playable card has it, a short list when several do (each to
 //! its own printing link), and [`NOT_FOUND`] when none does; a token or art card that shares a
-//! playable card's name stays out of the count. A printing link loads by its id alone, and a
+//! playable card's name stays out of the count, and a card whose full name it is wins over cards
+//! it only names the front face of. A printing link loads by its id alone, and a
 //! stale slug in it is swapped for the card's own. Send to signed out goes to Login and comes
 //! back to the card with the sheet asked for; the screen opens it once and drops the ask from
 //! the route, so Back or a reload never opens it again; on a list, the ask goes with the card
@@ -218,7 +219,11 @@ impl State {
                 if !self.fetch.is_current(ticket) {
                     return Vec::new();
                 }
-                let cards = playable_first(cards);
+                let slug = match &self.open {
+                    Some(Open::Named { slug }) => slug.clone(),
+                    Some(Open::Printing { .. }) | None => String::new(),
+                };
+                let cards = named_matches(cards, &slug);
                 self.shown = match cards.len() {
                     0 => Shown::NotFound,
                     1 => cards
@@ -405,18 +410,24 @@ impl State {
     }
 }
 
-/// The cards a name opens: its playable ones (search's playable layouts), in the server's order,
-/// so a token or art card that shares the name never makes a list of one real card. A name with
-/// no playable card keeps every match.
-fn playable_first(cards: Vec<Card>) -> Vec<Card> {
+/// The cards the name `slug` opens, in the server's order: its playable ones (search's playable
+/// layouts), so a token or art card that shares the name never makes a list of one real card,
+/// and of those the ones whose full name is `slug`, so `bind` is Bind and not Bind // Liberate.
+/// A front face counts only when no full name matches, and a name with no playable card keeps
+/// every match.
+fn named_matches(cards: Vec<Card>, slug: &str) -> Vec<Card> {
     let (playable, others): (Vec<Card>, Vec<Card>) = cards
         .into_iter()
         .partition(|c| PLAYABLE_LAYOUTS.contains(&c.scryfall_data.layout.as_str()));
-    if playable.is_empty() {
+    let pool = if playable.is_empty() {
         others
     } else {
         playable
-    }
+    };
+    let (full, fronts): (Vec<Card>, Vec<Card>) = pool.into_iter().partition(|c| {
+        slug::card_slug(&c.scryfall_data.name).is_some_and(|own| own.as_str() == slug)
+    });
+    if full.is_empty() { fronts } else { full }
 }
 
 /// The slug segment of `card`'s printing link ([`slug::printing_path`]'s).
