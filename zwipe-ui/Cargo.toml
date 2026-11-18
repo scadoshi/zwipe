@@ -19,6 +19,7 @@ tracing = { workspace = true }
 uuid = { workspace = true }
 
 [dev-dependencies]
+proptest = { workspace = true }
 serde_json = { workspace = true }
 
 # uuid pulls getrandom, which needs to be told which browser API to use.

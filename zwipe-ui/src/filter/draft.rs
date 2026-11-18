@@ -487,6 +487,36 @@ mod tests {
         assert_eq!(blank.reset().text, "Filter already at default");
     }
 
+    /// "In my collection" is a filter the user picked, not a preference: every host's Reset
+    /// clears it, while the price currency and Add's synergy stay.
+    #[test]
+    fn reset_clears_in_my_collection_on_every_host() {
+        use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+
+        for reset in [
+            ResetRule::Plain,
+            ResetRule::AddSearch(AddContext::default()),
+            ResetRule::AddMaybeboard,
+        ] {
+            let config = SheetConfig {
+                reset: reset.clone(),
+                show_owned: true,
+                ..SheetConfig::default()
+            };
+            let mut filter = CardQueryBuilder::default();
+            filter.set_owned_only(true);
+            filter.set_price_currency(PriceCurrency::Eur);
+            let mut draft = FilterDraft::new(&filter, config);
+            assert_eq!(draft.reset().text, "Filter reset", "{reset:?}");
+            assert!(!draft.draft.owned_only(), "{reset:?}");
+            assert_eq!(
+                draft.draft.price_currency(),
+                Some(PriceCurrency::Eur),
+                "{reset:?}"
+            );
+        }
+    }
+
     #[test]
     fn a_format_picked_beside_the_deck_format_applies_rather_than_clears() {
         let config = SheetConfig {

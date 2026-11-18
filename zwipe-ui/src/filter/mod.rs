@@ -6,6 +6,9 @@ pub mod fields;
 pub mod picker;
 pub mod sections;
 
+#[cfg(test)]
+mod properties;
+
 use zwipe_core::domain::card::scryfall_data::colors::Colors;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
