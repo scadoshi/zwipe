@@ -122,9 +122,10 @@ fn field_value_js(id: &str) -> String {
 }
 
 /// Sets the text of the field with id `id` to the text the app sends next, unless it holds it.
+/// It waits at the script's top level: the app closes an eval's channel once the script returns.
 fn write_field_js(id: &str) -> String {
     format!(
-        "(async () => {{ const text = await dioxus.recv(); const el = document.getElementById({id:?}); if (el && el.value !== text) el.value = text; }})();"
+        "const text = await dioxus.recv(); const el = document.getElementById({id:?}); if (el && el.value !== text) el.value = text;"
     )
 }
 
@@ -233,6 +234,23 @@ mod tests {
         assert!(
             !html.contains("value="),
             "the field carries no value attribute: {html}"
+        );
+    }
+
+    /// The app runs an eval's script as an async function and closes its channel when that
+    /// function returns, so a clear sent to a script that waits inside a nested function finds
+    /// the channel closed and the field keeps its text. The write waits at the script's top level.
+    #[test]
+    fn the_write_waits_for_the_app_s_text_at_the_top_level() {
+        let js = write_field_js("oracle-tag-search");
+        assert!(js.starts_with("const text = await dioxus.recv();"), "{js}");
+        assert!(
+            !js.contains("=>") && !js.contains("function"),
+            "no nested function the eval returns ahead of: {js}"
+        );
+        assert!(
+            js.contains(r#"document.getElementById("oracle-tag-search")"#),
+            "{js}"
         );
     }
 
