@@ -83,6 +83,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Home's tag turns Live again after switching back to Everybody",
         "The filter's Reset keeps your price currency",
         "The filter's toasts say cleared, applied or already at default to match what changed",
+        "On the web, Esc on a hint over a sheet closes only the hint",
     ],
 }];
 
