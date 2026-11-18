@@ -28,7 +28,8 @@ pub enum LookupError {
 impl ZwipeClient {
     /// Looks up the cards `lookup` names, at most the server's limit, one printing each. With a
     /// `session` it sends its token, so the user's Universes Beyond setting applies; without one
-    /// it looks up signed out.
+    /// it looks up signed out. A token the server refuses (401) asks once more signed out, so a
+    /// token that expired since the caller freshened it still finds cards.
     ///
     /// # Errors
     ///
@@ -40,9 +41,12 @@ impl ZwipeClient {
         lookup: &HttpCardLookup,
         session: Option<&Session>,
     ) -> Result<Vec<Card>, LookupError> {
-        let response = self
+        let mut response = self
             .send(&LookupCards(lookup.clone()), session, None)
             .await?;
+        if session.is_some() && response.status() == reqwest::StatusCode::UNAUTHORIZED {
+            response = self.send(&LookupCards(lookup.clone()), None, None).await?;
+        }
         if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
             return Err(LookupError::RateLimited {
                 retry_after: retry_after(response.headers()),
@@ -159,6 +163,64 @@ mod tests {
         let error = client.lookup_cards(&bolt(), None).await.unwrap_err();
         assert!(
             matches!(error, LookupError::RateLimited { retry_after: None }),
+            "{error:?}"
+        );
+    }
+
+    /// A server that answers each of its first `replies.len()` connections with the next reply,
+    /// handing back the requests it read.
+    #[expect(
+        clippy::unwrap_used,
+        reason = "a test helper: a socket error fails the test"
+    )]
+    async fn serve_each(
+        replies: &'static [&'static [u8]],
+    ) -> (ZwipeClient, tokio::task::JoinHandle<Vec<String>>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let mut requests = Vec::new();
+            for reply in replies {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                let mut buf = vec![0_u8; 8192];
+                let read = socket.read(&mut buf).await.unwrap();
+                requests.push(String::from_utf8_lossy(buf.get(..read).unwrap()).into_owned());
+                socket.write_all(reply).await.unwrap();
+            }
+            requests
+        });
+        let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
+        (client, server)
+    }
+
+    const REFUSED: &[u8] =
+        b"HTTP/1.1 401 Unauthorized\r\nContent-Length: 7\r\nConnection: close\r\n\r\nexpired";
+
+    /// A token the server refuses (a 401 for one that expired since the session was checked)
+    /// costs the user nothing: the lookup asks once more signed out.
+    #[tokio::test]
+    async fn a_refused_token_asks_once_more_signed_out() {
+        let (client, server) = serve_each(&[REFUSED, EMPTY]).await;
+        let cards = client
+            .lookup_cards(&bolt(), Some(&session()))
+            .await
+            .unwrap();
+        assert_eq!(cards, Vec::<Card>::new());
+        let requests = server.await.unwrap();
+        assert!(
+            requests[0]
+                .to_ascii_lowercase()
+                .contains("authorization: bearer")
+        );
+        assert!(!requests[1].to_ascii_lowercase().contains("authorization:"));
+    }
+
+    #[tokio::test]
+    async fn a_401_signed_out_is_not_asked_again() {
+        let (client, _server) = serve_once(REFUSED).await;
+        let error = client.lookup_cards(&bolt(), None).await.unwrap_err();
+        assert!(
+            matches!(error, LookupError::Client(ClientError::Unauthorized(_))),
             "{error:?}"
         );
     }
