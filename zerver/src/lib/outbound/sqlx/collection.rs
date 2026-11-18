@@ -11,6 +11,7 @@ use zwipe_core::domain::collection::{
     CardCondition, CardLanguage, CollectionTag, PurchaseCurrency, PurchasePrice,
 };
 use zwipe_core::domain::deck::ImportMode;
+use zwipe_core::http::contracts::collection::HttpCollectionSummary;
 
 use crate::domain::collection::models::import::{
     Applied, CollectionCard, Lookups, NameMatch, Printing, Wanted,
@@ -190,6 +191,34 @@ impl CollectionRepository for Postgres {
             removed: u32::try_from(removed).unwrap_or(u32::MAX),
             cards: cards_after,
         })
+    }
+
+    async fn fetch_summary(&self, user_id: Uuid) -> Result<HttpCollectionSummary, anyhow::Error> {
+        let (cards, printings): (i64, i64) = query_as(
+            "SELECT count(DISTINCT oracle_id), count(DISTINCT scryfall_data_id) \
+             FROM collection_cards WHERE user_id = $1",
+        )
+        .bind(user_id)
+        .fetch_one(&self.pool)
+        .await
+        .context("collection summary")?;
+        Ok(HttpCollectionSummary { cards, printings })
+    }
+
+    async fn fetch_owned_printing_ids(
+        &self,
+        user_id: Uuid,
+        oracle_id: Uuid,
+    ) -> Result<Vec<Uuid>, anyhow::Error> {
+        query_scalar(
+            "SELECT DISTINCT scryfall_data_id FROM collection_cards \
+             WHERE user_id = $1 AND oracle_id = $2",
+        )
+        .bind(user_id)
+        .bind(oracle_id)
+        .fetch_all(&self.pool)
+        .await
+        .context("owned printings")
     }
 }
 

@@ -4,7 +4,7 @@ use std::future::Future;
 
 use uuid::Uuid;
 use zwipe_core::domain::deck::ImportMode;
-use zwipe_core::http::contracts::collection::HttpCollectionImportSummary;
+use zwipe_core::http::contracts::collection::{HttpCollectionImportSummary, HttpCollectionSummary};
 
 use crate::domain::collection::models::import::{
     Applied, CollectionCard, ImportCollection, ImportCollectionFailure, Lookups, Wanted,
@@ -30,6 +30,19 @@ pub trait CollectionRepository: Clone + Send + Sync + 'static {
         mode: ImportMode,
         cards: &[CollectionCard],
     ) -> impl Future<Output = Result<Applied, anyhow::Error>> + Send;
+
+    /// How many distinct cards and printings `user_id`'s collection holds.
+    fn fetch_summary(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<HttpCollectionSummary, anyhow::Error>> + Send;
+
+    /// The printings of the card `oracle_id` in `user_id`'s collection, each once.
+    fn fetch_owned_printing_ids(
+        &self,
+        user_id: Uuid,
+        oracle_id: Uuid,
+    ) -> impl Future<Output = Result<Vec<Uuid>, anyhow::Error>> + Send;
 }
 
 /// Service port for collections.
@@ -39,4 +52,17 @@ pub trait CollectionService: Clone + Send + Sync + 'static {
         &self,
         request: ImportCollection,
     ) -> impl Future<Output = Result<HttpCollectionImportSummary, ImportCollectionFailure>> + Send;
+
+    /// How many distinct cards and printings `user_id`'s collection holds.
+    fn fetch_summary(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<HttpCollectionSummary, anyhow::Error>> + Send;
+
+    /// The printings of the card `oracle_id` in `user_id`'s collection, each once.
+    fn fetch_owned_printing_ids(
+        &self,
+        user_id: Uuid,
+        oracle_id: Uuid,
+    ) -> impl Future<Output = Result<Vec<Uuid>, anyhow::Error>> + Send;
 }

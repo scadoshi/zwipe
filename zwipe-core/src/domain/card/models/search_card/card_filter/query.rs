@@ -100,8 +100,8 @@ pub struct CardQuery {
     #[serde(default)]
     include_skipped: bool,
     /// When true, only cards with a printing in the searching user's collection
-    /// (by oracle id). Every route that takes a query is authed, so the server
-    /// always knows whose collection. `#[serde(default)]` so older clients that
+    /// (by oracle id). A search with no user behind it (one the server runs on
+    /// its own) matches nothing with it on. `#[serde(default)]` so older clients that
     /// omit it parse to `false` (today's search), and left off the wire when
     /// false so today's requests are unchanged.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]

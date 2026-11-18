@@ -16,6 +16,16 @@ pub struct HttpImportCollection {
     pub mode: ImportMode,
 }
 
+/// What the caller's collection holds. A client offers "In my collection" only when it holds
+/// something, and only a server with the owned filter answers this route.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HttpCollectionSummary {
+    /// Distinct cards, by oracle id, with at least one printing in the collection.
+    pub cards: i64,
+    /// Distinct printings in the collection, whatever their finish, condition or language.
+    pub printings: i64,
+}
+
 /// What a collection import did.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HttpCollectionImportSummary {

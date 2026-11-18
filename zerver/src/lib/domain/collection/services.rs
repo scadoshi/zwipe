@@ -1,7 +1,8 @@
 //! The collection service: matching an export's rows and writing them.
 
+use uuid::Uuid;
 use zwipe_core::domain::collection::ImportCollectionError;
-use zwipe_core::http::contracts::collection::HttpCollectionImportSummary;
+use zwipe_core::http::contracts::collection::{HttpCollectionImportSummary, HttpCollectionSummary};
 
 use crate::domain::collection::models::import::{
     self, ImportCollection, ImportCollectionFailure, Wanted,
@@ -43,5 +44,17 @@ impl<R: CollectionRepository> CollectionService for Service<R> {
             .apply_import(user_id, mode, &resolved.cards)
             .await?;
         Ok(import::summary(source, rows_read, resolved, applied))
+    }
+
+    async fn fetch_summary(&self, user_id: Uuid) -> Result<HttpCollectionSummary, anyhow::Error> {
+        self.repo.fetch_summary(user_id).await
+    }
+
+    async fn fetch_owned_printing_ids(
+        &self,
+        user_id: Uuid,
+        oracle_id: Uuid,
+    ) -> Result<Vec<Uuid>, anyhow::Error> {
+        self.repo.fetch_owned_printing_ids(user_id, oracle_id).await
     }
 }

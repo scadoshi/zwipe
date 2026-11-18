@@ -617,6 +617,14 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                             ),
                         ),
                 )
+                // The collection's reads ride the private limits; its import, with its own
+                // body cap and limits, is in collection_routes.
+                .nest(
+                    "/collection",
+                    Router::new()
+                        .route("/summary", get(collection::collection_summary))
+                        .route("/printings/{oracle_id}", get(collection::owned_printings)),
+                )
                 .nest(
                     "/user",
                     Router::new()
