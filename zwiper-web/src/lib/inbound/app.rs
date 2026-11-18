@@ -94,10 +94,12 @@ pub fn App() -> Element {
     });
     let esc_back = use_context_provider(|| EscBack(Signal::new(None)));
     use_future(move || async move {
-        let mut escapes = document::eval(KEYS_JS);
-        while escapes.recv::<bool>().await.is_ok() {
-            let closed = overlay_back_stack.close_top();
-            if let Some(back) = back_after_escape(closed, *esc_back.0.peek()) {
+        let mut escapes = document::eval(&keys_js());
+        while let Ok(sheet_open) = escapes.recv::<bool>().await {
+            if sheet_open {
+                overlay_back_stack.close_top();
+            }
+            if let Some(back) = back_after_escape(sheet_open, *esc_back.0.peek()) {
                 back.call(());
             }
         }
@@ -300,54 +302,62 @@ if (!window.__zwipeDialogFocus) {
 "#;
 
 /// What the screen's Back button does, which Esc does with nothing open: the
-/// nav's back arrow sets it while the screen has one.
+/// nav's back arrow sets it on a deck's Add, Remove and Edit, and leaves it
+/// empty everywhere else.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct EscBack(pub Signal<Option<Callback<()>>>);
 
-/// The Back Esc runs after closing what it could: `back` when `closed` is
-/// false, so Esc closes one layer at a time and goes back only from a bare
-/// screen.
-fn back_after_escape<T>(closed: bool, back: Option<T>) -> Option<T> {
-    if closed { None } else { back }
+/// The Back Esc runs: `back` when no sheet is open, so Esc closes one sheet at
+/// a time and goes back only from a bare screen. A screen layer that is no
+/// sheet (the deck's Cards on a phone) stays.
+fn back_after_escape<T>(sheet_open: bool, back: Option<T>) -> Option<T> {
+    if sheet_open { None } else { back }
 }
 
 /// The page-wide keys. While a dialog is open the kit's own listener runs
 /// Escape and Enter, and the kit's theme sheet handles its arrows and
 /// Enter, so this one steps aside. Otherwise Escape in a text field only
-/// leaves the field; anywhere else it sends `true` to the root, which closes
-/// the top overlay or, with none open, goes back as the screen's Back button
-/// does. Enter with nothing focused submits the page's form panel when it has
-/// exactly one, as Enter in one of its fields does.
+/// leaves the field; anywhere else it sends the root whether a sheet is open
+/// ([`components::keys::MODAL_SELECTORS`]): the root closes the top one, or
+/// with none open on a deck's Add, Remove or Edit goes back as the screen's
+/// Back button does. Enter with nothing focused submits the page's form panel
+/// when it has exactly one, as Enter in one of its fields does.
 ///
 /// Escape is marked taken, so no later listener closes the same overlay
 /// again, and sends once the key's dispatch is over, so a dialog the close
 /// opens (a picker asking before it discards) draws after the kit's
 /// listener has passed on this same key and doesn't take it as a dismiss.
-const KEYS_JS: &str = r#"
-document.addEventListener('keydown', (e) => {
+fn keys_js() -> String {
+    let modals = components::keys::MODAL_SELECTORS.join(", ");
+    format!(
+        r#"
+document.addEventListener('keydown', (e) => {{
     if (document.querySelector('.alert-dialog[data-state="open"]')) return;
     const focus = document.activeElement;
     const inField = focus && focus.closest('input, textarea, select, [contenteditable="true"]');
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape') {{
         e.preventDefault();
-        if (inField) {
+        if (inField) {{
             focus.blur();
             return;
-        }
-        setTimeout(() => dioxus.send(true), 0);
+        }}
+        const open = !!document.querySelector('{modals}');
+        setTimeout(() => dioxus.send(open), 0);
         return;
-    }
+    }}
     const onControl = focus && (focus.tagName === 'BUTTON' || focus.tagName === 'A');
-    if (e.key === 'Enter' && !e.isComposing && !onControl && !inField) {
+    if (e.key === 'Enter' && !e.isComposing && !onControl && !inField) {{
         const forms = Array.from(document.querySelectorAll('.web-form-panel form'))
             .filter((form) => form.offsetParent !== null);
-        if (forms.length === 1 && !document.querySelector('.bottom-sheet.show')) {
+        if (forms.length === 1 && !document.querySelector('.bottom-sheet.show')) {{
             e.preventDefault();
             forms[0].requestSubmit();
-        }
-    }
-}, true);
-"#;
+        }}
+    }}
+}}, true);
+"#
+    )
+}
 
 /// Holds back the browser's default for its quick find keys, `/` and Firefox's links-only `'`,
 /// while focus sits outside a text field and no modifier is held, so the find bar never opens over
@@ -456,27 +466,45 @@ mod tests {
         // Unmarked, the kit's last-chance Esc (a sheet's own close) closes the same overlay again,
         // and on a history-backed layer (the deck's Cards) that is a second step back.
         assert!(
-            KEYS_JS.contains("if (e.key === 'Escape') {\n        e.preventDefault();"),
-            "{KEYS_JS}"
+            keys_js().contains("if (e.key === 'Escape') {\n        e.preventDefault();"),
+            "{}",
+            keys_js()
         );
     }
 
     #[test]
     fn esc_in_quick_add_or_any_field_only_leaves_the_field() {
-        let esc = KEYS_JS
+        let js = keys_js();
+        let esc = js
             .split("if (e.key === 'Escape') {")
             .nth(1)
             .unwrap_or_default();
         let blur =
             esc.find("if (inField) {\n            focus.blur();\n            return;\n        }");
-        let send = esc.find("dioxus.send(true)");
+        let send = esc.find("dioxus.send(open)");
         assert!(
             blur.is_some_and(|b| send.is_some_and(|s| b < s)),
-            "a focused field blurs and the key goes no further: {KEYS_JS}"
+            "a focused field blurs and the key goes no further: {js}"
         );
         assert!(
-            KEYS_JS.contains("const inField = focus && focus.closest('input, textarea, select, [contenteditable=\"true\"]');"),
-            "Quick add is an input: {KEYS_JS}"
+            js.contains("const inField = focus && focus.closest('input, textarea, select, [contenteditable=\"true\"]');"),
+            "Quick add is an input: {js}"
+        );
+    }
+
+    #[test]
+    fn esc_tells_the_root_whether_a_sheet_is_open_so_the_cards_layer_never_closes_on_it() {
+        let js = keys_js();
+        let modals = components::keys::MODAL_SELECTORS.join(", ");
+        assert!(
+            js.contains(&format!(
+                "const open = !!document.querySelector('{modals}');"
+            )),
+            "{js}"
+        );
+        assert!(
+            !modals.contains("web-cards-layer"),
+            "the Cards layer is no sheet"
         );
     }
 
