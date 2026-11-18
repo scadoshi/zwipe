@@ -31,6 +31,13 @@ pub fn use_page_keys_through(
     use_keys_under_guard(guard::guard_js_through(sheet_class, keys), on_key);
 }
 
+/// Calls `on_key` with each key pressed while this registration is the newest and the modal
+/// `modal` (a selector) is the topmost open one ([`guard::top_modal_guard_js`]), for a modal that
+/// opens over a sheet and answers its own keys, such as the Oracle tags dictionary.
+pub fn use_modal_keys(modal: &'static str, on_key: Callback<String>) {
+    use_keys_under_guard(guard::top_modal_guard_js(modal), on_key);
+}
+
 /// Registers `on_key` for the keys `guard` (a browser expression) lets reach the screen.
 fn use_keys_under_guard(guard: String, on_key: Callback<String>) {
     let id = use_hook(Uuid::new_v4);

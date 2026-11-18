@@ -13,11 +13,12 @@
 //! Where the kit draws a sheet form as a modal it is the kit's modal, wide
 //! enough to read in, with the title bar's × and the Search label and box,
 //! the letters and the list inside; below that it is the app's full-screen
-//! overlay. `/` focuses the search, a letter key jumps to that letter while
-//! the search is empty and unfocused, and Esc closes it, as the × or the
-//! header's back arrow do.
+//! overlay. While it is the topmost modal, over the sheet that opened it,
+//! `/` focuses the search, a letter key jumps to that letter while the search
+//! is empty and unfocused, and Esc closes it, as the × or the header's back
+//! arrow do. The page's own keys stand down while it is open.
 
-use components::keys::{focus_by_id, use_page_keys};
+use components::keys::{DICTIONARY, focus_by_id, use_modal_keys};
 use components::{
     BackArrow, Button, ButtonVariant, ClearWrap, PageHeader, SheetFrame, SheetWide, TOAST_NORMAL,
     use_overlay_back,
@@ -70,20 +71,23 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
         }
     });
 
-    use_page_keys(Callback::new(move |key: String| {
-        if key == "/" {
-            focus_by_id(SEARCH_ID);
-            return;
-        }
-        let mut chars = key.chars();
-        if let (Some(c), None) = (chars.next(), chars.next())
-            && c.is_ascii_alphabetic()
-            && query.peek().trim().is_empty()
-            && !*examples_open.peek()
-        {
-            selected_letter.set(c.to_ascii_lowercase());
-        }
-    }));
+    use_modal_keys(
+        DICTIONARY,
+        Callback::new(move |key: String| {
+            if key == "/" {
+                focus_by_id(SEARCH_ID);
+                return;
+            }
+            let mut chars = key.chars();
+            if let (Some(c), None) = (chars.next(), chars.next())
+                && c.is_ascii_alphabetic()
+                && query.peek().trim().is_empty()
+                && !*examples_open.peek()
+            {
+                selected_letter.set(c.to_ascii_lowercase());
+            }
+        }),
+    );
 
     let catalog = cache.0.read();
     let slot = &catalog.oracle_tags;
