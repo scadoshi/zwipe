@@ -36,14 +36,14 @@ pub const TITLE: &str = "Commanders";
 enum ScreenKey {
     /// Focuses the Maybeboard's Quick add.
     QuickAdd,
-    /// Opens the Maybeboard's filter.
+    /// Opens the filter of the list the user is in.
     Filter,
-    /// Opens the Maybeboard's filter at its Name section, the name field focused.
+    /// Opens the filter of the list the user is in at its Name section, the name field focused.
     FilterByName,
 }
 
-/// The screen action `key` stands for: `q` Quick add, `f` the Maybeboard's filter and `/` that
-/// filter at its name field ([`shortcuts::card_key`]).
+/// The screen action `key` stands for: `q` Quick add, `f` the filter of the list the user is in
+/// and `/` that filter at its name field ([`shortcuts::card_key`]).
 fn screen_key(key: &str) -> Option<ScreenKey> {
     match shortcuts::card_key(key) {
         Some(CardKey::Filter) => Some(ScreenKey::Filter),
@@ -54,6 +54,40 @@ fn screen_key(key: &str) -> Option<ScreenKey> {
     }
 }
 
+/// The list the user is in: the one holding the keyboard cursor or the one last touched, the
+/// Maybeboard before either. The filter keys act on it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(super) enum ActiveList {
+    /// The saved commanders, on the left.
+    #[default]
+    Maybeboard,
+    /// The suggested commanders, on the right.
+    Suggested,
+}
+
+/// A filter sheet a key opens: the list's, at its name field or not.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct FilterOpen {
+    list: ActiveList,
+    at_name: bool,
+}
+
+/// The filter sheet `key` opens while the user is in `active`, or `None` for a key that opens
+/// no filter.
+fn filter_opened(key: ScreenKey, active: ActiveList) -> Option<FilterOpen> {
+    match key {
+        ScreenKey::Filter => Some(FilterOpen {
+            list: active,
+            at_name: false,
+        }),
+        ScreenKey::FilterByName => Some(FilterOpen {
+            list: active,
+            at_name: true,
+        }),
+        ScreenKey::QuickAdd => None,
+    }
+}
+
 /// The Commanders screen, at `/commanders`.
 #[component]
 pub fn CommanderMaybeboard() -> Element {
@@ -61,9 +95,10 @@ pub fn CommanderMaybeboard() -> Element {
     let hint_open = use_one_time_hint(OneTimeHint::Commanders);
     // Each list's own filter, and whether its sheet is open.
     let maybeboard_filter = use_signal(CardQueryBuilder::new);
-    let mut maybeboard_filter_open = use_signal(|| false);
+    let maybeboard_filter_open = use_signal(|| false);
     let suggested_filter = use_signal(CardQueryBuilder::new);
     let suggested_filter_open = use_signal(|| false);
+    let mut active_list = use_signal(ActiveList::default);
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
     let hover_stack = use_hover_stack();
@@ -82,11 +117,23 @@ pub fn CommanderMaybeboard() -> Element {
             .chain(held.read().iter().map(|s| s.card.clone()))
             .collect::<Vec<Card>>()
     });
-    let screen_keys = Callback::new(move |key: String| match screen_key(&key) {
-        Some(ScreenKey::QuickAdd) => focus_by_id(QUICK_ADD_ID),
-        Some(ScreenKey::Filter) => maybeboard_filter_open.set(true),
-        Some(ScreenKey::FilterByName) => components::open_at_name(maybeboard_filter_open),
-        None => {}
+    let screen_keys = Callback::new(move |key: String| {
+        let Some(key) = screen_key(&key) else {
+            return;
+        };
+        let Some(FilterOpen { list, at_name }) = filter_opened(key, *active_list.peek()) else {
+            focus_by_id(QUICK_ADD_ID);
+            return;
+        };
+        let mut open = match list {
+            ActiveList::Maybeboard => maybeboard_filter_open,
+            ActiveList::Suggested => suggested_filter_open,
+        };
+        if at_name {
+            components::open_at_name(open);
+        } else {
+            open.set(true);
+        }
     });
     use_card_row_keys_and(
         listed_cards,
@@ -150,12 +197,14 @@ pub fn CommanderMaybeboard() -> Element {
                             filter: maybeboard_filter,
                             filter_open: maybeboard_filter_open,
                             expanded_card,
+                            on_active: move |()| active_list.set(ActiveList::Maybeboard),
                         }
                         SuggestedPanel {
                             list: suggestions,
                             filter: suggested_filter,
                             filter_open: suggested_filter_open,
                             expanded_card,
+                            on_active: move |()| active_list.set(ActiveList::Suggested),
                         }
                     }
                 }
@@ -192,6 +241,36 @@ mod tests {
                 screen_key(&key) == Some(ScreenKey::FilterByName),
                 shortcuts::card_key(&key) == Some(CardKey::FilterByName),
                 "{key}"
+            );
+        }
+    }
+
+    #[test]
+    fn f_and_slash_open_the_filter_of_the_list_the_user_is_in() {
+        assert_eq!(
+            ActiveList::default(),
+            ActiveList::Maybeboard,
+            "before any touch"
+        );
+        for list in [ActiveList::Maybeboard, ActiveList::Suggested] {
+            assert_eq!(
+                filter_opened(ScreenKey::Filter, list),
+                Some(FilterOpen {
+                    list,
+                    at_name: false
+                })
+            );
+            assert_eq!(
+                filter_opened(ScreenKey::FilterByName, list),
+                Some(FilterOpen {
+                    list,
+                    at_name: true
+                })
+            );
+            assert_eq!(
+                filter_opened(ScreenKey::QuickAdd, list),
+                None,
+                "q is Maybeboard's"
             );
         }
     }

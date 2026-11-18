@@ -121,7 +121,8 @@ impl SavedList {
 /// The Maybeboard list over `entries`, the screen's copy of the saved
 /// commanders, narrowed by its own `filter`, which its console's funnel
 /// opens through `filter_open`. A row opens into
-/// `expanded_card`, which the screen's card keys share.
+/// `expanded_card`, which the screen's card keys share. A touch in the list,
+/// or the keyboard cursor moving into it, calls `on_active`.
 #[component]
 #[expect(
     clippy::wildcard_enum_match_arm,
@@ -132,6 +133,7 @@ pub(super) fn MaybeboardPanel(
     filter: Signal<CardQueryBuilder>,
     filter_open: Signal<bool>,
     expanded_card: Signal<Option<Uuid>>,
+    on_active: EventHandler<()>,
 ) -> Element {
     let navigator = use_navigator();
     let session: Signal<Option<Session>> = use_context();
@@ -381,6 +383,9 @@ pub(super) fn MaybeboardPanel(
     rsx! {
             div {
                 class: "web-commanders-list",
+                // A touch or the keyboard cursor in the list makes it the one the filter keys act on.
+                onpointerdown: move |_| on_active.call(()),
+                onfocusin: move |_| on_active.call(()),
                 div { class: "flex-col web-maybeboard",
                     if is_loading() {
                         div { class: "chip-row",

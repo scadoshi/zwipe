@@ -1,7 +1,6 @@
-//! The Commanders screen's Suggested list: Playstyle's suggested commanders,
-//! drawn with Playstyle's own fold, Swipe and Clear skips, the Show row over
-//! the fold on a wide window and inside it below the breakpoint, with the
-//! list's own filter beside it.
+//! The Commanders screen's Suggested list: the suggested commanders with their
+//! Swipe and Clear skips, the console (the Show row and the list's own
+//! filter) over the list at every width.
 
 use components::{Chip, DangerZoneAction};
 use dioxus::prelude::*;
@@ -11,7 +10,6 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use super::list_filter::ListFilterButton;
 use crate::inbound::cards::card_row::ShowRowArt;
 use crate::inbound::chrome::ghost::{GhostShowRow, GhostText};
-use crate::inbound::chrome::media::use_wide;
 use crate::inbound::screens::playstyle::{
     ShowIdentityChips, SuggestedFold, SuggestedOverlays, Suggestions,
 };
@@ -21,17 +19,18 @@ const LIST_TITLE: &str = "Suggested";
 
 /// The Suggested list over the screen's `list`, narrowed by its own `filter`, which its console's
 /// funnel opens through `filter_open`; its rows open into `expanded_card`. Its Show row's Art chip
-/// shows or hides this list's art only.
+/// shows or hides this list's art only. A touch in the list, or the keyboard cursor moving into
+/// it, calls `on_active`.
 #[component]
 pub(super) fn SuggestedPanel(
     list: Suggestions,
     filter: Signal<CardQueryBuilder>,
     filter_open: Signal<bool>,
     expanded_card: Signal<Option<Uuid>>,
+    on_active: EventHandler<()>,
 ) -> Element {
     let mut show_row_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_row_art));
-    let wide = use_wide();
     let Suggestions {
         deck_count,
         is_loading,
@@ -54,7 +53,12 @@ pub(super) fn SuggestedPanel(
         }
     };
     rsx! {
-        div { class: "web-commanders-list web-commanders-suggested", "data-cursor-list": "",
+        div {
+            class: "web-commanders-list web-commanders-suggested",
+            "data-cursor-list": "",
+            // A touch or the keyboard cursor in the list makes it the one the filter keys act on.
+            onpointerdown: move |_| on_active.call(()),
+            onfocusin: move |_| on_active.call(()),
             div { class: "flex-col web-suggested",
                 if is_loading() {
                     GhostShowRow {}
@@ -76,10 +80,10 @@ pub(super) fn SuggestedPanel(
                         span { class: "chip-note", "Build a deck to see suggestions" }
                     }
                 } else {
-                    if wide() {
-                        div { class: "deck-controls", {show_chips.clone()} }
-                    }
-                    SuggestedFold { list, title: LIST_TITLE, wide: wide(), show_chips, expanded_card }
+                    // The console sits over the list at every width, as Staples' and the
+                    // Maybeboard's do.
+                    div { class: "deck-controls", {show_chips} }
+                    SuggestedFold { list, title: LIST_TITLE, expanded_card }
                     DangerZoneAction {
                         label: "Clear skips",
                         button: "Clear",

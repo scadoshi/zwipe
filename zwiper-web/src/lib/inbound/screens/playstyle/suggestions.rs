@@ -388,15 +388,13 @@ pub(crate) fn use_suggestions(filter: Option<Signal<CardQueryBuilder>>) -> Sugge
     }
 }
 
-/// The list's fold, titled `title`: Swipe and the list's `?` in its header, the Show row
-/// (`show_chips`) inside it below the breakpoint (`!wide`; a wide window draws it over the fold),
-/// the empty lines and the first ten rows, each expanding into `expanded_card`.
+/// The list's fold, titled `title`: Swipe and the list's `?` in its header, the empty lines and
+/// the first ten rows, each expanding into `expanded_card`. Its controls sit above it, in the
+/// screen's console.
 #[component]
 pub(crate) fn SuggestedFold(
     list: Suggestions,
     title: &'static str,
-    wide: bool,
-    show_chips: Element,
     expanded_card: Signal<Option<Uuid>>,
 ) -> Element {
     let Suggestions {
@@ -425,9 +423,6 @@ pub(crate) fn SuggestedFold(
                 }
                 InfoButton { topic: HintTopic::SuggestionList }
             },
-            if !wide {
-                div { class: "web-card-group-filters", {show_chips} }
-            }
             if !has_entries {
                 div { class: "activity-total activity-total-group",
                     span { class: "chip-note", "No suggestions right now" }
