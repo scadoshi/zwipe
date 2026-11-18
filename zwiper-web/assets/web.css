@@ -2937,3 +2937,16 @@ body {
         transition: none;
     }
 }
+
+/* The command zone's typeahead (deck form) sits in the form's flow under its field, at every
+   width: the rows below move down while it shows, so it covers no label, its own or the next
+   field's. */
+.search-float-anchor.search-float-flow {
+    height: auto;
+}
+
+.search-float-flow > .search-float-results {
+    position: static;
+    margin-bottom: 0;
+    margin-top: var(--space-2);
+}
