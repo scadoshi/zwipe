@@ -2650,6 +2650,46 @@ body {
     }
 }
 
+/* Collection's list under the import: the search row, then the list panel,
+   a panel gap apart, the column's full width. */
+.collection-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* The list panel runs the column's width, as Commander maybeboard's does. */
+.collection-list > .card-group {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+@media (min-width: 900px) {
+    /* The search field stops at a field's width, as the file field does. */
+    .collection-list > .chip-row .input-clear-wrap {
+        flex: 0 1 var(--web-field-max);
+        width: var(--web-field-max);
+        max-width: 100%;
+    }
+}
+
+/* Below the breakpoint the list, not the import above it, clears the
+   floating dock. */
+@media (max-width: 899px) {
+    .web-import-body.container-sm:has(+ .collection-list) {
+        padding-bottom: 0;
+    }
+
+    .collection-list {
+        padding: 0 var(--space-4) 6rem;
+    }
+}
+
 /* ---- Deck view ---- */
 
 /* Below the breakpoint the page is the app's one stack, its end clear of

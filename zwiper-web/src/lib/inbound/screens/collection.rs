@@ -3,7 +3,7 @@
 //!
 //! Laid out as deck Import is: the Mode chips and their line on top, the file field in a panel,
 //! the results beside it on a wide window, and the import as the dock's checkmark. A replace asks
-//! first.
+//! first. The collection's own list follows, [`CollectionList`].
 
 use components::icons::{CHECK, DockIcon};
 use components::{AlertDialog, Chip, DialogAction};
@@ -19,6 +19,7 @@ use zwipe_ui::telemetry::vocabulary::Screen;
 use crate::inbound::chrome::authed::{Authed, use_authed};
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::collection::CollectionCache;
+use crate::inbound::screens::collection_list::CollectionList;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
 
@@ -191,6 +192,7 @@ pub fn Collection() -> Element {
                             }
                         }
                     }
+                    CollectionList {}
                 }
             }
             div { class: "action-dock action-dock-right",
