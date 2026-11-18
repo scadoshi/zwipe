@@ -210,8 +210,13 @@ fn malformed(error: &csv::Error) -> ImportCollectionError {
     }
 }
 
-/// Turns down a record holding a cell past [`MAX_CELL_CHARS`].
+/// Turns down a record holding a cell with a line break in it, or a cell past
+/// [`MAX_CELL_CHARS`]. Neither app writes a line break inside a cell, so one means a quote that
+/// never closed and ran on through the rows after it.
 fn check_cells(record: &StringRecord, line: u64) -> Result<(), ImportCollectionError> {
+    if record.iter().any(|cell| cell.contains(['\n', '\r'])) {
+        return Err(ImportCollectionError::Malformed { line });
+    }
     if record
         .iter()
         .any(|cell| cell.chars().count() > MAX_CELL_CHARS)
@@ -395,6 +400,17 @@ Meren of Clan Nel Toth,TDC,Tarkir: Dragonstorm Commander,297,foil,mythic,2,10463
             panic!("{export:?}")
         };
         assert_eq!(row.name.as_deref(), Some("Sol Ring"));
+    }
+
+    #[test]
+    fn an_unclosed_quote_turns_the_file_down_instead_of_swallowing_rows() {
+        let csv = "Quantity,Name,Finish,Condition,Date Added,Language,Purchase Price,Tags,Edition Name,Edition Code,Multiverse Id,Scryfall ID,Collector Number
+1,Sol Ring,Normal,NM,,EN,,,x,c21,,,263
+1,\"Unclosed,Normal,NM,,EN,,,x,c21,,,1
+1,Arcane Signet,Normal,NM,,EN,,,x,c21,,,234
+1,Mind Stone,Normal,NM,,EN,,,x,c21,,,250
+";
+        assert_eq!(read(csv), Err(ImportCollectionError::Malformed { line: 3 }));
     }
 
     #[test]
