@@ -108,15 +108,56 @@ fn PickerBody(search_id: &'static str, search_key: bool, children: Element) -> E
     }
 }
 
+/// Records on a text field the text it holds as Enter goes down, in the capture phase, ahead of
+/// every handler: in the app the field's events reach the app one at a time, and a draw of an
+/// older query can land in the field between the key and the read. Installed once per page.
+const ENTER_TEXT_JS: &str = "if (!window.__zwipeEnterText) { window.__zwipeEnterText = true; document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target instanceof HTMLInputElement) { e.target.dataset.enterText = e.target.value; } }, true); }";
+
+/// Sends the text the field with id `id` held as Enter went down ([`ENTER_TEXT_JS`]), once, else
+/// its text now, or nothing when the field is gone.
+fn field_value_js(id: &str) -> String {
+    format!(
+        "(() => {{ const el = document.getElementById({id:?}); if (!el) {{ dioxus.send(null); return; }} const text = el.dataset.enterText ?? el.value; delete el.dataset.enterText; dioxus.send(text); }})();"
+    )
+}
+
+/// Sets the text of the field with id `id` to the text the app sends next, unless it holds it.
+/// It waits at the script's top level: the app closes an eval's channel once the script returns.
+fn write_field_js(id: &str) -> String {
+    format!(
+        "const text = await dioxus.recv(); const el = document.getElementById({id:?}); if (el && el.value !== text) el.value = text;"
+    )
+}
+
 /// The search every picker leads with: its `Search` label chip on the left and the filter's
 /// compact field on the same line, as Quick add's row, the field's `×` easing in as text is
-/// typed.
+/// typed. The field's text is the DOM's: typing changes the query, and no draw writes the field
+/// back, so a draw of an older query can't take letters out of it. The app writes the field only
+/// when the query changes another way (a clear, or an opening that starts it with text). Enter
+/// in the field calls `on_enter` with the field's text as it was when the key went down, which
+/// the query takes on first: Go can land before the last keystroke reaches the query, so the
+/// picker reads its top match from that text, not the grid last drawn.
 #[component]
 pub fn PickerSearch(
     id: &'static str,
     placeholder: &'static str,
     mut query: Signal<String>,
+    #[props(default)] on_enter: Option<EventHandler<String>>,
 ) -> Element {
+    use_hook(|| {
+        document::eval(ENTER_TEXT_JS);
+    });
+    // The text the field holds as far as the app knows: what it typed, or what the app last
+    // wrote. The field starts empty.
+    let mut shown = use_signal(String::new);
+    use_effect(move || {
+        let text = query();
+        if *shown.peek() != text {
+            shown.set(text.clone());
+            let field = document::eval(&write_field_js(id));
+            let _ = field.send(text);
+        }
+    });
     rsx! {
         div { class: "chip-row",
             label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: id, "Search" }
@@ -128,13 +169,123 @@ pub fn PickerSearch(
                     id,
                     r#type: "text",
                     placeholder,
-                    value: "{query}",
                     autocapitalize: "none",
                     autocorrect: "off",
                     spellcheck: "false",
-                    oninput: move |event| query.set(event.value()),
+                    oninput: move |event| {
+                        let typed = event.value();
+                        shown.set(typed.clone());
+                        query.set(typed);
+                    },
+                    onkeydown: move |event| {
+                        if event.key() == Key::Enter && !event.is_composing()
+                            && let Some(on_enter) = on_enter
+                        {
+                            event.prevent_default();
+                            spawn(async move {
+                                let mut field = document::eval(&field_value_js(id));
+                                let typed = match field.recv::<Option<String>>().await {
+                                    Ok(Some(typed)) => typed,
+                                    _ => query.peek().clone(),
+                                };
+                                if *query.peek() != typed {
+                                    shown.set(typed.clone());
+                                    query.set(typed.clone());
+                                }
+                                on_enter.call(typed);
+                            });
+                        }
+                    },
                 }
             }
         }
+    }
+}
+
+/// One choice in a picker's grid, marked as the one Enter acts on while `target`, which the
+/// stylesheet shows while the search has focus. The wrapper takes no box of its own.
+#[component]
+pub fn PickerChoice(target: bool, children: Element) -> Element {
+    rsx! {
+        span { class: if target { "picker-choice enter-target" } else { "picker-choice" }, {children} }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[component]
+    fn Typed() -> Element {
+        let query = use_signal(|| "draw".to_owned());
+        rsx! {
+            PickerSearch { id: "test-search", placeholder: "Search", query }
+        }
+    }
+
+    /// The field's text is the DOM's: no draw writes it, so a draw of an older query that lands
+    /// while typing can't take letters back out of the field.
+    #[test]
+    fn no_draw_writes_the_field_s_text() {
+        let mut dom = VirtualDom::new(Typed);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(html.contains("id=\"test-search\""), "{html}");
+        assert!(
+            !html.contains("value="),
+            "the field carries no value attribute: {html}"
+        );
+    }
+
+    /// The app runs an eval's script as an async function and closes its channel when that
+    /// function returns, so a clear sent to a script that waits inside a nested function finds
+    /// the channel closed and the field keeps its text. The write waits at the script's top level.
+    #[test]
+    fn the_write_waits_for_the_app_s_text_at_the_top_level() {
+        let js = write_field_js("oracle-tag-search");
+        assert!(js.starts_with("const text = await dioxus.recv();"), "{js}");
+        assert!(
+            !js.contains("=>") && !js.contains("function"),
+            "no nested function the eval returns ahead of: {js}"
+        );
+        assert!(
+            js.contains(r#"document.getElementById("oracle-tag-search")"#),
+            "{js}"
+        );
+    }
+
+    /// Go can land in the same instant as the typing, before the field's text reaches the
+    /// query: Enter reads the field itself.
+    #[test]
+    fn enter_reads_the_field_s_text_as_typed() {
+        let js = field_value_js("send-to-search");
+        assert!(
+            js.contains(r#"document.getElementById("send-to-search")"#),
+            "{js}"
+        );
+        assert!(js.contains(".value"), "{js}");
+    }
+
+    /// In the app the field can be drawn back to an older query between the key and the read:
+    /// Enter takes the text the field held as the key went down, recorded before any handler.
+    #[test]
+    fn enter_takes_the_text_recorded_as_the_key_went_down() {
+        let record = ENTER_TEXT_JS;
+        assert!(record.contains("addEventListener('keydown'"), "{record}");
+        assert!(
+            record.contains("}, true);"),
+            "a capture listener, ahead of the app's: {record}"
+        );
+        assert!(
+            record.contains("dataset.enterText = e.target.value"),
+            "{record}"
+        );
+        let read = field_value_js("format-search");
+        let recorded = read
+            .find("dataset.enterText")
+            .expect("reads the recorded text");
+        let live = read.find(".value").expect("falls back to the field");
+        assert!(recorded < live, "the recorded text comes first: {read}");
+        assert!(read.contains("delete"), "a recording is read once: {read}");
     }
 }

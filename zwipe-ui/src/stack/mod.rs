@@ -320,14 +320,19 @@ impl<A> CardStack<A> {
         self.kept = 0;
     }
 
-    /// Drops the card under the cursor so the next one slides in. Does nothing past the end.
-    pub fn remove_current(&mut self) {
+    /// Drops the card under a cycling stack's cursor so the next one slides in, wrapping to the
+    /// first card when it was the last, as [`CardStack::advance_wrapping`] does. Does nothing past
+    /// the end.
+    pub fn remove_current_wrapping(&mut self) {
         if self.index < self.cards.len() {
             self.cards.remove(self.index);
         }
+        if self.index >= self.cards.len() {
+            self.index = 0;
+        }
     }
 
-    /// Puts a card back under the cursor, the undo of [`CardStack::remove_current`].
+    /// Puts a card back under the cursor, the undo of [`CardStack::remove_current_wrapping`].
     pub fn insert_current(&mut self, card: Card) {
         let at = self.index.min(self.cards.len());
         self.cards.insert(at, card);
@@ -535,12 +540,30 @@ mod tests {
         let mut stack: CardStack<RemoveAction> = CardStack::default();
         stack.replace(vec![card("A"), card("B")]);
         let a = stack.current_wrapping().unwrap().clone();
-        stack.remove_current();
+        stack.remove_current_wrapping();
         assert_eq!(name(stack.current_wrapping()), Some("B"));
         stack.insert_current(a);
         assert_eq!(name(stack.current_wrapping()), Some("A"));
         stack.replace_current(card("Z"));
         assert_eq!(name(stack.current_wrapping()), Some("Z"));
+    }
+
+    #[test]
+    fn removing_the_last_card_wraps_to_the_first() {
+        let mut stack: CardStack<RemoveAction> = CardStack::default();
+        stack.replace(vec![card("A"), card("B")]);
+        stack.advance_wrapping();
+        stack.remove_current_wrapping();
+        assert_eq!(stack.index(), 0);
+        assert_eq!(
+            name(stack.window().first()),
+            Some("A"),
+            "the window draws it"
+        );
+        stack.remove_current_wrapping();
+        assert!(stack.is_empty());
+        assert_eq!(stack.index(), 0);
+        assert_eq!(stack.window().len(), 0, "nothing to draw");
     }
 
     #[test]
@@ -596,10 +619,18 @@ mod tests {
     fn retreat_after_removing_the_last_card_lands_in_range() {
         let mut stack = stack(&["a", "b", "c"]);
         stack.restore(stack.cards().to_vec(), 2, Vec::new());
-        stack.remove_current();
-        assert_eq!(stack.index(), 2, "one past the end after the removal");
+        stack.remove_current_wrapping();
+        assert_eq!(stack.index(), 0, "the removal wraps to the first card");
         assert!(stack.retreat_wrapping());
         assert_eq!(name(stack.current()), Some("b"));
+        let mut past: CardStack<AddAction> = CardStack::default();
+        past.restore(vec![card("a"), card("b")], 5, Vec::new());
+        assert!(past.retreat_wrapping());
+        assert_eq!(
+            name(past.current()),
+            Some("b"),
+            "a cursor past the end lands on the last"
+        );
         let mut empty: CardStack<AddAction> = CardStack::default();
         assert!(!empty.retreat_wrapping());
     }

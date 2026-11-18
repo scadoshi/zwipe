@@ -21,12 +21,13 @@ use crate::toast::{Toast, ToastKind};
 /// What Reset does on a host.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub enum ResetRule {
-    /// Back to the blank filter: the deck cards view and Remove.
+    /// Back to the blank filter, keeping the price currency: the deck cards view, Remove, the
+    /// commander maybeboard and Swipe select.
     #[default]
     Plain,
-    /// Add's search: back to the deck-context default, keeping synergy.
+    /// Add's search: back to the deck-context default, keeping synergy and the price currency.
     AddSearch(AddContext),
-    /// Add's maybeboard: back to blank, keeping synergy.
+    /// Add's maybeboard: back to blank, keeping synergy and the price currency.
     AddMaybeboard,
 }
 
@@ -155,11 +156,23 @@ impl FilterDraft {
             ApplyAction::RefuseEmpty => {
                 ApplyOutcome::Refused(Toast::quick(ToastKind::Warning, "Filter is already empty"))
             }
-            ApplyAction::NoChange | ApplyAction::Commit { cleared: false } => {
-                self.applied("Filter applied")
+            ApplyAction::NoChange | ApplyAction::Commit { .. } => {
+                if self.draft == self.reset_from(&self.snapshot) {
+                    self.applied("Filter cleared")
+                } else {
+                    self.applied("Filter applied")
+                }
             }
-            ApplyAction::Commit { cleared: true } => self.applied("Filter cleared"),
         }
+    }
+
+    /// What Reset would stage on this host over `filter`: `filter` itself when it already is
+    /// the host's default.
+    fn reset_from(&self, filter: &CardQueryBuilder) -> CardQueryBuilder {
+        let mut staged = filter.clone();
+        // A filter already at the default stays as it is.
+        let _ = reset_rule(&self.config.reset, &mut staged);
+        staged
     }
 
     /// The draft committed with a success toast.
@@ -179,15 +192,7 @@ impl FilterDraft {
 
     /// Reset: stages the host's default in the draft for Apply to commit.
     pub fn reset(&mut self) -> Toast {
-        let result = match &self.config.reset {
-            ResetRule::Plain => {
-                self.draft.clear();
-                Ok(())
-            }
-            ResetRule::AddSearch(context) => context.reset_search(&mut self.draft),
-            ResetRule::AddMaybeboard => super::reset_maybeboard(&mut self.draft),
-        };
-        match result {
+        match reset_rule(&self.config.reset, &mut self.draft) {
             Ok(()) => Toast::quick(ToastKind::Info, "Filter reset"),
             Err(AlreadyDefault) => Toast::quick(ToastKind::Warning, "Filter already at default"),
         }
@@ -255,6 +260,29 @@ impl FilterDraft {
     }
 }
 
+/// Applies `rule`'s Reset to `filter`.
+///
+/// # Errors
+///
+/// Returns [`AlreadyDefault`] when `filter` already is the rule's default.
+fn reset_rule(rule: &ResetRule, filter: &mut CardQueryBuilder) -> Result<(), AlreadyDefault> {
+    match rule {
+        ResetRule::Plain => {
+            let mut blank = CardQueryBuilder::default();
+            if let Some(currency) = filter.price_currency() {
+                blank.set_price_currency(currency);
+            }
+            if *filter == blank {
+                return Err(AlreadyDefault);
+            }
+            *filter = blank;
+            Ok(())
+        }
+        ResetRule::AddSearch(context) => context.reset_search(filter),
+        ResetRule::AddMaybeboard => super::reset_maybeboard(filter),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -293,6 +321,107 @@ mod tests {
             panic!("applies");
         };
         assert_eq!(toast.text, "Filter cleared");
+    }
+
+    /// Add's Reset goes back to the deck's default, which still narrows the search, and Apply
+    /// names that a clear as every other host does.
+    #[test]
+    fn apply_after_reset_on_add_says_cleared() {
+        use zwipe_core::domain::card::scryfall_data::colors::{Color, Colors};
+
+        let context = AddContext {
+            format: Some(Format::Commander),
+            colors: Some(Colors::from(vec![Color::Red])),
+            has_commander: true,
+            lands_at_target: false,
+        };
+        let mut narrowed = context.fresh_search();
+        narrowed.set_name_contains("goblin".to_owned());
+        let add = SheetConfig {
+            validate: true,
+            reset: ResetRule::AddSearch(context.clone()),
+            deck_format: Some(Format::Commander),
+            ..SheetConfig::default()
+        };
+        let maybeboard = SheetConfig {
+            reset: ResetRule::AddMaybeboard,
+            ..SheetConfig::default()
+        };
+        for config in [add, maybeboard] {
+            let mut draft = FilterDraft::new(&narrowed, config.clone());
+            assert_eq!(draft.reset().text, "Filter reset");
+            let ApplyOutcome::Applied { toast, .. } = draft.apply() else {
+                panic!("applies on {:?}", config.reset);
+            };
+            assert_eq!(toast.text, "Filter cleared", "{:?}", config.reset);
+        }
+
+        let config = SheetConfig {
+            reset: ResetRule::AddSearch(context.clone()),
+            ..SheetConfig::default()
+        };
+        let mut draft = FilterDraft::new(&context.fresh_search(), config);
+        draft.draft.set_name_contains("goblin".to_owned());
+        let ApplyOutcome::Applied { toast, .. } = draft.apply() else {
+            panic!("applies");
+        };
+        assert_eq!(toast.text, "Filter applied", "a narrowing isn't a clear");
+    }
+
+    /// A change Reset ignores, Synergy on Add or the price currency on a plain host, is an edit
+    /// like any other: Apply says applied, since the filter didn't go back to what Reset gives.
+    #[test]
+    fn a_synergy_or_currency_change_alone_says_applied() {
+        use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+
+        for reset in [
+            ResetRule::AddSearch(AddContext::default()),
+            ResetRule::AddMaybeboard,
+        ] {
+            let config = SheetConfig {
+                reset: reset.clone(),
+                ..SheetConfig::default()
+            };
+            let mut draft = FilterDraft::new(&CardQueryBuilder::default(), config);
+            draft.draft.set_synergy(true);
+            let ApplyOutcome::Applied { toast, .. } = draft.apply() else {
+                panic!("applies on {reset:?}");
+            };
+            assert_eq!(toast.text, "Filter applied", "{reset:?}");
+        }
+
+        let mut draft = FilterDraft::new(&CardQueryBuilder::default(), SheetConfig::default());
+        draft.draft.set_price_currency(PriceCurrency::Eur);
+        let ApplyOutcome::Applied { toast, .. } = draft.apply() else {
+            panic!("applies");
+        };
+        assert_eq!(toast.text, "Filter applied");
+    }
+
+    /// Reset on a plain host keeps the price currency, a display preference, and says so when
+    /// it has nothing to do, as Add's resets do.
+    #[test]
+    fn a_plain_reset_keeps_the_currency_and_names_a_reset_with_nothing_to_do() {
+        use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+
+        let mut filter = CardQueryBuilder::default();
+        filter.set_name_contains("bolt".to_owned());
+        filter.set_price_currency(PriceCurrency::Eur);
+        let mut draft = FilterDraft::new(&filter, SheetConfig::default());
+        assert_eq!(draft.reset().text, "Filter reset");
+        let mut want = CardQueryBuilder::default();
+        want.set_price_currency(PriceCurrency::Eur);
+        assert_eq!(draft.draft, want, "the currency stays");
+
+        assert_eq!(draft.reset().text, "Filter already at default");
+        assert_eq!(draft.draft, want, "a second reset changes nothing");
+        let ApplyOutcome::Applied { toast, .. } = draft.apply() else {
+            panic!("applies");
+        };
+        assert_eq!(toast.text, "Filter cleared");
+
+        let mut blank = FilterDraft::new(&CardQueryBuilder::default(), SheetConfig::default());
+        assert_eq!(blank.reset().text, "Filter already at default");
     }
 
     #[test]

@@ -35,6 +35,7 @@ cookie = { version = "0.18" }      # the refresh cookie's Max-Age type (cookie::
 tower = { version = "0.5" }
 tower-http = { version = "0.6", features = ["cors", "trace", "catch-panic", "limit", "timeout", "request-id", "util", "compression-gzip", "compression-br", "set-header"] }
 tower_governor = { version = "0.8" }
+governor = { version = "0.10" }
 tokio = { workspace = true }
 sqlx = { version = "0.9", features = ["runtime-tokio", "tls-rustls", "postgres", "chrono", "uuid", "json"] }
 sqlx-macros = { version = "0.9" }

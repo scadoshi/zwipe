@@ -35,6 +35,7 @@ Read-only usage reports you run against the production database, then paste the 
 | `errors.sql` | What's breaking for users in the field? Any contract drift? | After each release, then weekly |
 | `platforms.sql` | Who is on iOS, Android and the web: users, new users, usage and the signup funnel by platform | Weekly |
 | `zervice.sql` | Is the nightly job running, how long does it take, and what does it leave in the database? | Weekly, or after a sync looks off |
+| `totals_check.sql` | Why would the public lifetime totals on Home go down? The API's totals and their parts, the retire trigger, write statistics, the biggest accounts, and counter rows lower than their own records | When the totals look wrong |
 
 All of them are **read-only** (no writes, no locks) and print `── header ──` sections so the output is self-describing. Run any of them the same way:
 
