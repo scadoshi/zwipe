@@ -1,8 +1,8 @@
-//! The suggested commanders list both Playstyle and the Commanders screen
-//! show: [`use_suggestions`] loads and edits it, [`SuggestedFold`] draws it
+//! The suggested commanders, which the Commanders screen lists:
+//! [`use_suggestions`] loads and edits the list, [`SuggestedFold`] draws it
 //! with its Swipe and its rows, and [`SuggestedOverlays`] holds its Clear
-//! skips dialog and its Swipe select. Each screen draws the cell around the
-//! fold, the Show row's place and the Danger zone in its own layout.
+//! skips dialog and its Swipe select. The same load carries the builder
+//! profile Playstyle draws, which reads it through [`use_held`] alone.
 
 use std::collections::HashSet;
 
@@ -105,12 +105,16 @@ impl Suggestions {
 
 /// The held ranking's load: what it holds and the tickets that keep an old reply from landing.
 #[derive(Clone, Copy)]
-struct Held {
+pub(crate) struct Held {
     entries: Signal<Vec<HttpCommanderSuggestion>>,
-    deck_count: Signal<u32>,
-    profile: Signal<Option<HttpBuilderProfile>>,
-    is_loading: Signal<bool>,
-    load_failed: Signal<bool>,
+    /// The user's deck count; 0 before the first load.
+    pub(crate) deck_count: Signal<u32>,
+    /// The builder profile the load carries.
+    pub(crate) profile: Signal<Option<HttpBuilderProfile>>,
+    /// Whether the first load is still out.
+    pub(crate) is_loading: Signal<bool>,
+    /// Whether a load failed with nothing to show.
+    pub(crate) load_failed: Signal<bool>,
     reload: Signal<u32>,
     loads: Signal<Generation>,
     /// Whether the newest load's reply is still out.
@@ -128,7 +132,7 @@ impl Held {
 
 /// Loads the held ranking, 100 deep, again on every [`Held::refetch`]. Each load takes a ticket
 /// and only the newest one's reply lands.
-fn use_held() -> Held {
+pub(crate) fn use_held() -> Held {
     let authed = use_authed();
     let load = Held {
         entries: use_signal(Vec::new),
@@ -179,14 +183,9 @@ fn use_held() -> Held {
     load
 }
 
-/// The user's decks and Create deck from a suggestion: the create gate the deck list's Create
-/// shares, an unverified account having one deck at most.
-fn use_create_gate() -> (Signal<Option<Vec<DeckProfile>>>, Callback<Card>) {
-    let navigator = use_navigator();
-    let session: Signal<Option<Session>> = use_context();
-    let toast = use_toast();
+/// The user's decks, `None` until they load: quiet, so a failure leaves them unknown.
+pub(crate) fn use_deck_profiles() -> Signal<Option<Vec<DeckProfile>>> {
     let authed = use_authed();
-    let seed: CreateDeckSeed = use_context();
     let mut deck_profiles: Signal<Option<Vec<DeckProfile>>> = use_signal(|| None);
     use_hook(move || {
         spawn(async move {
@@ -198,6 +197,17 @@ fn use_create_gate() -> (Signal<Option<Vec<DeckProfile>>>, Callback<Card>) {
             deck_profiles.set(found);
         });
     });
+    deck_profiles
+}
+
+/// The user's decks and Create deck from a suggestion: the create gate the deck list's Create
+/// shares, an unverified account having one deck at most.
+fn use_create_gate() -> (Signal<Option<Vec<DeckProfile>>>, Callback<Card>) {
+    let navigator = use_navigator();
+    let session: Signal<Option<Session>> = use_context();
+    let toast = use_toast();
+    let seed: CreateDeckSeed = use_context();
+    let deck_profiles = use_deck_profiles();
     let at_deck_limit = move || {
         session().is_some_and(|s| {
             s.user.email_verified_at.is_none()

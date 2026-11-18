@@ -212,7 +212,7 @@ body {
 
 /* A screen with a floating dock ends its content a dock's height above the
    footer, so at the page's end the dock rests between the two. */
-.web-scroll-screen:has(> .web-site-footer):has(.action-dock:not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *), .web-dock-pair:not(:is(.swipe-bottom-row, .screen .screen) *)) > .screen-content {
+.web-scroll-screen:has(> .web-site-footer):has(.action-dock:not(:is(.swipe-bottom-row, .web-dock-pair, .web-list-console, .bottom-sheet, .screen .screen) *), .web-dock-pair:not(:is(.swipe-bottom-row, .screen .screen) *)) > .screen-content {
     padding-bottom: 5rem;
 }
 
@@ -228,7 +228,7 @@ body {
    sheet or an overlay screen. The docked details panel shrinks from its
    foot by as much, so it keeps ending above the docks. */
 @supports (animation-timeline: view()) {
-    .web-scroll-screen :is(.action-dock, .web-dock-pair, .swipe-bottom-row):not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *) {
+    .web-scroll-screen :is(.action-dock, .web-dock-pair, .swipe-bottom-row):not(:is(.swipe-bottom-row, .web-dock-pair, .web-list-console, .bottom-sheet, .screen .screen) *) {
         animation: footer-rise linear both;
         animation-timeline: --site-footer;
         animation-range: entry 0px entry 100vh;
@@ -2179,6 +2179,26 @@ body {
 
 /* ---- Commanders: the Maybeboard and Suggested columns ---- */
 
+/* A list's console row: its first control (Quick add, or the Show row) on the
+   left and the list's own filter on the right, the dock in the page's flow as
+   the swipe screens' bottom row holds one. */
+.web-list-console {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+}
+
+.web-list-console > :first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.web-list-console > .action-dock {
+    position: static;
+    flex: none;
+    margin: 0;
+}
+
 /* The app's column: the list's controls and the list. A wide window gives
    it the page's width, the list and Danger zone as full panels. */
 .web-maybeboard,
@@ -2198,16 +2218,16 @@ body {
 
     /* Quick add is as wide as its bar, as the deck page's is, so its results
        center and wrap under the field rather than across the page. */
-    .web-maybeboard > .quick-add {
+    .web-maybeboard .quick-add {
         width: fit-content;
         max-width: 100%;
     }
 
-    .web-maybeboard > .quick-add .input-clear-wrap:has(> #commander-maybeboard-search) {
+    .web-maybeboard .quick-add .input-clear-wrap:has(> #commander-maybeboard-search) {
         width: var(--web-field-max);
     }
 
-    .web-maybeboard > .quick-add > .quick-add-results {
+    .web-maybeboard .quick-add > .quick-add-results {
         contain: inline-size;
     }
 

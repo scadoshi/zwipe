@@ -1,12 +1,14 @@
 //! The Commanders screen's Suggested list: Playstyle's suggested commanders,
 //! drawn with Playstyle's own fold, Swipe and Clear skips, the Show row over
-//! the fold on a wide window and inside it below the breakpoint, narrowed by
-//! the screen's filter too.
+//! the fold on a wide window and inside it below the breakpoint, with the
+//! list's own filter beside it.
 
 use components::{Chip, DangerZoneAction};
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
+use super::list_filter::ListFilterButton;
 use crate::inbound::cards::card_row::ShowRowArt;
 use crate::inbound::chrome::ghost::{GhostShowRow, GhostText};
 use crate::inbound::chrome::media::use_wide;
@@ -17,10 +19,16 @@ use crate::inbound::screens::playstyle::{
 /// The list's header.
 const LIST_TITLE: &str = "Suggested";
 
-/// The Suggested list over the screen's `list`, its rows opening into `expanded_card`. Its Show
-/// row's Art chip shows or hides this list's art only.
+/// The Suggested list over the screen's `list`, narrowed by its own `filter`, which its console's
+/// funnel opens through `filter_open`; its rows open into `expanded_card`. Its Show row's Art chip
+/// shows or hides this list's art only.
 #[component]
-pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uuid>>) -> Element {
+pub(super) fn SuggestedPanel(
+    list: Suggestions,
+    filter: Signal<CardQueryBuilder>,
+    filter_open: Signal<bool>,
+    expanded_card: Signal<Option<Uuid>>,
+) -> Element {
     let mut show_row_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_row_art));
     let wide = use_wide();
@@ -32,13 +40,17 @@ pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uui
         identities,
         ..
     } = list;
+    // The console's Show row, then the list's own filter.
     let show_chips = rsx! {
-        ShowIdentityChips { active_identity, identities: identities(),
-            Chip {
-                selected: show_row_art(),
-                onclick: move |_| show_row_art.toggle(),
-                "Art"
+        div { class: "web-list-console",
+            ShowIdentityChips { active_identity, identities: identities(),
+                Chip {
+                    selected: show_row_art(),
+                    onclick: move |_| show_row_art.toggle(),
+                    "Art"
+                }
             }
+            ListFilterButton { filter, filter_open }
         }
     };
     rsx! {

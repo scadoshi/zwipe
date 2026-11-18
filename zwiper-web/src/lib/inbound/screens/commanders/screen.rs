@@ -1,26 +1,23 @@
 //! The Commanders screen: [`MaybeboardPanel`] and [`SuggestedPanel`] in the
 //! page grammar's two columns on a wide window, Maybeboard on the left, and
-//! one after the other below the breakpoint. The dock's Filter is the
-//! screen's: what it sets narrows both lists, and each list keeps its own
-//! Show row on top of that. The card keys, the cursor, the hover image, the
+//! one after the other below the breakpoint. Each list has its own filter,
+//! the funnel in its console, over its own Show row. The card keys, the cursor, the hover image, the
 //! image and Printings overlays and one open row are the screen's too, over
 //! both lists' cards.
 
 use components::deck_cursor::use_card_list_cursor;
 use components::keys::focus_by_id;
-use components::{ActionDock, DockFilter, HoverStackHost, use_hover_stack};
+use components::{HoverStackHost, use_hover_stack};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_ui::filter;
-use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::screens::playstyle as suggested_model;
 use zwipe_ui::telemetry::vocabulary::Screen;
 
+use super::list_filter::ListFilterSheet;
 use super::maybeboard::{MaybeboardPanel, QUICK_ADD_ID};
 use super::suggested::SuggestedPanel;
-use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::cards::card_row::{CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::row_keys::use_card_row_keys_and;
@@ -39,14 +36,14 @@ pub const TITLE: &str = "Commanders";
 enum ScreenKey {
     /// Focuses the Maybeboard's Quick add.
     QuickAdd,
-    /// Opens the filter.
+    /// Opens the Maybeboard's filter.
     Filter,
-    /// Opens the filter at its Name section, the name field focused.
+    /// Opens the Maybeboard's filter at its Name section, the name field focused.
     FilterByName,
 }
 
-/// The screen action `key` stands for: `q` Quick add, `f` the filter and `/` the filter at its name
-/// field ([`shortcuts::card_key`]).
+/// The screen action `key` stands for: `q` Quick add, `f` the Maybeboard's filter and `/` that
+/// filter at its name field ([`shortcuts::card_key`]).
 fn screen_key(key: &str) -> Option<ScreenKey> {
     match shortcuts::card_key(key) {
         Some(CardKey::Filter) => Some(ScreenKey::Filter),
@@ -62,8 +59,11 @@ fn screen_key(key: &str) -> Option<ScreenKey> {
 pub fn CommanderMaybeboard() -> Element {
     telemetry::use_telemetry_screen(Screen::CommanderMaybeboard);
     let hint_open = use_one_time_hint(OneTimeHint::CommanderMaybeboard);
-    let mut filter = use_signal(CardQueryBuilder::new);
-    let mut filter_open = use_signal(|| false);
+    // Each list's own filter, and whether its sheet is open.
+    let maybeboard_filter = use_signal(CardQueryBuilder::new);
+    let mut maybeboard_filter_open = use_signal(|| false);
+    let suggested_filter = use_signal(CardQueryBuilder::new);
+    let suggested_filter_open = use_signal(|| false);
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
     let hover_stack = use_hover_stack();
@@ -72,7 +72,7 @@ pub fn CommanderMaybeboard() -> Element {
 
     // The saved commanders, which the Maybeboard list loads and edits, and the suggestions.
     let mut saved: Signal<Vec<Card>> = use_signal(Vec::new);
-    let suggestions = use_suggestions(Some(filter));
+    let suggestions = use_suggestions(Some(suggested_filter));
     let mut held = suggestions.entries;
 
     // Every card on the screen, which the card keys act on.
@@ -84,8 +84,8 @@ pub fn CommanderMaybeboard() -> Element {
     });
     let screen_keys = Callback::new(move |key: String| match screen_key(&key) {
         Some(ScreenKey::QuickAdd) => focus_by_id(QUICK_ADD_ID),
-        Some(ScreenKey::Filter) => filter_open.set(true),
-        Some(ScreenKey::FilterByName) => components::open_at_name(filter_open),
+        Some(ScreenKey::Filter) => maybeboard_filter_open.set(true),
+        Some(ScreenKey::FilterByName) => components::open_at_name(maybeboard_filter_open),
         None => {}
     });
     use_card_row_keys_and(
@@ -145,29 +145,25 @@ pub fn CommanderMaybeboard() -> Element {
                 onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
                 div { class: "web-page web-commanders content-enter",
                     div { class: "web-columns",
-                        MaybeboardPanel { entries: saved, filter, expanded_card }
-                        SuggestedPanel { list: suggestions, expanded_card }
+                        MaybeboardPanel {
+                            entries: saved,
+                            filter: maybeboard_filter,
+                            filter_open: maybeboard_filter_open,
+                            expanded_card,
+                        }
+                        SuggestedPanel {
+                            list: suggestions,
+                            filter: suggested_filter,
+                            filter_open: suggested_filter_open,
+                            expanded_card,
+                        }
                     }
-                }
-            }
-            // Filter, the screen's action, floats at the bottom right as the
-            // dock's funnel, its dot on while a filter is set.
-            ActionDock {
-                DockFilter {
-                    label: "Filter",
-                    dot: filter::shows_dot(&filter.read()),
-                    onclick: move |()| filter_open.set(true),
                 }
             }
         }
         OneTimeHintDialog { hint: OneTimeHint::CommanderMaybeboard, open: hint_open }
-        CardFilterPanel {
-            open: filter_open,
-            filter,
-            config: SheetConfig::default(),
-            quiet_reset: true,
-            on_apply: move |applied: CardQueryBuilder| filter.set(applied),
-        }
+        ListFilterSheet { filter: maybeboard_filter, filter_open: maybeboard_filter_open }
+        ListFilterSheet { filter: suggested_filter, filter_open: suggested_filter_open }
         HoverStackHost { stack: hover_stack }
         CardOverlaysHost {
             overlays,

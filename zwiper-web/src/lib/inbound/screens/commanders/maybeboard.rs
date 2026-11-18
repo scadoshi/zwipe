@@ -1,9 +1,9 @@
 //! The Commanders screen's Maybeboard list: the commanders a user saved for
 //! later, with Quick add by name, the Show row's color pips, the Sort row,
-//! and Create deck or Remove on each. The screen's filter, which it shares
-//! with the Suggested list, narrows it too.
+//! and Create deck or Remove on each. Its own filter, the funnel beside Quick
+//! add, narrows it too.
 //!
-//! `q` focuses Quick add, `/` opens the screen's filter at its name, and ↑
+//! `q` focuses Quick add, `/` opens this list's filter at its name, and ↑
 //! and ↓ move through Quick add's result chips with Enter adding the
 //! highlighted one. Swipe sits in the list's header and Clear maybeboard is
 //! the Danger zone panel under the list.
@@ -28,6 +28,7 @@ use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::screens::deck_list;
 use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
 
+use super::list_filter::ListFilterButton;
 use crate::domain::commander_maybeboard;
 use crate::inbound::caches::CreateDeckSeed;
 use crate::inbound::card_stores::CardStores;
@@ -118,7 +119,8 @@ impl SavedList {
 }
 
 /// The Maybeboard list over `entries`, the screen's copy of the saved
-/// commanders, narrowed by the screen's `filter`. A row opens into
+/// commanders, narrowed by its own `filter`, which its console's funnel
+/// opens through `filter_open`. A row opens into
 /// `expanded_card`, which the screen's card keys share.
 #[component]
 #[expect(
@@ -128,6 +130,7 @@ impl SavedList {
 pub(super) fn MaybeboardPanel(
     entries: Signal<Vec<Card>>,
     filter: Signal<CardQueryBuilder>,
+    filter_open: Signal<bool>,
     expanded_card: Signal<Option<Uuid>>,
 ) -> Element {
     let navigator = use_navigator();
@@ -409,6 +412,8 @@ pub(super) fn MaybeboardPanel(
                             GhostActionRow { label: 16, button: 5 }
                         }
                     } else {
+                        // The console's first row: Quick add, then the list's own filter.
+                        div { class: "web-list-console",
                         div { class: "quick-add",
                         div { class: "chip-row",
                             label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: QUICK_ADD_ID, "Quick add" }
@@ -473,6 +478,8 @@ pub(super) fn MaybeboardPanel(
                                 }
                             }
                         }
+                        }
+                        ListFilterButton { filter, filter_open }
                         }
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
