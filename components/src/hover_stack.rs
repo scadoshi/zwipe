@@ -5,7 +5,7 @@
 //! and holds it while the cursor stays on the row. Entering another row
 //! swaps the card at once; leaving the row fades it out over
 //! `PREVIEW_FADE_MS`, and a row that scrolls out from under a still cursor
-//! counts as left. An expanded row shows none. The card sits in the corner
+//! counts as left. While any row is open no row shows one. The card sits in the corner
 //! away from the cursor.
 //!
 //! A screen calls [`use_hover_stack`], mounts [`HoverStackHost`] outside
