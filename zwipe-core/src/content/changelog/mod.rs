@@ -61,7 +61,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "A card's + stops once the deck reaches its card limit, the commander counted",
         "Undoing a remove brings the card back with its flag",
         "On the web, Enter in any form field submits the form or shows what's missing",
-        "On the web, Shift+P opens Send to for the card",
+        "On the web, Shift+P opens Send to wherever a card's details offer it",
     ],
 }];
 
