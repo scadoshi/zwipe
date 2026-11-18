@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::domain::card::models::card_role::CardRole;
 use crate::domain::card::models::lookup::{CardTypeWord, LookupName, MAX_LOOKUP_CHIPS};
 use crate::domain::card::models::scryfall_data::colors::Color;
+use crate::domain::card::models::search_card::card_filter;
 
 /// The body of `POST /api/card/lookup`, a card search open to signed-out callers.
 ///
@@ -64,7 +65,9 @@ impl HttpCardLookup {
     /// # Errors
     ///
     /// [`InvalidCardLookup`] when a list holds more than [`MAX_LOOKUP_CHIPS`] values, or when
-    /// the name is empty and no chip is set.
+    /// no chip is set and the name has no letter or digit: the search drops punctuation before it
+    /// matches ([`card_filter::strip_punctuation`]), so a name of only punctuation matches every
+    /// card.
     pub fn try_new(
         name: LookupName,
         types: Vec<CardTypeWord>,
@@ -80,7 +83,8 @@ impl HttpCardLookup {
         if card_roles.len() > MAX_LOOKUP_CHIPS {
             return Err(InvalidCardLookup::TooManyRoles);
         }
-        if name.is_empty() && types.is_empty() && colors.is_empty() && card_roles.is_empty() {
+        let no_name = card_filter::strip_punctuation(name.as_str()).is_empty();
+        if no_name && types.is_empty() && colors.is_empty() && card_roles.is_empty() {
             return Err(InvalidCardLookup::Nothing);
         }
         let colors: BTreeSet<Color> = colors.into_iter().collect();
@@ -202,6 +206,25 @@ mod tests {
         assert!(
             nothing.contains("a lookup needs a name, a type, a color or a role"),
             "{nothing}"
+        );
+    }
+
+    #[test]
+    fn a_name_with_no_letter_or_digit_is_no_criterion() {
+        for name in ["%%%", "___", "--", "!?"] {
+            let refused = read(json!({ "name": name })).unwrap_err();
+            assert!(
+                refused.contains("a lookup needs a name, a type, a color or a role"),
+                "{name}: {refused}"
+            );
+        }
+        assert!(
+            read(json!({ "name": "%%%", "types": ["Elf"] })).is_ok(),
+            "a chip still makes it a lookup"
+        );
+        assert!(
+            read(json!({ "name": "B.F.M." })).is_ok(),
+            "punctuation around letters is a name"
         );
     }
 

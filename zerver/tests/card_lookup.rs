@@ -258,3 +258,19 @@ async fn a_body_over_4_kb_is_refused_before_it_is_read(pool: sqlx::PgPool) {
         .await;
     assert_eq!(status, StatusCode::OK, "a real lookup still fits");
 }
+
+#[sqlx::test]
+async fn a_name_of_only_punctuation_is_refused_rather_than_searching_everything(
+    pool: sqlx::PgPool,
+) {
+    let app = TestApp::new(pool.clone());
+    seed_cards(&pool, &[card("Lightning Bolt").mono("R")]).await;
+    let (status, _) = app
+        .post(CARD_LOOKUP_ROUTE, json!({ "name": "%%%" }), None)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "it would match every card"
+    );
+}
