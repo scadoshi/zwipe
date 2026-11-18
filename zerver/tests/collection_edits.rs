@@ -12,10 +12,17 @@
 
 mod common;
 
+use std::net::SocketAddr;
+
 use axum::http::StatusCode;
 use common::{CardFixture, TestApp, card, seed_cards};
 use serde_json::{Value, json};
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::collection::{CollectionPageSize, CollectionSearch, Finish, SetQuantity};
+use zwipe_core::http::contracts::collection::HttpSetCollectionCard;
+use zwipe_core::http::endpoints::collection::{GetCollection, SetCollectionCard};
 use zwipe_core::http::paths::{COLLECTION_CARDS_ROUTE, COLLECTION_ROUTE};
 
 /// A set call for `printing` in `finish`, with `extra` fields (condition, language) merged in.
@@ -450,4 +457,85 @@ async fn the_list_pages_by_name_and_searches_names_as_text(pool: sqlx::PgPool) {
         "no query: the first page of 50: {plain}"
     );
     assert_eq!(plain["total"], 5);
+}
+
+/// The list and the set call made through `zwipe-client`, against the router served on a local
+/// port, so the URL each is sent to is the one the client builds: the search, with `'`, `&` and
+/// a space in it, has to reach the route as its query.
+#[sqlx::test]
+async fn the_client_s_calls_reach_the_routes(pool: sqlx::PgPool) {
+    let vault = card("Lim-Dûl's Vault & Co");
+    let bolt = card("Lightning Bolt").mono("R");
+    seed_cards(&pool, &[vault.clone(), bolt.clone()]).await;
+    let app = TestApp::new(pool);
+    let session: Session =
+        serde_json::from_value(app.register_on("clientcall", None).await).unwrap();
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let service = app
+        .router
+        .clone()
+        .into_make_service_with_connect_info::<SocketAddr>();
+    tokio::spawn(async move { axum::serve(listener, service).await });
+    let client = ZwipeClient::new(format!("http://{address}").parse().unwrap());
+
+    for printing in [&vault, &bolt] {
+        let call = HttpSetCollectionCard {
+            scryfall_data_id: printing.id(),
+            finish: Finish::Foil,
+            condition: None,
+            language: None,
+            quantity: SetQuantity::new(2).unwrap(),
+        };
+        let reply = client
+            .call(SetCollectionCard(call), Some(&session))
+            .await
+            .unwrap();
+        assert!(reply.card.is_some(), "stored");
+    }
+
+    let page = client
+        .call(
+            GetCollection {
+                name: CollectionSearch::new("dûl's vault & co").unwrap(),
+                offset: 0,
+                limit: CollectionPageSize::new(1).unwrap(),
+            },
+            Some(&session),
+        )
+        .await
+        .unwrap();
+    assert_eq!(page.total, 1, "the search reached the route as its query");
+    let names: Vec<&str> = page
+        .cards
+        .iter()
+        .map(|row| row.card.scryfall_data.name.as_str())
+        .collect();
+    assert_eq!(names, ["Lim-Dûl's Vault & Co"]);
+
+    let every = client
+        .call(
+            GetCollection {
+                name: CollectionSearch::default(),
+                offset: 1,
+                limit: CollectionPageSize::new(1).unwrap(),
+            },
+            Some(&session),
+        )
+        .await
+        .unwrap();
+    assert_eq!(every.total, 2);
+    assert_eq!(
+        every.next_offset, None,
+        "offset 1 of 2 with 1 a page is the last"
+    );
+    assert_eq!(
+        every
+            .cards
+            .first()
+            .map(|row| row.card.scryfall_data.name.as_str()),
+        Some("Lim-Dûl's Vault & Co"),
+        "the offset reached the route too"
+    );
 }
