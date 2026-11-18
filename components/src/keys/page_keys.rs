@@ -7,13 +7,15 @@
 
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_ui::shortcuts;
 
 use crate::keys::guard;
 
 /// Calls `on_key` with each key (`KeyboardEvent.key`, such as `"/"` or
 /// `"a"`) pressed while this registration is the newest and no text field,
-/// dialog or sheet has focus. The browser's default for the key is kept
-/// unless `on_key` is registered for `/`, which never types into the page.
+/// dialog or sheet has focus. The browser's default for the key is kept,
+/// except for the keys that open Quick add and the filter's name box, which
+/// never type themselves into the field they open.
 pub fn use_page_keys(on_key: Callback<String>) {
     use_keys_under_guard(guard::guard_js(), on_key);
 }
@@ -33,10 +35,7 @@ pub fn use_page_keys_through(
 fn use_keys_under_guard(guard: String, on_key: Callback<String>) {
     let id = use_hook(Uuid::new_v4);
     use_hook(move || {
-        let script = PAGE_KEYS_JS
-            .replace("__KEY__", guard::PRESSED_KEY)
-            .replace("__ID__", &id.to_string())
-            .replace("__GUARD__", &guard);
+        let script = page_keys_js(&guard, id);
         spawn(async move {
             let mut keys = document::eval(&script);
             while let Ok(key) = keys.recv::<String>().await {
@@ -47,6 +46,19 @@ fn use_keys_under_guard(guard: String, on_key: Callback<String>) {
     use_drop(move || {
         document::eval(&PAGE_KEYS_DROP_JS.replace("__ID__", &id.to_string()));
     });
+}
+
+/// The keys that put focus in a text field (Quick add, the filter's name box). Their own input is
+/// held back, so the key never types itself into the field it opens.
+const FIELD_KEYS: [&str; 2] = [shortcuts::QUICK_ADD_KEY, shortcuts::FILTER_NAME_KEY];
+
+/// [`PAGE_KEYS_JS`] for registration `id` under `guard`.
+fn page_keys_js(guard: &str, id: Uuid) -> String {
+    PAGE_KEYS_JS
+        .replace("__KEY__", guard::PRESSED_KEY)
+        .replace("__ID__", &id.to_string())
+        .replace("__GUARD__", guard)
+        .replace("__FIELD_KEYS__", &format!("{FIELD_KEYS:?}"))
 }
 
 /// Calls `on_undo` for Ctrl+Z (Cmd+Z on a Mac) while this registration is
@@ -139,7 +151,7 @@ const onKey = (e) => {
     const stack = window.__zwipePageKeys;
     if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
     if (__KEY__.length !== 1 || !__GUARD__) return;
-    if (__KEY__ === '/') e.preventDefault();
+    if (__FIELD_KEYS__.includes(__KEY__)) e.preventDefault();
     dioxus.send(__KEY__);
 };
 window['__zwipePageKey__ID__'] = onKey;
@@ -177,3 +189,26 @@ if (onKey) document.removeEventListener('keydown', onKey);
 delete window['__zwipeUndoKey__ID__'];
 window.__zwipeUndoKeys = (window.__zwipeUndoKeys || []).filter((id) => id !== '__ID__');
 ";
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quick_add_and_filter_keys_never_type_into_the_field_they_open() {
+        let js = page_keys_js("true", Uuid::nil());
+        assert!(
+            js.contains(&format!(
+                "if ([\"{}\", \"{}\"].includes(",
+                shortcuts::QUICK_ADD_KEY,
+                shortcuts::FILTER_NAME_KEY
+            )),
+            "{js}"
+        );
+        assert_eq!(
+            js.matches("e.preventDefault()").count(),
+            1,
+            "every other key keeps the browser's default: {js}"
+        );
+    }
+}
