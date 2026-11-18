@@ -3,7 +3,7 @@
 //! them; a tap on a deck sends the card there.
 
 use uuid::Uuid;
-use zwipe_core::domain::deck::{Board, DeckProfile};
+use zwipe_core::domain::deck::{Board, DeckEntry, DeckProfile};
 
 /// The sheet's title, and the label of the button that opens it.
 pub const TITLE: &str = "Send to";
@@ -50,10 +50,23 @@ pub fn sent(deck: &str, board: Board) -> String {
 }
 
 /// The toast when `deck` already holds the card, naming the deck it went to rather than the
-/// one the user is on.
+/// one the user is on, and the board that holds it when that is known. A deck holds one copy
+/// of a card across its boards.
 #[must_use]
-pub fn already_in(deck: &str) -> String {
-    format!("Already in {deck}")
+pub fn already_in(deck: &str, board: Option<Board>) -> String {
+    match board {
+        Some(board) => format!("Already in {deck}'s {}", board_name(board)),
+        None => format!("Already in {deck}"),
+    }
+}
+
+/// The board of `entries` that holds the card with `oracle_id`, if any.
+#[must_use]
+pub fn holding_board(entries: &[DeckEntry], oracle_id: Uuid) -> Option<Board> {
+    entries
+        .iter()
+        .find(|e| e.deck_card.oracle_id == oracle_id)
+        .map(|e| e.deck_card.board)
 }
 
 /// A deck the card can go to.
@@ -128,10 +141,45 @@ mod tests {
     }
 
     #[test]
-    fn a_card_the_deck_already_holds_names_that_deck() {
+    fn a_card_the_deck_already_holds_names_that_deck_and_its_board() {
         assert_eq!(
-            already_in("Surfer 399 Isshin"),
-            "Already in Surfer 399 Isshin"
+            already_in("Krenko", Some(Board::Maybeboard)),
+            "Already in Krenko's maybeboard"
+        );
+        assert_eq!(
+            already_in("Krenko", Some(Board::Deck)),
+            "Already in Krenko's mainboard"
+        );
+        assert_eq!(
+            already_in("Krenko", Some(Board::Sideboard)),
+            "Already in Krenko's sideboard"
+        );
+        assert_eq!(
+            already_in("Surfer 399 Isshin", None),
+            "Already in Surfer 399 Isshin",
+            "the board unknown"
+        );
+    }
+
+    #[test]
+    fn the_board_holding_a_card_is_found_by_its_oracle_id() {
+        let held = crate::test_support::deck(
+            crate::test_support::deck_profile("Krenko"),
+            vec![
+                crate::test_support::card("Island"),
+                crate::test_support::card("Sol Ring"),
+            ],
+        );
+        let mut entries = held.entries;
+        let oracle = entries.get(1).map(|e| e.deck_card.oracle_id).unwrap();
+        if let Some(sol_ring) = entries.get_mut(1) {
+            sol_ring.deck_card.board = Board::Maybeboard;
+        }
+        assert_eq!(holding_board(&entries, oracle), Some(Board::Maybeboard));
+        assert_eq!(
+            holding_board(&entries, Uuid::nil()),
+            None,
+            "not in the deck"
         );
     }
 
