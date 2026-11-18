@@ -646,10 +646,8 @@ fn commanders_hint() -> HintContent {
             ]),
             bullet(vec![key("Quick add"), text(" saves a commander by name")]),
             bullet(vec![
-                key("Show"),
-                text(" and "),
                 icon_key(KeyIcon::Funnel),
-                text(" narrow each list on its own"),
+                text(" narrows both lists at once"),
             ]),
         ],
     )
