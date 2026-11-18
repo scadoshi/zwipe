@@ -18,6 +18,7 @@ use crate::inbound::http::AppState;
 use crate::inbound::http::handlers::{
     auth, card, changelog, client, deck, deck_card, health, metrics, user,
 };
+use crate::inbound::http::limiter_purge::{LIMITER_PURGE_EVERY, purging};
 use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor};
 
 /// Largest crash report body accepted, in bytes. A report is about 2 KB of
@@ -160,156 +161,171 @@ fn private_no_store_layer() -> SetResponseHeaderLayer<HeaderValue> {
 )]
 pub fn public_routes() -> Router<AppState> {
     // 5 req / 30s: tight limit, brute-force target
-    let login_config = Arc::new(
+    let login_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(6))
             .burst_size(5)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 5 req / 1hr: rarely needed legitimately
-    let register_config = Arc::new(
+    let register_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_mins(12))
             .burst_size(5)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 20 req / 1min: clients refresh on cold start
-    let refresh_config = Arc::new(
+    let refresh_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(3))
             .burst_size(20)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 5 req / 1hr per IP: password reset is rare
-    let forgot_password_config = Arc::new(
+    let forgot_password_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_mins(12))
             .burst_size(5)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 10 req / 1hr per IP: verify-email, confirm-email-change, reset-password and its check
-    let verify_reset_config = Arc::new(
+    let verify_reset_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(360))
             .burst_size(10)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 60 req / min per IP: card metadata is public and CF-cached, but a tight
     // limit guards the origin from someone bypassing CF to scrape directly.
-    let public_card_config = Arc::new(
+    let public_card_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(1))
             .burst_size(60)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // A burst of 10, then one every 3s per IP: each example page is a real card search, heavier
     // than the catalog reads, and Cloudflare caches repeat pages for an hour.
-    let public_examples_config = Arc::new(
+    let public_examples_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(3))
             .burst_size(10)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 30 req / 2s per IP: public marketing aggregates. CF cache absorbs most
     // traffic; this guards origin if someone bypasses CF or warms many POPs.
-    let public_marketing_config = Arc::new(
+    let public_marketing_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(2))
             .burst_size(30)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 30 req / 2s per IP: min-version gate poll. ~30-byte payload hit once a
     // minute per app; modest cap guards origin without risking lockout noise.
-    let public_client_config = Arc::new(
+    let public_client_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(2))
             .burst_size(30)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 30 req / 2s per IP: public changelog. Fetched once per app launch and
     // Cloudflare edge-caches it, so origin traffic is tiny; this guards the
     // origin if someone bypasses CF or warms many POPs.
-    let public_changelog_config = Arc::new(
+    let public_changelog_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(2))
             .burst_size(30)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 10 req / min per IP: pre-auth funnel events. A legitimate session
     // fires a handful ever (app opened, register viewed/submitted); this is
     // an unauthenticated write, so keep the row-spam ceiling low.
-    let anonymous_event_config = Arc::new(
+    let anonymous_event_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(6))
             .burst_size(10)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // Burst 2, then 1 req / min per IP: crash reports. A legitimate client
     // posts at most one per launch; this is an unauthenticated write that
     // inserts a row per call, so it gets the strictest limiter (the crash_id
     // upsert makes anything past it idempotent).
-    let crash_report_config = Arc::new(
+    let crash_report_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(60))
             .burst_size(2)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 30 req / 2s per IP: public shared-deck reads. A page load fetches once
     // and CF may cache briefly; this guards origin against token scanning.
-    let public_share_config = Arc::new(
+    let public_share_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(2))
             .burst_size(30)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 30 req / minute per IP, burst 10: shared decks' preview images. A
     // render costs ~100ms of CPU plus art fetches, so this sits inside the
     // share routes' own limit; Cloudflare's edge serves repeat requests, so
     // origin only sees a link's first unfurls.
-    let share_preview_config = Arc::new(
+    let share_preview_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(2))
             .burst_size(10)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 30 req / 2s per IP: health checks. Generous for frequent polling
     // (manual curls, uptime monitors) while capping unauthenticated floods,
     // notably /health/database which pings Postgres.
-    let health_config = Arc::new(
+    let health_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(2))
             .burst_size(30)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
 
     Router::new()
@@ -520,70 +536,77 @@ pub fn public_routes() -> Router<AppState> {
 )]
 pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
     // 500 req / 5min (~1.67/s avg): generous for swiping, keyed by user ID
-    let private_config = Arc::new(
+    let private_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_millis(600))
             .burst_size(500)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // burst 2, then 1 req/30min: account mutations are done once; 2 attempts covers typos
-    let sensitive_config = Arc::new(
+    let sensitive_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_mins(30))
             .burst_size(2)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // burst 20, then 1 req/10s: commander autocomplete needs headroom for fast typers
-    let card_search_config = Arc::new(
+    let card_search_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(10))
             .burst_size(20)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // burst 1, then 1 req/60s: resend verification: a fast multi-click sends
     // one email, the rest get 429. Window matches the client cooldown timer.
-    let resend_verification_config = Arc::new(
+    let resend_verification_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(60))
             .burst_size(1)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // The same for a pending email change's link, on its own budget so one
     // resend does not hold up the other.
-    let resend_email_change_config = Arc::new(
+    let resend_email_change_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(60))
             .burst_size(1)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 12 req/min: clients flush usage every ~30s; this gives ample headroom
-    let metrics_usage_config = Arc::new(
+    let metrics_usage_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(5))
             .burst_size(12)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // burst 5, then 1 req/min: each import is a fetch from Archidekt made
     // from this origin's address, so one user cannot spend its reputation.
-    let archidekt_import_config = Arc::new(
+    let archidekt_import_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(60))
             .burst_size(5)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
 
     Router::new()

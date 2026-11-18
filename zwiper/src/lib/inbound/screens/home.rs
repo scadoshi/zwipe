@@ -106,6 +106,11 @@ impl Caches {
         }
     }
 
+    /// Whether everybody's counters held were fetched this launch under a minute ago.
+    fn everybody_fresh(self) -> bool {
+        self.counts.peek().as_ref().is_some_and(|c| !c.is_stale())
+    }
+
     /// Whether the user's own counters held are theirs and under a minute
     /// old.
     fn mine_fresh(self, session: Option<&Session>) -> bool {
@@ -466,7 +471,8 @@ pub fn Home() -> Element {
                     scope,
                     ontoggle: move |()| {
                         let mine_fresh = caches.mine_fresh(session.peek().as_ref());
-                        driver.dispatch(Action::ToggleScope { mine_fresh });
+                        let everybody_fresh = caches.everybody_fresh();
+                        driver.dispatch(Action::ToggleScope { mine_fresh, everybody_fresh });
                     },
                     onactivity: move |()| driver.dispatch(Action::Activity),
                 }

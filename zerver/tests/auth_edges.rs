@@ -267,6 +267,81 @@ async fn lockout_is_per_address(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
+async fn an_ipv6_client_moving_inside_its_64_stays_locked_out(pool: sqlx::PgPool) {
+    use std::net::{IpAddr, SocketAddr};
+
+    use axum::http::Method;
+
+    let app = TestApp::new(pool);
+    let _ = app.register("victim").await;
+    let from = |ip: &str| SocketAddr::new(ip.parse::<IpAddr>().unwrap(), 50001);
+    let wrong = json!({ "identifier": "victim", "password": "WrongPass123!" });
+    let right = json!({ "identifier": "victim", "password": "TestPass123!" });
+
+    // Five wrong passwords, each from a new address in one /64: one client to the limiter and
+    // the lockout, so the five are the limiter's burst and each counts toward the lock.
+    for n in 1..=5 {
+        let (status, _) = app
+            .send_from(
+                from(&format!("2001:db8:1:2::{n}")),
+                Method::POST,
+                LOGIN_ROUTE,
+                Some(wrong.clone()),
+                None,
+            )
+            .await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "wrong password {n}");
+    }
+
+    // A sixth address in that /64 is the same client: past the limiter's burst it's refused
+    // before the password is read.
+    let (status, _) = app
+        .send_from(
+            from("2001:db8:1:2::99"),
+            Method::POST,
+            LOGIN_ROUTE,
+            Some(right.clone()),
+            None,
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "the /64 shares one limiter bucket"
+    );
+
+    // The next /64 is another client: the owner there logs in.
+    let (status, body) = app
+        .send_from(
+            from("2001:db8:1:3::1"),
+            Method::POST,
+            LOGIN_ROUTE,
+            Some(right.clone()),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "another /64 logs in: {body}");
+
+    // Once the limiter's burst refills, the /64 is still locked: the right password gets the
+    // wrong-password answer from any address in it.
+    tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+    let (status, _) = app
+        .send_from(
+            from("2001:db8:1:2:abcd::7"),
+            Method::POST,
+            LOGIN_ROUTE,
+            Some(right),
+            None,
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "the /64 stays locked from a new address"
+    );
+}
+
+#[sqlx::test]
 async fn session_insert_prunes_expired_and_caps(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (_, uid) = app.register("hoarder").await;

@@ -307,22 +307,49 @@ fn only_me_shows_the_users_own_counts_once_they_arrive() {
 #[test]
 fn toggling_saves_the_scope_and_asks_for_mine_unless_fresh() {
     let (mut state, _) = load(cold());
-    let effects = state.update(Action::ToggleScope { mine_fresh: false });
+    let effects = state.update(Action::ToggleScope {
+        mine_fresh: false,
+        everybody_fresh: false,
+    });
     let [Effect::SaveScope(Scope::OnlyMe), Effect::FetchMyCounts(_)] = effects.as_slice() else {
         panic!("to only me: {effects:?}");
     };
     assert_eq!(state.scope(), Scope::OnlyMe);
 
     assert_eq!(
-        state.update(Action::ToggleScope { mine_fresh: false }),
+        state.update(Action::ToggleScope {
+            mine_fresh: false,
+            everybody_fresh: true,
+        }),
         [Effect::SaveScope(Scope::Everybody)],
-        "everybody's counts are not asked for on a switch"
+        "a fresh copy of everybody's is enough"
     );
     assert_eq!(
-        state.update(Action::ToggleScope { mine_fresh: true }),
+        state.update(Action::ToggleScope {
+            mine_fresh: true,
+            everybody_fresh: false,
+        }),
         [Effect::SaveScope(Scope::OnlyMe)],
         "a fresh copy of mine is enough"
     );
+}
+
+/// Back on Everybody, a copy over a minute old is asked for again, as a Home load does, so the
+/// tag turns Live once the answer lands.
+#[test]
+fn switching_back_to_everybody_asks_for_a_stale_copy_once() {
+    let (mut state, _) = load(cold());
+    let _ = state.update(Action::ToggleScope {
+        mine_fresh: true,
+        everybody_fresh: false,
+    });
+    let effects = state.update(Action::ToggleScope {
+        mine_fresh: true,
+        everybody_fresh: false,
+    });
+    let [Effect::SaveScope(Scope::Everybody), Effect::FetchCounts(_)] = effects.as_slice() else {
+        panic!("to everybody with a stale copy: {effects:?}");
+    };
 }
 
 #[test]
@@ -332,7 +359,10 @@ fn toggling_signed_out_asks_for_nothing() {
         ..Cached::default()
     });
     assert_eq!(
-        state.update(Action::ToggleScope { mine_fresh: false }),
+        state.update(Action::ToggleScope {
+            mine_fresh: false,
+            everybody_fresh: true
+        }),
         [Effect::SaveScope(Scope::OnlyMe)]
     );
 }
@@ -340,10 +370,19 @@ fn toggling_signed_out_asks_for_nothing() {
 #[test]
 fn a_late_counts_reply_is_ignored() {
     let (mut state, _) = load(cold());
-    let effects = state.update(Action::ToggleScope { mine_fresh: false });
+    let effects = state.update(Action::ToggleScope {
+        mine_fresh: false,
+        everybody_fresh: true,
+    });
     let older = ticket_of(&effects, my_counts_ticket);
-    let _ = state.update(Action::ToggleScope { mine_fresh: false });
-    let _ = state.update(Action::ToggleScope { mine_fresh: false });
+    let _ = state.update(Action::ToggleScope {
+        mine_fresh: false,
+        everybody_fresh: true,
+    });
+    let _ = state.update(Action::ToggleScope {
+        mine_fresh: false,
+        everybody_fresh: true,
+    });
     let _ = state.update(Action::MyCountsLoaded {
         ticket: older,
         figures: figures(1),
