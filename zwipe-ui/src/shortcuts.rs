@@ -375,9 +375,29 @@ pub fn examples_groups() -> Vec<SheetGroup> {
 /// a card under Card. The cursor keeps `j` and `k`.
 #[must_use]
 pub fn card_rows_groups(layout: ListLayout) -> Vec<SheetGroup> {
+    sheet_groups(card_rows_keys(layout))
+}
+
+/// The Commander maybeboard's groups: a screen of card rows in one list ([`card_rows_groups`]),
+/// with the filter, the filter at its name and Quick add under Page.
+#[must_use]
+pub fn commander_maybeboard_groups() -> Vec<SheetGroup> {
+    sheet_groups(ScreenKeys {
+        page: vec![
+            (&["f"], "Filter"),
+            FILTER_NAME_ROW,
+            (&[QUICK_ADD_KEY], "Quick add"),
+        ],
+        ..card_rows_keys(ListLayout::One)
+    })
+}
+
+/// The keys of a screen of card rows laid out as `layout`: its cursor's moves, Enter and the keys
+/// that read a card.
+fn card_rows_keys(layout: ListLayout) -> ScreenKeys {
     let rows = card_rows_rows(layout);
     let find = |key: &str| rows.iter().copied().find(|row| row.0.contains(&key));
-    sheet_groups(ScreenKeys {
+    ScreenKeys {
         moves: ["↑", "j", "Home"]
             .iter()
             .filter_map(|key| find(key))
@@ -385,7 +405,7 @@ pub fn card_rows_groups(layout: ListLayout) -> Vec<SheetGroup> {
         open: find("Enter"),
         card: card_read_rows().to_vec(),
         ..ScreenKeys::default()
-    })
+    }
 }
 
 /// The keys that read a card under the cursor or open: Printings, Image, Flip and details. A deck
@@ -624,6 +644,31 @@ mod tests {
                 ("Card", vec!["p", "i", "v", "d"]),
             ])
         );
+    }
+
+    #[test]
+    fn the_commander_maybeboard_lists_its_filter_and_quick_add_keys() {
+        assert_eq!(
+            outline(&commander_maybeboard_groups())
+                .get(..3)
+                .map(<[_]>::to_vec),
+            Some(vec![
+                (
+                    "Navigation",
+                    vec!["↑", "j", "Home", "gg", "Shift+G", "Enter"]
+                ),
+                ("Card", vec!["p", "i", "v", "d"]),
+                ("Page", vec!["f", "/", "q", "t", "?", "Shift+H", "Esc"]),
+            ])
+        );
+        let rows = rows_of(&commander_maybeboard_groups());
+        for row in [
+            (&["f"][..], "Filter"),
+            FILTER_NAME_ROW,
+            (&["q"][..], "Quick add"),
+        ] {
+            assert!(rows.contains(&row), "{row:?}");
+        }
     }
 
     #[test]

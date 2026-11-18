@@ -4,8 +4,9 @@
 
 use chrono::NaiveDate;
 use components::{
-    BarChart, BarOrientation, CardListFold, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell,
-    HeatGrid, HeatHit, HeatReadout, HeatWeekdays, LabelCase, OtagDef, RoleTags, use_heat_pick,
+    ACTIVITY_HEAT_PARTS, BarChart, BarOrientation, CardListFold, ChartTip, Chip, HEAT_CELL,
+    HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatMonths, HeatReadout, HeatWeekdays, LabelCase,
+    OtagDef, RoleTags, use_heat_pick, use_open_on_newest,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -38,7 +39,8 @@ const GHOST_COLUMNS: usize = 54;
 
 /// The year as a heatmap: weekday labels down the left, month labels over
 /// the top, a cell per day in the kit's [`HeatGrid`], opening scrolled to
-/// the newest week. Under it the kit's [`HeatReadout`]: the year's tags,
+/// the newest week with no month name cut by the pinned weekdays
+/// ([`ACTIVITY_HEAT_PARTS`]). Under it the kit's [`HeatReadout`]: the year's tags,
 /// which a clicked day's take over for a few seconds. Hovering a day names
 /// it in a floating chip.
 #[component]
@@ -77,6 +79,7 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
             hover.set(Some((day.join(", "), x, y)));
         }
     };
+    use_open_on_newest(ACTIVITY_HEAT_PARTS);
     rsx! {
         div {
             class: "chart-scroll scroll-fade-x activity-scroll",
@@ -113,15 +116,7 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
                     view_box: "0 0 {width} {height}",
                     role: "img",
                     "aria-label": "{activity::year_line(&days)}",
-                    for (column, name) in layout.months.iter() {
-                        text {
-                            key: "m{column}",
-                            class: "heat-label",
-                            x: "{LEFT + components::heat_span(*column)}",
-                            y: "{TOP - 4.0}",
-                            "{name}"
-                        }
-                    }
+                    HeatMonths { months: layout.months, left: LEFT, top: TOP }
                     HeatWeekdays { labels: weekdays, top: TOP }
                     HeatGrid { cells: grid, left: LEFT, top: TOP, on_enter, on_tap }
                 }

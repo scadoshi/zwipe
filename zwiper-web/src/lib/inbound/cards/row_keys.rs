@@ -4,7 +4,8 @@
 //! closes its details, each as its own button or a click on it does. The
 //! card is the one under the cursor, else the one whose details are open.
 //! Shift+H lists them ([`ShortcutsScreen::CardRows`]), with the cursor's keys for the screen's
-//! [`ListLayout`].
+//! [`ListLayout`], or a screen's own sheet where it has keys of its own (the Commander
+//! maybeboard's [`ShortcutsScreen::CommanderMaybeboard`]).
 
 use components::keys::use_page_keys_through;
 use components::{MeldSource, MeldToggle};
@@ -75,22 +76,28 @@ pub(crate) fn use_card_row_keys(
     expanded_card: Signal<Option<Uuid>>,
     layout: ListLayout,
 ) {
-    use_card_row_keys_and(cards, expanded_card, layout, None);
+    use_card_row_keys_and(
+        cards,
+        expanded_card,
+        ShortcutsScreen::CardRows(layout),
+        None,
+    );
 }
 
-/// [`use_card_row_keys`] on a screen with keys of its own: a key that is not a card key goes
-/// to `screen_keys`, since only the newest page key listener hears the keys.
+/// [`use_card_row_keys`] on a screen with keys of its own, which Shift+H lists as `sheet`: a key
+/// that is not a card key goes to `screen_keys`, since only the newest page key listener hears
+/// the keys.
 pub(crate) fn use_card_row_keys_and(
     cards: Memo<Vec<Card>>,
     expanded_card: Signal<Option<Uuid>>,
-    layout: ListLayout,
+    sheet: ShortcutsScreen,
     screen_keys: Option<Callback<String>>,
 ) {
     let overlays = try_use_context::<CardOverlays>();
     let details = try_use_context::<StackDetails>();
     let faces = try_use_context::<RowFaces>();
     let melds = try_use_context::<MeldSource>();
-    use_offer_shortcuts(ShortcutsScreen::CardRows(layout));
+    use_offer_shortcuts(sheet);
     use_page_keys_through(
         STACK_DETAILS_CLASS,
         &ROW_KEYS,

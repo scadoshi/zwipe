@@ -31,7 +31,6 @@ use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::screens::deck_list;
-use zwipe_ui::shortcuts::ListLayout;
 use zwipe_ui::telemetry::vocabulary::Screen;
 use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
 
@@ -49,7 +48,7 @@ use crate::inbound::chrome::ghost::{
     GhostActionRow, GhostButton, GhostChipRow, GhostList, GhostShowRow, GhostText,
 };
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::chrome::shortcuts::{self, CardKey};
+use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
@@ -430,7 +429,12 @@ pub fn CommanderMaybeboard() -> Element {
         Some(ScreenKey::FilterByName) => components::open_at_name(filter_open),
         None => {}
     });
-    use_card_row_keys_and(filtered, expanded_card, ListLayout::One, Some(screen_keys));
+    use_card_row_keys_and(
+        filtered,
+        expanded_card,
+        ShortcutsScreen::CommanderMaybeboard,
+        Some(screen_keys),
+    );
     // The arrow keys and h, j, k and l move a cursor through the rows.
     use_card_list_cursor();
     let filtered = filtered();
@@ -761,6 +765,21 @@ mod tests {
                 shortcuts::card_key(&key) == Some(CardKey::FilterByName),
                 "{key}"
             );
+        }
+    }
+
+    #[test]
+    fn shift_h_lists_the_filter_and_quick_add_keys_that_work_here() {
+        let listed: Vec<&str> = shortcuts::sheet_rows(&ShortcutsScreen::CommanderMaybeboard)
+            .into_iter()
+            .flat_map(|(keys, _)| keys.iter().copied())
+            .collect();
+        for key in ["f", "/", "q"] {
+            assert!(listed.contains(&key), "{key} is listed: {listed:?}");
+            assert!(screen_key(key).is_some(), "{key} works here");
+        }
+        for key in ["p", "i", "v", "d", "Enter", "Shift+H"] {
+            assert!(listed.contains(&key), "{key} is listed: {listed:?}");
         }
     }
 

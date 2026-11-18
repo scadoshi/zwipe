@@ -3350,9 +3350,11 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
 }
 
 /* The grid at its own size, so a cell keeps its pitch on any phone, and the
-   box the day chip is placed in. */
+   box the day chip is placed in. Its width is the grid's, so room added at its
+   right end widens it. */
 .activity-plot {
     position: relative;
+    box-sizing: content-box;
 }
 
 .activity-plot .heat-grid {

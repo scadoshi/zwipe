@@ -58,6 +58,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, Enter in a filter's text field applies the filter",
         "On the web at phone width, Themes from the menu opens fully on screen",
         "Themes has a search by name or color, and on the web t opens it ready to type",
+        "Activity's heatmap opens with no month name cut at its left edge",
+        "On the web, Shift+H on the Commander maybeboard lists its filter and Quick add keys",
     ],
 }];
 

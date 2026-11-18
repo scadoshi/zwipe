@@ -6,8 +6,9 @@
 //! `zwipe_ui::activity`; this module draws them.
 
 use components::{
-    BarChart, BarOrientation, CardListFold, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell,
-    HeatGrid, HeatHit, HeatReadout, HeatWeekdays, LabelCase, OtagDef, RoleTags, use_heat_pick,
+    ACTIVITY_HEAT_PARTS, BarChart, BarOrientation, CardListFold, ChartTip, Chip, HEAT_CELL,
+    HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatMonths, HeatReadout, HeatWeekdays, LabelCase,
+    OtagDef, RoleTags, use_heat_pick, use_open_on_newest,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -32,7 +33,8 @@ const TOP: f64 = 14.0;
 /// The year as a heatmap: weekday labels down the left, month labels over
 /// the top, a cell per day shaded by its swipes and searches in orangui's
 /// [`HeatGrid`]. Wider than a phone, it scrolls sideways and opens on the
-/// latest week. Under it, orangui's [`HeatReadout`]: the year's swipes,
+/// latest week, with no month name cut by the pinned weekdays
+/// ([`ACTIVITY_HEAT_PARTS`]). Under it, orangui's [`HeatReadout`]: the year's swipes,
 /// searches and span as tags, which a tapped day's take over for a few
 /// seconds on a touch or narrow screen. A hover device with room names the
 /// day under the pointer in a floating chip instead.
@@ -71,6 +73,7 @@ fn ActivityHeatmap(layout: HeatLayout, rest: Vec<String>, label: String) -> Elem
             hover.set(Some((day.join(", "), x, y)));
         }
     };
+    use_open_on_newest(ACTIVITY_HEAT_PARTS);
     rsx! {
         div {
             class: "chart-scroll scroll-fade-x activity-scroll",
@@ -104,15 +107,7 @@ fn ActivityHeatmap(layout: HeatLayout, rest: Vec<String>, label: String) -> Elem
                     view_box: "0 0 {width} {height}",
                     role: "img",
                     "aria-label": "{label}",
-                    for (column, name) in layout.months.iter() {
-                        text {
-                            key: "m{column}",
-                            class: "heat-label",
-                            x: "{LEFT + components::heat_span(*column)}",
-                            y: "{TOP - 4.0}",
-                            "{name}"
-                        }
-                    }
+                    HeatMonths { months: layout.months, left: LEFT, top: TOP }
                     HeatWeekdays { labels: weekdays, top: TOP }
                     HeatGrid {
                         cells: grid,
