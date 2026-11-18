@@ -8,9 +8,8 @@
 
 #![expect(
     clippy::unwrap_used,
-    clippy::panic,
     clippy::indexing_slicing,
-    reason = "a test: helpers outside #[test] fns unwrap and index, and a panic is the failure report"
+    reason = "a test: helpers outside #[test] fns unwrap and index"
 )]
 
 mod common;
