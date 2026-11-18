@@ -161,6 +161,36 @@ fn the_star_is_one_toggle_outline_off_and_filled_on() {
 }
 
 #[test]
+fn the_flag_is_named_flag_off_and_unflag_on_as_the_star_is() {
+    fn off() -> Element {
+        rsx! { components::FlagButton { flagged: false, on_toggle: move |()| {} } }
+    }
+    fn on() -> Element {
+        rsx! { components::FlagButton { flagged: true, on_toggle: move |()| {} } }
+    }
+    let html = render(off);
+    for part in [
+        r#"aria-label="Flag""#,
+        r#"title="Flag""#,
+        r#"aria-pressed="false""#,
+    ] {
+        assert!(html.contains(part), "{part} in {html}");
+    }
+    let html = render(on);
+    for part in [
+        r#"aria-label="Unflag""#,
+        r#"title="Unflag""#,
+        r#"aria-pressed="true""#,
+    ] {
+        assert!(html.contains(part), "{part} in {html}");
+    }
+    assert!(
+        !html.contains(">Unflag<") && !html.contains(">Flag<"),
+        "{html}"
+    );
+}
+
+#[test]
 fn every_star_wears_the_star_color() {
     for selector in [".card-row-mvp {", ".stat-chip.deck-head-card-role-mvp {"] {
         let at = components::MAGIC_CSS.find(selector).unwrap();

@@ -130,7 +130,7 @@ pub use card_filter::{CardFilterPanel, DictionarySlot, OPEN_SECTION_SCROLL_JS, o
 pub use card_group::{CardGroup, TailPlace, group_tail};
 pub use card_icon_button::{
     CardIconButton, FLAG, FLAG_LABEL, FlagButton, FlagMark, IMAGE_ICON, IMAGE_LABEL, ImageButton,
-    MELD, STAR, StarButton,
+    MELD, STAR, StarButton, UNFLAG_LABEL,
 };
 pub use card_list_fold::CardListFold;
 pub use card_proxy::{CardProxy, FIT_JS as CARD_PROXY_FIT_JS, ProxyFace, use_card_proxy_fit};

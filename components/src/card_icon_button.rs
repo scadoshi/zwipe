@@ -24,8 +24,12 @@ pub const STAR: &str =
 /// `components/LICENSE-LUCIDE`), filled by [`FlagButton`] while the card is flagged.
 pub const FLAG: &str = "M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7";
 
-/// What the Flag button is called for a screen reader and in its tooltip, flagged or not.
+/// What the Flag button is called for a screen reader and in its tooltip while the card isn't
+/// flagged.
 pub const FLAG_LABEL: &str = "Flag";
+
+/// What the Flag button is called while the card is flagged.
+pub const UNFLAG_LABEL: &str = "Unflag";
 
 /// What the Image button is called for a screen reader and in its tooltip.
 pub const IMAGE_LABEL: &str = "Image";
@@ -89,12 +93,13 @@ pub fn StarButton(starred: bool, on_toggle: EventHandler<()>) -> Element {
 }
 
 /// A deck card's Flag toggle: the flag, an outline while the card isn't `flagged` and filled
-/// while it is, named [`FLAG_LABEL`] either way, pressed while flagged.
+/// while it is, named [`FLAG_LABEL`] or [`UNFLAG_LABEL`] to match, pressed while flagged.
 #[component]
 pub fn FlagButton(flagged: bool, on_toggle: EventHandler<()>) -> Element {
+    let label: &'static str = if flagged { UNFLAG_LABEL } else { FLAG_LABEL };
     rsx! {
         CardIconButton {
-            label: FLAG_LABEL,
+            label,
             path: FLAG,
             action: data_action::FLAG,
             pressed: Some(flagged),
