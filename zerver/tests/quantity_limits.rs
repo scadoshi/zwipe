@@ -283,3 +283,20 @@ async fn an_import_line_above_99_is_left_unresolved(pool: sqlx::PgPool) {
     let (_, deck) = app.get(&deck_route(deck_id), Some(&token)).await;
     assert_eq!(deck["entries"], json!([]), "nothing lands: {deck}");
 }
+
+/// The migration that caps a card at 99 copies.
+const CAP_MIGRATION: &str = include_str!("../migrations/20261118120000_deck_card_quantity_cap.sql");
+
+#[test]
+fn the_cap_refuses_new_writes_before_it_clamps_the_old_ones() {
+    let check = CAP_MIGRATION
+        .find("ADD CONSTRAINT deck_cards_quantity_range")
+        .unwrap();
+    let clamp = CAP_MIGRATION
+        .find("UPDATE deck_cards SET quantity = 99")
+        .unwrap();
+    assert!(
+        check < clamp,
+        "a write over 99 landing between a clamp and a later check would escape both and fail VALIDATE"
+    );
+}

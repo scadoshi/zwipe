@@ -12,10 +12,11 @@ use crate::copy_room::can_add_copy;
 use crate::{FlagButton, StarButton};
 
 /// The quantity stepper (`-`, the count, `+`) when `on_qty_change` is
-/// given, its `+` disabled once the card can take no more copies ([`can_add_copy`]), then the [`StarButton`] when `mvp` and `on_toggle_mvp` are, then the
-/// [`FlagButton`] when `flagged` and `on_toggle_flag` are. Each is a
-/// `card-action-btn` that stops its click there, so a row under it stays
-/// as it is.
+/// given, its `+` disabled once the card can take no more copies
+/// ([`can_add_copy`]), then the [`StarButton`] when `mvp` and
+/// `on_toggle_mvp` are, then the [`FlagButton`] when `flagged` and
+/// `on_toggle_flag` are. Each is a `card-action-btn` that stops its click
+/// there, so a row under it stays as it is.
 #[component]
 pub fn CardEditButtons(
     qty: i32,

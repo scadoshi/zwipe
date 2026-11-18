@@ -453,8 +453,8 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         let Some(target) = current.checked_add(delta) else {
             return;
         };
-        // A card holds at most `Quantity::MAX` copies; `+` is disabled there, and its key
-        // does nothing.
+        // A card holds at most `Quantity::MAX` copies: past it, `+` and its key do nothing. At
+        // the deck's card limit the key still sends, and the server refuses it.
         if delta > 0 && target > Quantity::MAX {
             return;
         }
