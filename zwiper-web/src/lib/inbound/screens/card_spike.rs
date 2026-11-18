@@ -7,7 +7,8 @@ use std::collections::HashSet;
 
 use components::icons::{DockIcon, SEND, ShareIcon};
 use components::{
-    CardDetailsPanel, CardStack, DeckFold, FlippableCardImage, LoadFailed, PickerSearch, StackCard,
+    CardDetailsPanel, CardStack, DeckFold, FlippableCardImage, LoadFailed, Panel, PickerSearch,
+    StackCard,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -24,8 +25,11 @@ use crate::inbound::shell::ScreenFrame;
 /// The card page's stats fold's title.
 const METRICS_TITLE: &str = "Card stats";
 
-/// The stats the card page leaves slots for, in the order they show.
-const METRICS: [&str; 4] = ["Skip rate", "Add rate", "Remove rate", "In decks"];
+/// The swipes the card page leaves rate slots for, in the order they show.
+const RATES: [&str; 4] = ["Skip", "Add", "Maybeboard", "Remove"];
+
+/// The card page's deck counter's label.
+const IN_DECKS: &str = "In decks";
 
 /// The spike's only rules: the card's size in the middle column, the details under the card on a
 /// phone (the deck page hides them behind the eye there), and the list's width.
@@ -35,7 +39,8 @@ const SPIKE_CSS: &str = r"
 .cs-image img { width: 100%; height: auto; }
 .cs-list { max-width: 40rem; margin: 0 auto; padding: var(--space-3) var(--space-4); box-sizing: border-box; width: 100%; display: flex; flex-direction: column; gap: var(--space-2); }
 .cs-results { width: 100%; grid-template-columns: repeat(auto-fit, minmax(12.5rem, 15rem)); justify-content: center; }
-.cs-metrics { width: 100%; max-width: 20rem; }
+.cs-metrics { width: 100%; max-width: 20rem; display: flex; flex-direction: column; gap: var(--space-3); }
+.cs-rates { grid-template-columns: minmax(0, 1fr) auto auto; row-gap: var(--space-2); padding: var(--space-3); }
 @media (min-width: 900px) {
   .cs-metrics { position: fixed; top: var(--web-dock-panel-top); left: 1rem; z-index: 40; width: var(--web-dock-panel-width); max-width: none; }
   .cs-list { max-width: 60rem; }
@@ -172,7 +177,6 @@ fn SpikeScreen(open: Open, look: String) -> Element {
     let status = state.status();
     let card = state.card().cloned();
     let cards = state.cards().to_vec();
-    let title = state.title();
     let message = state.message();
     drop(state);
     let frame_title = card
@@ -197,15 +201,44 @@ fn SpikeScreen(open: Open, look: String) -> Element {
                             on_printings: move |()| printings_open.set(true),
                         }
                     }
-                    // Slots for the card's own numbers, which thinker is working out: Playstyle's
-                    // Summary fold, docked opposite the details on a wide window.
+                    // Slots for the card's own numbers, which thinker is working out: the deck count
+                    // as Activity's counter, then each swipe's count and rate in Playstyle's compact
+                    // table, docked opposite the details on a wide window.
                     div { class: "cs-metrics",
+                        div { class: "home-hero activity-counts",
+                            // The kit's counter markup with "Soon" for its number: its own
+                            // counter rolls digits while a value loads, which would read as data.
+                            Panel {
+                                div { class: "stats-figures",
+                                    section { class: "stats-strip",
+                                        div { class: "stat",
+                                            span { class: "stat-num", "Soon" }
+                                            span { class: "stat-label", "{IN_DECKS}" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         DeckFold { fold_key: METRICS_TITLE, title: METRICS_TITLE, folded: metrics_folded,
-                            div { class: "flex-col web-playstyle-fold-body",
-                                for label in METRICS {
-                                    div { key: "{label}", class: "settings-row",
+                            div { class: "tag-table cs-rates",
+                                div { class: "tag-table-head",
+                                    span { class: "settings-row-label", "Swipe" }
+                                }
+                                div { class: "tag-table-head tag-table-head-p3",
+                                    span { class: "settings-row-label", "Swipes" }
+                                }
+                                div { class: "tag-table-head tag-table-head-p2",
+                                    span { class: "settings-row-label", "Rate" }
+                                }
+                                for label in RATES {
+                                    div { key: "{label}", class: "tag-table-tag",
                                         span { class: "settings-row-label", "{label}" }
-                                        span { class: "info-row-value", "Soon" }
+                                    }
+                                    span { class: "tag-table-num",
+                                        span { class: "stat-chip stat-chip-p3", "Soon" }
+                                    }
+                                    span { class: "tag-table-num",
+                                        span { class: "stat-chip stat-chip-p2", "Soon" }
                                     }
                                 }
                             }
@@ -232,7 +265,6 @@ fn SpikeScreen(open: Open, look: String) -> Element {
         (Status::Several, _) => rsx! {
             div { class: "screen-content content-enter cs-list",
                 {search}
-                h2 { class: "panel-title", {title.unwrap_or_default()} }
                 // Each result is a one-card stack in the deck page's Stacks grid: the whole card
                 // shows, its name on its own frame, and a tap opens it.
                 div { class: "deck-stacks cs-results",
