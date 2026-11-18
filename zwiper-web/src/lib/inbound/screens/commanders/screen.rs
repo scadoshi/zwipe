@@ -58,7 +58,7 @@ fn screen_key(key: &str) -> Option<ScreenKey> {
 #[component]
 pub fn CommanderMaybeboard() -> Element {
     telemetry::use_telemetry_screen(Screen::CommanderMaybeboard);
-    let hint_open = use_one_time_hint(OneTimeHint::CommanderMaybeboard);
+    let hint_open = use_one_time_hint(OneTimeHint::Commanders);
     // Each list's own filter, and whether its sheet is open.
     let maybeboard_filter = use_signal(CardQueryBuilder::new);
     let mut maybeboard_filter_open = use_signal(|| false);
@@ -161,7 +161,7 @@ pub fn CommanderMaybeboard() -> Element {
                 }
             }
         }
-        OneTimeHintDialog { hint: OneTimeHint::CommanderMaybeboard, open: hint_open }
+        OneTimeHintDialog { hint: OneTimeHint::Commanders, open: hint_open }
         ListFilterSheet { filter: maybeboard_filter, filter_open: maybeboard_filter_open }
         ListFilterSheet { filter: suggested_filter, filter_open: suggested_filter_open }
         HoverStackHost { stack: hover_stack }

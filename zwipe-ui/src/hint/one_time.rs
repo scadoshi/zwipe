@@ -418,6 +418,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 ]),
             ],
         ),
+        OneTimeHint::Commanders => commanders_hint(),
         OneTimeHint::SuggestedCommanders => content(
             "Playstyle",
             vec![
@@ -592,8 +593,8 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
 }
 
 /// [`content_for_user`] as `surface` shows it: the web app's own text for the hints whose screens
-/// differ from the app's (the welcome, Playstyle and the Commanders screen, which the web has and
-/// the app doesn't yet). Every other hint, and every hint in the app, reads as
+/// differ from the app's (the welcome and Playstyle, whose suggestions the web moved to its
+/// Commanders screen). Every other hint, and every hint in the app, reads as
 /// [`content_for_user`] has it.
 #[must_use]
 pub fn content_on(
@@ -607,6 +608,51 @@ pub fn content_on(
         return Some(web);
     }
     content_for_user(hint, email_verified)
+}
+
+/// The web's Commanders screen: its two lists and what each list's controls do.
+fn commanders_hint() -> HintContent {
+    content(
+        "Commanders",
+        vec![
+            line(vec![text(
+                "Your saved commanders and the ones that fit your decks, side by side",
+            )]),
+            bullet(vec![
+                key("Maybeboard"),
+                text(" holds the commanders you save"),
+            ]),
+            bullet(vec![
+                key("Suggested"),
+                text(" ranks your top 10 against all your decks, best fit first"),
+            ]),
+            bullet(vec![
+                key("Create deck"),
+                text(" starts a deck with that commander"),
+            ]),
+            bullet(vec![
+                key_in("Remove", Role::Error),
+                text(" takes a save off Maybeboard, or hides a suggestion for a week"),
+            ]),
+            bullet(vec![
+                key("Swipe"),
+                text(" deals either list: "),
+                emph("right", Role::Success),
+                text(" starts a deck, "),
+                emph("up", Role::Warning),
+                text(" saves, "),
+                emph("left", Role::Error),
+                text(" skips"),
+            ]),
+            bullet(vec![key("Quick add"), text(" saves a commander by name")]),
+            bullet(vec![
+                key("Show"),
+                text(" and "),
+                icon_key(KeyIcon::Funnel),
+                text(" narrow each list on its own"),
+            ]),
+        ],
+    )
 }
 
 /// The web app's text for `hint` where it differs from the app's, else `None`.
@@ -624,49 +670,6 @@ fn web_content(hint: OneTimeHint, email_verified: bool) -> Option<HintContent> {
                 line(vec![
                     text("Suggested commanders are on "),
                     key("Commanders"),
-                ]),
-            ],
-        ));
-    }
-    if hint == OneTimeHint::CommanderMaybeboard {
-        return Some(content(
-            "Commanders",
-            vec![
-                line(vec![text(
-                    "Your saved commanders and the ones that fit your decks, side by side",
-                )]),
-                bullet(vec![
-                    key("Maybeboard"),
-                    text(" holds the commanders you save"),
-                ]),
-                bullet(vec![
-                    key("Suggested"),
-                    text(" ranks your top 10 against all your decks, best fit first"),
-                ]),
-                bullet(vec![
-                    key("Create deck"),
-                    text(" starts a deck with that commander"),
-                ]),
-                bullet(vec![
-                    key_in("Remove", Role::Error),
-                    text(" takes a save off Maybeboard, or hides a suggestion for a week"),
-                ]),
-                bullet(vec![
-                    key("Swipe"),
-                    text(" deals either list: "),
-                    emph("right", Role::Success),
-                    text(" starts a deck, "),
-                    emph("up", Role::Warning),
-                    text(" saves, "),
-                    emph("left", Role::Error),
-                    text(" skips"),
-                ]),
-                bullet(vec![key("Quick add"), text(" saves a commander by name")]),
-                bullet(vec![
-                    key("Show"),
-                    text(" and "),
-                    icon_key(KeyIcon::Funnel),
-                    text(" narrow each list on its own"),
                 ]),
             ],
         ));
@@ -964,8 +967,13 @@ mod tests {
             plain(playstyle).last().map(String::as_str),
             Some("Suggested commanders are on Commanders")
         );
-        let commanders = content_on(OneTimeHint::CommanderMaybeboard, true, Surface::Web).unwrap();
+        let commanders = content_on(OneTimeHint::Commanders, true, Surface::Web).unwrap();
         assert_eq!(commanders.title, "Commanders");
+        assert_eq!(
+            content_on(OneTimeHint::CommanderMaybeboard, true, Surface::Web),
+            content_for_user(OneTimeHint::CommanderMaybeboard, true),
+            "the maybeboard's own hint keeps its text"
+        );
         assert_eq!(
             content_on(OneTimeHint::Activity, true, Surface::Web),
             content_for_user(OneTimeHint::Activity, true),
