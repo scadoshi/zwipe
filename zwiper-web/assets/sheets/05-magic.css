@@ -2229,10 +2229,12 @@ html.keyboard-up .web-dock-pair {
             visibility 0s linear 0s;
     }
 
-    /* A modal's own dock, above the drawer (an Oracle tag's examples opened
-       from the filter's dictionary), stays, and so does the Printings sheet's
-       (Flip or Meld beside Select) when it opens from the drawer. */
-    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *) {
+    /* A modal's own dock, above the drawer, stays: a nested screen's (an
+       Oracle tag's examples opened from the filter's dictionary) and a large
+       modal's wherever it mounts (the examples opened from the deck form's
+       Oracle tags picker, outside any page screen). So does the Printings
+       sheet's (Flip or Meld beside Select) when it opens from the drawer. */
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *, .web-large-modal *) {
         transform: translateY(calc(100% + 2rem));
         opacity: 0;
         visibility: hidden;
@@ -2246,7 +2248,7 @@ html.keyboard-up .web-dock-pair {
 }
 
 @media (min-width: 60rem) and (prefers-reduced-motion: reduce) {
-    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *) {
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *, .web-large-modal *) {
         transform: none;
     }
 }
@@ -3789,7 +3791,7 @@ footer.site-footer .site-footer-note {
     }
 
     .action-dock:not(.sheet-dock),
-    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *) {
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *, .web-large-modal *) {
         transition: none;
     }
 
