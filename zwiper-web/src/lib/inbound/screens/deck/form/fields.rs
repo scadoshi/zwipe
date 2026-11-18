@@ -3,7 +3,7 @@
 //! (deck, oracle and other tags). A wide window puts `Profile` and `Budget`
 //! in the left column and `Tags` in the right.
 
-use components::{Chip, ClearWrap, Pressable, TextInput};
+use components::{Chip, ClearWrap, TextInput};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::commander_eligibility;
@@ -15,22 +15,30 @@ use zwipe_ui::text::sentence_case;
 
 use super::DeckForm;
 use super::command_zone::CommandZoneField;
+use crate::inbound::chrome::enter_submit::EnterSubmit;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton, open_topic};
 
 /// The deck name input's id.
 pub const DECK_NAME_ID: &str = "deck_name";
 
-/// Every field. `on_enter` runs when Enter is pressed in the deck name.
+/// Every field, in one form: `on_submit` runs when Enter is pressed in any text field.
 #[component]
-pub fn DeckFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
+pub fn DeckFields(form: DeckForm, on_submit: EventHandler<()>) -> Element {
     rsx! {
-        div { class: "container-sm web-deck-form",
+        form {
+            class: "container-sm web-deck-form",
+            novalidate: true,
+            onsubmit: move |event| {
+                event.prevent_default();
+                on_submit.call(());
+            },
+            EnterSubmit {}
             div { class: "flex-col text-center web-deck-form-column",
-                ProfileFields { form, on_enter }
+                ProfileFields { form, on_submit }
                 BudgetFields { form }
             }
             div { class: "flex-col text-center web-deck-form-column",
-                TagFields { form }
+                TagFields { form, on_submit }
             }
         }
     }
@@ -49,9 +57,59 @@ fn Collapsible(show: bool, children: Element) -> Element {
     }
 }
 
+/// What a key does on a field that opens a picker.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PickerKey {
+    /// Submits the form, as Enter does in every field of the deck form.
+    Submit,
+    /// Opens the picker.
+    Open,
+}
+
+/// Enter submits the form and Space opens the picker; every other key does nothing here.
+fn picker_key(key: &Key) -> Option<PickerKey> {
+    if *key == Key::Enter {
+        Some(PickerKey::Submit)
+    } else if matches!(key, Key::Character(c) if c == " ") {
+        Some(PickerKey::Open)
+    } else {
+        None
+    }
+}
+
+/// A field that opens a picker: a click or Space opens it, and Enter submits the form. In the
+/// tab order as a `role="button"`, ringed while focused.
+#[component]
+fn PickerField(
+    #[props(into)] class: String,
+    on_open: EventHandler<()>,
+    on_submit: EventHandler<()>,
+    children: Element,
+) -> Element {
+    rsx! {
+        div {
+            class,
+            role: "button",
+            tabindex: "0",
+            onclick: move |_| on_open.call(()),
+            onkeydown: move |event: KeyboardEvent| {
+                let Some(action) = picker_key(&event.key()) else {
+                    return;
+                };
+                event.prevent_default();
+                match action {
+                    PickerKey::Submit => on_submit.call(()),
+                    PickerKey::Open => on_open.call(()),
+                }
+            },
+            {children}
+        }
+    }
+}
+
 /// Name, format, the command zone and power level.
 #[component]
-fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
+fn ProfileFields(form: DeckForm, on_submit: EventHandler<()>) -> Element {
     let format = (form.format)();
     let commander = form.commander.card.read().clone();
     let show_commander = format.is_some_and(|f| f.has_commander());
@@ -73,12 +131,6 @@ fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
             }
             div { class: "web-form-fields",
                 div {
-                    onkeydown: move |event: Event<KeyboardData>| {
-                        if event.key() == Key::Enter {
-                            event.prevent_default();
-                            on_enter.call(());
-                        }
-                    },
                     TextInput {
                         label: "Deck name",
                         on_info: open_topic(HintTopic::DeckName),
@@ -99,9 +151,9 @@ fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
                         filled: format.is_some(),
                         on_clear: move |()| form.clear_format(),
                         if let Some(format) = format {
-                            Pressable { class: "input input-tappable", onpress: move |()| format_open.set(true), "{format.display_name()}" }
+                            PickerField { class: "input input-tappable", on_open: move |()| format_open.set(true), on_submit, "{format.display_name()}" }
                         } else {
-                            Pressable { class: "input input-placeholder input-tappable", onpress: move |()| format_open.set(true), "Not set" }
+                            PickerField { class: "input input-placeholder input-tappable", on_open: move |()| format_open.set(true), on_submit, "Not set" }
                         }
                     }
                 }
@@ -246,7 +298,7 @@ fn BudgetFields(form: DeckForm) -> Element {
 
 /// Deck tags, oracle tags and other tags.
 #[component]
-fn TagFields(form: DeckForm) -> Element {
+fn TagFields(form: DeckForm, on_submit: EventHandler<()>) -> Element {
     let mut tags = form.tags;
     let mut oracle_tags = form.oracle_tags;
     let mut other_tags = form.other_tags;
@@ -273,9 +325,9 @@ fn TagFields(form: DeckForm) -> Element {
                         }
                     }
                     if tags.read().is_empty() {
-                        Pressable { class: "input input-placeholder input-tappable", onpress: move |()| tags_open.set(true), "Not set" }
+                        PickerField { class: "input input-placeholder input-tappable", on_open: move |()| tags_open.set(true), on_submit, "Not set" }
                     } else {
-                        Pressable { class: "chip-box input-tappable", onpress: move |()| tags_open.set(true),
+                        PickerField { class: "chip-box input-tappable", on_open: move |()| tags_open.set(true), on_submit,
                             for tag in tags() {
                                 div { key: "{tag}", class: "chip selected flex items-center gap-05",
                                     "{deck_tag_label(&tag)}"
@@ -310,9 +362,9 @@ fn TagFields(form: DeckForm) -> Element {
                         }
                     }
                     if oracle_tags.read().is_empty() {
-                        Pressable { class: "input input-placeholder input-tappable", onpress: move |()| oracle_open.set(true), "Not set" }
+                        PickerField { class: "input input-placeholder input-tappable", on_open: move |()| oracle_open.set(true), on_submit, "Not set" }
                     } else {
-                        Pressable { class: "chip-box input-tappable", onpress: move |()| oracle_open.set(true),
+                        PickerField { class: "chip-box input-tappable", on_open: move |()| oracle_open.set(true), on_submit,
                             for slug in oracle_tags() {
                                 div { key: "{slug}", class: "chip selected flex items-center gap-05",
                                     "{slug}"
@@ -364,6 +416,88 @@ fn TagFields(form: DeckForm) -> Element {
                     }
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use reqwest::Url;
+    use zwipe_client::ZwipeClient;
+    use zwipe_core::domain::auth::models::platform::ClientPlatform;
+    use zwipe_core::domain::auth::models::session::Session;
+    use zwipe_ui::telemetry::SharedUsageBuffer;
+
+    use super::*;
+    use crate::config::APP_VERSION;
+    use crate::inbound::screens::deck::form::use_deck_form;
+
+    /// The contexts the fields read: no session, a client, telemetry and the hint sheet.
+    #[component]
+    fn Host() -> Element {
+        use_context_provider(|| Signal::new(None::<Session>));
+        use_context_provider(|| {
+            Signal::new(ZwipeClient::new(Url::parse("http://127.0.0.1:9").unwrap()))
+        });
+        use_context_provider(|| SharedUsageBuffer::new(ClientPlatform::Web, APP_VERSION));
+        use_context_provider(|| Signal::new(None::<HintTopic>));
+        rsx! {
+            components::ToastStack { default_duration: components::TOAST_NORMAL, Fields {} }
+        }
+    }
+
+    #[component]
+    fn Fields() -> Element {
+        let form = use_deck_form();
+        rsx! {
+            DeckFields { form, on_submit: |()| {} }
+        }
+    }
+
+    #[test]
+    fn enter_on_a_picker_field_submits_and_space_opens_it() {
+        assert_eq!(picker_key(&Key::Enter), Some(PickerKey::Submit));
+        assert_eq!(
+            picker_key(&Key::Character(" ".into())),
+            Some(PickerKey::Open)
+        );
+        assert_eq!(picker_key(&Key::Character("a".into())), None);
+        assert_eq!(picker_key(&Key::Tab), None);
+    }
+
+    /// Enter in any of the form's fields submits it: the fields sit in a real form whose first
+    /// button, its default, is a submit button, and every other button in it is a plain button,
+    /// so Enter on one runs that button and never sends the form.
+    #[test]
+    fn enter_in_any_field_submits_the_deck_form() {
+        let mut dom = VirtualDom::new(Host);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        let form = html
+            .split_once("<form")
+            .and_then(|(_, rest)| rest.split_once("</form>"))
+            .map_or_else(
+                || panic!("the fields sit in a form: {html}"),
+                |(body, _)| body,
+            );
+        for field in [
+            "id=\"deck_name\"",
+            "id=\"price_target\"",
+            "id=\"commander\"",
+        ] {
+            assert!(form.contains(field), "{field} in the form: {form}");
+        }
+        let mut buttons = form.split("<button").skip(1);
+        let first = buttons.next().unwrap_or_default();
+        assert!(
+            first.contains("type=\"submit\"") && first.contains("hidden"),
+            "the default button is the hidden submit: {first}"
+        );
+        for button in buttons {
+            assert!(
+                button.contains("type=\"button\""),
+                "a plain button: {button}"
+            );
         }
     }
 }

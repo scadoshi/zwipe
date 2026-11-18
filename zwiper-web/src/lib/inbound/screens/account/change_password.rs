@@ -18,6 +18,7 @@ use zwipe_ui::telemetry::vocabulary::{ProfileScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::enter_submit::EnterSubmit;
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
 use crate::inbound::telemetry;
 
@@ -156,10 +157,12 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                 },
                 form {
                     class: "flex-col text-center",
+                    novalidate: true,
                     onsubmit: move |event| {
                         event.prevent_default();
                         ask_to_confirm();
                     },
+                    EnterSubmit {}
                     TextInput {
                         value: current,
                         id: "current_password",
@@ -186,7 +189,6 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                         label: "Confirm password",
                         input_type: "password",
                     }
-                    button { r#type: "submit", hidden: true }
                 }
                 // Save floats at the sheet's bottom right.
                 div { class: "action-dock action-dock-right sheet-dock",

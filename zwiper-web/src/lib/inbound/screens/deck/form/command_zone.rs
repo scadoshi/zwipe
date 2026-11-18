@@ -246,11 +246,13 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
                                 event.prevent_default();
                                 highlight.set(highlight().and_then(|at| at.checked_sub(1)));
                             }
+                            // Enter picks the highlighted card; with none highlighted it
+                            // submits the form, as in any other field.
                             Key::Enter => {
-                                event.prevent_default();
-                                event.stop_propagation();
                                 let hit = highlight().and_then(|at| results.peek().get(at).cloned());
                                 if let Some(hit) = hit {
+                                    event.prevent_default();
+                                    event.stop_propagation();
                                     pick(hit);
                                 }
                             }
