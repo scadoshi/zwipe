@@ -48,7 +48,10 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 9);
 pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 23, 2),
     date: None,
-    entries: &["On Android, the app no longer signs you out now and then after a restart"],
+    entries: &[
+        "On Android, the app no longer signs you out now and then after a restart",
+        "A shared deck's card prices and group totals follow the deck's own currency",
+    ],
 }];
 
 /// Shipped releases, newest first.
@@ -65,7 +68,7 @@ pub const RELEASES: &[Release] = &[
             "Activity's heatmap opens with no month name cut at its left edge",
             "On the web, Shift+H on the Commander maybeboard lists its filter and Quick add keys",
             "On the web, the Decks loading ghost no longer runs under the footer",
-            "A shared deck shows every price in the deck's own currency",
+            "A shared deck prices its header and link preview in the deck's own currency",
             "At phone width, the open menu has a rule under its header",
             "At phone width, the open menu's bottom row no longer sits on its edge",
             "Remove shows No cards match your filters when a filter matches nothing",
