@@ -62,6 +62,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Undoing a remove brings the card back with its flag",
         "On the web, Enter in any form field submits the form or shows what's missing",
         "On the web, Shift+P opens Send to wherever a card's details offer it",
+        "On the web, Esc goes back only from Add, Remove and Edit deck",
     ],
 }];
 
