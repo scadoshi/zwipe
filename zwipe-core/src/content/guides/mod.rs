@@ -126,7 +126,13 @@ pub static GUIDES: &[Guide] = &[
         title: "Getting started with Zwipe",
         summary: "Zwipe builds Magic: The Gathering decks with swipes instead of forms. Here's the whole model.",
         tags: &["Getting started"],
-        related: &[],
+        related: &[
+            "deck-stats",
+            "remove-cards",
+            "budgeting",
+            "land-targets",
+            "import-export",
+        ],
         blocks: &[
             Block::Lead(
                 "Zwipe builds Magic: The Gathering decks by swiping through cards one at a time.",
@@ -1126,5 +1132,33 @@ mod tests {
             );
             assert!(!guide.tags.is_empty(), "{} has a tag", guide.slug);
         }
+    }
+
+    #[test]
+    fn a_guide_that_points_to_guides_below_lists_them() {
+        for guide in GUIDES {
+            let points_below = guide.blocks.iter().any(|block| {
+                matches!(block, Block::Lead(text) | Block::P(text) | Block::Note(text) if text.contains("guide below"))
+            });
+            assert!(
+                !points_below || !guide.related.is_empty(),
+                "{} says a guide is below but lists none",
+                guide.slug
+            );
+        }
+        let started = find("getting-started").map(|g| g.related);
+        assert_eq!(
+            started,
+            Some(
+                &[
+                    "deck-stats",
+                    "remove-cards",
+                    "budgeting",
+                    "land-targets",
+                    "import-export"
+                ][..]
+            ),
+            "the deck view's stats, then each tool its paragraph names, in its order"
+        );
     }
 }
