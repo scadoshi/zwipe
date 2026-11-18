@@ -134,15 +134,13 @@ impl CollectionRepository for Postgres {
     ) -> Result<Applied, anyhow::Error> {
         let arrays = ImportArrays::of(cards);
         let mut tx = self.pool.begin().await.context("collection import begin")?;
-        // One import at a time per collection.
-        let owner: Option<Uuid> = query_scalar("SELECT id FROM users WHERE id = $1 FOR UPDATE")
+        // One import at a time per collection, held to the end of the transaction. An advisory
+        // lock keyed on the user, so the user's own row stays free for their other writes.
+        query("SELECT pg_advisory_xact_lock(hashtext('collection_import'), hashtext($1::text))")
             .bind(user_id)
-            .fetch_optional(&mut *tx)
+            .execute(&mut *tx)
             .await
             .context("collection import lock")?;
-        if owner.is_none() {
-            anyhow::bail!("collection import for a user that doesn't exist");
-        }
         let removed = if mode.is_replace() {
             query(REMOVE_MISSING)
                 .bind(user_id)

@@ -490,3 +490,33 @@ async fn the_route_holds_its_caps(pool: sqlx::PgPool) {
     let copies: Vec<i32> = rows(&pool, &uid).await.iter().map(|r| r.4).collect();
     assert_eq!(copies, vec![3], "the three imports that got through landed");
 }
+
+/// An import serializes with the user's other imports, not with the rest of their writes: it
+/// finishes while another transaction is writing to the user's row.
+#[sqlx::test]
+async fn an_import_doesnt_wait_on_the_user_s_row(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let c = seeded(&pool).await;
+    let (token, uid) = app.register("unblocked").await;
+    let mut other = pool.begin().await.unwrap();
+    // An ordinary write to the user's row, as a settings change makes.
+    sqlx::query("UPDATE users SET updated_at = updated_at WHERE id = $1")
+        .bind(uid.parse::<Uuid>().unwrap())
+        .execute(&mut *other)
+        .await
+        .unwrap();
+    let one = format!(
+        "{ARCHIDEKT_HEADER}\n1,Sol Ring,Normal,NM,,EN,,,x,c21,,{},263\n",
+        c.sol.id()
+    );
+
+    let done = tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        import(&app, Some(&token), &one, "add"),
+    )
+    .await;
+
+    other.rollback().await.unwrap();
+    let (status, body) = done.expect("the import finished while the user's row was being written");
+    assert_eq!(status, StatusCode::OK, "{body}");
+}
