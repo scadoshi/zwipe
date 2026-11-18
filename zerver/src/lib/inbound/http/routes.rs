@@ -829,6 +829,14 @@ pub fn collection_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                 .route(
                     "/import",
                     post(collection::import_collection).layer(
+                        GovernorLayer::new(Arc::clone(&collection_import_user_config))
+                            .error_handler(unauthorized_on_missing_key),
+                    ),
+                )
+                // The export reads the whole collection, so it shares the import's limits.
+                .route(
+                    "/export",
+                    get(collection::export_collection).layer(
                         GovernorLayer::new(collection_import_user_config)
                             .error_handler(unauthorized_on_missing_key),
                     ),

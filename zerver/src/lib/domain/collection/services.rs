@@ -4,10 +4,13 @@ use uuid::Uuid;
 use zwipe_core::domain::collection::{CollectionPageSize, CollectionSearch, ImportCollectionError};
 use zwipe_core::http::contracts::collection::{HttpCollectionImportSummary, HttpCollectionSummary};
 
+use crate::domain::collection::models::export_file;
 use crate::domain::collection::models::import::{
     self, ImportCollection, ImportCollectionFailure, Wanted,
 };
-use crate::domain::collection::models::rows::{SetRow, SetRowFailure, StoredPage, StoredRow};
+use crate::domain::collection::models::rows::{
+    ExportFailure, SetRow, SetRowFailure, StoredPage, StoredRow,
+};
 use crate::domain::collection::ports::{CollectionRepository, CollectionService};
 
 /// Collection operations over a [`CollectionRepository`].
@@ -71,5 +74,13 @@ impl<R: CollectionRepository> CollectionService for Service<R> {
         limit: CollectionPageSize,
     ) -> Result<StoredPage, anyhow::Error> {
         self.repo.fetch_page(user_id, name, offset, limit).await
+    }
+
+    async fn export(&self, user_id: Uuid) -> Result<String, ExportFailure> {
+        let lines = self.repo.fetch_export_lines(user_id).await?;
+        tokio::task::spawn_blocking(move || export_file::write(&lines))
+            .await
+            .map_err(anyhow::Error::from)?
+            .map_err(ExportFailure::Database)
     }
 }

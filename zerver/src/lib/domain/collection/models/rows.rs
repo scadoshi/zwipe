@@ -62,3 +62,14 @@ pub enum SetRowFailure {
     #[error(transparent)]
     Database(#[from] anyhow::Error),
 }
+
+/// Why an export wrote nothing.
+#[derive(Debug, thiserror::Error)]
+pub enum ExportFailure {
+    /// The collection holds more rows than an import takes back.
+    #[error("the collection holds more than {max} rows, more than an import takes back", max = zwipe_core::domain::collection::limits::MAX_ROWS)]
+    TooManyRows,
+    /// The database failed.
+    #[error(transparent)]
+    Database(#[from] anyhow::Error),
+}

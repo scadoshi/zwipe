@@ -13,15 +13,15 @@ use zwipe_core::domain::collection::{
     ImportCollectionError,
 };
 use zwipe_core::http::contracts::collection::{
-    CollectionCard, HttpCollectionImportSummary, HttpCollectionPage, HttpCollectionSummary,
-    HttpImportCollection, HttpSetCollectionCard, HttpSetCollectionCardReply,
+    CollectionCard, HttpCollectionExport, HttpCollectionImportSummary, HttpCollectionPage,
+    HttpCollectionSummary, HttpImportCollection, HttpSetCollectionCard, HttpSetCollectionCardReply,
 };
 
 use crate::domain::card::ports::CardService;
 use crate::domain::card::requests::get_scryfall_data::ScryfallDataIds;
 use crate::domain::collection::models::export;
 use crate::domain::collection::models::import::{ImportCollection, ImportCollectionFailure};
-use crate::domain::collection::models::rows::{SetRow, SetRowFailure, StoredRow};
+use crate::domain::collection::models::rows::{ExportFailure, SetRow, SetRowFailure, StoredRow};
 use crate::domain::collection::ports::CollectionService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
@@ -272,5 +272,36 @@ pub async fn collection_page(
             total: page.total,
             next_offset,
         }),
+    ))
+}
+
+impl From<ExportFailure> for ApiError {
+    fn from(value: ExportFailure) -> Self {
+        match value {
+            ExportFailure::TooManyRows => Self::UnprocessableEntity(value.to_string()),
+            ExportFailure::Database(e) => e.to_500(),
+        }
+    }
+}
+
+/// The caller's collection as a ManaBox export, which a collection import reads back, named for
+/// today's date.
+///
+/// # Errors
+///
+/// Returns 422 for a collection with more rows than an import takes back, 401 without a
+/// session, 429 past the rate limit it shares with the import, and 500 on a database failure.
+pub async fn export_collection(
+    user: AuthenticatedUser,
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<HttpCollectionExport>), ApiError> {
+    let csv = state.collection_service.export(user.id).await?;
+    let file_name = format!(
+        "zwipe-collection-{}.csv",
+        chrono::Utc::now().format("%Y-%m-%d")
+    );
+    Ok((
+        StatusCode::OK,
+        Json(HttpCollectionExport { file_name, csv }),
     ))
 }

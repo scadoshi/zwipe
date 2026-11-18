@@ -7,10 +7,13 @@ use zwipe_core::domain::collection::{CollectionPageSize, CollectionSearch};
 use zwipe_core::domain::deck::ImportMode;
 use zwipe_core::http::contracts::collection::{HttpCollectionImportSummary, HttpCollectionSummary};
 
+use crate::domain::collection::models::export_file::ExportLine;
 use crate::domain::collection::models::import::{
     Applied, CollectionCard, ImportCollection, ImportCollectionFailure, Lookups, Wanted,
 };
-use crate::domain::collection::models::rows::{SetRow, SetRowFailure, StoredPage, StoredRow};
+use crate::domain::collection::models::rows::{
+    ExportFailure, SetRow, SetRowFailure, StoredPage, StoredRow,
+};
 
 /// Database port for collections.
 pub trait CollectionRepository: Clone + Send + Sync + 'static {
@@ -63,6 +66,13 @@ pub trait CollectionRepository: Clone + Send + Sync + 'static {
         offset: u32,
         limit: CollectionPageSize,
     ) -> impl Future<Output = Result<StoredPage, anyhow::Error>> + Send;
+
+    /// Every row of `user_id`'s collection with its card's facts, in the list's order, for an
+    /// export.
+    fn fetch_export_lines(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<Vec<ExportLine>, ExportFailure>> + Send;
 }
 
 /// Service port for collections.
@@ -100,4 +110,7 @@ pub trait CollectionService: Clone + Send + Sync + 'static {
         offset: u32,
         limit: CollectionPageSize,
     ) -> impl Future<Output = Result<StoredPage, anyhow::Error>> + Send;
+
+    /// `user_id`'s collection as a ManaBox export's text.
+    fn export(&self, user_id: Uuid) -> impl Future<Output = Result<String, ExportFailure>> + Send;
 }
