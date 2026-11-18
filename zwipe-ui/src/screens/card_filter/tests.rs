@@ -1,4 +1,5 @@
 use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::deck::Format;
 
@@ -286,16 +287,26 @@ fn back_without_edits_only_closes() {
 }
 
 #[test]
-fn a_plain_reset_clears_and_toasts_every_time() {
+fn a_plain_reset_clears_then_says_there_is_nothing_to_reset() {
     let mut state = opened_over(&named("elf"));
-    let reset = [Effect::Toast(Toast::new(
-        ToastKind::Info,
-        "Filter reset",
-        QUICK,
-    ))];
-    assert_eq!(state.update(Action::Reset), reset);
+    assert_eq!(
+        state.update(Action::Reset),
+        [Effect::Toast(Toast::new(
+            ToastKind::Info,
+            "Filter reset",
+            QUICK
+        ))]
+    );
     assert_eq!(state.draft(), Some(&CardQueryBuilder::default()));
-    assert_eq!(state.update(Action::Reset), reset, "the app toasts again");
+    assert_eq!(
+        state.update(Action::Reset),
+        [Effect::Toast(Toast::new(
+            ToastKind::Warning,
+            "Filter already at default",
+            QUICK
+        ))],
+        "as Add's resets say"
+    );
     assert!(state.is_open(), "Reset stages; Apply commits");
 }
 
@@ -349,6 +360,28 @@ fn a_quiet_reset_stages_the_blank_filter_without_a_toast() {
     assert_eq!(state.update(Action::Reset), []);
     assert_eq!(state.draft(), Some(&CardQueryBuilder::default()));
     assert!(!state.unchanged());
+}
+
+/// A quiet Reset keeps the price currency, as every plain Reset does.
+#[test]
+fn a_quiet_reset_keeps_the_currency() {
+    let mut euros = named("elf");
+    euros.set_price_currency(PriceCurrency::Eur);
+    let mut state = State::new();
+    let _ = state.update(open_action(
+        &euros,
+        config(false, false, ResetRule::Plain),
+        ResetNotice::Quiet,
+    ));
+    assert_eq!(state.update(Action::Reset), []);
+    assert_eq!(
+        state.draft().and_then(CardQueryBuilder::price_currency),
+        Some(PriceCurrency::Eur)
+    );
+    assert_eq!(
+        state.draft().and_then(CardQueryBuilder::name_contains),
+        None
+    );
 }
 
 #[test]

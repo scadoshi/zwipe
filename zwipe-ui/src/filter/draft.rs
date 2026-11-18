@@ -21,7 +21,8 @@ use crate::toast::{Toast, ToastKind};
 /// What Reset does on a host.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub enum ResetRule {
-    /// Back to the blank filter: the deck cards view and Remove.
+    /// Back to the blank filter, keeping the price currency: the deck cards view, Remove, the
+    /// commander maybeboard and Swipe select.
     #[default]
     Plain,
     /// Add's search: back to the deck-context default, keeping synergy.
@@ -267,7 +268,14 @@ impl FilterDraft {
 fn reset_rule(rule: &ResetRule, filter: &mut CardQueryBuilder) -> Result<(), AlreadyDefault> {
     match rule {
         ResetRule::Plain => {
-            filter.clear();
+            let mut blank = CardQueryBuilder::default();
+            if let Some(currency) = filter.price_currency() {
+                blank.set_price_currency(currency);
+            }
+            if *filter == blank {
+                return Err(AlreadyDefault);
+            }
+            *filter = blank;
             Ok(())
         }
         ResetRule::AddSearch(context) => context.reset_search(filter),
@@ -388,6 +396,32 @@ mod tests {
             panic!("applies");
         };
         assert_eq!(toast.text, "Filter applied");
+    }
+
+    /// Reset on a plain host keeps the price currency, a display preference, and says so when
+    /// it has nothing to do, as Add's resets do.
+    #[test]
+    fn a_plain_reset_keeps_the_currency_and_names_a_reset_with_nothing_to_do() {
+        use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+
+        let mut filter = CardQueryBuilder::default();
+        filter.set_name_contains("bolt".to_owned());
+        filter.set_price_currency(PriceCurrency::Eur);
+        let mut draft = FilterDraft::new(&filter, SheetConfig::default());
+        assert_eq!(draft.reset().text, "Filter reset");
+        let mut want = CardQueryBuilder::default();
+        want.set_price_currency(PriceCurrency::Eur);
+        assert_eq!(draft.draft, want, "the currency stays");
+
+        assert_eq!(draft.reset().text, "Filter already at default");
+        assert_eq!(draft.draft, want, "a second reset changes nothing");
+        let ApplyOutcome::Applied { toast, .. } = draft.apply() else {
+            panic!("applies");
+        };
+        assert_eq!(toast.text, "Filter cleared");
+
+        let mut blank = FilterDraft::new(&CardQueryBuilder::default(), SheetConfig::default());
+        assert_eq!(blank.reset().text, "Filter already at default");
     }
 
     #[test]
