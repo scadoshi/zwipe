@@ -335,8 +335,9 @@ fn back_after_escape<T>(closed: bool, back: Option<T>) -> Option<T> {
 /// leaves the field; anywhere else it sends `true` to the root, which closes
 /// the top overlay unless it is the deck's Cards layer ([`EscKeeps`]), or,
 /// with nothing to close on a deck's Add, Remove or Edit, goes back as the
-/// screen's Back button does. Enter with nothing focused submits the page's form panel when it has
-/// exactly one, as Enter in one of its fields does.
+/// screen's Back button does. Enter with nothing focused submits the page's form when it has exactly
+/// one, a form in a panel or the deck form around its panels, and no picker, sheet or modal is
+/// open over it, as Enter in one of its fields does.
 ///
 /// Escape is marked taken, so no later listener closes the same overlay
 /// again, and sends once the key's dispatch is over, so a dialog the close
@@ -358,9 +359,9 @@ document.addEventListener('keydown', (e) => {
     }
     const onControl = focus && (focus.tagName === 'BUTTON' || focus.tagName === 'A');
     if (e.key === 'Enter' && !e.isComposing && !onControl && !inField) {
-        const forms = Array.from(document.querySelectorAll('.web-form-panel form'))
+        const forms = Array.from(document.querySelectorAll('.web-form-panel form, form:has(.web-form-panel)'))
             .filter((form) => form.offsetParent !== null);
-        if (forms.length === 1 && !document.querySelector('.bottom-sheet.show')) {
+        if (forms.length === 1 && !document.querySelector('.alert-dialog[data-state="open"], .bottom-sheet.show, .screen.web-large-modal, .swipe-select-screen.show')) {
             e.preventDefault();
             forms[0].requestSubmit();
         }
@@ -477,6 +478,36 @@ mod tests {
         assert!(
             KEYS_JS.contains("if (e.key === 'Escape') {\n        e.preventDefault();"),
             "{KEYS_JS}"
+        );
+    }
+
+    #[test]
+    fn enter_with_nothing_focused_finds_the_deck_form_around_its_panels() {
+        let fields = include_str!("screens/deck/form/fields.rs");
+        let deck_form = fields
+            .split_once("form {\n            class: \"container-sm web-deck-form\",")
+            .map_or("", |(_, rest)| rest);
+        assert!(
+            deck_form.contains("div { class: \"web-form-panel\","),
+            "the deck form holds its panels, where every other form sits in one"
+        );
+        assert!(
+            KEYS_JS.contains(
+                "document.querySelectorAll('.web-form-panel form, form:has(.web-form-panel)')"
+            ),
+            "a form in a panel and a form around panels: {KEYS_JS}"
+        );
+    }
+
+    #[test]
+    fn enter_with_nothing_focused_waits_while_any_picker_or_sheet_is_open() {
+        // A phone-width picker is a screen over the deck form, which stays laid out behind it.
+        let modals = components::keys::MODAL_SELECTORS.join(", ");
+        assert!(
+            KEYS_JS.contains(&format!(
+                "if (forms.length === 1 && !document.querySelector('{modals}')) {{"
+            )),
+            "{modals}: {KEYS_JS}"
         );
     }
 
