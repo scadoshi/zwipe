@@ -52,13 +52,26 @@ fn use_keys_under_guard(guard: String, on_key: Callback<String>) {
 /// held back, so the key never types itself into the field it opens.
 const FIELD_KEYS: [&str; 2] = [shortcuts::QUICK_ADD_KEY, shortcuts::FILTER_NAME_KEY];
 
-/// [`PAGE_KEYS_JS`] for registration `id` under `guard`.
+/// Registers one screen's key listener, registration `id`, which answers while it is the newest
+/// and `guard` (a browser expression) holds.
 fn page_keys_js(guard: &str, id: Uuid) -> String {
-    PAGE_KEYS_JS
-        .replace("__KEY__", guard::PRESSED_KEY)
-        .replace("__ID__", &id.to_string())
-        .replace("__GUARD__", guard)
-        .replace("__FIELD_KEYS__", &format!("{FIELD_KEYS:?}"))
+    let key = guard::PRESSED_KEY;
+    let field_keys = format!("{FIELD_KEYS:?}");
+    format!(
+        r"
+window.__zwipePageKeys = window.__zwipePageKeys || [];
+window.__zwipePageKeys.push('{id}');
+const onKey = (e) => {{
+    const stack = window.__zwipePageKeys;
+    if (!stack.length || stack[stack.length - 1] !== '{id}') return;
+    if ({key}.length !== 1 || !{guard}) return;
+    if ({field_keys}.includes({key})) e.preventDefault();
+    dioxus.send({key});
+}};
+window['__zwipePageKey{id}'] = onKey;
+document.addEventListener('keydown', onKey);
+"
+    )
 }
 
 /// Calls `on_undo` for Ctrl+Z (Cmd+Z on a Mac) while this registration is
@@ -141,21 +154,6 @@ const SCOPED_KEYS_DROP_JS: &str = r"
 const onKey = window['__zwipeScopedKey__ID__'];
 if (onKey) document.removeEventListener('keydown', onKey);
 delete window['__zwipeScopedKey__ID__'];
-";
-
-/// Registers one screen's key listener.
-const PAGE_KEYS_JS: &str = r"
-window.__zwipePageKeys = window.__zwipePageKeys || [];
-window.__zwipePageKeys.push('__ID__');
-const onKey = (e) => {
-    const stack = window.__zwipePageKeys;
-    if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
-    if (__KEY__.length !== 1 || !__GUARD__) return;
-    if (__FIELD_KEYS__.includes(__KEY__)) e.preventDefault();
-    dioxus.send(__KEY__);
-};
-window['__zwipePageKey__ID__'] = onKey;
-document.addEventListener('keydown', onKey);
 ";
 
 /// Removes one screen's key listener.
