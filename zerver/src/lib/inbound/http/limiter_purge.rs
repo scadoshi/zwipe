@@ -102,11 +102,11 @@ mod tests {
         );
     }
 
-    /// Reads `routes.rs` only: a limiter built in another file escapes it, so a split-out
-    /// router adds its file here.
+    /// Reads `routes.rs` and `family_limit.rs`, where the limiters are built: a limiter built in
+    /// another file escapes it, so a split-out router adds its file here.
     #[test]
     fn every_limiter_the_routes_build_purges() {
-        let routes = include_str!("routes.rs");
+        let routes = [include_str!("routes.rs"), include_str!("family_limit.rs")].concat();
         let compact: String = routes.split_whitespace().collect();
         let built = compact.matches("GovernorConfigBuilder::default()").count();
         let purged = compact

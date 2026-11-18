@@ -279,7 +279,7 @@ async fn an_ipv6_client_moving_inside_its_64_stays_locked_out(pool: sqlx::PgPool
     let right = json!({ "identifier": "victim", "password": "TestPass123!" });
 
     // Five wrong passwords, each from a new address in one /64: one client to the limiter and
-    // the lockout, so the five are the limiter's burst and each counts toward the lock.
+    // the lockout, so each counts toward the lock.
     for n in 1..=5 {
         let (status, _) = app
             .send_from(
@@ -293,8 +293,8 @@ async fn an_ipv6_client_moving_inside_its_64_stays_locked_out(pool: sqlx::PgPool
         assert_eq!(status, StatusCode::UNAUTHORIZED, "wrong password {n}");
     }
 
-    // A sixth address in that /64 is the same client: past the limiter's burst it's refused
-    // before the password is read.
+    // A sixth address in that /64 is the same client: inside the /64's larger limiter burst, it
+    // reaches the lockout, which five failures have shut, so the right password is refused.
     let (status, _) = app
         .send_from(
             from("2001:db8:1:2::99"),
@@ -306,8 +306,8 @@ async fn an_ipv6_client_moving_inside_its_64_stays_locked_out(pool: sqlx::PgPool
         .await;
     assert_eq!(
         status,
-        StatusCode::TOO_MANY_REQUESTS,
-        "the /64 shares one limiter bucket"
+        StatusCode::UNAUTHORIZED,
+        "the /64 shares one lockout"
     );
 
     // The next /64 is another client: the owner there logs in.

@@ -126,6 +126,15 @@ const CF_CONNECTING_IP: &str = "cf-connecting-ip";
 #[derive(Debug, Clone)]
 pub struct CfConnectingIpKeyExtractor;
 
+/// The client as a rate limit counts it: [`client_ip`] through [`lockout::address_key`], an IPv6
+/// client by its /64 and an IPv4 address written as IPv6 as IPv4. `None` when there is no address.
+pub(crate) fn client_key(
+    headers: &axum::http::HeaderMap,
+    extensions: &axum::http::Extensions,
+) -> Option<IpAddr> {
+    client_ip(headers, extensions).map(lockout::address_key)
+}
+
 /// The real client address: `CF-Connecting-IP` when present, else the socket
 /// peer (localhost / Tailscale paths). See [`CfConnectingIpKeyExtractor`] for
 /// why the header is trustworthy here.
@@ -148,9 +157,7 @@ impl KeyExtractor for CfConnectingIpKeyExtractor {
     type Key = IpAddr;
 
     fn extract<T>(&self, req: &axum::http::Request<T>) -> Result<Self::Key, GovernorError> {
-        client_ip(req.headers(), req.extensions())
-            .map(lockout::address_key)
-            .ok_or(GovernorError::UnableToExtractKey)
+        client_key(req.headers(), req.extensions()).ok_or(GovernorError::UnableToExtractKey)
     }
 }
 

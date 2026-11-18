@@ -1,6 +1,7 @@
 //! HTTP layer: Axum server, error mapping, middleware, and route definitions.
 
 pub mod cache;
+pub mod family_limit;
 pub mod handlers;
 pub mod limiter_purge;
 pub mod middleware;
