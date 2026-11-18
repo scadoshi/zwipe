@@ -5,6 +5,7 @@ pub mod family_limit;
 pub mod handlers;
 pub mod limiter_purge;
 pub mod middleware;
+pub mod rate_limits;
 pub mod routes;
 pub mod share_preview;
 pub mod swipe_cap;
@@ -31,6 +32,7 @@ use zwipe_core::http::paths::CHANGELOG_ROUTE;
 
 use crate::domain::auth::access_token::JwtSecret;
 use crate::domain::auth::ports::AuthService;
+use crate::inbound::http::rate_limits::RateLimits;
 use crate::wiring::{Auth, Cards, Decks, Health, Metrics, Users};
 
 // == error ==
@@ -237,6 +239,16 @@ pub fn build_router(
     jwt_secret: JwtSecret,
     allowed_origins: Vec<HeaderValue>,
 ) -> axum::Router {
+    build_router_with(state, jwt_secret, allowed_origins, &RateLimits::default())
+}
+
+/// [`build_router`] with its rate limiters' buckets set by `limits`.
+pub fn build_router_with(
+    state: AppState,
+    jwt_secret: JwtSecret,
+    allowed_origins: Vec<HeaderValue>,
+    limits: &RateLimits,
+) -> axum::Router {
     // RequestId is set by SetRequestIdLayer before TraceLayer fires, so it's
     // available as a request extension when we build the span.
     let trace_layer = tower_http::trace::TraceLayer::new_for_http().make_span_with(
@@ -267,12 +279,12 @@ pub fn build_router(
         .merge(
             // last-active layer wraps private routes only: it peeks the Bearer
             // token, so it must sit where every request carries one
-            routes::private_routes(jwt_secret).layer(axum::middleware::from_fn_with_state(
+            routes::private_routes(jwt_secret, limits).layer(axum::middleware::from_fn_with_state(
                 state.clone(),
                 middleware::track_last_active,
             )),
         )
-        .merge(routes::public_routes())
+        .merge(routes::public_routes(limits))
         .layer(axum::Extension(cookie_origins))
         .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .layer(TimeoutLayer::with_status_code(

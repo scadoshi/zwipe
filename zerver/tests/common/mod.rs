@@ -2,7 +2,7 @@
 //!
 //! Each test gets a fresh, migrated, isolated database via `#[sqlx::test]`
 //! (requires `DATABASE_URL` in the env: `set -a; source zerver/.env`). We build
-//! the real Axum router with [`build_router`] over that pool + a capturing fake
+//! the real Axum router with [`build_router_with`] over that pool + a capturing fake
 //! email sender, and drive it in-process with `tower::ServiceExt::oneshot`: no
 //! socket, full middleware stack.
 
@@ -40,7 +40,8 @@ use zwipe::domain::auth::models::access_token::JwtSecret;
 use zwipe::domain::email::models::{SendEmail, SendEmailError};
 use zwipe::domain::email::ports::{EmailSender, SendEmailFuture};
 use zwipe::domain::{auth, card, deck, health, metrics, user};
-use zwipe::inbound::http::{AppState, build_router};
+use zwipe::inbound::http::rate_limits::RateLimits;
+use zwipe::inbound::http::{AppState, build_router_with};
 
 /// The one origin the test router allows, for the browser's cookie routes.
 pub(crate) const TEST_ORIGIN: &str = "https://app.zwipe.net";
@@ -116,7 +117,17 @@ pub(crate) struct TestApp {
 }
 
 impl TestApp {
+    /// The app with the server's bursts on periods long enough that no bucket refills while a
+    /// test runs, so a test that spends a burst sees the same answer however slow the run.
     pub(crate) fn new(pool: PgPool) -> Self {
+        Self::with_limits(
+            pool,
+            &RateLimits::default().with_every_period(std::time::Duration::from_secs(3600)),
+        )
+    }
+
+    /// The app with its rate limiters' buckets set by `limits`.
+    pub(crate) fn with_limits(pool: PgPool, limits: &RateLimits) -> Self {
         let db = Postgres::from_pool(pool.clone());
         let emails = FakeEmailSender::default();
         let jwt_secret = JwtSecret::new(TEST_JWT_SECRET).unwrap();
@@ -156,10 +167,11 @@ impl TestApp {
             )),
         };
 
-        let router = build_router(
+        let router = build_router_with(
             state,
             jwt_secret,
             vec![axum::http::HeaderValue::from_static(TEST_ORIGIN)],
+            limits,
         );
 
         let n = IP_COUNTER.fetch_add(1, Ordering::Relaxed);
