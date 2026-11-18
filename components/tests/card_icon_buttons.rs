@@ -151,8 +151,8 @@ fn the_star_is_one_toggle_outline_off_and_filled_on() {
         "{html}"
     );
     assert!(
-        components::MAGIC_CSS.contains(".card-action-icon[data-action=\"star\"][aria-pressed=\"true\"] > .action-dock-icon {\n    fill: currentColor;"),
-        "the starred star is filled"
+        components::MAGIC_CSS.contains(".card-action-icon:is([data-action=\"star\"], [data-action=\"flag\"])[aria-pressed=\"true\"] > .action-dock-icon {\n    fill: currentColor;"),
+        "the starred star is filled, by the rule it shares with the flag"
     );
     assert!(
         components::MAGIC_CSS.contains(".card-action-btn.card-action-icon[data-action=\"star\"][aria-pressed=\"true\"] {\n    border-color: var(--color-star);\n    color: var(--ink-color-star, var(--color-star));"),

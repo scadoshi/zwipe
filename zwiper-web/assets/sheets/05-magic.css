@@ -306,6 +306,13 @@
     height: 1rem;
 }
 
+/* A tile's flag shows only while the card is flagged, so it is filled, as
+   the pressed Flag button is. */
+.card-row-flag > .action-dock-icon,
+.card-stack-flag > .action-dock-icon {
+    fill: currentColor;
+}
+
 .card-row-mvp {
     display: inline-block;
     color: var(--ink-color-star, var(--color-star));
@@ -965,12 +972,8 @@ i.ms.ms-cost.ms-gp {
     color: var(--ink-color-star, var(--color-star));
 }
 
-.card-action-icon[data-action="star"][aria-pressed="true"] > .action-dock-icon {
-    fill: currentColor;
-}
-
-/* A flagged card's Flag button fills its flag, in the text's color. */
-.card-action-icon[data-action="flag"][aria-pressed="true"] > .action-dock-icon {
+/* A pressed Star or Flag fills its icon: an outline off, a filled shape on. */
+.card-action-icon:is([data-action="star"], [data-action="flag"])[aria-pressed="true"] > .action-dock-icon {
     fill: currentColor;
 }
 
