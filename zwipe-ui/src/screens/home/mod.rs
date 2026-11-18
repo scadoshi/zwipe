@@ -249,6 +249,8 @@ pub enum Action {
     ToggleScope {
         /// Whether the client holds the user's own counters from under [`COUNTS_FRESH`](crate::timing::COUNTS_FRESH) ago, so switching to them asks for none.
         mine_fresh: bool,
+        /// Whether the client holds everybody's counters from under [`COUNTS_FRESH`](crate::timing::COUNTS_FRESH) ago, so switching back to them asks for none.
+        everybody_fresh: bool,
     },
     /// Opens the deck list, from the Decks panel's All decks chip.
     Decks,
@@ -565,11 +567,17 @@ impl State {
             Action::RetryDecks => return self.retry(Panel::Decks).into_iter().collect(),
             Action::RetryPlayStyle => return self.retry(Panel::PlayStyle).into_iter().collect(),
             Action::RetryFlavor => return self.retry(Panel::Flavor).into_iter().collect(),
-            Action::ToggleScope { mine_fresh } => {
+            Action::ToggleScope {
+                mine_fresh,
+                everybody_fresh,
+            } => {
                 self.scope = self.scope.toggled();
                 let mut effects = vec![Effect::SaveScope(self.scope)];
                 if !mine_fresh {
                     effects.extend(self.fetch_my_counts());
+                }
+                if self.scope == Scope::Everybody && !everybody_fresh {
+                    effects.push(Effect::FetchCounts(self.generations.counts.next_ticket()));
                 }
                 return effects;
             }

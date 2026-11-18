@@ -9,6 +9,7 @@ pub mod sections;
 use zwipe_core::domain::card::scryfall_data::colors::Colors;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::deck::Format;
 
@@ -134,7 +135,7 @@ impl AddContext {
         b
     }
 
-    /// Reset on Search: back to the deck-context default, keeping synergy. `Err` when it already is there.
+    /// Reset on Search: back to the deck-context default, keeping synergy and the price currency. `Err` when it already is there.
     ///
     /// # Errors
     ///
@@ -145,15 +146,15 @@ impl AddContext {
         if at_default && b.sort().is_none() {
             return Err(AlreadyDefault);
         }
-        let synergy = b.synergy();
+        let kept = Kept::of(b);
         b.clear();
         self.apply_deck_context(b);
-        b.set_synergy(synergy);
+        kept.restore(b);
         Ok(())
     }
 }
 
-/// Reset on Add's maybeboard: back to blank, keeping synergy. `Err` when it already is blank.
+/// Reset on Add's maybeboard: back to blank, keeping synergy and the price currency. `Err` when it already is blank.
 ///
 /// # Errors
 ///
@@ -162,10 +163,34 @@ pub fn reset_maybeboard(b: &mut CardQueryBuilder) -> Result<(), AlreadyDefault> 
     if b.is_empty() && b.sort().is_none() {
         return Err(AlreadyDefault);
     }
-    let synergy = b.synergy();
+    let kept = Kept::of(b);
     b.clear();
-    b.set_synergy(synergy);
+    kept.restore(b);
     Ok(())
+}
+
+/// What Add's resets carry over: synergy, a mode, and the price currency, a display preference.
+struct Kept {
+    synergy: bool,
+    currency: Option<PriceCurrency>,
+}
+
+impl Kept {
+    /// What `b` holds that a reset keeps.
+    fn of(b: &CardQueryBuilder) -> Self {
+        Self {
+            synergy: b.synergy(),
+            currency: b.price_currency(),
+        }
+    }
+
+    /// Puts it back on the reset `b`.
+    fn restore(self, b: &mut CardQueryBuilder) {
+        b.set_synergy(self.synergy);
+        if let Some(currency) = self.currency {
+            b.set_price_currency(currency);
+        }
+    }
 }
 
 /// The filter already is at its default, so Reset has nothing to do.
@@ -269,6 +294,26 @@ mod tests {
             has_commander: true,
             lands_at_target: true,
         }
+    }
+
+    /// Add's resets keep the price currency, a display preference, as the plain Reset does.
+    #[test]
+    fn adds_resets_keep_the_currency() {
+        use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+
+        let mut narrowed = commander_deck().fresh_search();
+        narrowed.set_name_contains("elf".to_owned());
+        narrowed.set_price_currency(PriceCurrency::Eur);
+
+        let mut search = narrowed.clone();
+        assert_eq!(commander_deck().reset_search(&mut search), Ok(()));
+        assert_eq!(search.price_currency(), Some(PriceCurrency::Eur));
+        assert_eq!(search.name_contains(), None);
+
+        let mut maybeboard = narrowed;
+        assert_eq!(reset_maybeboard(&mut maybeboard), Ok(()));
+        assert_eq!(maybeboard.price_currency(), Some(PriceCurrency::Eur));
+        assert_eq!(maybeboard.name_contains(), None);
     }
 
     #[test]
