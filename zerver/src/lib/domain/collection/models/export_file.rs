@@ -1,6 +1,6 @@
-//! Writing a collection out as a ManaBox export: ManaBox's own header and columns, then a Tags
-//! column, which the collection import reads back from either app. A cell a spreadsheet would
-//! run as a formula is written as text.
+//! Writing a collection out as a ManaBox export: ManaBox's own header, columns and spellings,
+//! conditions on ManaBox's own scale, then a Tags column, which the collection import reads back
+//! from either app. A cell a spreadsheet would run as a formula is written as text.
 
 use chrono::{DateTime, SecondsFormat, Utc};
 use csv::WriterBuilder;
@@ -70,6 +70,8 @@ pub struct ExportLine {
 const FORMULA_STARTS: [char; 6] = ['=', '+', '-', '@', '\t', '\r'];
 
 /// `cell` as a spreadsheet shows it as text: with a `'` in front when it starts like a formula.
+/// A real card can start that way (`+2 Mace` leaves as `'+2 Mace`); the import still finds it,
+/// by its Scryfall id first.
 fn defused(cell: &str) -> String {
     if cell.starts_with(FORMULA_STARTS) {
         format!("'{cell}")
@@ -84,6 +86,42 @@ fn finish_cell(finish: Finish) -> &'static str {
         Finish::Foil => "foil",
         Finish::Etched => "etched",
         Finish::Nonfoil | Finish::Unknown => "normal",
+    }
+}
+
+/// ManaBox's spelling of `condition`, on ManaBox's own scale (Cardmarket's: mint, near mint,
+/// excellent, good, light played, played, poor). The grades only TCGplayer uses round down to
+/// the next ManaBox grade no better than theirs, so an export never overstates a card:
+/// moderately and heavily played are `played`, damaged is `poor`.
+fn condition_cell(condition: CardCondition) -> &'static str {
+    match condition {
+        CardCondition::Mint => "mint",
+        CardCondition::NearMint => "near_mint",
+        CardCondition::Excellent => "excellent",
+        CardCondition::Good => "good",
+        CardCondition::LightlyPlayed => "light_played",
+        CardCondition::ModeratelyPlayed | CardCondition::Played | CardCondition::HeavilyPlayed => {
+            "played"
+        }
+        CardCondition::Poor | CardCondition::Damaged => "poor",
+        CardCondition::Unknown => "",
+    }
+}
+
+/// The grade a condition reads back as after [`condition_cell`] writes it.
+#[cfg(test)]
+fn on_manabox_scale(condition: CardCondition) -> CardCondition {
+    match condition {
+        CardCondition::ModeratelyPlayed | CardCondition::HeavilyPlayed => CardCondition::Played,
+        CardCondition::Damaged => CardCondition::Poor,
+        same @ (CardCondition::Mint
+        | CardCondition::NearMint
+        | CardCondition::Excellent
+        | CardCondition::Good
+        | CardCondition::LightlyPlayed
+        | CardCondition::Played
+        | CardCondition::Poor
+        | CardCondition::Unknown) => same,
     }
 }
 
@@ -133,7 +171,7 @@ pub fn write(lines: &[ExportLine]) -> Result<String, anyhow::Error> {
             "false".to_owned(),
             "false".to_owned(),
             "false".to_owned(),
-            line.condition.map_or("", CardCondition::as_str).to_owned(),
+            line.condition.map_or("", condition_cell).to_owned(),
             line.language.map_or("", CardLanguage::as_str).to_owned(),
             "false".to_owned(),
             currency,
@@ -231,9 +269,44 @@ mod tests {
         for (row, want) in export.rows.iter().zip(&lines) {
             assert_eq!(
                 (row.finish, row.condition, row.language),
-                (want.finish, want.condition, want.language)
+                (
+                    want.finish,
+                    want.condition.map(on_manabox_scale),
+                    want.language
+                ),
+                "a grade only TCGplayer uses reads back as the ManaBox grade it rounds down to"
             );
         }
+    }
+
+    #[test]
+    fn conditions_leave_in_manabox_spellings_on_its_scale() {
+        for (condition, cell) in [
+            (CardCondition::Mint, "mint"),
+            (CardCondition::NearMint, "near_mint"),
+            (CardCondition::Excellent, "excellent"),
+            (CardCondition::Good, "good"),
+            (CardCondition::LightlyPlayed, "light_played"),
+            (CardCondition::ModeratelyPlayed, "played"),
+            (CardCondition::Played, "played"),
+            (CardCondition::HeavilyPlayed, "played"),
+            (CardCondition::Poor, "poor"),
+            (CardCondition::Damaged, "poor"),
+        ] {
+            assert_eq!(condition_cell(condition), cell, "{condition:?}");
+        }
+    }
+
+    #[test]
+    fn lightly_played_is_written_as_manabox_spells_it() {
+        let played = ExportLine {
+            condition: Some(CardCondition::LightlyPlayed),
+            ..line("x")
+        };
+        let csv = write(&[played]).unwrap();
+        let mut cells = csv::Reader::from_reader(csv.as_bytes());
+        let record = cells.records().next().unwrap().unwrap();
+        assert_eq!(record.get(13), Some("light_played"), "{csv}");
     }
 
     #[test]
