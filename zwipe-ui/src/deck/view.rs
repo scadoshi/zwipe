@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::{DeckOtherTag, DeckProfile, Format};
+use zwipe_core::domain::deck::{DeckOtherTag, DeckProfile, Format, deck_name};
 use zwipe_core::domain::share_link;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
@@ -187,10 +187,16 @@ pub fn total_price_line(
     StatsProfile::from(profile).total_price_line(total, currency)
 }
 
-/// The clone dialog's prefilled name: `{name} (clone)`.
+/// What [`clone_name`] appends.
+const CLONE_SUFFIX: &str = " (clone)";
+
+/// The clone dialog's prefilled name: `{name} (clone)`, the name cut short when the whole would
+/// pass [`deck_name::MAX_LENGTH`], so the prefill is a name Clone accepts.
 #[must_use]
 pub fn clone_name(deck_name: &str) -> String {
-    format!("{deck_name} (clone)")
+    let room = deck_name::MAX_LENGTH.saturating_sub(CLONE_SUFFIX.chars().count());
+    let base: String = deck_name.trim().chars().take(room).collect();
+    format!("{}{CLONE_SUFFIX}", base.trim_end())
 }
 
 /// An action on the deck view that went through, for its toast. Failures are not here: each client maps the error to its message.
@@ -233,7 +239,8 @@ impl Done {
 
 #[cfg(test)]
 mod tests {
-    use zwipe_core::domain::deck::DeckOtherTag;
+    use zwipe_core::domain::deck::deck_name::MAX_LENGTH;
+    use zwipe_core::domain::deck::{DeckName, DeckOtherTag};
     use zwipe_core::domain::site::APP_BASE;
 
     use super::*;
@@ -329,6 +336,23 @@ mod tests {
     #[test]
     fn the_clone_prefill_appends_clone() {
         assert_eq!(clone_name("Elves"), "Elves (clone)");
+    }
+
+    /// A name near the limit is cut so the prefill is still a name Clone accepts.
+    #[test]
+    fn the_clone_prefill_fits_the_name_limit() {
+        for len in [MAX_LENGTH - 8, MAX_LENGTH - 7, MAX_LENGTH] {
+            let name = "é".repeat(len);
+            let prefill = clone_name(&name);
+            assert!(prefill.ends_with(" (clone)"), "{prefill}");
+            assert!(DeckName::new(&*prefill).is_ok(), "{len}: {prefill}");
+        }
+        let spaced = format!("{} Elves", "x".repeat(55));
+        assert_eq!(
+            clone_name(&spaced),
+            format!("{} (clone)", "x".repeat(55)),
+            "the cut drops a trailing space"
+        );
     }
 
     #[test]

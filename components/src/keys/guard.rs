@@ -38,8 +38,30 @@ pub fn cursor_guard_js(sheet_class: &str) -> String {
     browser_guard(Modifiers::Refused, &overlays)
 }
 
-/// Open overlays that keep the screen's keys to themselves: a dialog and a sheet or drawer.
-pub const OVERLAY_SELECTORS: [&str; 2] = [".alert-dialog[data-state=\"open\"]", OPEN_SHEET];
+/// Open overlays that keep the screen's keys to themselves: a dialog, a sheet or drawer, and the
+/// Oracle tags dictionary's full-screen form, which answers its own keys ([`top_modal_guard_js`]).
+pub const OVERLAY_SELECTORS: [&str; 3] = [
+    ".alert-dialog[data-state=\"open\"]",
+    OPEN_SHEET,
+    ".web-dictionary",
+];
+
+/// The Oracle tags dictionary in either form: the full-screen overlay, or the wide modal's sheet.
+/// It opens over the sheet that asked for it (the filter, the deck form's Oracle tags picker), so
+/// its keys go through [`top_modal_guard_js`].
+pub const DICTIONARY: &str = ".web-dictionary, .web-dict-sheet .bottom-sheet";
+
+/// The guard for a modal's own keys, `modal` a selector: they reach it while it is the topmost
+/// open modal ([`MODAL_SELECTORS`]), whatever it sits over, and not while typing in a field or
+/// with Ctrl, Alt or Meta held.
+#[must_use]
+pub fn top_modal_guard_js(modal: &str) -> String {
+    let modals = MODAL_SELECTORS.join(", ");
+    let on_top = format!(
+        "(() => {{ const open = [...document.querySelectorAll('{modals}')]; const top = open[open.length - 1]; return !!top && top.matches('{modal}'); }})()"
+    );
+    browser_guard(Modifiers::Refused, &on_top)
+}
 
 /// The class of the Stacks view's card details drawer, the one sheet the deck cards screen's
 /// hover keys pass through ([`guard_js_through`]).
@@ -170,6 +192,39 @@ mod tests {
     use zwipe_ui::deck_cards::keys as hover_keys;
 
     use super::*;
+
+    #[test]
+    fn the_dictionary_answers_its_own_keys_while_it_is_the_topmost_modal() {
+        let js = top_modal_guard_js(DICTIONARY);
+        assert!(
+            js.contains(&format!(
+                "const open = [...document.querySelectorAll('{}')]; const top = open[open.length - 1]; return !!top && top.matches('{DICTIONARY}');",
+                MODAL_SELECTORS.join(", ")
+            )),
+            "on top, over the filter or a picker sheet, it takes the keys: {js}"
+        );
+        assert!(
+            !js.contains(&overlays_closed(None)),
+            "the sheet it is, or sits over, does not hold its keys: {js}"
+        );
+        assert!(
+            js.contains("return !typing"),
+            "typing in its search still types: {js}"
+        );
+        assert!(
+            DICTIONARY.contains(".web-dictionary")
+                && DICTIONARY.contains(".web-dict-sheet .bottom-sheet"),
+            "both forms, the full-screen overlay and the wide modal: {DICTIONARY}"
+        );
+    }
+
+    #[test]
+    fn the_full_screen_dictionary_keeps_the_page_s_keys_from_it() {
+        assert!(
+            OVERLAY_SELECTORS.contains(&".web-dictionary"),
+            "no page key (t, j, k) acts under it: {OVERLAY_SELECTORS:?}"
+        );
+    }
 
     #[test]
     fn a_letters_case_comes_from_shift_alone_so_caps_lock_changes_nothing() {

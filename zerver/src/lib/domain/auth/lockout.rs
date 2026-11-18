@@ -8,8 +8,11 @@
 //!
 //! Counters live in memory. zerver is one process, and a restart clearing
 //! them hands an attacker five more guesses, nothing more.
+//!
+//! An address here is [`address_key`](crate::domain::auth::lockout::address_key)'s: an IPv6 client counts as its whole
+//! /64, which one client holds, so moving within it starts nothing over.
 
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv6Addr};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
@@ -38,7 +41,29 @@ fn still_locked(locked_at: Option<Instant>, now: Instant) -> bool {
     locked_at.is_some_and(|at| now.saturating_duration_since(at) < LOCKOUT)
 }
 
-/// In-memory failed-login counters keyed by `(user, address)`.
+/// Bits of an IPv6 address that name the network one client holds: a /64, the smallest block an
+/// ISP or host hands out.
+const IPV6_CLIENT_PREFIX_BITS: u32 = 64;
+
+/// The address a client is counted by, in the login lockout and every rate limit: an IPv4 address
+/// as itself (also when written as IPv4-mapped IPv6), an IPv6 address as its /64 with the host
+/// bits zeroed, since one client holds the whole /64 and could otherwise take a new address, and
+/// a fresh count, for each request.
+#[must_use]
+pub fn address_key(ip: IpAddr) -> IpAddr {
+    match ip {
+        IpAddr::V4(v4) => IpAddr::V4(v4),
+        IpAddr::V6(v6) => {
+            if let Some(v4) = v6.to_ipv4_mapped() {
+                return IpAddr::V4(v4);
+            }
+            let network = u128::from(v6) & (u128::MAX << (128 - IPV6_CLIENT_PREFIX_BITS));
+            IpAddr::V6(Ipv6Addr::from(network))
+        }
+    }
+}
+
+/// In-memory failed-login counters keyed by `(user, address)`, the address as [`address_key`].
 #[derive(Debug, Default)]
 pub struct LoginLockout {
     entries: DashMap<(Uuid, IpAddr), Failures>,
@@ -58,21 +83,24 @@ impl LoginLockout {
 
     /// Forgets the pair's failures after a successful login.
     pub fn clear(&self, user_id: Uuid, ip: IpAddr) {
-        self.entries.remove(&(user_id, ip));
+        self.entries.remove(&(user_id, address_key(ip)));
     }
 
     fn is_locked_at(&self, user_id: Uuid, ip: IpAddr, now: Instant) -> bool {
         self.entries
-            .get(&(user_id, ip))
+            .get(&(user_id, address_key(ip)))
             .is_some_and(|f| still_locked(f.locked_at, now))
     }
 
     fn record_failure_at(&self, user_id: Uuid, ip: IpAddr, now: Instant) -> bool {
-        let mut entry = self.entries.entry((user_id, ip)).or_insert(Failures {
-            count: 0,
-            last_failed_at: now,
-            locked_at: None,
-        });
+        let mut entry = self
+            .entries
+            .entry((user_id, address_key(ip)))
+            .or_insert(Failures {
+                count: 0,
+                last_failed_at: now,
+                locked_at: None,
+            });
         let fresh = now.duration_since(entry.last_failed_at) <= FAILURE_WINDOW;
         // Past MAX_FAILURES the exact count no longer matters, so it caps.
         entry.count = if fresh {
@@ -123,6 +151,32 @@ mod tests {
         }
         assert!(lockout.record_failure_at(user, ip, now));
         assert!(lockout.is_locked_at(user, ip, now));
+    }
+
+    #[test]
+    fn failures_across_one_ipv6_64_count_as_one_address() {
+        let lockout = LoginLockout::default();
+        let user = Uuid::new_v4();
+        let now = Instant::now();
+        for n in 1..=MAX_FAILURES {
+            let ip: IpAddr = format!("2001:db8:1:2::{n}").parse().unwrap();
+            lockout.record_failure_at(user, ip, now);
+        }
+        let same_64: IpAddr = "2001:db8:1:2:abcd::9".parse().unwrap();
+        let next_64: IpAddr = "2001:db8:1:3::1".parse().unwrap();
+        assert!(
+            lockout.is_locked_at(user, same_64, now),
+            "a new address in the /64 is still locked"
+        );
+        assert!(
+            !lockout.is_locked_at(user, next_64, now),
+            "the next /64 is another client"
+        );
+        lockout.clear(user, same_64);
+        assert!(
+            !lockout.is_locked_at(user, same_64, now),
+            "a login from the /64 clears it"
+        );
     }
 
     #[test]

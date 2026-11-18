@@ -1,5 +1,6 @@
 //! One command-zone field: its label row with `Filter`, `×` and `Swipe`, the
-//! floating results, and the input with its own `×`.
+//! input with its own `×`, and the results under it, in the form's flow, so
+//! they push the rows below down rather than cover a label.
 //!
 //! Typing searches after zwipe-ui's debounce once the slot's minimum is
 //! typed; ↑ and ↓ move through the results and Enter picks the highlighted
@@ -165,6 +166,27 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
 
     let found = results();
     let lit = highlight();
+    let floats = dropdown().then(|| rsx! {
+        div { class: "search-float-anchor search-float-flow",
+            div { class: "search-float-results",
+                if searching() {
+                    div { class: "chip-unselected search-float-chip", "Searching…" }
+                } else if found.is_empty() {
+                    div { class: "chip-unselected search-float-chip", "No results" }
+                } else {
+                    for (i, hit) in found.into_iter().enumerate() {
+                        div {
+                            key: "{hit.scryfall_data.id}",
+                            class: if lit == Some(i) { "chip-unselected search-float-chip web-float-highlight" } else { "chip-unselected search-float-chip" },
+                            style: "animation-delay: {i.saturating_mul(40)}ms, {i.saturating_mul(40).saturating_add(250)}ms;",
+                            onclick: move |_| pick(hit.clone()),
+                            "{hit.scryfall_data.name}"
+                        }
+                    }
+                }
+            }
+        }
+    });
     rsx! {
         div {
             div { class: "label-row",
@@ -181,27 +203,6 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
                     class: "chip-xs chip-primary",
                     onclick: move |_| swipe_open.set(true),
                     "Swipe"
-                }
-            }
-            if dropdown() {
-                div { class: "search-float-anchor",
-                    div { class: "search-float-results",
-                        if searching() {
-                            div { class: "chip-unselected search-float-chip", "Searching…" }
-                        } else if found.is_empty() {
-                            div { class: "chip-unselected search-float-chip", "No results" }
-                        } else {
-                            for (i, hit) in found.into_iter().enumerate() {
-                                div {
-                                    key: "{hit.scryfall_data.id}",
-                                    class: if lit == Some(i) { "chip-unselected search-float-chip web-float-highlight" } else { "chip-unselected search-float-chip" },
-                                    style: "animation-delay: {i.saturating_mul(40)}ms, {i.saturating_mul(40).saturating_add(250)}ms;",
-                                    onclick: move |_| pick(hit.clone()),
-                                    "{hit.scryfall_data.name}"
-                                }
-                            }
-                        }
-                    }
                 }
             }
             // The × in the box clears what it shows: the search typed into
@@ -261,6 +262,7 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
                     },
                 }
             }
+            {floats}
         }
     }
 }

@@ -81,7 +81,7 @@ pub struct DictionarySlot {
 /// The filter panel. `filter` is the host's applied filter; `on_apply` takes
 /// the committed draft. `catalog` holds the lists the pickers search, and
 /// `on_need` fetches the kinds the source needs each time the panel opens.
-/// `quiet_reset` stages the blank filter on `Reset` without a toast, as the
+/// `quiet_reset` stages the host's Reset without a toast, as the
 /// commander maybeboard and Swipe select do.
 ///
 /// The rest is optional chrome: `on_toast` raises the panel's toasts (none
@@ -213,7 +213,8 @@ pub fn CardFilterPanel(
 
     let mut reset = move || {
         if quiet_reset {
-            draft.write().draft.clear();
+            // The toast is the one thing a quiet Reset leaves out.
+            let _ = draft.write().reset();
         } else {
             let t = draft.write().reset();
             raise(on_toast, t);
