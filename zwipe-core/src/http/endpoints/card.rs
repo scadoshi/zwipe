@@ -10,6 +10,7 @@ use crate::domain::card::oracle_tag::OracleTag;
 use crate::domain::card::oracle_tag_examples::OracleTagSlug;
 use crate::domain::card::scryfall_data::universe::UbFranchiseView;
 use crate::domain::card::search_card::card_filter::CardQuery;
+use crate::domain::card::slug::CardSlug;
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths;
 use crate::http::paths::{
@@ -101,6 +102,19 @@ impl Endpoint for GetPrintings {
     type Response = Vec<Card>;
     fn path(&self) -> Cow<'static, str> {
         Cow::Owned(paths::printings_route(self.0))
+    }
+}
+
+/// Every card whose name, or front face's name, folds to one slug, for a reader with no account.
+#[derive(Debug)]
+pub struct GetNamedCards(pub CardSlug);
+impl Endpoint for GetNamedCards {
+    const METHOD: Method = Method::Get;
+    const AUTH: bool = false;
+    type Request = ();
+    type Response = Vec<Card>;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(paths::named_card_route(&self.0))
     }
 }
 

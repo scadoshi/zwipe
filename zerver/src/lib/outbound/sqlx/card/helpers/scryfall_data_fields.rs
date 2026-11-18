@@ -1,14 +1,15 @@
 //! Scryfall data field helpers for SQL query building.
 //!
-//! Provides utilities for binding all 87 Scryfall card fields to `SQLx` query builders,
+//! Provides utilities for binding every Scryfall card field, and the name's slugs, to `SQLx` query builders,
 //! enabling efficient bulk insert/update operations.
 
 use sqlx::types::Json;
 use sqlx::{Postgres, QueryBuilder};
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::scryfall_data::colors::Colors;
+use zwipe_core::domain::card::slug::{card_slug, front_slug};
 
-/// Every [`ScryfallData`] field name, line-separated for SQL generation.
+/// Every [`ScryfallData`] field name, then the name's slugs, line-separated for SQL generation.
 ///
 /// This constant serves as the single source of truth for field ordering,
 /// ensuring consistency between INSERT column lists and VALUES bindings.
@@ -100,6 +101,8 @@ const SCRYFALL_DATA_FIELDS: &str = r"
     preview_previewed_at
     preview_source_uri
     preview_source
+    name_slug
+    front_slug
 ";
 
 /// Returns a comma-separated list of all Scryfall data field names.
@@ -144,7 +147,7 @@ pub fn bulk_upsert_conflict_fields() -> String {
 
 /// Extension trait for binding a single card's fields to a query builder.
 ///
-/// Pushes all 88 Scryfall fields as SQL bind parameters in the correct order,
+/// Pushes every field in `SCRYFALL_DATA_FIELDS` as an SQL bind parameter in order,
 /// wrapped in parentheses for use in VALUES clauses.
 pub trait BindScryfallDataFields {
     /// Binds all fields from the given card to the query builder.
@@ -339,6 +342,11 @@ impl BindScryfallDataFields for QueryBuilder<Postgres> {
         self.push_bind(card.preview_source_uri.clone());
         self.push(", ");
         self.push_bind(card.preview_source.clone());
+        self.push(", ");
+        // the lookup by name's slugs, from the name
+        self.push_bind(card_slug(&card.name).map(String::from));
+        self.push(", ");
+        self.push_bind(front_slug(&card.name).map(String::from));
         self.push(")");
         self
     }

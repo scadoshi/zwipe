@@ -13,6 +13,7 @@ use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::card::slug::CardSlug;
 
 use crate::domain::card::models::printing_removal::{
     Printing, References, RemovalCounts, RemovalMode, RemovalPlan, RemovalReport, Survivors,
@@ -238,6 +239,14 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn fetch_printings(
         &self,
         oracle_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
+
+    /// Returns every card whose name, or front face's name, folds to `slug`, one printing each,
+    /// the one search shows: a full-name match before a front face, playable cards before
+    /// tokens and art cards, then by name. Empty when no card has that slug.
+    fn fetch_named_cards(
+        &self,
+        slug: &CardSlug,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// Retrieves complete cards by oracle ids, at most one card per oracle,
@@ -575,6 +584,14 @@ pub trait CardService: Clone + Send + Sync + 'static {
     fn fetch_printings(
         &self,
         oracle_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
+
+    /// Returns every card whose name, or front face's name, folds to `slug`, one printing each,
+    /// the one search shows: a full-name match before a front face, playable cards before
+    /// tokens and art cards, then by name. Empty when no card has that slug.
+    fn fetch_named_cards(
+        &self,
+        slug: &CardSlug,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// Searches for complete cards matching filter criteria. Applies the

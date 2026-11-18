@@ -12,6 +12,7 @@
 use uuid::Uuid;
 
 use crate::domain::card::oracle_tag_examples::OracleTagSlug;
+use crate::domain::card::slug::CardSlug;
 use crate::http::endpoint::Method;
 
 // == health ==
@@ -123,6 +124,12 @@ pub fn card_route(scryfall_data_id: Uuid) -> String {
 #[must_use]
 pub fn printings_route(oracle_id: Uuid) -> String {
     format!("{CARD_ROUTE}/{oracle_id}/printings")
+}
+
+/// Every card whose name, or front face's name, folds to `slug`.
+#[must_use]
+pub fn named_card_route(slug: &CardSlug) -> String {
+    format!("{CARD_ROUTE}/named/{slug}")
 }
 
 #[must_use]
@@ -335,6 +342,8 @@ mod tests {
 
         assert_eq!(card_route(a), format!("/api/card/{sa}"));
         assert_eq!(printings_route(a), format!("/api/card/{sa}/printings"));
+        let name: CardSlug = "fire-ice".parse().unwrap();
+        assert_eq!(named_card_route(&name), "/api/card/named/fire-ice");
         let slug: OracleTagSlug = "spot-removal".parse().unwrap();
         assert_eq!(
             oracle_tag_examples_route(&slug),
