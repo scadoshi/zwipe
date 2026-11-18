@@ -6,9 +6,12 @@
 use components::icons::{CHECK, DockIcon};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::use_toast;
+use uuid::Uuid;
 use zwipe_core::domain::deck::Format;
+use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 use zwipe_ui::screens::deck_form;
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
+use zwipe_ui::write_id::WriteId;
 
 use super::form::command_zone::autofill_named_partner;
 use super::form::fields::DeckFields;
@@ -34,6 +37,8 @@ pub fn CreateDeck() -> Element {
     let hint_open = use_one_time_hint(OneTimeHint::CreateDeck);
     let form = use_deck_form();
     let mut saving = use_signal(|| false);
+    // The deck id Create sends, kept while the same form is saved again after a failure.
+    let mut create_id = use_signal(WriteId::<HttpCreateDeckProfile>::new);
 
     // The handed-over commander, taken once. The format is set directly so
     // the picker's cascade cannot clear the commander; a "Partner with"
@@ -69,7 +74,8 @@ pub fn CreateDeck() -> Element {
             return;
         }
         saving.set(true);
-        let request = domain::deck::create_request(&values);
+        let mut request = domain::deck::create_request(&values);
+        request.id = Some(create_id.write().id_for(request.clone(), Uuid::new_v4));
         spawn(async move {
             match authed
                 .try_run("create_deck", |c, s| async move {
@@ -78,6 +84,7 @@ pub fn CreateDeck() -> Element {
                 .await
             {
                 Ok(created) => {
+                    create_id.write().landed();
                     guard.release();
                     navigator.replace(Route::ViewDeck {
                         view: None,

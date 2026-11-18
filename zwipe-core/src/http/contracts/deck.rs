@@ -37,7 +37,7 @@ pub struct HttpImportArchidektDeck {
 }
 
 /// Deck creation request body.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct HttpCreateDeckProfile {
     /// Deck display name.
     pub name: String,

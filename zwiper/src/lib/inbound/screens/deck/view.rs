@@ -106,9 +106,10 @@ impl Driver {
                 ticket,
                 deck_id,
                 name,
+                id,
             } = effect
             {
-                cloned = self.run_clone(ticket, deck_id, name).await;
+                cloned = self.run_clone(ticket, deck_id, name, id).await;
             } else {
                 self.perform(effect);
             }
@@ -118,10 +119,10 @@ impl Driver {
 
     /// Sends the clone and feeds its reply back. Returns whether it went
     /// through.
-    async fn run_clone(self, ticket: Ticket, deck_id: Uuid, name: String) -> bool {
+    async fn run_clone(self, ticket: Ticket, deck_id: Uuid, name: String, id: Uuid) -> bool {
         let body = HttpCloneDeck {
             new_name: name,
-            id: None,
+            id: Some(id),
         };
         let reply = self
             .authed
@@ -173,9 +174,10 @@ impl Driver {
                 ticket,
                 deck_id,
                 name,
+                id,
             } => {
                 spawn(async move {
-                    self.run_clone(ticket, deck_id, name).await;
+                    self.run_clone(ticket, deck_id, name, id).await;
                 });
             }
             Effect::ShareDeck { ticket, deck_id } => self.share(ticket, deck_id),
