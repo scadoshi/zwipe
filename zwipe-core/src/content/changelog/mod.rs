@@ -57,7 +57,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, / opens Filter at its name field",
         "On the web, Enter in a filter's text field applies the filter",
         "Warnings lists a deck's unpriced cards in place of the count on Budget",
-        "Toasts rise from the bottom edge and drop back down",
+        "Toasts rise from the bottom edge and drift up as they fade out",
         "Toasts sit as far from the side as from the bottom",
         "Stacked toasts line up behind the newest",
         "Exceptions no longer shows a line under it while Universes Beyond shows",

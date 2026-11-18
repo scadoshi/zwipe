@@ -130,8 +130,8 @@
 
 /* Shoots up from below the screen's bottom edge into its spot, by transform
    alone: its own height, the corner gap and the keyboard below its spot, and
-   its shadow's reach. Leaving, it drops back below the edge (toast-leave.js,
-   or the timed keyframes below). */
+   its shadow's reach. Leaving, it drifts up a little and fades out, like a
+   puff of smoke (toast-leave.js, or the timed keyframes below). */
 @keyframes toast-rise-in {
     from {
         transform: translateY(calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4)));
@@ -258,9 +258,9 @@
  * Keyframe percentages are relative to the animation's duration, so one
  * keyframe cannot serve both lives: the stops that give a 3s toast a 200ms
  * fade give a 5s toast a 330ms one. Hence a keyframe per life, worked back
- * from the same wall-clock feel, about 200ms up and 250ms down either way.
- * Each rises from below the bottom edge and drops back below it, as an
- * untimed toast does. */
+ * from the same wall-clock feel, about 200ms up and 250ms out either way.
+ * Each rises from below the bottom edge and leaves drifting up as it fades,
+ * as an untimed toast does. */
 
 @keyframes toast-life-3000 {
     0% {
@@ -272,13 +272,15 @@
         transform: translateY(0);
     }
 
-    /* 2750ms, so the drop takes the last 250ms */
+    /* 2750ms, so the leave takes the last 250ms */
     92% {
         transform: translateY(0);
+        opacity: 1;
     }
 
     100% {
-        transform: translateY(calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4)));
+        transform: translateY(-0.75rem);
+        opacity: 0;
     }
 }
 
@@ -295,10 +297,12 @@
     /* 4750ms */
     95% {
         transform: translateY(0);
+        opacity: 1;
     }
 
     100% {
-        transform: translateY(calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4)));
+        transform: translateY(-0.75rem);
+        opacity: 0;
     }
 }
 
@@ -310,4 +314,46 @@
 .toast-container.timed-fade [data-type="warning"],
 .toast-container.timed-fade [data-type="error"] {
     animation: toast-life-5000 5000ms ease both;
+}
+
+/* Under reduced motion a timed toast is simply there and fades out at the end
+   of its life, never moving. */
+@keyframes toast-still-3000 {
+    0% {
+        opacity: 1;
+    }
+
+    92% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes toast-still-5000 {
+    0% {
+        opacity: 1;
+    }
+
+    95% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast-container.timed-fade [data-type="info"] {
+        animation-name: toast-still-3000;
+    }
+
+    .toast-container.timed-fade [data-type="success"],
+    .toast-container.timed-fade [data-type="warning"],
+    .toast-container.timed-fade [data-type="error"] {
+        animation-name: toast-still-5000;
+    }
 }
