@@ -556,7 +556,7 @@ pub enum Effect {
         op: Op,
     },
     /// Takes back what a Send to added to another deck: reads the card's row there, then lowers
-    /// it by `copies` or deletes it ([`send_to::send_undo`]); answers with [`Action::Deleted`],
+    /// it by `copies` or deletes it ([`crate::send_to::send_undo`]); answers with [`Action::Deleted`],
     /// [`Action::UndoLeftAlone`] when the row moved boards or left, or [`Action::Failed`].
     UndoSend {
         /// The ticket to hand back.
