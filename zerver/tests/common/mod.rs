@@ -306,12 +306,22 @@ impl TestApp {
         method: Method,
         path: &str,
     ) -> (StatusCode, header::HeaderMap, axum::body::Bytes) {
+        self.send_bytes_from(self.fake_ip, method, path).await
+    }
+
+    /// `send_bytes` from a chosen peer address, for tests about per-address limits.
+    pub(crate) async fn send_bytes_from(
+        &self,
+        peer: SocketAddr,
+        method: Method,
+        path: &str,
+    ) -> (StatusCode, header::HeaderMap, axum::body::Bytes) {
         let mut request = Request::builder()
             .method(method)
             .uri(path)
             .body(Body::empty())
             .unwrap();
-        request.extensions_mut().insert(ConnectInfo(self.fake_ip));
+        request.extensions_mut().insert(ConnectInfo(peer));
         let response = self.router.clone().oneshot(request).await.unwrap();
         let status = response.status();
         let headers = response.headers().clone();
