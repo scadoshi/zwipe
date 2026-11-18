@@ -12,11 +12,12 @@ use tower_governor::GovernorLayer;
 use tower_governor::errors::GovernorError;
 use tower_governor::governor::GovernorConfigBuilder;
 use tower_http::set_header::SetResponseHeaderLayer;
+use zwipe_core::domain::collection::limits::MAX_BODY_BYTES;
 
 use crate::domain::auth::models::access_token::JwtSecret;
 use crate::inbound::http::AppState;
 use crate::inbound::http::handlers::{
-    auth, card, changelog, client, deck, deck_card, health, metrics, user,
+    auth, card, changelog, client, collection, deck, deck_card, health, metrics, user,
 };
 use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor};
 
@@ -581,7 +582,25 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(60))
             .burst_size(5)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
+    // burst 3, then 1 per 20 s, per account and per address: an import reads a whole file and
+    // writes up to 50,000 rows in one transaction.
+    let collection_import_user_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(20))
+            .burst_size(3)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret))
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
+    let collection_import_ip_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(20))
+            .burst_size(3)
+            .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
@@ -703,6 +722,22 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                                 .error_handler(unauthorized_on_missing_key),
                         ),
                     ),
+                )
+                .nest(
+                    "/collection",
+                    Router::new()
+                        .route(
+                            "/import",
+                            post(collection::import_collection).layer(
+                                GovernorLayer::new(collection_import_user_config)
+                                    .error_handler(unauthorized_on_missing_key),
+                            ),
+                        )
+                        .layer(DefaultBodyLimit::max(MAX_BODY_BYTES))
+                        .layer(
+                            GovernorLayer::new(collection_import_ip_config)
+                                .error_handler(stable_rate_limit),
+                        ),
                 )
                 .nest(
                     "/deck",

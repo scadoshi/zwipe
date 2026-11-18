@@ -16,6 +16,10 @@ pub enum ImportCollectionError {
     /// A header and no card rows.
     #[error("the file has no cards in it")]
     NoRows,
+    /// Card rows, none of which matched a card. A replace would empty the collection, so
+    /// nothing changes.
+    #[error("no row matched a card")]
+    NothingMatched,
     /// More than [`MAX_ROWS`] card rows.
     #[error("too many rows, the limit is {MAX_ROWS}")]
     TooManyRows,

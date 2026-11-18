@@ -29,7 +29,7 @@ use zwipe_core::http::paths::CHANGELOG_ROUTE;
 
 use crate::domain::auth::access_token::JwtSecret;
 use crate::domain::auth::ports::AuthService;
-use crate::wiring::{Auth, Cards, Decks, Health, Metrics, Users};
+use crate::wiring::{Auth, Cards, Collections, Decks, Health, Metrics, Users};
 
 // == error ==
 
@@ -204,6 +204,7 @@ pub struct AppState {
     pub card_service: Arc<Cards>,
     pub deck_service: Arc<Decks>,
     pub metrics_service: Arc<Metrics>,
+    pub collection_service: Arc<Collections>,
     /// Per-user debounce cache for `users.last_active_at` bumps.
     pub last_active_cache: Arc<DashMap<Uuid, Instant>>,
     /// The hour's featured flavor card, deadline-pinned to the top of the
@@ -218,6 +219,25 @@ pub struct AppState {
     pub swipe_cap: Arc<swipe_cap::SwipeCap>,
     /// Draws shared decks' preview images and keeps recent ones.
     pub share_preview: Arc<share_preview::SharePreview>,
+}
+
+/// Every service the server holds.
+#[derive(Debug)]
+pub struct Services {
+    /// Registration, login and sessions.
+    pub auth: Auth,
+    /// Profiles and settings.
+    pub users: Users,
+    /// Health checks.
+    pub health: Health,
+    /// Card search and lookups.
+    pub cards: Cards,
+    /// Decks and their cards.
+    pub decks: Decks,
+    /// Usage events and counters.
+    pub metrics: Metrics,
+    /// Collections.
+    pub collections: Collections,
 }
 
 /// Axum HTTP server with pre-configured routes and middleware.
@@ -312,23 +332,25 @@ impl HttpServer {
     /// # Errors
     ///
     /// Fails when the listener can't bind to the configured address.
-    pub async fn new(
-        auth_service: Auth,
-        user_service: Users,
-        health_service: Health,
-        card_service: Cards,
-        deck_service: Decks,
-        metrics_service: Metrics,
-        config: HttpServerConfig<'_>,
-    ) -> anyhow::Result<Self> {
-        let jwt_secret = auth_service.jwt_secret().clone();
+    pub async fn new(services: Services, config: HttpServerConfig<'_>) -> anyhow::Result<Self> {
+        let Services {
+            auth,
+            users,
+            health,
+            cards,
+            decks,
+            metrics,
+            collections,
+        } = services;
+        let jwt_secret = auth.jwt_secret().clone();
         let state = AppState {
-            auth_service: Arc::new(auth_service),
-            user_service: Arc::new(user_service),
-            health_service: Arc::new(health_service),
-            card_service: Arc::new(card_service),
-            deck_service: Arc::new(deck_service),
-            metrics_service: Arc::new(metrics_service),
+            auth_service: Arc::new(auth),
+            user_service: Arc::new(users),
+            health_service: Arc::new(health),
+            card_service: Arc::new(cards),
+            deck_service: Arc::new(decks),
+            metrics_service: Arc::new(metrics),
+            collection_service: Arc::new(collections),
             last_active_cache: Arc::new(DashMap::new()),
             featured_flavor: Arc::new(cache::TtlSlot::new()),
             min_client_version: Arc::from(config.min_client_version.as_str()),
