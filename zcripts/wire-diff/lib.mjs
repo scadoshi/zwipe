@@ -136,22 +136,134 @@ export const diff = (main, cand) => {
     : [{ path: "", kind: "status", main: main.status, cand: cand.status }, ...found];
 };
 
-/** Whether `entry` is a usable approval: every field filled in. */
+/** The kinds of data change an approval can name: "printings", another printing of the same card. */
+const DATA_KINDS = ["printings"];
+
+/** Whether `entry` is a usable data change: a kind wire-diff knows, its oracle ids and why. */
+const completeData = (entry) =>
+  DATA_KINDS.includes(entry.data) &&
+  (entry.oracle_ids === "*" ||
+    (Array.isArray(entry.oracle_ids) && entry.oracle_ids.length > 0 && entry.oracle_ids.every((id) => typeof id === "string"))) &&
+  ["reason", "approved_by"].every((k) => typeof entry[k] === "string" && entry[k].trim() !== "") &&
+  (entry.route === undefined || typeof entry.route === "string");
+
+/** Whether `entry` is a usable approval: every field of a path entry or a data change filled in. */
 const complete = (entry) =>
-  ["route", "path", "kind", "reason", "approved_by"].every((k) => typeof entry[k] === "string" && entry[k].trim() !== "");
+  entry.data !== undefined
+    ? completeData(entry)
+    : ["route", "path", "kind", "reason", "approved_by"].every((k) => typeof entry[k] === "string" && entry[k].trim() !== "");
+
+/** The oracle id of a card object: its own, its `scryfall_data`'s, or its `card`'s. */
+const oracleOf = (value, depth = 0) => {
+  if (kindOf(value) !== "object" || depth > 2) return undefined;
+  if (typeof value.oracle_id === "string") return value.oracle_id;
+  return oracleOf(value.scryfall_data, depth + 1) ?? oracleOf(value.card, depth + 1);
+};
 
 /**
- * Sorts every difference in `results` (`[{step: {name, route}, diffs}]`) into approved (an entry
- * in `approved` names its route, path and kind) and unapproved. Lists the entries missing a
- * field as incomplete, and the complete ones that matched nothing as stale.
+ * The card a difference at `path` sits in: the oracle id of its nearest enclosing object that is
+ * a card on both sides, when both sides name the same card there; `undefined` outside any card or
+ * where the two sides hold different cards (a reorder, not another printing).
+ */
+const cardOf = (main, cand, path) => {
+  const parts = segments(path);
+  const under = (body, depth) => parts.slice(0, depth).reduce((v, k) => (v == null ? undefined : v[k]), body);
+  for (let depth = parts.length - 1; depth >= 0; depth--) {
+    const a = oracleOf(under(main, depth));
+    const b = oracleOf(under(cand, depth));
+    if (a !== undefined || b !== undefined) return a === b ? a : undefined;
+  }
+  return undefined;
+};
+
+/** A printing id (a UUID), the first one in `value` when it's a string: an id, or a URL holding one. */
+const printingIn = (value) => (typeof value === "string" ? value.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/)?.[0] : undefined);
+
+/**
+ * Every printing id the replies in `results` name beside its card's oracle id, as a map to that
+ * oracle id: a card's own `id` next to its `oracle_id`, and a row's `scryfall_data_id` next to its.
+ */
+const printingsOf = (results) => {
+  const found = new Map();
+  const walk = (v) => {
+    if (kindOf(v) === "array") v.forEach(walk);
+    if (kindOf(v) !== "object") return;
+    if (typeof v.oracle_id === "string") {
+      for (const key of ["id", "scryfall_data_id"]) if (typeof v[key] === "string") found.set(v[key], v.oracle_id);
+    }
+    Object.values(v).forEach(walk);
+  };
+  for (const { main, cand } of results) [main, cand].forEach(walk);
+  return found;
+};
+
+/**
+ * Whether data change `entry` covers difference `d` on `route`, the replies `main` and `cand`:
+ * inside a listed card, the same card on both sides, or a value outside any card that names a
+ * printing of the same listed card on each side (`printings` maps printing ids to oracle ids).
+ */
+const coversData = (entry, route, d, main, cand, printings) => {
+  if (d.kind === "status" || (entry.route !== undefined && entry.route !== route)) return false;
+  const listed = (card) => card !== undefined && (entry.oracle_ids === "*" || entry.oracle_ids.includes(card));
+  const card = cardOf(main, cand, d.path);
+  if (card !== undefined) return listed(card);
+  if (d.kind !== "value") return false;
+  const was = printings.get(printingIn(d.main));
+  return was !== undefined && was === printings.get(printingIn(d.cand)) && listed(was);
+};
+
+/** Whether `approved` holds a usable printings data change. */
+const printingsApproved = (approved) => approved.some((a) => a.data === "printings" && completeData(a));
+
+/**
+ * `main` and `cand` with every card list that holds the same cards on both sides put in oracle id
+ * order, so each card compares with itself, while `approved` holds a printings data change:
+ * another printing can reorder a list sorted by printing. A list that gained or lost a card keeps
+ * its order, so that still shows. Without a printings data change both come back as they were.
+ */
+export const alignCards = (main, cand, approved) => {
+  if (!printingsApproved(approved)) return [main, cand];
+  const align = (a, b) => {
+    if (Array.isArray(a) && Array.isArray(b)) {
+      const ids = (list) => list.map((item) => oracleOf(item));
+      const [x, y] = [ids(a), ids(b)];
+      const cards = x.length > 0 && [...x, ...y].every((id) => id !== undefined);
+      const sameCards = cards && x.length === y.length && [...x].sort().join() === [...y].sort().join();
+      const order = (list) => [...list].sort((p, q) => (oracleOf(p) < oracleOf(q) ? -1 : oracleOf(p) > oracleOf(q) ? 1 : 0));
+      const [p, q] = sameCards ? [order(a), order(b)] : [a, b];
+      const pairs = p.map((item, i) => (i < q.length ? align(item, q[i]) : [item, undefined]));
+      return [pairs.map(([m]) => m), [...pairs.slice(0, q.length).map(([, c]) => c), ...q.slice(p.length)]];
+    }
+    if (kindOf(a) === "object" && kindOf(b) === "object") {
+      const x = { ...a };
+      const y = { ...b };
+      for (const k of Object.keys(a)) if (Object.hasOwn(b, k)) [x[k], y[k]] = align(a[k], b[k]);
+      return [x, y];
+    }
+    return [a, b];
+  };
+  return align(main, cand);
+};
+
+/**
+ * Sorts every difference in `results` (`[{step: {name, route}, diffs, main, cand}]`, `main` and
+ * `cand` the compared replies) into approved and unapproved. A path entry approves a difference
+ * by its route, path and kind; a data change (`"data": "printings"`) approves one inside a card
+ * whose oracle id it lists (or `"*"` for any), the same card on both sides. Lists the entries
+ * missing a field as incomplete, and the complete ones that matched nothing as stale.
  */
 export const judge = (results, approved) => {
   const usable = approved.filter(complete);
+  const printings = printingsApproved(usable) ? printingsOf(results) : new Map();
   const used = new Set();
   const verdict = { approved: [], unapproved: [], stale: [], incomplete: approved.filter((a) => !complete(a)) };
-  for (const { step, diffs } of results) {
+  for (const { step, diffs, main, cand } of results) {
     for (const d of diffs) {
-      const entry = usable.find((a) => a.route === step.route && a.kind === d.kind && matches(a.path, d.path));
+      const entry = usable.find((a) =>
+        a.data === undefined
+          ? a.route === step.route && a.kind === d.kind && matches(a.path, d.path)
+          : coversData(a, step.route, d, main, cand, printings),
+      );
       const row = { step: step.name, route: step.route, ...d };
       if (entry) {
         used.add(entry);

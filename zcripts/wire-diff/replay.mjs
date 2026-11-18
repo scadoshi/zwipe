@@ -21,7 +21,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { diff, judge, normalize, shapes } from "./lib.mjs";
+import { alignCards, diff, judge, normalize, shapes } from "./lib.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const [, , mainUrl, candUrl, requestsFile, approvedFile, normalizeFile] = process.argv;
@@ -101,11 +101,14 @@ for (const [index, raw] of script.steps.entries()) {
     mask: [...(rules.mask ?? []), ...(step.mask ?? [])],
     sort: [...(rules.sort ?? []), ...(step.sort ?? [])],
   };
-  const [mainBody, candBody] = step.shape
-    ? shapes(normalize(replies.main.body, stepRules), normalize(replies.cand.body, stepRules))
-    : [normalize(replies.main.body, stepRules), normalize(replies.cand.body, stepRules)];
+  const [mainBody, candBody] = alignCards(
+    ...(step.shape
+      ? shapes(normalize(replies.main.body, stepRules), normalize(replies.cand.body, stepRules))
+      : [normalize(replies.main.body, stepRules), normalize(replies.cand.body, stepRules)]),
+    approved,
+  );
   const found = diff({ status: replies.main.status, body: mainBody }, { status: replies.cand.status, body: candBody });
-  results.push({ step: { name: step.name, route: step.route }, diffs: found });
+  results.push({ step: { name: step.name, route: step.route }, diffs: found, main: mainBody, cand: candBody });
   const mark = found.length === 0 ? "same" : `${found.length} difference(s)`;
   console.log(`${String(replies.main.status).padEnd(3)} ${step.method.padEnd(6)} ${step.route}  ${step.name}: ${mark}`);
 }
@@ -113,8 +116,20 @@ for (const [index, raw] of script.steps.entries()) {
 const verdict = judge(results, approved);
 const show = (v) => (v === undefined ? "(absent)" : JSON.stringify(v)?.slice(0, 120));
 for (const d of verdict.approved) console.log(`approved  ${d.route} ${d.path} ${d.kind}: ${d.reason}`);
-for (const a of verdict.incomplete) console.log(`incomplete ${a.route ?? "?"} ${a.path ?? "?"}: an approval needs route, path, kind, reason and approved_by`);
-for (const a of verdict.stale) console.log(`stale     ${a.route} ${a.path} ${a.kind}: nothing differs there now; remove it from approved.json`);
+for (const a of verdict.incomplete) {
+  console.log(
+    a.data === undefined
+      ? `incomplete ${a.route ?? "?"} ${a.path ?? "?"}: an approval needs route, path, kind, reason and approved_by`
+      : `incomplete data ${a.data}: a data change needs data "printings", oracle_ids (a list, or "*"), reason and approved_by`,
+  );
+}
+for (const a of verdict.stale) {
+  console.log(
+    a.data === undefined
+      ? `stale     ${a.route} ${a.path} ${a.kind}: nothing differs there now; remove it from approved.json`
+      : `stale     data ${a.data} ${a.route ?? "(any route)"}: no card differs that way now; remove it from approved.json`,
+  );
+}
 for (const d of verdict.unapproved) {
   console.log(`UNAPPROVED ${d.kind} at ${d.route} ${d.path || "(status)"} (${d.step})\n  main: ${show(d.main)}\n  cand: ${show(d.cand)}`);
 }
