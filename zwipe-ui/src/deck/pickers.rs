@@ -257,6 +257,42 @@ pub fn enter_adds_tag(picked: &[String], slug: &str) -> bool {
     !picked.iter().any(|s| s == slug)
 }
 
+/// The first of `shown` while `typed` has text, else none: what Enter in a picker's search acts
+/// on. `shown` is the grid for `typed` itself, so Enter that lands before the grid redraws still
+/// acts on the text as typed.
+fn first_for<T>(typed: &str, shown: impl IntoIterator<Item = T>) -> Option<T> {
+    if typed.trim().is_empty() {
+        None
+    } else {
+        shown.into_iter().next()
+    }
+}
+
+/// The format Enter picks for the search text `typed`.
+#[must_use]
+pub fn format_on_enter(typed: &str) -> Option<Format> {
+    first_for(typed, formats_matching(typed))
+}
+
+/// The deck tag Enter adds for the search text `typed`, from `catalog`.
+#[must_use]
+pub fn deck_tag_on_enter<'catalog>(
+    catalog: &'catalog [DeckTagView],
+    typed: &str,
+) -> Option<&'catalog DeckTagView> {
+    first_for(typed, deck_tags_matching(catalog, typed))
+}
+
+/// The Oracle tag Enter adds for the search text `typed`, from `catalog` with `picked` held.
+#[must_use]
+pub fn oracle_tag_on_enter(
+    catalog: &[OracleTag],
+    picked: &[String],
+    typed: &str,
+) -> Option<OracleTag> {
+    first_for(typed, oracle_tag_results(catalog, picked, typed))
+}
+
 /// The formats whose names hold `query`, ignoring case, in [`Format::all`]'s order. An empty query lists every format.
 #[must_use]
 pub fn formats_matching(query: &str) -> Vec<Format> {
@@ -664,5 +700,51 @@ mod tests {
             !enter_adds_tag(&picked, "aggro"),
             "Enter never takes a tag off"
         );
+    }
+
+    /// Go can land in the same instant as the typing, before the grid redraws for it: Enter
+    /// reads the text as typed, so it acts on that text's top match, never the one drawn for the
+    /// text before it.
+    #[test]
+    fn enter_acts_on_the_text_as_typed_not_the_grid_last_drawn() {
+        assert_eq!(
+            formats_matching("m").first(),
+            Some(&Format::Commander),
+            "the stale top match"
+        );
+        assert_eq!(format_on_enter("mod"), Some(Format::Modern));
+        assert_eq!(format_on_enter("  "), None, "a blank search has no target");
+
+        let catalog = vec![
+            tag("40k-model", true),
+            tag("draw", false),
+            tag("card-draw", false),
+        ];
+        assert_eq!(
+            oracle_tag_results(&catalog, &[], "")[0].slug,
+            "40k-model",
+            "the stale top match"
+        );
+        assert_eq!(
+            oracle_tag_on_enter(&catalog, &[], "draw").map(|t| t.slug),
+            Some("draw".to_owned())
+        );
+        assert_eq!(oracle_tag_on_enter(&catalog, &[], ""), None);
+
+        let view = |slug: &str, name: &str| DeckTagView {
+            slug: slug.to_owned(),
+            display_name: name.to_owned(),
+            description: String::new(),
+            seed_otags: Vec::new(),
+        };
+        let tags = vec![
+            view("aristocrats", "Aristocrats"),
+            view("voltron", "Voltron"),
+        ];
+        assert_eq!(
+            deck_tag_on_enter(&tags, "volt").map(|t| t.slug.as_str()),
+            Some("voltron")
+        );
+        assert_eq!(deck_tag_on_enter(&tags, ""), None);
     }
 }

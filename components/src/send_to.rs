@@ -94,8 +94,10 @@ pub fn SendToSheet(
         .and_then(|shown| crate::enter_target(&query(), shown))
         .cloned();
     let target_id = target.as_ref().map(|t| t.id);
-    let send_target = move |()| {
-        if let Some(target) = target.clone() {
+    // Enter sends to the first deck for the search as typed, which can be ahead of the list.
+    let all_decks = decks.unwrap_or_default();
+    let send_target = move |typed: String| {
+        if let Some(target) = send_to::target_on_enter(&all_decks, current, &typed) {
             on_send.call((target, board()));
         }
     };

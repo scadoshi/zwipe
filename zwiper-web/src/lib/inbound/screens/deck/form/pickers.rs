@@ -25,8 +25,8 @@ use zwipe_core::domain::deck::{
 };
 use zwipe_ui::deck::form::{format_details, reseed_oracle_tags};
 use zwipe_ui::deck::pickers::{
-    DECK_TAG_BAR_EMPTY, DISCARD, DISCARD_BODY, FORMAT_BAR_EMPTY, KEEP, ORACLE_TAG_BAR_EMPTY,
-    ORACLE_TAG_NO_DESCRIPTION, PICKER_BAR_HINT, Picker,
+    self as pickers, DECK_TAG_BAR_EMPTY, DISCARD, DISCARD_BODY, FORMAT_BAR_EMPTY, KEEP,
+    ORACLE_TAG_BAR_EMPTY, ORACLE_TAG_NO_DESCRIPTION, PICKER_BAR_HINT, Picker,
 };
 use zwipe_ui::filter::fields::same_set;
 use zwipe_ui::hint::HintTopic;
@@ -207,8 +207,8 @@ pub fn FormatPicker(form: DeckForm) -> Element {
         .collect();
     let target = enter_target(&typed, &results).copied();
     // Enter picks the top match and saves, as a format is a single choice.
-    let pick_target = move |()| {
-        if let Some(format) = target {
+    let pick_target = move |typed: String| {
+        if let Some(format) = pickers::format_on_enter(&typed) {
             focused.set(Some(format));
             if *form.format.peek() != Some(format) {
                 form.select_format(format);
@@ -376,8 +376,8 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
     let target = enter_target(&typed, &results).cloned();
     let target_slug = target.as_ref().map(|t| t.slug.clone());
     // Enter adds the top match and keeps the picker open for the next.
-    let add_target = move |()| {
-        let Some(tag) = target.clone() else {
+    let add_target = move |typed: String| {
+        let Some(tag) = pickers::deck_tag_on_enter(&catalog.peek(), &typed).cloned() else {
             return;
         };
         if add_on_enter(&mut tags.write(), &tag.slug, MAX_DECK_TAGS) == OnEnter::Full {
@@ -576,8 +576,13 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
     let target = enter_target(&typed, &results).cloned();
     let target_slug = target.as_ref().map(|t| t.slug.clone());
     // Enter adds the top match and keeps the picker open for the next.
-    let add_target = move |()| {
-        let Some(tag) = target.clone() else {
+    let add_target = move |typed: String| {
+        let tag = {
+            let catalog = cache.0.read();
+            let all: &[OracleTag] = catalog.oracle_tags.ready().map_or(&[], Vec::as_slice);
+            pickers::oracle_tag_on_enter(all, &selected.peek(), &typed)
+        };
+        let Some(tag) = tag else {
             return;
         };
         if add_on_enter(&mut selected.write(), &tag.slug, MAX_DECK_ORACLE_TAGS) == OnEnter::Full {
