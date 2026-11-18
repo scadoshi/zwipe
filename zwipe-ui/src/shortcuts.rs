@@ -270,7 +270,10 @@ const DECK_ACTION_ROWS: [SheetRow; 3] = [
 /// Quick add.
 #[must_use]
 pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
-    let reads = card_read_rows();
+    let reads: Vec<SheetRow> = match editable {
+        Editable::Yes => card_read_rows_with_send_to(),
+        Editable::No => card_read_rows().to_vec(),
+    };
     let moves: [SheetRow; 3] = [
         (&["↑", "↓", "←", "→"], "Move between cards"),
         (&["h", "j", "k", "l"], "Move between cards"),
@@ -334,7 +337,7 @@ pub fn card_rows_rows(layout: ListLayout) -> Vec<SheetRow> {
     moves
         .into_iter()
         .chain([open])
-        .chain(card_read_rows())
+        .chain(card_read_rows_with_send_to())
         .collect()
 }
 
@@ -358,7 +361,9 @@ pub fn deck_cards_groups(editable: Editable) -> Vec<SheetGroup> {
             .chain([FEATURED_ROW])
             .collect(),
         open: find("Enter"),
-        card: pick(&["p", "i", "v", "d", "m", "s", "Shift+S", "Shift+F", "-", "+"]),
+        card: pick(&[
+            "p", "Shift+P", "i", "v", "d", "m", "s", "Shift+S", "Shift+F", "-", "+",
+        ]),
         page: pick(&["u", "f", FILTER_NAME_KEY, QUICK_ADD_KEY, "a", "r", "e"]),
         ..ScreenKeys::default()
     })
@@ -370,7 +375,7 @@ pub fn examples_groups() -> Vec<SheetGroup> {
     let [next, back, details, flip] = examples_rows();
     sheet_groups(ScreenKeys {
         swipe: vec![next, back],
-        card: vec![details, flip],
+        card: vec![details, flip, SEND_TO_ROW],
         ..ScreenKeys::default()
     })
 }
@@ -408,7 +413,7 @@ fn card_rows_keys(layout: ListLayout) -> ScreenKeys {
             .filter_map(|key| find(key))
             .collect(),
         open: find("Enter"),
-        card: card_read_rows().to_vec(),
+        card: card_read_rows_with_send_to(),
         ..ScreenKeys::default()
     }
 }
@@ -424,6 +429,21 @@ pub fn card_read_rows() -> [SheetRow; 4] {
         (&["v"], FLIP_ROW),
         (&["d"], "Card details"),
     ]
+}
+
+/// The key that opens Send to for the card the keys act on, where its details offer Send to.
+/// Shift+P, so `p` stays Printings.
+pub const SEND_TO_KEY: &str = "P";
+
+/// The sheet's row for [`SEND_TO_KEY`].
+pub const SEND_TO_ROW: SheetRow = (&["Shift+P"], "Send to");
+
+/// [`card_read_rows`] with [`SEND_TO_ROW`] beside Printings, for a screen whose card details
+/// offer Send to.
+#[must_use]
+pub fn card_read_rows_with_send_to() -> Vec<SheetRow> {
+    let [printings, rest @ ..] = card_read_rows();
+    [printings, SEND_TO_ROW].into_iter().chain(rest).collect()
 }
 
 /// What the `i` row does: the Image button's icon with its name, so the sheet teaches the icon.
@@ -555,7 +575,9 @@ mod tests {
                 ),
                 (
                     "Card",
-                    vec!["p", "i", "v", "d", "m", "s", "Shift+S", "Shift+F", "-", "+"]
+                    vec![
+                        "p", "Shift+P", "i", "v", "d", "m", "s", "Shift+S", "Shift+F", "-", "+"
+                    ]
                 ),
                 (
                     "Page",
@@ -637,7 +659,7 @@ mod tests {
             Some(vec![
                 ("Swipe", vec!["←", "↓"]),
                 ("Navigation", vec!["gg", "Shift+G"]),
-                ("Card", vec!["d", "v"]),
+                ("Card", vec!["d", "v", "Shift+P"]),
             ])
         );
         assert_eq!(
@@ -649,7 +671,7 @@ mod tests {
                     "Navigation",
                     vec!["↑", "j", "Home", "gg", "Shift+G", "Enter"]
                 ),
-                ("Card", vec!["p", "i", "v", "d"]),
+                ("Card", vec!["p", "Shift+P", "i", "v", "d"]),
             ])
         );
     }
@@ -665,7 +687,7 @@ mod tests {
                     "Navigation",
                     vec!["↑", "j", "Home", "gg", "Shift+G", "Enter"]
                 ),
-                ("Card", vec!["p", "i", "v", "d"]),
+                ("Card", vec!["p", "Shift+P", "i", "v", "d"]),
                 ("Page", vec!["f", "/", "q", "t", "?", "Shift+H", "Esc"]),
             ])
         );

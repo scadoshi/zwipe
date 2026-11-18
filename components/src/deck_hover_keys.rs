@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::deck::Board;
 use zwipe_ui::deck_cards::cursor::Walk;
@@ -19,6 +20,7 @@ use crate::deck_cards_view::{DeckEditActions, OnPrinting, StackDetails};
 use crate::deck_cursor;
 use crate::keys::{STACK_DETAILS_CLASS, use_page_keys_through};
 use crate::meld::{MeldSource, MeldToggle};
+use crate::send_to::SendTo;
 
 /// Sends the card the deck cards screen's keys act on: the card the details drawer shows, as
 /// `stack:<id>` so `d` closes it, else the keyboard cursor's card when a key moved last
@@ -70,6 +72,13 @@ fn editable(actions: Option<&DeckEditActions>) -> Editable {
     }
 }
 
+/// Opens Send to for `card`, where the client provides it.
+fn send_card(send_to: Option<SendTo>, card: Card) {
+    if let Some(send_to) = send_to {
+        send_to.open_for(card);
+    }
+}
+
 /// Flags or unflags `card_id` through `actions`, by whether `flagged` holds it now.
 fn toggle_flag(actions: Option<DeckEditActions>, flagged: Option<crate::Flagged>, card_id: Uuid) {
     if let (Some(actions), Some(crate::Flagged(cards))) = (actions, flagged) {
@@ -92,6 +101,7 @@ pub fn use_deck_hover_keys(keys: DeckHoverKeys) {
     } = keys;
     let editable = editable(actions.as_ref());
     let meld_source = try_use_context::<MeldSource>();
+    let send_to = try_use_context::<SendTo>();
     // The owner's flags, which Shift+F reads to toggle a card's.
     let flagged = try_use_context::<crate::Flagged>();
     deck_cursor::use_deck_cursor(details, Walk::Columns);
@@ -127,6 +137,7 @@ pub fn use_deck_hover_keys(keys: DeckHoverKeys) {
                 let shown_face = faces.peek().get(&id).copied().unwrap_or(0);
                 match hover_keys::hover_action(hover, &row, board, shown_face) {
                     Some(HoverAction::Printings(card, slot)) => on_printing.call((*card, slot)),
+                    Some(HoverAction::SendTo(card)) => send_card(send_to, *card),
                     Some(HoverAction::Move(card_id, target)) => {
                         if let Some(actions) = actions {
                             actions
