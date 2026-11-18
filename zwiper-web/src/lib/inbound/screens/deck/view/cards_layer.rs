@@ -25,6 +25,7 @@ use zwipe_ui::deck_cards::stacks::CardsView;
 use zwipe_ui::screens::deck_cards::TITLE;
 
 use super::ghost::DeckBandsGhost;
+use crate::inbound::app::EscKeeps;
 use crate::inbound::chrome::leave_guard::use_route_overlay;
 use crate::inbound::router::Route;
 use crate::inbound::shell::use_overlay_nav;
@@ -110,6 +111,18 @@ pub(crate) fn DeckCardsLayer(
 ) -> Element {
     let open = use_signal(|| true);
     let layer = use_overlay_back_action(open.into(), on_close);
+    // Esc closes the sheets over the layer, never the layer itself.
+    let esc_keeps = try_use_context::<EscKeeps>();
+    use_effect(move || {
+        if let Some(EscKeeps(mut kept)) = esc_keeps {
+            kept.set(layer());
+        }
+    });
+    use_drop(move || {
+        if let Some(EscKeeps(mut kept)) = esc_keeps {
+            kept.set(None);
+        }
+    });
     // Its route's `?view=cards` entry is its history entry, so the overlay stack adds none.
     use_route_overlay();
     // The nav over the layer names the Cards, opens their hint and its back arrow closes them.
