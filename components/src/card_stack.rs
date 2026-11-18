@@ -142,9 +142,6 @@ pub fn CardStack(
                                     }
                                     on_select.call(id);
                                 },
-                                if crate::is_flagged(id) {
-                                    crate::FlagMark { class: "card-stack-flag" }
-                                }
                                 // An image that is missing or failed leaves the
                                 // card's text in the card's box.
                                 if let Some(src) = image.filter(|_| !failed.read().contains(&id)) {
@@ -167,8 +164,16 @@ pub fn CardStack(
                                         class: if exposed { String::new() } else { STRIP_CLASS.to_owned() },
                                     }
                                 }
-                                if qty > 1 {
-                                    span { class: "card-stack-qty", "\u{d7}{qty}" }
+                                // The flag and the copies sit side by side at the top right.
+                                if crate::is_flagged(id) || qty > 1 {
+                                    div { class: "card-stack-badges",
+                                        if crate::is_flagged(id) {
+                                            crate::FlagMark { class: "card-stack-flag" }
+                                        }
+                                        if qty > 1 {
+                                            span { class: "card-stack-qty", "\u{d7}{qty}" }
+                                        }
+                                    }
                                 }
                             }
                         }

@@ -284,26 +284,18 @@
     height: 1em;
 }
 
-/* A flagged stack card's flag on its top corner, on the panel's ground so
-   it reads over the card's art. Its corner follows the card's: the card's
-   4.75% radius (about 8px on a stack card) less the badge's inset. */
+/* A flagged stack card's flag, the quantity badge's twin beside it
+   (.card-stack-qty): the same translucent box, its icon at the badge's
+   text size and on its text line, so either badge alone is as tall as the
+   other. */
 .card-stack-flag {
-    position: absolute;
-    top: var(--space-1);
-    right: var(--space-1);
-    z-index: 1;
-    display: inline-flex;
-    padding: var(--space-1);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--space-1);
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    pointer-events: none;
+    display: inline-block;
 }
 
 .card-stack-flag > .action-dock-icon {
-    width: 1rem;
-    height: 1rem;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
 }
 
 /* A tile's flag shows only while the card is flagged, so it is filled, as
@@ -3395,10 +3387,20 @@ footer.site-footer .site-footer-note {
 }
 
 
-.card-stack-qty {
+/* A stack card's flag and copies, side by side at its top right, one
+   height between them. */
+.card-stack-badges {
     position: absolute;
     top: 0.35rem;
     right: 0.35rem;
+    z-index: 1;
+    display: flex;
+    gap: var(--space-1);
+    pointer-events: none;
+}
+
+.card-stack-qty,
+.card-stack-flag {
     padding: 0.05rem var(--space-2);
     border: 1px solid var(--border-secondary);
     border-radius: 0.5rem;
