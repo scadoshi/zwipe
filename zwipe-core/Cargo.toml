@@ -19,3 +19,6 @@ rand = { workspace = true }
 regex = "1"
 thiserror = { workspace = true }
 uuid = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }

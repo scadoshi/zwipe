@@ -10,6 +10,7 @@ workspace = true
 tower = { version = "0.5", features = ["util"] }   # ServiceExt::oneshot
 http-body-util = "0.1"                             # collect response bodies
 zwipe-client = { path = "../zwipe-client" }       # the reset check round trip
+proptest = { workspace = true }
 
 [lib]
 name = "zwipe"

@@ -12,6 +12,9 @@ pub mod quantity;
 pub mod source;
 pub mod tag;
 
+#[cfg(test)]
+mod properties;
+
 pub use condition::CardCondition;
 pub use finish::Finish;
 pub use import::ImportCollectionError;
