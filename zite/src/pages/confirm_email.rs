@@ -1,6 +1,7 @@
 use components::{HintKey, Panel, icons};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
+use zwipe_ui::write_repeat;
 
 use crate::components::PageMeta;
 use crate::{Nav, api};
@@ -13,7 +14,9 @@ enum Failure {
     DeadLink,
     /// Another account took the address after it was asked for.
     Taken,
-    /// The link has no token, or the request never landed.
+    /// The answer was lost: the change may have gone through.
+    Lost,
+    /// The link has no token, or the reply didn't read.
     Other(String),
 }
 
@@ -32,10 +35,9 @@ pub fn ConfirmEmail(token: String) -> Element {
                 .confirm_email_change(token)
                 .await
                 .map_err(|e| match e {
-                    // A request that never landed is not a bad token; say so.
-                    ClientError::Network(_) | ClientError::Decode(_) => {
-                        Failure::Other(e.to_user_message())
-                    }
+                    // A lost answer is not a bad token, and the change may have landed.
+                    ClientError::Network(_) => Failure::Lost,
+                    ClientError::Decode(_) => Failure::Other(e.to_user_message()),
                     ClientError::Conflict(_) => Failure::Taken,
                     ClientError::BadRequest(_)
                     | ClientError::Unauthorized(_)
@@ -83,6 +85,13 @@ pub fn ConfirmEmail(token: String) -> Element {
                     div { class: "outcome-error",
                     Panel { title: "Email not changed", title_h1: true, centered: true,
                         p { class: "card-summary", "Another account started using this address after you asked for it. Your email is the same as before." }
+                    }
+                    }
+                },
+                Some(Err(Failure::Lost)) => rsx! {
+                    div { class: "outcome-error",
+                    Panel { title: write_repeat::LINK_UNCONFIRMED_TITLE, title_h1: true, centered: true,
+                        p { class: "card-summary", {write_repeat::CONFIRM_EMAIL_LOST} }
                     }
                     }
                 },

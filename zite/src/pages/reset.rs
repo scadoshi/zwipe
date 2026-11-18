@@ -4,6 +4,7 @@ use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_ui::account;
 use zwipe_ui::text::sentence_case;
+use zwipe_ui::write_repeat::{self, FormAnswer, FormNote, FormRepeat};
 
 use crate::components::PageMeta;
 use crate::{Nav, api};
@@ -54,10 +55,26 @@ fn check_submit(state: &ResetState, pw: &str, cf: &str, token: &str) -> SubmitCh
     SubmitCheck::Send
 }
 
-/// The line a failed reset shows: the server's reason for a password it
-/// turns down (422), the connection message for a request that never landed,
-/// and a dead link for anything else.
-fn failure_message(error: &ClientError) -> String {
+/// How a reset failed: a dead link (401) is the refusal a repeat gets once an earlier, lost try
+/// used the link.
+fn reset_answer(error: &ClientError) -> FormAnswer {
+    if matches!(error, ClientError::Network(_)) {
+        FormAnswer::Network
+    } else if matches!(error, ClientError::Unauthorized(_)) {
+        FormAnswer::RepeatRefused
+    } else {
+        FormAnswer::Other
+    }
+}
+
+/// The line a failed reset shows: after a lost answer, or for the dead link its retry then finds
+/// (`note`), to try the new password; else the server's reason for a password it turns down
+/// (422), the connection message for a request that never landed, and a dead link for anything
+/// else.
+fn failure_message(error: &ClientError, note: Option<FormNote>) -> String {
+    if note.is_some() {
+        return write_repeat::RESET_UNCONFIRMED.to_owned();
+    }
     match error {
         ClientError::UnprocessableEntity(reason) => format!("Password {reason}"),
         ClientError::Network(_) | ClientError::Decode(_) => error.to_user_message(),
@@ -87,6 +104,8 @@ pub fn Reset(token: String) -> Element {
     let confirm = use_signal(String::new);
     let mut state = use_signal(|| ResetState::Form);
     let mut rules_open = use_signal(|| false);
+    // Whether an earlier submit's answer was lost, so its retry's dead link may be that try.
+    let mut repeat = use_signal(FormRepeat::default);
 
     // The link's token is checked once on load. Only the server's word that
     // it is dead (a 400) replaces the form; any other answer, a rate limit or
@@ -127,7 +146,10 @@ pub fn Reset(token: String) -> Element {
         spawn(async move {
             match api::client().reset_password(token, Secret::new(pw)).await {
                 Ok(()) => state.set(ResetState::Success),
-                Err(e) => state.set(ResetState::Error(failure_message(&e))),
+                Err(e) => {
+                    let note = repeat.write().settle(reset_answer(&e));
+                    state.set(ResetState::Error(failure_message(&e, note)));
+                }
             }
         });
     };
@@ -325,14 +347,41 @@ mod tests {
     #[test]
     fn a_password_the_server_turns_down_shows_its_reason() {
         assert_eq!(
-            failure_message(&ClientError::UnprocessableEntity(
-                "must be at least 8 characters long".to_string()
-            )),
+            failure_message(
+                &ClientError::UnprocessableEntity("must be at least 8 characters long".to_string()),
+                None
+            ),
             "Password must be at least 8 characters long"
         );
         assert_eq!(
-            failure_message(&ClientError::Unauthorized(String::new())),
+            failure_message(&ClientError::Unauthorized(String::new()), None),
             "This link is invalid or has expired. Request a new one from the app."
+        );
+    }
+
+    /// A reset whose answer was lost may have used the link, so its retry's dead link says to try
+    /// the new password too.
+    #[test]
+    fn a_lost_reset_s_retry_finding_the_link_dead_says_to_try_the_new_password() {
+        let dead = ClientError::Unauthorized("token not found or expired".to_owned());
+        assert_eq!(reset_answer(&dead), FormAnswer::RepeatRefused);
+        let mut repeat = FormRepeat::default();
+        let lost = repeat.settle(FormAnswer::Network);
+        assert_eq!(
+            failure_message(&dead, lost),
+            write_repeat::RESET_UNCONFIRMED,
+            "the lost answer's own line"
+        );
+        let retry = repeat.settle(reset_answer(&dead));
+        assert_eq!(
+            failure_message(&dead, retry),
+            write_repeat::RESET_UNCONFIRMED
+        );
+        let again = repeat.settle(reset_answer(&dead));
+        assert_eq!(
+            failure_message(&dead, again),
+            "This link is invalid or has expired. Request a new one from the app.",
+            "once said, a later refusal is the server's own"
         );
     }
 }

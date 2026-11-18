@@ -247,8 +247,14 @@ pub const PASSWORD_UNCONFIRMED: &str = "We couldn't confirm the change. It may h
 /// Reset password, its answer lost or its repeat refused as a used link.
 pub const RESET_UNCONFIRMED: &str = "We couldn't confirm the reset. Try logging in with your new password, and if that fails, ask for a new link.";
 
-/// Verify email, its answer lost.
-pub const VERIFY_LOST: &str = "We couldn't confirm it. Reload the page: if it says the link was already used, your email is verified.";
+/// The title over a link page's line when its answer was lost (Verify email, Confirm email
+/// change).
+pub const LINK_UNCONFIRMED_TITLE: &str = "Couldn't confirm";
 
-/// Confirm email change, its answer lost.
-pub const CONFIRM_EMAIL_LOST: &str = "We couldn't confirm it. Reload the page: if it says the link was already used, your new email is confirmed.";
+/// Verify email, its answer lost, under [`LINK_UNCONFIRMED_TITLE`].
+pub const VERIFY_LOST: &str =
+    "Reload the page: if it says the link was already used, your email is verified.";
+
+/// Confirm email change, its answer lost, under [`LINK_UNCONFIRMED_TITLE`].
+pub const CONFIRM_EMAIL_LOST: &str =
+    "Reload the page: if it says the link was already used, your new email is confirmed.";
