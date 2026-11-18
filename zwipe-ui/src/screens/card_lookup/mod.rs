@@ -1,8 +1,9 @@
 //! The card screen: one card opened by its name's slug (`/card/<slug>`) or one printing by its id
 //! (`/card/<slug>/<id>`), signed in or out.
 //!
-//! A name opens the card when one card has it, a short list when several do (each to its own
-//! printing link), and [`NOT_FOUND`] when none does. A printing link loads by its id alone, and a
+//! A name opens the card when one playable card has it, a short list when several do (each to
+//! its own printing link), and [`NOT_FOUND`] when none does; a token or art card that shares a
+//! playable card's name stays out of the count. A printing link loads by its id alone, and a
 //! stale slug in it is swapped for the card's own. Send to signed out goes to Login and comes
 //! back to the card with the sheet asked for; the screen opens it once and drops the ask from
 //! the route, so Back or a reload never opens it again; on a list, the ask goes with the card
@@ -18,6 +19,7 @@ mod tests;
 
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::criteria::PLAYABLE_LAYOUTS;
 use zwipe_core::domain::card::slug::{self, CardSlug};
 
 use crate::generation::{Generation, Ticket};
@@ -216,6 +218,7 @@ impl State {
                 if !self.fetch.is_current(ticket) {
                     return Vec::new();
                 }
+                let cards = playable_first(cards);
                 self.shown = match cards.len() {
                     0 => Shown::NotFound,
                     1 => cards
@@ -399,6 +402,20 @@ impl State {
     #[must_use]
     pub fn message(&self) -> Option<&'static str> {
         (self.shown == Shown::NotFound).then_some(NOT_FOUND)
+    }
+}
+
+/// The cards a name opens: its playable ones (search's playable layouts), in the server's order,
+/// so a token or art card that shares the name never makes a list of one real card. A name with
+/// no playable card keeps every match.
+fn playable_first(cards: Vec<Card>) -> Vec<Card> {
+    let (playable, others): (Vec<Card>, Vec<Card>) = cards
+        .into_iter()
+        .partition(|c| PLAYABLE_LAYOUTS.contains(&c.scryfall_data.layout.as_str()));
+    if playable.is_empty() {
+        others
+    } else {
+        playable
     }
 }
 

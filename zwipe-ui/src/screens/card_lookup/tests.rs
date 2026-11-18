@@ -110,6 +110,54 @@ fn one_card_shows_it_several_list_them_none_says_so() {
     assert_eq!(state.message(), Some(NOT_FOUND));
 }
 
+/// `card` with Scryfall layout `layout`.
+fn laid_out(name: &str, layout: &str) -> Card {
+    let mut card = card(name);
+    card.scryfall_data.layout = layout.to_owned();
+    card
+}
+
+#[test]
+fn only_playable_cards_make_a_list() {
+    let (mut state, ticket, _) = by_name("sol-ring", false, true);
+    let ring = laid_out("Sol Ring", "normal");
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![ring.clone(), laid_out("Sol Ring // Sol Ring", "art_series")],
+    });
+    assert_eq!(
+        state.status(),
+        Status::One,
+        "an art card's front face is no rival"
+    );
+    assert_eq!(state.card(), Some(&ring));
+
+    let (mut state, ticket, _) = by_name("rampant-growth", false, true);
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![
+            laid_out("Rampant Growth", "normal"),
+            laid_out("Rampant, Growth", "normal"),
+            laid_out("Rampant Growth", "token"),
+        ],
+    });
+    assert_eq!(state.status(), Status::Several);
+    assert_eq!(state.cards().len(), 2, "the list is the playable cards");
+
+    let (mut state, ticket, _) = by_name("goblin", false, true);
+    let tokens = vec![laid_out("Goblin", "token"), laid_out("Goblin", "token")];
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: tokens.clone(),
+    });
+    assert_eq!(
+        state.status(),
+        Status::Several,
+        "no playable card: every match lists"
+    );
+    assert_eq!(state.cards(), tokens.as_slice());
+}
+
 #[test]
 fn a_route_that_is_not_a_slug_finds_nothing_without_asking() {
     let mut state = State::new();
