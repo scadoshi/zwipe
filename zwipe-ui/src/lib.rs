@@ -42,6 +42,7 @@ pub mod theme_sync;
 pub mod timing;
 pub mod toast;
 pub mod write_id;
+pub mod write_repeat;
 
 #[cfg(test)]
 mod test_support;

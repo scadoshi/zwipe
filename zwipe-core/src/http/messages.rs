@@ -61,6 +61,10 @@ pub const USER_FIXABLE: [&str; 12] = [
     PASSWORD_TOO_LONG,
 ];
 
+/// A login, or a password change, whose password doesn't match the account's. One answer for an
+/// unknown account too, so the reply never confirms one exists.
+pub const INVALID_CREDENTIALS: &str = "invalid credentials";
+
 /// Whether `server` is word for word one of the [`USER_FIXABLE`] messages or the
 /// [`TooManyImportLines`] refusal, a paste the user can shorten.
 #[must_use]

@@ -29,6 +29,7 @@ use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_view::{
     self, Action, Destination, Dialog, DockItem, Effect, MoreItem, Section, State,
 };
+use zwipe_ui::write_repeat::{Unconfirmed, Verdict, WriteKey};
 
 use super::card::components::undo_log::{UndoAction, UndoStore};
 use super::components::clone_deck_dialog::CloneDeckDialog;
@@ -43,7 +44,7 @@ use super::components::deck_warnings::DeckWarnings;
 use super::components::more_buttons::{DeckDialogs, MoreButtons, use_deck_dialogs};
 use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
 use super::missing_deck;
-use crate::inbound::components::auth::authed::{Authed, use_authed};
+use crate::inbound::components::auth::authed::{Authed, answer_of, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 use crate::inbound::components::hint_host::HintTopic;
@@ -76,6 +77,8 @@ pub(crate) struct Driver {
     opener: DeckOpener,
     /// The per-deck undo stacks the deck cards screen walks.
     undo_store: UndoStore,
+    /// The session's writes whose answer was lost, so the warnings' Remove reads a repeat as done.
+    unconfirmed: Option<Signal<Unconfirmed>>,
 }
 
 // By hand: the handles have no `PartialEq`. One model is one driver.
@@ -336,6 +339,7 @@ impl Driver {
             usage_buffer,
             session,
             client,
+            unconfirmed,
             ..
         } = self;
         spawn(async move {
@@ -345,6 +349,14 @@ impl Driver {
                 client().delete_deck_card(deck_id, card, &session).await
             }
             .await;
+            // A lost earlier try that removed it reads as removed.
+            let landed = unconfirmed.is_some_and(|mut unconfirmed| {
+                unconfirmed
+                    .write()
+                    .settle(WriteKey::remove_card(deck_id, card), answer_of(&result))
+                    == Verdict::LandedEarlier
+            });
+            let result = if landed { Ok(()) } else { result };
             let reply = match result {
                 Ok(()) => Some(()),
                 Err(e) => {
@@ -417,12 +429,16 @@ impl Driver {
 
     fn delete(self, ticket: Ticket, deck_id: Uuid) {
         spawn(async move {
+            // A lost earlier try that deleted it reads as deleted.
             let reply = self
                 .authed
-                .run("delete_deck", |c, s| async move {
-                    c.delete_deck(deck_id, &s).await
-                })
-                .await;
+                .run_write(
+                    "delete_deck",
+                    WriteKey::delete_deck(deck_id),
+                    |c, s| async move { c.delete_deck(deck_id, &s).await },
+                )
+                .await
+                .or_landed(|| ());
             self.settle(ticket, reply, |()| Action::Deleted { ticket });
         });
     }
@@ -492,6 +508,7 @@ pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
         toast: use_toast(),
         authed: use_authed(Screen::Deck(DeckScreen::View)),
         usage_buffer: use_context(),
+        unconfirmed: try_use_context(),
         session,
         client,
         hint_open: use_signal(|| false),

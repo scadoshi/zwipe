@@ -38,6 +38,7 @@ use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo;
 use zwipe_ui::stores::undo::{UndoAction, UndoStore, create_board_field};
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
+use zwipe_ui::write_repeat::WriteKey;
 use zwipe_ui::{deck_cards, filter};
 
 use super::{OneLine, SwipeDetails};
@@ -516,11 +517,15 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 if let Some(entry) = entry {
                     removes.write().begin(card_id);
                     spawn_write(async move {
+                        // A lost earlier try that removed it reads as removed.
                         let deleted = authed
-                            .run("remove_card", |c, s| async move {
-                                c.delete_deck_card(deck_id, card_id, &s).await
-                            })
+                            .run_write(
+                                "remove_card",
+                                WriteKey::remove_card(deck_id, card_id),
+                                |c, s| async move { c.delete_deck_card(deck_id, card_id, &s).await },
+                            )
                             .await
+                            .or_landed(|| ())
                             .is_some();
                         let waiting = removes.write().finish(card_id);
                         match (waiting, deleted) {

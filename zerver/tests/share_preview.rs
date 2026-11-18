@@ -25,6 +25,7 @@
 mod common;
 
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -607,11 +608,11 @@ async fn the_preview_route_is_rate_limited_per_address(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let share = shared_deck(&app, "limited").await;
     let path = shared_deck_preview_route(share.parse().unwrap());
-    // The first request draws the image, long enough in a debug build for
-    // the bucket to refill, so the burst starts once it is cached.
-    let (status, _, _) = app.send_bytes(Method::GET, &path).await;
+    // Another address draws and caches the image, so the burst below is all
+    // cached replies on a full bucket of its own.
+    let warm = SocketAddr::from(([198, 51, 100, 1], 4000));
+    let (status, _, _) = app.send_bytes_from(warm, Method::GET, &path).await;
     assert_eq!(status, StatusCode::OK, "warm-up");
-    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     // A burst of 10 passes; the 11th from the same address is refused.
     for i in 0..10 {
         let (status, _, _) = app.send_bytes(Method::GET, &path).await;

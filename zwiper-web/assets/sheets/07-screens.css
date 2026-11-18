@@ -2690,6 +2690,12 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
     margin-bottom: 0;
 }
 
+/* Send to's boards row sits as far above its Search row as the Search row
+   sits above the deck chips. */
+.tag-controls > .send-to-boards {
+    margin-bottom: var(--space-2);
+}
+
 /* The count as a chip at the row's end. */
 .tag-controls-head {
     display: flex;

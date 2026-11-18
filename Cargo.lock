@@ -5084,7 +5084,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "orangui"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=main#869d1c6a7a19d1b07ecad83f13f5682029c38c4f"
+source = "git+https://github.com/scadoshi/orangui?branch=main#ae57809297b23fd52abde878711612478c87dbdc"
 dependencies = [
  "dioxus",
  "dioxus-primitives",
@@ -5104,7 +5104,7 @@ dependencies = [
 [[package]]
 name = "orangui-core"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=main#869d1c6a7a19d1b07ecad83f13f5682029c38c4f"
+source = "git+https://github.com/scadoshi/orangui?branch=main#ae57809297b23fd52abde878711612478c87dbdc"
 dependencies = [
  "serde",
 ]
@@ -9191,6 +9191,7 @@ dependencies = [
  "sqlx-macros",
  "thiserror 2.0.19",
  "tokio",
+ "tokio-util",
  "tower",
  "tower-http",
  "tower_governor",
