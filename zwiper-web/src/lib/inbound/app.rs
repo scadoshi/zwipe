@@ -101,6 +101,7 @@ pub fn App() -> Element {
     use_hook(|| {
         document::eval(&hint_focus_js());
         document::eval(DIALOG_FOCUS_JS);
+        document::eval(FIND_KEYS_JS);
     });
     // A swipe screen's card slides clear of its docked details panel.
     components::use_details_clear();
@@ -327,6 +328,19 @@ document.addEventListener('keydown', (e) => {
 }, true);
 "#;
 
+/// Holds back the browser's default for its quick find keys, `/` and Firefox's links-only `'`,
+/// while focus sits outside a text field and no modifier is held, so the find bar never opens over
+/// the app. The key still travels on to the app's own listeners, so `/` opens Quick add wherever
+/// it does.
+const FIND_KEYS_JS: &str = r#"window.addEventListener('keydown', (e) => {
+    if (e.key !== '/' && e.key !== "'") return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const focus = document.activeElement;
+    if (focus && focus.closest && focus.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+    e.preventDefault();
+}, true);
+"#;
+
 /// Copies the shell's page color and sink onto html as `--page-edge` and
 /// `--page-sink`, which html and body paint: html sits above the themed
 /// shell, and themes.css's `:root` defaults outweigh a theme class there, so
@@ -423,6 +437,36 @@ mod tests {
         assert!(
             KEYS_JS.contains("if (e.key === 'Escape') {\n        e.preventDefault();"),
             "{KEYS_JS}"
+        );
+    }
+
+    #[test]
+    fn the_browser_s_quick_find_keys_never_open_its_find_bar_outside_a_text_field() {
+        assert!(
+            FIND_KEYS_JS.starts_with("window.addEventListener('keydown',"),
+            "on window, ahead of every document listener: {FIND_KEYS_JS}"
+        );
+        assert!(
+            FIND_KEYS_JS.trim_end().ends_with("}, true);"),
+            "in the capture phase: {FIND_KEYS_JS}"
+        );
+        for key in ["'/'", "\"'\""] {
+            assert!(FIND_KEYS_JS.contains(key), "{key}: {FIND_KEYS_JS}");
+        }
+        assert!(
+            FIND_KEYS_JS.contains("e.ctrlKey || e.metaKey || e.altKey"),
+            "a combo keeps the browser's default: {FIND_KEYS_JS}"
+        );
+        assert!(
+            FIND_KEYS_JS.contains(
+                "input, textarea, select, [contenteditable]:not([contenteditable=\"false\"])"
+            ),
+            "a text field still types the key: {FIND_KEYS_JS}"
+        );
+        assert!(
+            !FIND_KEYS_JS.contains("stopPropagation")
+                && !FIND_KEYS_JS.contains("stopImmediatePropagation"),
+            "the app's own listeners still hear the key: {FIND_KEYS_JS}"
         );
     }
 
