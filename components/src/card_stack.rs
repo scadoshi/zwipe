@@ -170,7 +170,7 @@ pub fn CardStack(
                                 if starred || crate::is_flagged(id) || qty > 1 {
                                     div { class: "card-stack-badges",
                                         if starred {
-                                            span { class: "card-stack-star", "aria-label": "Starred", role: "img", "\u{2605}" }
+                                            crate::StarMark { class: "card-stack-star" }
                                         }
                                         if crate::is_flagged(id) {
                                             crate::FlagMark { class: "card-stack-flag" }

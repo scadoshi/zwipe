@@ -288,11 +288,13 @@
    (.card-stack-qty): the same translucent box, its icon at the badge's
    text size and on its text line, so either badge alone is as tall as the
    other. */
-.card-stack-flag {
+.card-stack-flag,
+.card-stack-star {
     display: inline-block;
 }
 
-.card-stack-flag > .action-dock-icon {
+.card-stack-flag > .action-dock-icon,
+.card-stack-star > .action-dock-icon {
     width: 1em;
     height: 1em;
     vertical-align: -0.125em;
@@ -301,7 +303,8 @@
 /* A tile's flag shows only while the card is flagged, so it is filled, as
    the pressed Flag button is. */
 .card-row-flag > .action-dock-icon,
-.card-stack-flag > .action-dock-icon {
+.card-stack-flag > .action-dock-icon,
+.card-stack-star > .action-dock-icon {
     fill: currentColor;
 }
 
@@ -3411,12 +3414,10 @@ footer.site-footer .site-footer-note {
     background-color: color-mix(in srgb, var(--bg-primary) 85%, transparent);
 }
 
-/* A starred stack card's star, in the star color List's star wears. The
-   star comes from a fallback font with a taller line, so it takes the
-   badge text's own line height and stands as tall as the other badges. */
+/* A starred stack card's star, in the star color List's star wears: the
+   Star button's icon at the flag's size, filled. */
 .card-stack-star {
     color: var(--ink-color-star, var(--color-star));
-    line-height: 1.36;
 }
 
 /* Dealing in, on entering the Stacks view: each card rises from below into

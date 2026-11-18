@@ -110,3 +110,12 @@ pub fn FlagMark(class: &'static str) -> Element {
         span { class, "aria-label": "Flagged", role: "img", DockIcon { path: FLAG } }
     }
 }
+
+/// The star a starred card's tile shows: the Star button's icon, so it draws at one size
+/// whatever fonts the device has.
+#[component]
+pub fn StarMark(class: &'static str) -> Element {
+    rsx! {
+        span { class, "aria-label": "Starred", role: "img", DockIcon { path: STAR } }
+    }
+}

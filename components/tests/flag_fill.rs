@@ -19,6 +19,6 @@ fn one_rule_fills_a_pressed_star_or_flag() {
 #[test]
 fn a_flagged_card_s_tile_mark_is_filled() {
     assert!(MAGIC.contains(
-        "\n.card-row-flag > .action-dock-icon,\n.card-stack-flag > .action-dock-icon {\n    fill: currentColor;\n}"
+        "\n.card-row-flag > .action-dock-icon,\n.card-stack-flag > .action-dock-icon,\n.card-stack-star > .action-dock-icon {\n    fill: currentColor;\n}"
     ));
 }
