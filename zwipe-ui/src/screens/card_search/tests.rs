@@ -157,6 +157,13 @@ fn a_name_no_card_could_have_matches_nothing_without_asking() {
 }
 
 #[test]
+fn a_name_of_only_punctuation_matches_nothing_without_asking() {
+    let mut state = State::new();
+    assert_eq!(state.update(Action::Type("%%%".to_owned())), []);
+    assert_eq!(state.status(), Status::NoMatch);
+}
+
+#[test]
 fn a_failure_offers_retry_which_asks_again() {
     let mut state = State::new();
     let (ticket, _) = typed(&mut state, "bolt");
@@ -265,7 +272,7 @@ fn picking_a_result_opens_the_card_by_its_slug() {
 #[test]
 fn a_name_with_no_slug_opens_its_printing() {
     let mut state = State::new();
-    let (ticket, _) = typed(&mut state, "_");
+    let (ticket, _) = typed(&mut state, "a");
     let odd = card("_____");
     let id = odd.scryfall_data.id;
     let _ = state.update(Action::Loaded {

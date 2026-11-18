@@ -7,10 +7,12 @@ use serde::{Deserialize, Serialize};
 use crate::domain::card::models::card_role::CardRole;
 use crate::domain::card::models::lookup::{CardTypeWord, LookupName, MAX_LOOKUP_CHIPS};
 use crate::domain::card::models::scryfall_data::colors::Color;
+use crate::domain::card::models::search_card::card_filter;
 
 /// The body of `POST /api/card/lookup`, a card search open to signed-out callers.
 ///
-/// It names only what to match: a name and the filter's type, color and role chips. Limits,
+/// It names only what to match: a name and the filter's type, color and role chips, each one
+/// optional, the name included (left out, it's the empty name). Limits,
 /// offsets, sorts and every other search field are refused as unknown, and the server builds the
 /// query itself. Each list holds at most [`MAX_LOOKUP_CHIPS`] values, and a lookup names at least
 /// one thing to match. Colors are kept once each, in WUBRG order.
@@ -30,6 +32,7 @@ pub struct HttpCardLookup {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RawCardLookup {
+    #[serde(default)]
     name: LookupName,
     #[serde(default)]
     types: Vec<CardTypeWord>,
@@ -62,7 +65,9 @@ impl HttpCardLookup {
     /// # Errors
     ///
     /// [`InvalidCardLookup`] when a list holds more than [`MAX_LOOKUP_CHIPS`] values, or when
-    /// the name is empty and no chip is set.
+    /// no chip is set and the name has no letter or digit: the search drops punctuation before it
+    /// matches ([`card_filter::strip_punctuation`]), so a name of only punctuation matches every
+    /// card.
     pub fn try_new(
         name: LookupName,
         types: Vec<CardTypeWord>,
@@ -78,7 +83,8 @@ impl HttpCardLookup {
         if card_roles.len() > MAX_LOOKUP_CHIPS {
             return Err(InvalidCardLookup::TooManyRoles);
         }
-        if name.is_empty() && types.is_empty() && colors.is_empty() && card_roles.is_empty() {
+        let no_name = card_filter::strip_punctuation(name.as_str()).is_empty();
+        if no_name && types.is_empty() && colors.is_empty() && card_roles.is_empty() {
             return Err(InvalidCardLookup::Nothing);
         }
         let colors: BTreeSet<Color> = colors.into_iter().collect();
@@ -187,6 +193,39 @@ mod tests {
             assert!(read(body).is_err(), "{field}");
         }
         assert!(read(json!({ "name": "x", "types": vec!["Goblin"; MAX_LOOKUP_CHIPS] })).is_ok());
+    }
+
+    #[test]
+    fn the_name_is_optional_and_a_lookup_still_needs_one_criterion() {
+        let types_only = read(json!({ "types": ["Goblin"] })).unwrap();
+        assert!(types_only.name().is_empty(), "no name is the empty name");
+        assert_eq!(types_only.types().len(), 1);
+        assert!(read(json!({ "colors": ["R"] })).is_ok());
+        assert!(read(json!({ "card_roles": ["ramp"] })).is_ok());
+        let nothing = read(json!({})).unwrap_err();
+        assert!(
+            nothing.contains("a lookup needs a name, a type, a color or a role"),
+            "{nothing}"
+        );
+    }
+
+    #[test]
+    fn a_name_with_no_letter_or_digit_is_no_criterion() {
+        for name in ["%%%", "___", "--", "!?"] {
+            let refused = read(json!({ "name": name })).unwrap_err();
+            assert!(
+                refused.contains("a lookup needs a name, a type, a color or a role"),
+                "{name}: {refused}"
+            );
+        }
+        assert!(
+            read(json!({ "name": "%%%", "types": ["Elf"] })).is_ok(),
+            "a chip still makes it a lookup"
+        );
+        assert!(
+            read(json!({ "name": "B.F.M." })).is_ok(),
+            "punctuation around letters is a name"
+        );
     }
 
     #[test]

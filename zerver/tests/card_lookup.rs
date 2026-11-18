@@ -239,6 +239,73 @@ async fn the_route_is_limited_per_address(pool: sqlx::PgPool) {
         .await;
     assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
     assert!(headers.contains_key(header::RETRY_AFTER), "{headers:?}");
+    assert_eq!(
+        headers
+            .get(header::CACHE_CONTROL)
+            .and_then(|v| v.to_str().ok()),
+        Some("private, no-store"),
+        "a refusal isn't cached either"
+    );
+}
+
+#[sqlx::test]
+async fn a_body_over_4_kb_is_refused_before_it_is_read(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let padded = json!({ "name": "bolt", "pad": "x".repeat(5000) });
+    let (status, _, _) = app
+        .send_raw(Method::POST, CARD_LOOKUP_ROUTE, Some(padded), None, &[])
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::PAYLOAD_TOO_LARGE,
+        "a lookup body is at most about 1 KB"
+    );
+    let (status, _) = app
+        .post(CARD_LOOKUP_ROUTE, json!({ "name": "bolt" }), None)
+        .await;
+    assert_eq!(status, StatusCode::OK, "a real lookup still fits");
+}
+
+#[sqlx::test]
+async fn a_name_of_only_punctuation_is_refused_rather_than_searching_everything(
+    pool: sqlx::PgPool,
+) {
+    let app = TestApp::new(pool.clone());
+    seed_cards(&pool, &[card("Lightning Bolt").mono("R")]).await;
+    let (status, _) = app
+        .post(CARD_LOOKUP_ROUTE, json!({ "name": "%%%" }), None)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "it would match every card"
+    );
+}
+
+#[sqlx::test]
+async fn no_answer_is_cached_since_a_signed_in_one_follows_the_user_s_setting(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    seed_cards(&pool, &[card("Lightning Bolt").mono("R")]).await;
+    for (body, want) in [
+        (json!({ "name": "bolt" }), StatusCode::OK),
+        (json!({ "name": "%%%" }), StatusCode::UNPROCESSABLE_ENTITY),
+        (
+            json!({ "name": "bolt", "pad": "x".repeat(5000) }),
+            StatusCode::PAYLOAD_TOO_LARGE,
+        ),
+    ] {
+        let (status, headers, _) = app
+            .send_raw(Method::POST, CARD_LOOKUP_ROUTE, Some(body), None, &[])
+            .await;
+        assert_eq!(status, want);
+        assert_eq!(
+            headers
+                .get(header::CACHE_CONTROL)
+                .and_then(|v| v.to_str().ok()),
+            Some("private, no-store"),
+            "{status}"
+        );
+    }
 }
 
 /// A browser reads a 429's `Retry-After` only when CORS exposes it, so the web's search can wait

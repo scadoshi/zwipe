@@ -294,8 +294,8 @@ fn limit() -> usize {
     usize::try_from(LOOKUP_LIMIT).unwrap_or(usize::MAX)
 }
 
-/// The lookup for `text` as a name, or `None` when no card could have it (empty once trimmed,
-/// too long, or holding a control character).
+/// The lookup for `text` as a name, or `None` when the server would refuse it (empty once
+/// trimmed, too long, holding a control character, or with no letter or digit).
 fn name_lookup(text: &str) -> Option<HttpCardLookup> {
     let name = LookupName::try_from(text.to_owned()).ok()?;
     HttpCardLookup::try_new(name, Vec::new(), Vec::new(), Vec::new()).ok()
