@@ -14,6 +14,14 @@ pub const COMMAND_ZONE_SEARCH_DEBOUNCE: Duration = Duration::from_millis(800);
 /// deck cards view and the commander maybeboard.
 pub const QUICK_ADD_DEBOUNCE: Duration = Duration::from_millis(300);
 
+/// How long Home's card search waits after a keystroke before it looks up: the 250 ms the
+/// server's lookup limiter is sized for (four lookups a second at most).
+pub const CARD_SEARCH_DEBOUNCE: Duration = Duration::from_millis(250);
+
+/// How long Home's card search waits after a 429 whose `Retry-After` it can't read: two of the
+/// lookup limiter's one-a-second refills.
+pub const CARD_SEARCH_RATE_LIMIT_WAIT: Duration = Duration::from_secs(2);
+
 /// Characters a quick add search needs before it runs.
 pub const QUICK_ADD_MIN_CHARS: usize = 2;
 
