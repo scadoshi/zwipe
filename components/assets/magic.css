@@ -998,10 +998,11 @@ i.ms.ms-cost.ms-gp {
         position: relative;
     }
 
+    /* The reach starts inside the 1px border, so it adds that back. */
     .card-action-btn::before {
         content: "";
         position: absolute;
-        inset: -0.375rem;
+        inset: calc(-0.375rem - 1px);
     }
 
     .card-action-row {
