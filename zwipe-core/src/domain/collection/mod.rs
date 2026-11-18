@@ -7,6 +7,7 @@ pub mod finish;
 pub mod import;
 pub mod language;
 pub mod limits;
+pub mod page;
 pub mod purchase;
 pub mod quantity;
 pub mod source;
@@ -16,7 +17,12 @@ pub use condition::CardCondition;
 pub use finish::Finish;
 pub use import::ImportCollectionError;
 pub use language::CardLanguage;
+pub use page::{
+    CollectionPageSize, CollectionSearch, InvalidCollectionPageSize, InvalidCollectionSearch,
+};
 pub use purchase::{InvalidPurchasePrice, PurchaseCurrency, PurchasePrice};
-pub use quantity::{CollectionQuantity, InvalidCollectionQuantity};
+pub use quantity::{
+    CollectionQuantity, InvalidCollectionQuantity, InvalidSetQuantity, SetQuantity,
+};
 pub use source::CollectionSource;
 pub use tag::{CollectionTag, CollectionTags, InvalidCollectionTags, is_unseen, strip_unseen};

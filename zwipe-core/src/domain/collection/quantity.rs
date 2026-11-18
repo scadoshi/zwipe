@@ -58,9 +58,76 @@ impl From<CollectionQuantity> for i32 {
     }
 }
 
+/// A count outside 0 to [`CollectionQuantity::MAX`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[error("must be between 0 and {max}", max = CollectionQuantity::MAX)]
+pub struct InvalidSetQuantity;
+
+/// The copies a set call gives one collection row: 0 to [`CollectionQuantity::MAX`], where 0
+/// removes the row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(try_from = "i32", into = "i32")]
+pub struct SetQuantity(i32);
+
+impl SetQuantity {
+    /// A set call of `copies`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidSetQuantity`] below 0 or above [`CollectionQuantity::MAX`].
+    pub fn new(copies: i32) -> Result<Self, InvalidSetQuantity> {
+        if (0..=CollectionQuantity::MAX).contains(&copies) {
+            Ok(Self(copies))
+        } else {
+            Err(InvalidSetQuantity)
+        }
+    }
+
+    /// The copies.
+    #[must_use]
+    pub fn get(self) -> i32 {
+        self.0
+    }
+
+    /// The row's quantity, or `None` when the call removes the row.
+    #[must_use]
+    pub fn row(self) -> Option<CollectionQuantity> {
+        CollectionQuantity::new(self.0).ok()
+    }
+}
+
+impl TryFrom<i32> for SetQuantity {
+    type Error = InvalidSetQuantity;
+
+    fn try_from(copies: i32) -> Result<Self, Self::Error> {
+        Self::new(copies)
+    }
+}
+
+impl From<SetQuantity> for i32 {
+    fn from(quantity: SetQuantity) -> Self {
+        quantity.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_set_call_takes_zero_to_the_most_and_zero_removes() {
+        assert_eq!(SetQuantity::new(0).unwrap().row(), None);
+        assert_eq!(
+            SetQuantity::new(3).unwrap().row(),
+            Some(CollectionQuantity::new(3).unwrap())
+        );
+        assert_eq!(SetQuantity::new(9_999).unwrap().get(), 9_999);
+        assert!(SetQuantity::new(-1).is_err());
+        assert!(SetQuantity::new(10_000).is_err());
+        assert!(serde_json::from_str::<SetQuantity>("-1").is_err());
+        assert!(serde_json::from_str::<SetQuantity>("10000").is_err());
+        assert_eq!(serde_json::from_str::<SetQuantity>("0").unwrap().get(), 0);
+    }
 
     #[test]
     fn a_row_holds_one_to_the_most() {

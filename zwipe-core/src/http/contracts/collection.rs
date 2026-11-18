@@ -1,9 +1,15 @@
-//! Collection import: the request carries a whole export, the reply says what landed and which
-//! rows didn't.
+//! The collection's calls: an import carries a whole export and says what landed and which rows
+//! didn't; a set call gives one row its copies; the list reads the collection a page at a time;
+//! the export hands it back as a ManaBox file.
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::domain::collection::CollectionSource;
+use crate::domain::card::Card;
+use crate::domain::collection::{
+    CardCondition, CardLanguage, CollectionQuantity, CollectionSource, CollectionTags, Finish,
+    SetQuantity,
+};
 use crate::domain::deck::ImportMode;
 
 /// Imports a ManaBox or Archidekt collection export into the caller's collection.
@@ -78,6 +84,73 @@ pub enum UnmatchedReason {
     Unknown,
 }
 
+/// One row of the caller's collection: a printing in one finish, condition and language, and how
+/// many copies of it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CollectionCard {
+    /// The printing, as search serves it.
+    pub card: Card,
+    /// Its finish.
+    pub finish: Finish,
+    /// Its condition, `None` when not given.
+    pub condition: Option<CardCondition>,
+    /// Its language, `None` when not given.
+    pub language: Option<CardLanguage>,
+    /// Its copies.
+    pub quantity: CollectionQuantity,
+    /// Its tags, from an Archidekt export; empty for every other row.
+    pub tags: CollectionTags,
+    /// When the export says it was added, `None` without one.
+    pub added_at: Option<DateTime<Utc>>,
+}
+
+/// Gives one row of the caller's collection its copies: the row with this printing, finish,
+/// condition and language. A condition or language left out is "not given", the row a manual
+/// add makes; with them the call edits exactly the row the list showed. 0 copies removes it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HttpSetCollectionCard {
+    /// The printing's Scryfall id.
+    pub scryfall_data_id: uuid::Uuid,
+    /// The row's finish.
+    pub finish: Finish,
+    /// The row's condition.
+    #[serde(default)]
+    pub condition: Option<CardCondition>,
+    /// The row's language.
+    #[serde(default)]
+    pub language: Option<CardLanguage>,
+    /// The row's copies from now on, 0 to remove it.
+    pub quantity: SetQuantity,
+}
+
+/// What a set call left: the row, or `None` when it removed it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HttpSetCollectionCardReply {
+    /// The row as it is now.
+    pub card: Option<CollectionCard>,
+}
+
+/// One page of the caller's collection, sorted by card name, then set, collector number and
+/// finish.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HttpCollectionPage {
+    /// The page's rows.
+    pub cards: Vec<CollectionCard>,
+    /// Rows the search matches across every page.
+    pub total: i64,
+    /// The offset of the next page, `None` on the last.
+    pub next_offset: Option<u32>,
+}
+
+/// The caller's collection as a ManaBox export: its header row and one line per row.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HttpCollectionExport {
+    /// A file name for the download, ending `.csv`.
+    pub file_name: String,
+    /// The file's text.
+    pub csv: String,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -115,6 +188,21 @@ mod tests {
         assert_eq!(
             summary.unmatched.first().map(|row| row.reason),
             Some(UnmatchedReason::Unknown)
+        );
+    }
+
+    /// A set call that leaves out condition and language names the manual-add row.
+    #[test]
+    fn a_set_call_without_condition_or_language_names_the_manual_row() {
+        let body = r#"{"scryfall_data_id":"00000000-0000-0000-0000-000000000001","finish":"foil","quantity":0}"#;
+        let call: HttpSetCollectionCard = serde_json::from_str(body).unwrap();
+        assert_eq!(call.condition, None);
+        assert_eq!(call.language, None);
+        assert_eq!(call.quantity.row(), None, "0 removes");
+        let body = r#"{"scryfall_data_id":"00000000-0000-0000-0000-000000000001","finish":"nonfoil","condition":"near_mint","language":"ja","quantity":10000}"#;
+        assert!(
+            serde_json::from_str::<HttpSetCollectionCard>(body).is_err(),
+            "past the most"
         );
     }
 

@@ -12,6 +12,8 @@
 use uuid::Uuid;
 
 use crate::domain::card::oracle_tag_examples::OracleTagSlug;
+use crate::domain::collection::{CollectionPageSize, CollectionSearch};
+use crate::domain::share_link::encode_segment;
 use crate::http::endpoint::Method;
 
 // == health ==
@@ -100,6 +102,12 @@ pub const PLAYSTYLE_ROUTE: &str = "/api/deck/playstyle";
 pub const IMPORT_COLLECTION_ROUTE: &str = "/api/collection/import";
 /// How many cards and printings the caller's collection holds.
 pub const COLLECTION_SUMMARY_ROUTE: &str = "/api/collection/summary";
+/// One page of the caller's collection; [`collection_page_route`] adds the query.
+pub const COLLECTION_ROUTE: &str = "/api/collection";
+/// Gives one row of the caller's collection its copies.
+pub const COLLECTION_CARDS_ROUTE: &str = "/api/collection/cards";
+/// The caller's collection as a ManaBox export.
+pub const EXPORT_COLLECTION_ROUTE: &str = "/api/collection/export";
 
 // == suggested commanders ==
 
@@ -170,6 +178,24 @@ pub fn clone_deck_route(source_deck_id: Uuid) -> String {
 #[must_use]
 pub fn share_deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/share")
+}
+
+/// The page of the caller's collection from `offset`, `limit` rows long, of the rows whose card
+/// names hold `name` (every row when it is empty): [`COLLECTION_ROUTE`] with its query, the search
+/// percent-encoded.
+#[must_use]
+pub fn collection_page_route(
+    name: &CollectionSearch,
+    offset: u32,
+    limit: CollectionPageSize,
+) -> String {
+    let limit = limit.get();
+    if name.is_empty() {
+        format!("{COLLECTION_ROUTE}?offset={offset}&limit={limit}")
+    } else {
+        let name = encode_segment(name.as_str());
+        format!("{COLLECTION_ROUTE}?name={name}&offset={offset}&limit={limit}")
+    }
 }
 
 /// The printings of the card `oracle_id` that the caller's collection holds.
@@ -349,6 +375,17 @@ mod tests {
 
         assert_eq!(card_route(a), format!("/api/card/{sa}"));
         assert_eq!(printings_route(a), format!("/api/card/{sa}/printings"));
+        let every = CollectionSearch::default();
+        let page = CollectionPageSize::default();
+        assert_eq!(
+            collection_page_route(&every, 0, page),
+            "/api/collection?offset=0&limit=50"
+        );
+        let search = CollectionSearch::new("Lim-Dûl's & co").unwrap();
+        assert_eq!(
+            collection_page_route(&search, 100, page),
+            "/api/collection?name=Lim-D%C3%BBl%27s%20%26%20co&offset=100&limit=50"
+        );
         let slug: OracleTagSlug = "spot-removal".parse().unwrap();
         assert_eq!(
             oracle_tag_examples_route(&slug),
