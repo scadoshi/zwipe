@@ -408,11 +408,6 @@
   specific - settings
 =========================== */
 
-/* On top of the shared app.css .pref-row. */
-.pref-row {
-    margin-bottom: var(--space-2);
-}
-
 /* Universes Beyond sheet: grayed franchise chips until the hide toggle is on,
    and short explanatory notes under the title and section label. */
 .ub-chips-disabled {
