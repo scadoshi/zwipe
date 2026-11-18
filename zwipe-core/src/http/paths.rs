@@ -311,6 +311,8 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Patch, CHANGE_USERNAME_ROUTE, true),
     (Method::Delete, CLEAR_COMMANDER_MAYBEBOARD_ROUTE, true),
     (Method::Get, COLLECTION_SUMMARY_ROUTE, true),
+    (Method::Get, COLLECTION_ROUTE, true),
+    (Method::Put, COLLECTION_CARDS_ROUTE, true),
     (Method::Post, COMMANDER_DISMISSALS_ROUTE, true),
     (Method::Delete, COMMANDER_DISMISSALS_ROUTE, true),
     (Method::Get, COMMANDER_SUGGESTIONS_ROUTE, true),
