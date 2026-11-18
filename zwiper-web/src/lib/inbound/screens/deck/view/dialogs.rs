@@ -2,16 +2,17 @@
 //! skips and Delete. The profile header's icons and the Danger zone panel
 //! open them; an action in a dialog closes it, as the app does.
 
-use components::{ActionButton, AlertDialog, DialogAction, ShareUrl, TOAST_QUICK};
+use components::{ActionButton, AlertDialog, DialogAction, ShareUrl, TOAST_NORMAL, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
-use zwipe_client::ZwipeClient;
+use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::deck::deck_name;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
 use zwipe_ui::screens::deck_view;
 use zwipe_ui::telemetry::vocabulary::component;
+use zwipe_ui::write_id::WriteId;
 
 use crate::domain::deck::share_link;
 use crate::inbound::chrome::authed::use_authed;
@@ -86,18 +87,38 @@ pub fn DeckDialogsHost(
             ToastOptions::default().duration(TOAST_QUICK),
         );
     };
-    let create_link = use_callback(move |()| {
-        spawn(async move {
-            if let Some(shared) = authed
-                .run("share_deck", |c, s| async move {
-                    c.share_deck(deck_id, &s).await
+    // The dialog stays open until the link lands, so it can't be reopened over a link still on
+    // its way; a failure keeps it open. A request lost on its way back may still have made the
+    // link, so the deck's own link decides.
+    let create_link = ActionButton::new("Create link").busy("Creating link…", move || async move {
+        let created = authed
+            .try_run_quiet("share_deck", |c, s| async move {
+                c.share_deck(deck_id, &s).await
+            })
+            .await
+            .map(|shared| shared.share_token);
+        let recheck = || async move {
+            authed
+                .run_quiet("recheck_share", |c, s| async move {
+                    c.fetch_deck_profile(deck_id, &s).await
                 })
                 .await
-            {
-                share_token.set(Some(shared.share_token));
-                copy_link(shared.share_token);
+                .map(|profile| profile.share_token)
+        };
+        match link_after_create(created, outcome_unknown, recheck).await {
+            Ok(token) => {
+                share_token.set(Some(token));
+                copy_link(token);
+                true
             }
-        });
+            Err(error) => {
+                toast.error(
+                    error.to_user_message(),
+                    ToastOptions::default().duration(TOAST_NORMAL),
+                );
+                false
+            }
+        }
     });
     let copy_shared = use_callback(move |()| {
         if let Some(token) = *share_token.peek() {
@@ -165,14 +186,7 @@ pub fn DeckDialogsHost(
     } else {
         (
             "Anyone with the link can view this deck. You can stop sharing at any time.",
-            vec![
-                DialogAction::Dismiss("Close".into()),
-                DialogAction::Confirm {
-                    label: "Create link".into(),
-                    danger: false,
-                    on_confirm: create_link,
-                },
-            ],
+            vec![DialogAction::Dismiss("Close".into()), create_link.into()],
         )
     };
 
@@ -216,6 +230,33 @@ pub fn DeckDialogsHost(
     }
 }
 
+/// Whether a failed call may still have landed: the request went out and its answer never came
+/// back, as when Android Chrome's hardware Esc stops every fetch in flight.
+fn outcome_unknown(error: &ClientError) -> bool {
+    matches!(error, ClientError::Network(_))
+}
+
+/// The link Create link ends with: the one `created` brings, or, after a failure
+/// `outcome_unknown` can't rule out landing, the deck's link as `recheck` reads it from the
+/// server (`None` when the read fails). Anything else keeps `created`'s error.
+async fn link_after_create<E, R>(
+    created: Result<Uuid, E>,
+    outcome_unknown: impl FnOnce(&E) -> bool,
+    recheck: impl FnOnce() -> R,
+) -> Result<Uuid, E>
+where
+    R: Future<Output = Option<Option<Uuid>>>,
+{
+    match created {
+        Ok(token) => Ok(token),
+        Err(error) if outcome_unknown(&error) => match recheck().await {
+            Some(Some(token)) => Ok(token),
+            Some(None) | None => Err(error),
+        },
+        Err(error) => Err(error),
+    }
+}
+
 /// Clone deck: a copy of the deck under a new name, prefilled with
 /// `{name} (clone)` on every open. The name is judged like Create's, with
 /// its line under the field, and `Save` stays off until it passes; a failure
@@ -226,6 +267,8 @@ fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool
     let authed = use_authed();
     let toast = use_toast();
     let mut name = use_signal(String::new);
+    // The copy's id Save sends, kept while the same name is saved again after a failure.
+    let mut clone_id = use_signal(WriteId::<String>::new);
     use_effect(move || {
         // Opening and closing both start the form over.
         let _open = open();
@@ -236,9 +279,11 @@ fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool
         .disabled(blank)
         .busy("Cloning…", move || {
             let new_name = name.peek().trim().to_owned();
+            let id = clone_id.write().id_for(new_name.clone(), Uuid::new_v4);
             async move {
                 let body = HttpCloneDeck {
                     new_name: new_name.clone(),
+                    id: Some(id),
                 };
                 let Some(cloned) = authed
                     .run("clone_deck", |c, s| async move {
@@ -248,6 +293,7 @@ fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool
                 else {
                     return false;
                 };
+                clone_id.write().landed();
                 toast.info(
                     format!("Cloned as \"{new_name}\""),
                     ToastOptions::default().duration(TOAST_QUICK),
@@ -291,5 +337,57 @@ fn CloneNameInput(mut name: Signal<String>) -> Element {
         if let Some(error) = error {
             div { class: "message-error", "{error}" }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::Cell;
+
+    use super::*;
+
+    const NEW: Uuid = Uuid::from_u128(7);
+
+    /// A failure whose outcome is unknown, as a request lost on its way back.
+    fn lost(error: &&str) -> bool {
+        *error == "lost"
+    }
+
+    #[tokio::test]
+    async fn a_created_link_is_the_link_and_nothing_is_rechecked() {
+        let rechecked = Cell::new(false);
+        let link = link_after_create(Ok::<_, &str>(NEW), lost, || async {
+            rechecked.set(true);
+            None
+        })
+        .await;
+        assert_eq!(link, Ok(NEW));
+        assert!(!rechecked.get());
+    }
+
+    #[tokio::test]
+    async fn a_request_lost_after_the_server_made_the_link_ends_with_that_link() {
+        let link = link_after_create(Err("lost"), lost, || async { Some(Some(NEW)) }).await;
+        assert_eq!(link, Ok(NEW), "the deck is shared, so Share shows it");
+    }
+
+    #[tokio::test]
+    async fn a_request_lost_before_the_server_made_the_link_stays_the_error() {
+        let unshared = link_after_create(Err("lost"), lost, || async { Some(None) }).await;
+        assert_eq!(unshared, Err("lost"));
+        let unread = link_after_create(Err("lost"), lost, || async { None }).await;
+        assert_eq!(unread, Err("lost"), "a recheck that fails changes nothing");
+    }
+
+    #[tokio::test]
+    async fn a_refusal_is_final_and_nothing_is_rechecked() {
+        let rechecked = Cell::new(false);
+        let link = link_after_create(Err("refused"), lost, || async {
+            rechecked.set(true);
+            Some(Some(NEW))
+        })
+        .await;
+        assert_eq!(link, Err("refused"));
+        assert!(!rechecked.get());
     }
 }

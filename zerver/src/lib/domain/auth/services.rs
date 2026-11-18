@@ -5,6 +5,7 @@ use anyhow::anyhow;
 use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use sha2::Digest;
+use tokio_util::task::TaskTracker;
 use uuid::Uuid;
 use zwipe_core::domain::Email;
 use zwipe_core::domain::auth::models::access_token::AccessToken;
@@ -118,6 +119,8 @@ pub struct Service<AR, UR> {
     web_base_url: String,
     /// User-facing support email address shown in transactional emails.
     support_email: String,
+    /// The emails sent off the request path; shared by every clone.
+    background_sends: TaskTracker,
 }
 
 /// The subject of the notice an account gets when Scotty claims its reserved name.
@@ -160,7 +163,14 @@ where
             account_exists_notices: Arc::new(NoticeCooldown::default()),
             web_base_url,
             support_email,
+            background_sends: TaskTracker::new(),
         }
+    }
+
+    /// The emails this service sends off the request path. A reply never waits on them; a caller
+    /// that wants every started send finished can close the tracker and wait on it.
+    pub fn background_sends(&self) -> &TaskTracker {
+        &self.background_sends
     }
 
     /// Renames the account in `request` from `old_username`, answering a taken name, or a reserved
@@ -356,7 +366,7 @@ where
                 let this = self.clone();
                 let user_id = user.id;
                 let to = user.email.to_string();
-                tokio::spawn(async move {
+                self.background_sends.spawn(async move {
                     if let Err(e) = this.send_verification_email(user_id, &to).await {
                         tracing::error!(event = "verification_email_failed", %user_id, error = %e);
                     }
@@ -368,7 +378,8 @@ where
                 if self.account_exists_notices.try_send(request.email.as_ref()) {
                     let this = self.clone();
                     let to = request.email.to_string();
-                    tokio::spawn(async move { this.send_account_exists_notice(&to).await });
+                    self.background_sends
+                        .spawn(async move { this.send_account_exists_notice(&to).await });
                 }
                 Ok(RegisterOutcome::EmailTaken)
             }
@@ -808,7 +819,8 @@ where
             let this = self.clone();
             let user_id = user.id;
             let to = request.email.to_string();
-            tokio::spawn(async move { this.send_email_change_link(user_id, &to, &raw).await });
+            self.background_sends
+                .spawn(async move { this.send_email_change_link(user_id, &to, &raw).await });
         }
 
         user.pending_email = Some(request.email.clone());
@@ -849,7 +861,8 @@ where
             let this = self.clone();
             let user_id = user.id;
             let to = pending.to_string();
-            tokio::spawn(async move { this.send_email_change_link(user_id, &to, &raw).await });
+            self.background_sends
+                .spawn(async move { this.send_email_change_link(user_id, &to, &raw).await });
         }
         Ok(())
     }

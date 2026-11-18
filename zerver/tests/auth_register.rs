@@ -28,12 +28,6 @@ async fn register(app: &TestApp, username: &str, email: &str) -> (StatusCode, Va
     .await
 }
 
-/// Lets a background send that was going to happen land, so a test can say
-/// none did.
-async fn settle() {
-    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-}
-
 #[sqlx::test]
 async fn new_email_is_202_without_session_and_can_log_in(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
@@ -42,7 +36,7 @@ async fn new_email_is_202_without_session_and_can_log_in(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::ACCEPTED, "{body}");
     assert_eq!(body, json!({ "status": "verification_sent" }));
 
-    app.emails.wait_for(1).await;
+    app.wait_for_emails(1).await;
     assert_eq!(app.emails.last_to().as_deref(), Some("newbie@test.local"));
     let raw = app.emails.last_token("verify").unwrap();
 
@@ -81,7 +75,7 @@ async fn taken_email_answers_like_a_new_one_and_tells_the_owner(pool: sqlx::PgPo
     assert_eq!(status, StatusCode::ACCEPTED, "{taken}");
     assert_eq!(taken, fresh, "byte-equal bodies");
 
-    app.emails.wait_for(emails_before + 2).await;
+    app.wait_for_emails(emails_before + 2).await;
     let (subject, body) = {
         let sent = app.emails.sent.lock().unwrap();
         let notice = sent
@@ -160,7 +154,7 @@ async fn account_exists_notice_is_on_cooldown(pool: sqlx::PgPool) {
 
     let _ = register(&app, "copy1", "carol@test.local").await;
     let _ = register(&app, "copy2", "carol@test.local").await;
-    app.emails.wait_for(before + 1).await;
-    settle().await;
+    app.wait_for_emails(before + 1).await;
+    app.settle_emails().await;
     assert_eq!(app.emails.count(), before + 1, "one notice an hour");
 }

@@ -41,6 +41,7 @@ pub mod text;
 pub mod theme_sync;
 pub mod timing;
 pub mod toast;
+pub mod write_id;
 
 #[cfg(test)]
 mod test_support;

@@ -19,6 +19,7 @@ use crate::generation::{Generation, Ticket};
 use crate::screens::deck_form;
 use crate::stores::undo::UndoAction;
 use crate::toast::{Line, Toast, keep_one};
+use crate::write_id::WriteId;
 
 /// The screen's title.
 pub const TITLE: &str = "Deck";
@@ -496,6 +497,8 @@ pub enum Effect {
         deck_id: Uuid,
         /// The copy's name, trimmed.
         name: String,
+        /// The copy's deck id, the same for a Save of the same name after a failure.
+        id: Uuid,
     },
     /// Creates a share link; answers with [`Action::Shared`].
     ShareDeck {
@@ -642,7 +645,7 @@ enum Mutation {
     SetQuantity { card: Uuid, quantity: i32 },
     ClearCommander,
     RemoveCard { card: Uuid },
-    Clone(String),
+    Clone { name: String, id: Uuid },
     Share,
     Unshare,
     ClearSkips,
@@ -665,10 +668,11 @@ impl Mutation {
                 deck_id,
                 card: *card,
             },
-            Self::Clone(name) => Effect::CloneDeck {
+            Self::Clone { name, id } => Effect::CloneDeck {
                 ticket,
                 deck_id,
                 name: name.clone(),
+                id: *id,
             },
             Self::Share => Effect::ShareDeck { ticket, deck_id },
             Self::Unshare => Effect::UnshareDeck { ticket, deck_id },
@@ -720,6 +724,8 @@ pub struct State {
     mutations: Vec<(Ticket, Mutation)>,
     hint: HintOffer,
     tickets: Generation,
+    /// The copy's id Clone sends, kept while the same name is saved again after a failure.
+    clone_id: WriteId<(Option<Uuid>, String)>,
     /// Whether this deck has shown warnings this visit; Warnings stays up after a fix clears the last one, so the page doesn't move under the next tap.
     warned: bool,
 }
@@ -798,7 +804,13 @@ impl State {
                 if name.is_empty() {
                     return Vec::new();
                 }
-                self.mutate(Mutation::Clone(name.to_owned()))
+                let id = self
+                    .clone_id
+                    .id_for((self.deck_id, name.to_owned()), Uuid::new_v4);
+                self.mutate(Mutation::Clone {
+                    name: name.to_owned(),
+                    id,
+                })
             }
             Action::Share => self.mutate(Mutation::Share),
             Action::StopShare => self.mutate(Mutation::Unshare),
@@ -897,10 +909,13 @@ impl State {
                 effects.extend(self.fetch_deck());
                 effects
             }
-            (Mutation::Clone(name), Landed::Cloned(deck_id)) => vec![
-                Effect::Toast(Done::Cloned(name).toast()),
-                Effect::Navigate(Destination::Deck(deck_id)),
-            ],
+            (Mutation::Clone { name, .. }, Landed::Cloned(deck_id)) => {
+                self.clone_id.landed();
+                vec![
+                    Effect::Toast(Done::Cloned(name).toast()),
+                    Effect::Navigate(Destination::Deck(deck_id)),
+                ]
+            }
             (Mutation::Share, Landed::Shared(token)) => {
                 self.share_token = Some(token);
                 self.share_url().map(copy_link).into_iter().collect()
