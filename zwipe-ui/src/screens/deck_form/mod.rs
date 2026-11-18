@@ -96,6 +96,18 @@ pub const OTHER_TAGS: &str = "Other tags";
 /// What an empty field shows, and every input's placeholder.
 pub const NOT_SET: &str = "Not set";
 
+/// The land target stepper's value: the user's own target, else the format's usual count marked
+/// `(default)`, since that is the count the deck's warnings use; [`NOT_SET`] with no format or a
+/// format without one.
+#[must_use]
+pub fn land_target_label(target: Option<i32>, format: Option<Format>) -> String {
+    match (target, format.and_then(|f| f.default_land_target())) {
+        (Some(target), _) => target.to_string(),
+        (None, Some(default)) => format!("{default} (default)"),
+        (None, None) => NOT_SET.to_owned(),
+    }
+}
+
 /// A command-zone field's chip that narrows its search to cards that fit the slot.
 pub const FILTER: &str = "Filter";
 

@@ -111,7 +111,7 @@ pub(crate) fn DeckFields(
                 span { class: "settings-list-title", {model::BUDGET} }
             }
             div { class: "form-panel-fields",
-                // Land target (Not set = use the format heuristic)
+                // Land target: unset shows the format's usual count as its default
                 div {
                     div { class: "label-row",
                         label { class: "label", {model::LAND_TARGET} }
@@ -133,7 +133,7 @@ pub(crate) fn DeckFields(
                             "-"
                         }
                         span { class: "stepper-value", style: "width: auto; min-width: 4rem;",
-                            if let Some(v) = land_target { "{v}" } else { {model::NOT_SET} }
+                            {model::land_target_label(land_target, format)}
                         }
                         button {
                             class: "stepper-btn",

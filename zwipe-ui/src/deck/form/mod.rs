@@ -27,13 +27,15 @@ pub enum Step {
     Up,
 }
 
-/// The land target after pressing a stepper button. From "Not set" either button lands on the format's usual count, or 0 with no format; then it stays within 0 and [`MAX_LAND_TARGET`].
+/// The land target after pressing a stepper button. An unset target steps from the format's usual count, the "(default)" it shows, as a set one would; with no format either button lands on 0. It stays within 0 and [`MAX_LAND_TARGET`].
 #[must_use]
 pub fn step_land_target(current: Option<i32>, format: Option<Format>, step: Step) -> i32 {
-    match (current, step) {
-        (None, _) => format.and_then(|f| f.default_land_target()).unwrap_or(0),
-        (Some(v), Step::Down) => v.saturating_sub(1).max(0),
-        (Some(v), Step::Up) => v.saturating_add(1).min(MAX_LAND_TARGET),
+    let Some(v) = current.or_else(|| format.and_then(|f| f.default_land_target())) else {
+        return 0;
+    };
+    match step {
+        Step::Down => v.saturating_sub(1).max(0),
+        Step::Up => v.saturating_add(1).min(MAX_LAND_TARGET),
     }
 }
 
@@ -612,12 +614,17 @@ mod tests {
     }
 
     #[test]
-    fn the_land_stepper_starts_at_the_formats_count_and_stays_in_range() {
+    fn the_land_stepper_steps_from_the_formats_count_and_stays_in_range() {
         assert_eq!(
             step_land_target(None, Some(Format::Commander), Step::Up),
-            37
+            38,
+            "+ on 37 (default) is 38"
         );
-        assert_eq!(step_land_target(None, Some(Format::Modern), Step::Down), 17);
+        assert_eq!(
+            step_land_target(None, Some(Format::Modern), Step::Down),
+            16,
+            "- on 17 (default) is 16"
+        );
         assert_eq!(step_land_target(None, None, Step::Up), 0);
         assert_eq!(step_land_target(Some(0), None, Step::Down), 0);
         assert_eq!(step_land_target(Some(100), None, Step::Up), 100);
