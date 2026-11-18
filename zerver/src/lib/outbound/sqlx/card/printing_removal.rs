@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 
-use sqlx::{PgPool, Postgres, Transaction, query, query_as};
+use sqlx::{PgPool, Postgres, Transaction, query, query_as, query_scalar};
 use uuid::Uuid;
 
 use super::IMPORTABLE_PRINTING;
@@ -298,11 +298,14 @@ async fn remap_collection(
     tx: &mut Transaction<'_, Postgres>,
     live: &str,
 ) -> Result<u64, sqlx::Error> {
-    // Built from string constants only; every value comes from the tables.
-    query(sqlx::AssertSqlSafe(format!(
+    // One statement, so a row committed on a removed printing while it runs is either moved or
+    // left for the next run, never deleted unmoved. Built from string constants only; every
+    // value comes from the tables.
+    let moved: i64 = query_scalar(sqlx::AssertSqlSafe(format!(
         "WITH moved AS ( \
-             SELECT cc.*, rp.replacement_id FROM collection_cards cc \
-             JOIN removed_printings rp ON cc.scryfall_data_id = rp.id AND {live} \
+             DELETE FROM collection_cards cc USING removed_printings rp \
+             WHERE cc.scryfall_data_id = rp.id AND {live} \
+             RETURNING cc.*, rp.replacement_id \
          ), \
          grouped AS ( \
              SELECT user_id, replacement_id, finish, condition, language, \
@@ -314,7 +317,8 @@ async fn remap_collection(
                         FILTER (WHERE purchase_price IS NOT NULL))[1] AS purchase_currency, \
                     min(added_at) AS added_at \
              FROM moved GROUP BY user_id, replacement_id, finish, condition, language \
-         ) \
+         ), \
+         written AS ( \
          INSERT INTO collection_cards AS cc \
              (user_id, scryfall_data_id, oracle_id, finish, condition, language, quantity, tags, \
               purchase_price, purchase_currency, added_at) \
@@ -341,16 +345,12 @@ async fn remap_collection(
              purchase_currency = CASE WHEN cc.purchase_price IS NULL \
                  THEN EXCLUDED.purchase_currency ELSE cc.purchase_currency END, \
              added_at = LEAST(cc.added_at, EXCLUDED.added_at), \
-             updated_at = now()"
+             updated_at = now() \
+         RETURNING 1 \
+         ) \
+         SELECT count(*) FROM moved"
     )))
-    .execute(&mut **tx)
+    .fetch_one(&mut **tx)
     .await?;
-    let moved = query(sqlx::AssertSqlSafe(format!(
-        "DELETE FROM collection_cards cc USING removed_printings rp \
-         WHERE cc.scryfall_data_id = rp.id AND {live}"
-    )))
-    .execute(&mut **tx)
-    .await?
-    .rows_affected();
-    Ok(moved)
+    Ok(u64::try_from(moved).unwrap_or(0))
 }
