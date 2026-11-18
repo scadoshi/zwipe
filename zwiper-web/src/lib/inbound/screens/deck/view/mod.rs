@@ -284,7 +284,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
     let clone_name = loaded_profile
         .as_ref()
         .and_then(|r| r.as_ref().ok())
-        .map_or_default(|p| format!("{} (clone)", p.name));
+        .map_or_default(|p| zwipe_ui::deck::view::clone_name(&p.name));
     let deck_name = loaded_profile
         .as_ref()
         .and_then(|r| r.as_ref().ok())
