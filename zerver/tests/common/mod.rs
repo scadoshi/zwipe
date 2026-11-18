@@ -762,11 +762,14 @@ pub(crate) async fn wait_for_lock_waiters(pool: &PgPool, count: i64) {
         .await
         .unwrap();
         if waiting >= count {
-            return;
+            break;
         }
         tokio::time::sleep(std::time::Duration::from_millis(25)).await;
     }
-    panic!("{waiting} of {count} requests queued behind the held lock");
+    assert!(
+        waiting >= count,
+        "{waiting} of {count} requests queued behind the held lock"
+    );
 }
 
 pub(crate) async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
