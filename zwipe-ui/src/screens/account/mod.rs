@@ -15,6 +15,7 @@ use zwipe_core::domain::user::{User, Username};
 use self::form::Form;
 pub use self::form::{Field, SAVE, SAVING, Sheet, Typed};
 pub use crate::account::Password;
+use crate::account::PasswordChange;
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
 use crate::write_repeat::{self, FormAnswer, FormNote, FormRepeat};
@@ -434,9 +435,6 @@ pub enum Effect {
     Toast(Toast),
 }
 
-/// What a password change sends: the current password and the new one.
-type SentPassword = (Password, Password);
-
 /// A request out, waiting for its reply.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Request {
@@ -457,7 +455,7 @@ enum Request {
     /// An email change to this address as typed.
     Email(String),
     /// A password change, with what it sent: the current password and the new one.
-    Password(SentPassword),
+    Password(PasswordChange),
     /// The reset link to this email.
     Reset(String),
     /// The delete.
@@ -574,7 +572,7 @@ pub struct State {
     hint: HintOffer,
     tickets: Generation,
     /// Whether an earlier password change's answer was lost.
-    password_repeat: FormRepeat<SentPassword>,
+    password_repeat: FormRepeat<PasswordChange>,
 }
 
 impl State {
@@ -933,7 +931,10 @@ impl State {
         }
         let current = Password::new(form.value(Field::CurrentPassword));
         let new = Password::new(form.value(Field::NewPassword));
-        let ticket = self.send(Request::Password((current.clone(), new.clone())));
+        let ticket = self.send(Request::Password(PasswordChange {
+            current: current.clone(),
+            new: new.clone(),
+        }));
         vec![Effect::ChangePassword {
             ticket,
             current,

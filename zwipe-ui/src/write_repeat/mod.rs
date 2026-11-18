@@ -123,6 +123,7 @@ pub enum Written<T> {
 impl<T> Written<T> {
     /// The answer, `landed()` for a write an earlier try already made, `None` for a failure: for
     /// a caller that goes on the same way either way it went through.
+    #[must_use]
     pub fn or_landed(self, landed: impl FnOnce() -> T) -> Option<T> {
         match self {
             Self::Done(value) => Some(value),
@@ -222,6 +223,14 @@ pub struct FormRepeat<K> {
 
 impl<K> Default for FormRepeat<K> {
     fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<K> FormRepeat<K> {
+    /// A form with nothing sent yet.
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             ids: WriteId::new(),
             lost: None,

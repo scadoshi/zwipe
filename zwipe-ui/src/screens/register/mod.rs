@@ -129,15 +129,21 @@ pub enum Effect {
     Toast(Toast),
 }
 
-/// What a registration sends: the username, the trimmed email and the password.
-type Sent = (String, String, Password);
+/// What a registration sends: the username for Login, and the whole of it for telling its
+/// repeat.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Registration {
+    username: String,
+    /// Trimmed, as sent.
+    email: String,
+    password: Password,
+}
 
-/// The registration out, with what it sent: the username for Login, and the whole of it for
-/// telling its repeat.
+/// The registration out, with what it sent.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Sending {
     ticket: Ticket,
-    sent: Sent,
+    sent: Registration,
 }
 
 /// Register for one visit: every field empty, nothing judged, nothing out.
@@ -154,7 +160,7 @@ pub struct State {
     sending: Option<Sending>,
     tickets: Generation,
     /// Whether an earlier registration's answer was lost.
-    repeat: FormRepeat<Sent>,
+    repeat: FormRepeat<Registration>,
 }
 
 impl State {
@@ -191,7 +197,7 @@ impl State {
                 let Some(sent) = self.settle(ticket) else {
                     return Vec::new();
                 };
-                let username = sent.0.clone();
+                let username = sent.username.clone();
                 let _ = self.repeat.settle(sent, FormAnswer::Done);
                 vec![
                     Effect::Prefill(username),
@@ -283,7 +289,11 @@ impl State {
         );
         self.sending = Some(Sending {
             ticket,
-            sent: (username.clone(), email.clone(), password.clone()),
+            sent: Registration {
+                username: username.clone(),
+                email: email.clone(),
+                password: password.clone(),
+            },
         });
         vec![Effect::Register {
             ticket,
@@ -294,7 +304,7 @@ impl State {
     }
 
     /// Ends the registration holding `ticket`, and returns what it sent if it was the one out.
-    fn settle(&mut self, ticket: Ticket) -> Option<Sent> {
+    fn settle(&mut self, ticket: Ticket) -> Option<Registration> {
         if self.sending.as_ref().is_none_or(|s| s.ticket != ticket) {
             return None;
         }

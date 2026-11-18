@@ -67,6 +67,15 @@ impl Debug for Password {
     }
 }
 
+/// What a password change sends, for telling its repeat: both passwords redact in `Debug`.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct PasswordChange {
+    /// The current password as typed.
+    pub current: Password,
+    /// The new password as typed.
+    pub new: Password,
+}
+
 /// What a tap on Log in does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LoginGate {
