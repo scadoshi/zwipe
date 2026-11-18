@@ -7,7 +7,7 @@ name: Wire diff
 
 on:
   push:
-    branches: [release]
+    branches: [release, scratch/ci-wire-diff-timing]
     paths:
       - 'zerver/**'
       - 'zwipe-core/**'
