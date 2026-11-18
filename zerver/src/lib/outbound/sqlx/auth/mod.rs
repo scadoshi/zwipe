@@ -41,6 +41,14 @@ use crate::outbound::sqlx::auth::models::{DatabaseRefreshToken, DatabaseUserWith
 use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres};
 use crate::outbound::sqlx::user::models::DatabaseUser;
 
+/// The id a login identifier names: only an id's own text, lowercase and hyphenated, as
+/// Postgres prints a uuid, so the other ways to write one name no account.
+fn id_named_by(identifier: &str) -> Option<Uuid> {
+    Uuid::parse_str(identifier)
+        .ok()
+        .filter(|id| id.hyphenated().to_string() == identifier)
+}
+
 impl AuthRepository for Postgres {
     // == create ==
     async fn create_user(&self, request: &RegisterUser) -> Result<User, RegisterUserError> {
@@ -92,15 +100,17 @@ impl AuthRepository for Postgres {
         })
     }
     // == get ==
-    /// Looks up a user by ID, username, **or** email using a single `OR` query.
+    /// Looks up a user by ID, username, **or** email using a single `OR` query
+    /// whose every arm reads an index.
     async fn fetch_user_with_password_hash(
         &self,
         request: &AuthenticateUser,
     ) -> Result<UserWithPasswordHash, AuthenticateUserError> {
         let database_user: DatabaseUserWithPasswordHash = query_as!(
             DatabaseUserWithPasswordHash,
-            "SELECT id, username, email, password_hash, email_verified_at, hints_shown FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
-            request.identifier
+            "SELECT id, username, email, password_hash, email_verified_at, hints_shown FROM users WHERE (id = $2 OR username = $1 OR email = $1)",
+            request.identifier,
+            id_named_by(&request.identifier),
         )
         .fetch_one(&self.pool)
         .await?;
@@ -698,5 +708,26 @@ impl AuthRepository for Postgres {
             .map_err(|e| ResetPasswordError::Database(e.into()))?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_an_id_s_printed_text_names_it() {
+        let id = Uuid::from_u128(0x0123_4567_89ab_cdef_0123_4567_89ab_cdef);
+        assert_eq!(id_named_by(&id.hyphenated().to_string()), Some(id));
+        for other in [
+            id.hyphenated().to_string().to_uppercase(),
+            id.simple().to_string(),
+            id.braced().to_string(),
+            id.urn().to_string(),
+            "seed4242".to_owned(),
+            "seed4242@test.local".to_owned(),
+        ] {
+            assert_eq!(id_named_by(&other), None, "{other}");
+        }
     }
 }
