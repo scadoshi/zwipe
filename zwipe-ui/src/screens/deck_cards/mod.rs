@@ -2034,16 +2034,12 @@ impl State {
             .undoing
             .iter()
             .find(|u| u.ticket == ticket)
-            .and_then(|u| match &u.action {
-                UndoAction::SentTo { deck_name, .. } => Some(deck_name.clone()),
-                UndoAction::Added { .. }
-                | UndoAction::Removed { .. }
-                | UndoAction::QuantityChanged { .. }
-                | UndoAction::MovedBoard { .. }
-                | UndoAction::MvpToggled { .. }
-                | UndoAction::FlagToggled { .. }
-                | UndoAction::PrintingChanged { .. }
-                | UndoAction::CommandZonePrintingChanged { .. } => None,
+            .and_then(|u| {
+                if let UndoAction::SentTo { deck_name, .. } = &u.action {
+                    Some(deck_name.clone())
+                } else {
+                    None
+                }
             })
             .unwrap_or_default();
         self.undoing.retain(|u| u.ticket != ticket);
