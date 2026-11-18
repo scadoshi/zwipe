@@ -662,6 +662,7 @@ impl CardRepository for MyPostgres {
             mvp_card_roles,
             exclude_universes_beyond,
             universes_beyond_exception_set_names,
+            owner,
         } = context;
         // WHERE clauses read the predicate fields; LIMIT/OFFSET/ORDER BY read
         // the query config: the CardCriteria/CardQuery split, mirrored here.
@@ -1478,6 +1479,15 @@ impl CardRepository for MyPostgres {
             ));
         }
 
+        // "In my collection": a card the searching user holds any printing of, by
+        // oracle id (collection_cards_owned serves it as an index-only probe). With
+        // no owner the bound NULL matches nothing, so the flag never widens a search.
+        if request.owned_only() {
+            sep.push("EXISTS (SELECT 1 FROM collection_cards cc WHERE cc.user_id = ");
+            sep.push_bind_unseparated(owner);
+            sep.push_unseparated(" AND cc.oracle_id = latest_cards.oracle_id)");
+        }
+
         // Synergy ON: constrain to the commander's synergy pool (membership).
         // Same per-row jsonb probe the synergy ORDER BY uses; the user's sort, if
         // any, then applies within this set. Skipped when no score map (cold
@@ -2230,6 +2240,7 @@ impl CardRepository for MyPostgres {
                     commander_seed: Some(seed),
                     exclude_universes_beyond,
                     universes_beyond_exception_set_names,
+                    owner: Some(user_id),
                     ..Default::default()
                 },
             )

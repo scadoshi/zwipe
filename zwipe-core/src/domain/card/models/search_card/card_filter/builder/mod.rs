@@ -204,6 +204,8 @@ pub struct CardQueryBuilder {
     direction: SortDirection,
     synergy: bool,
     include_skipped: bool,
+    #[serde(default)]
+    owned_only: bool,
 }
 
 impl Default for CardQueryBuilder {
@@ -275,6 +277,7 @@ impl Default for CardQueryBuilder {
             direction: SortDirection::Ascending,
             synergy: false,
             include_skipped: false,
+            owned_only: false,
         }
     }
 }
@@ -762,7 +765,8 @@ impl CardQueryBuilder {
             self.direction,
             self.synergy,
             self.include_skipped,
-        ))
+        )
+        .with_owned_only(self.owned_only))
     }
 
     /// Builds bare [`CardCriteria`] for the in-memory path
@@ -1010,7 +1014,7 @@ mod tests {
     fn a_changed_config_flag_is_search_intent() {
         /// A flag's name and the change that moves it off its default.
         type Change = (&'static str, fn(&mut CardQueryBuilder));
-        let changes: [Change; 7] = [
+        let changes: [Change; 8] = [
             ("promo yes", |b| {
                 b.set_promo(true);
             }),
@@ -1031,6 +1035,9 @@ mod tests {
             }),
             ("language", |b| {
                 b.set_language("ja");
+            }),
+            ("owned_only", |b| {
+                b.set_owned_only(true);
             }),
         ];
         for (what, change) in changes {

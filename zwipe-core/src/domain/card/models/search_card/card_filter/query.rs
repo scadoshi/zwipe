@@ -99,6 +99,13 @@ pub struct CardQuery {
     /// so older clients that omit it parse to `false` (suppressions applied).
     #[serde(default)]
     include_skipped: bool,
+    /// When true, only cards with a printing in the searching user's collection
+    /// (by oracle id). Every route that takes a query is authed, so the server
+    /// always knows whose collection. `#[serde(default)]` so older clients that
+    /// omit it parse to `false` (today's search), and left off the wire when
+    /// false so today's requests are unchanged.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    owned_only: bool,
 }
 
 impl CardQuery {
@@ -121,7 +128,14 @@ impl CardQuery {
             direction,
             synergy,
             include_skipped,
+            owned_only: false,
         }
+    }
+
+    /// The query with [`owned_only`](Self::owned_only) set.
+    #[must_use]
+    pub(super) fn with_owned_only(self, owned_only: bool) -> Self {
+        Self { owned_only, ..self }
     }
 
     /// The predicate fields.
@@ -172,6 +186,12 @@ impl CardQuery {
     #[must_use]
     pub fn include_skipped(&self) -> bool {
         self.include_skipped
+    }
+
+    /// Whether only cards in the user's collection come back (see field docs).
+    #[must_use]
+    pub fn owned_only(&self) -> bool {
+        self.owned_only
     }
 }
 
@@ -269,6 +289,27 @@ mod tests {
         assert_eq!(query.limit(), 25);
         assert_eq!(query.offset(), 0);
         assert_eq!(query.direction(), SortDirection::Ascending);
+    }
+
+    #[test]
+    fn owned_only_is_absent_from_the_wire_unless_on_and_defaults_off() {
+        // A client predating the flag omits it: the search is unchanged.
+        let query: CardQuery = serde_json::from_str(r#"{"name_contains":"bolt"}"#).unwrap();
+        assert!(!query.owned_only());
+        // Off, it never goes on the wire, so today's request bytes stay the same.
+        let off = CardQueryBuilder::with_name_contains("bolt")
+            .build()
+            .unwrap();
+        let value = serde_json::to_value(&off).unwrap();
+        assert!(!value.as_object().unwrap().contains_key("owned_only"));
+        // On, it does, and reads back.
+        let mut builder = CardQueryBuilder::with_name_contains("bolt");
+        builder.set_owned_only(true);
+        let on = builder.build().unwrap();
+        let value = serde_json::to_value(&on).unwrap();
+        assert_eq!(value["owned_only"], serde_json::json!(true));
+        let back: CardQuery = serde_json::from_value(value).unwrap();
+        assert!(back.owned_only());
     }
 
     #[test]
