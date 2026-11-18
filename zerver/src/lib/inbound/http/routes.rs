@@ -24,6 +24,10 @@ use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtr
 /// truncated panic text, and the route takes it unauthenticated.
 const CRASH_REPORT_BODY_LIMIT: usize = 4096;
 
+/// Largest card lookup body accepted, in bytes. The largest valid lookup, a 100-character name
+/// and fifteen short chip words, is about 1 KB, and the route takes it signed out.
+const CARD_LOOKUP_BODY_LIMIT: usize = 4096;
+
 /// Largest decklist import body accepted, in bytes. A 500-card list pasted
 /// from any deck site is about 15 KB.
 const IMPORT_BODY_LIMIT: usize = 64 * 1024;
@@ -220,6 +224,17 @@ pub fn public_routes() -> Router<AppState> {
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(3))
             .burst_size(10)
+            .key_extractor(CfConnectingIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
+    // Per IP, 20 at once, then one more each second: the card lookup is a real search open to
+    // signed-out callers. A search box debounced at 250ms sends up to 4 a second, 3 more than the
+    // refill, so the burst carries about 6 seconds of steady typing before a 429.
+    let public_lookup_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(1))
+            .burst_size(20)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
@@ -439,6 +454,15 @@ pub fn public_routes() -> Router<AppState> {
                                 .error_handler(stable_rate_limit),
                         )
                         .layer(hourly_cache_layer()),
+                )
+                .merge(
+                    Router::new()
+                        .route("/card/lookup", post(card::lookup_cards))
+                        .layer(
+                            GovernorLayer::new(public_lookup_config)
+                                .error_handler(stable_rate_limit),
+                        )
+                        .layer(DefaultBodyLimit::max(CARD_LOOKUP_BODY_LIMIT)),
                 )
                 .nest(
                     "/marketing",

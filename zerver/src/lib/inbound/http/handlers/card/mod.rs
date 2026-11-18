@@ -15,6 +15,7 @@ pub mod get_oracle_words;
 pub mod get_printings;
 pub mod get_sets;
 pub mod get_ub_franchises;
+pub mod lookup_cards;
 pub mod search_card;
 pub mod search_commanders;
 
@@ -33,5 +34,6 @@ pub use get_oracle_words::get_oracle_words;
 pub use get_printings::get_printings;
 pub use get_sets::get_sets;
 pub use get_ub_franchises::get_ub_franchises;
+pub use lookup_cards::lookup_cards;
 pub use search_card::search_cards;
 pub use search_commanders::search_commanders;
