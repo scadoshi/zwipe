@@ -59,6 +59,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "A card leaving the deck page's head fades out under the nav, not over it",
         "A card's + stops at 99 copies",
         "A card's + stops once the deck reaches its card limit, the commander counted",
+        "Undoing a remove brings the card back with its flag",
     ],
 }];
 
