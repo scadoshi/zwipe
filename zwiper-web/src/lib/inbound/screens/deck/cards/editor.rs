@@ -870,6 +870,24 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                     }
                 });
             }
+            UndoAction::SentTo {
+                card_id,
+                deck_id: target,
+                ..
+            } => {
+                spawn_write(async move {
+                    let deleted = authed
+                        .run("undo", |c, s| async move {
+                            c.delete_undone_deck_card(target, card_id, &s).await
+                        })
+                        .await;
+                    if deleted.is_some() {
+                        toast.info(message, quick);
+                    } else {
+                        put_back();
+                    }
+                });
+            }
             UndoAction::Removed { entry, baseline } => {
                 let mut entry = *entry;
                 if let Ok(quantity) = Quantity::new(baseline) {

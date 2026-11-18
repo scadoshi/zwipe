@@ -5,6 +5,8 @@
 use uuid::Uuid;
 use zwipe_core::domain::deck::{Board, DeckEntry, DeckProfile};
 
+use crate::stores::undo::UndoAction;
+
 /// The sheet's title, and the label of the button that opens it.
 pub const TITLE: &str = "Send to";
 
@@ -69,6 +71,28 @@ pub fn holding_board(entries: &[DeckEntry], oracle_id: Uuid) -> Option<Board> {
         .map(|e| e.deck_card.board)
 }
 
+/// The undo entry for sending `card_name` (printing `card_id`) to `target` from the deck
+/// `from`, the deck whose history it goes on: `None` when the send came from outside a deck.
+#[must_use]
+pub fn undo_entry(
+    from: Option<Uuid>,
+    target: &Target,
+    card_id: Uuid,
+    card_name: &str,
+) -> Option<(Uuid, UndoAction)> {
+    from.map(|from| {
+        (
+            from,
+            UndoAction::SentTo {
+                card_id,
+                card_name: card_name.to_owned(),
+                deck_id: target.id,
+                deck_name: target.name.clone(),
+            },
+        )
+    })
+}
+
 /// A deck the card can go to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Target {
@@ -103,6 +127,32 @@ pub fn targets(decks: &[Target], current: Option<Uuid>, query: &str) -> Vec<Targ
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_send_from_a_deck_goes_on_that_deck_s_undo() {
+        let (from, card) = (Uuid::from_u128(1), Uuid::from_u128(9));
+        let target = deck(2, "Krenko");
+        assert_eq!(
+            undo_entry(Some(from), &target, card, "Sol Ring"),
+            Some((
+                from,
+                UndoAction::SentTo {
+                    card_id: card,
+                    card_name: "Sol Ring".to_owned(),
+                    deck_id: target.id,
+                    deck_name: "Krenko".to_owned(),
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn a_send_from_outside_a_deck_records_no_undo() {
+        assert_eq!(
+            undo_entry(None, &deck(2, "Krenko"), Uuid::from_u128(9), "Sol Ring"),
+            None
+        );
+    }
 
     fn deck(n: u128, name: &str) -> Target {
         Target {

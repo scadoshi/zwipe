@@ -124,6 +124,17 @@ fn to_app_undo(action: SharedUndo) -> UndoAction {
             old_card: *old_card,
             new_id,
         },
+        SharedUndo::SentTo {
+            card_id,
+            card_name,
+            deck_id,
+            deck_name,
+        } => UndoAction::SentTo {
+            card_id,
+            card_name,
+            deck_id,
+            deck_name,
+        },
     }
 }
 
@@ -187,6 +198,17 @@ fn to_shared_undo(action: UndoAction) -> SharedUndo {
             slot,
             old_card: Box::new(old_card),
             new_id,
+        },
+        UndoAction::SentTo {
+            card_id,
+            card_name,
+            deck_id,
+            deck_name,
+        } => SharedUndo::SentTo {
+            card_id,
+            card_name,
+            deck_id,
+            deck_name,
         },
     }
 }
@@ -673,6 +695,10 @@ pub fn View(deck_id: Uuid) -> Element {
     // leave, so the stack survives navigating around the app.
     let undo_store: UndoStore = use_context();
     let undo_log = UndoLog(use_signal(|| undo_store.restore(deck_id)));
+    use_hook(move || {
+        let mut store = undo_store;
+        store.attach(deck_id, undo_log);
+    });
     use_drop(move || {
         let mut store = undo_store;
         store.park(deck_id, undo_log.0.peek().clone());

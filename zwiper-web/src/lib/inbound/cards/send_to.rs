@@ -1,6 +1,7 @@
 //! Send to on the web: the sheet above the signed-in screens. It loads the user's decks as it
 //! opens, leaves out the deck the page under it is on, and adds the card to the deck clicked,
-//! on the board picked, as a write that runs to its end even if the page goes first.
+//! on the board picked, as a write that runs to its end even if the page goes first. A send from
+//! a deck's page goes on that deck's undo.
 
 use components::{SendTo, SendToSheet, TOAST_NORMAL, TOAST_QUICK, spawn_write};
 use dioxus::prelude::*;
@@ -13,6 +14,7 @@ use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 use zwipe_ui::send_to::{self, Target};
 use zwipe_ui::telemetry::vocabulary::component;
 
+use crate::inbound::card_stores::CardStores;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::router::Route;
 
@@ -33,6 +35,7 @@ pub fn SendToHost(send_to: SendTo) -> Element {
     let current = deck_of(&route);
     let authed = use_authed().in_component(component::SEND_TO_SHEET);
     let toast = use_toast();
+    let CardStores { mut undo, .. } = use_context();
     let mut decks = use_signal(|| None::<Vec<Target>>);
     use_effect(move || {
         if !open() {
@@ -74,10 +77,20 @@ pub fn SendToHost(send_to: SendTo) -> Element {
                         })
                         .await;
                     match added {
-                        Ok(_) => toast.info(
-                            send_to::sent(&target.name, board),
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        ),
+                        Ok(_) => {
+                            if let Some((from, entry)) = send_to::undo_entry(
+                                current,
+                                &target,
+                                sent.scryfall_data.id,
+                                &sent.scryfall_data.name,
+                            ) {
+                                undo.write().push(from, entry);
+                            }
+                            toast.info(
+                                send_to::sent(&target.name, board),
+                                ToastOptions::default().duration(TOAST_QUICK),
+                            );
+                        }
                         Err(e) => {
                             // A duplicate names the board that holds the card, read from the deck.
                             let holding = match (&e, oracle_id) {
