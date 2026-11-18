@@ -279,3 +279,25 @@ fn a_name_with_no_slug_opens_its_printing() {
         })]
     );
 }
+
+#[test]
+fn text_typed_after_clear_during_a_cooldown_is_looked_up_when_it_ends() {
+    let mut state = State::new();
+    let (ticket, _) = typed(&mut state, "bol");
+    let effects = state.update(Action::Failed {
+        ticket,
+        failure: Failure::RateLimited { retry_after: None },
+    });
+    let [Effect::Cooldown { ticket: cool, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let cool = *cool;
+    assert_eq!(state.update(Action::Clear), []);
+    assert_eq!(state.update(Action::Type("bolt".to_owned())), []);
+    let effects = state.update(Action::CooledDown(cool));
+    let [Effect::Lookup { lookup, .. }] = effects.as_slice() else {
+        panic!("the box's text is looked up: {effects:?}");
+    };
+    assert_eq!(lookup.name().as_str(), "bolt");
+    assert_eq!(state.status(), Status::Loading);
+}

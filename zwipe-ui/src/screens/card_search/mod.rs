@@ -194,7 +194,7 @@ impl State {
                     return Vec::new();
                 }
                 self.cooling = None;
-                if self.status != Status::RateLimited {
+                if self.query.trim().is_empty() {
                     return Vec::new();
                 }
                 let ticket = self.tickets.next_ticket();
