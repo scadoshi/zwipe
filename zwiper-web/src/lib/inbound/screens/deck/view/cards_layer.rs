@@ -4,8 +4,9 @@
 //! a touch screen and under hover with a mouse. The owner's deck and a shared deck draw the same
 //! layer; only the owner's passes edit actions and the edit buttons in the dock.
 //!
-//! The layer sits on the overlay stack, so Esc and the OS back close it as they close a sheet,
-//! and a sheet it opens (the filter, a card's drawer) sits over it. The route holds it open
+//! The layer sits on the overlay stack, so the OS back closes it as it closes a sheet, and a
+//! sheet it opens (the filter, a card's drawer) sits over it. Esc closes those sheets and
+//! leaves the layer open. The route holds it open
 //! (`?view=cards`, [`use_cards_route`]).
 
 use std::collections::{HashMap, HashSet};
@@ -65,7 +66,7 @@ pub(crate) fn use_cards_route(
 }
 
 /// The Cards layer; see the module's doc. `controls` are the page's own, `dock` the floating
-/// icon bar's buttons, and `on_close` closes the layer from its back button, Esc or the OS back.
+/// icon bar's buttons, and `on_close` closes the layer from its back button or the OS back.
 #[component]
 pub(crate) fn DeckCardsLayer(
     // The deck's sections, each with its rows, in the page's order.

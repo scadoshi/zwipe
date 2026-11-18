@@ -6,7 +6,7 @@
 //! deliberate. The results sit under the box, pushing the rows below down.
 //! ↑ and ↓ move through them and Enter adds the highlighted one; a pick
 //! clears the box, which closes them. Esc closes them and leaves the box, so the page's keys
-//! answer again. `/` focuses the box.
+//! answer again. `q` focuses the box; `/` opens the filter at its name.
 
 use components::{ClearWrap, TOAST_QUICK, spawn_write, use_mounted};
 use dioxus::prelude::*;
@@ -27,7 +27,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::telemetry;
 use crate::outbound::timer;
 
-/// The input's id, for `/`.
+/// The input's id, for `q`.
 pub(crate) const QUICK_ADD_ID: &str = "quick-add";
 
 /// Takes focus off the box.

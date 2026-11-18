@@ -3,7 +3,8 @@
 //! Remove on each.
 //!
 //! On a wide window the Quick add, Show and list column sits on the left,
-//! `/` focuses Quick add, and ↑ and ↓ move through its result chips with
+//! `q` focuses Quick add, `/` opens the filter at its name, and ↑ and ↓
+//! move through Quick add's result chips with
 //! Enter adding the highlighted one. Below the breakpoint it is the app's
 //! screen. Swipe sits in the list's header, Filter floats in the dock and
 //! Clear maybeboard is the Danger zone panel under the list.
@@ -58,7 +59,7 @@ use crate::outbound::timer;
 /// The saved commanders' header.
 const LIST_TITLE: &str = "Commanders";
 
-/// The Quick add input's id, for `/`.
+/// The Quick add input's id, for `q`.
 const QUICK_ADD_ID: &str = "commander-maybeboard-search";
 
 /// The saved list and its load state. Entries live in a signal so Remove
