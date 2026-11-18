@@ -13,14 +13,14 @@ use crate::domain::collection::models::import::{
 /// Database port for collections.
 pub trait CollectionRepository: Clone + Send + Sync + 'static {
     /// The printings `wanted` can match: by Scryfall id, by set code and collector number (the
-    /// English printing first), and how many printings carry each name, within a set and
-    /// overall. A printing with no oracle id matches nothing.
+    /// English printing first), and by name, within a set and overall, where one printing is a
+    /// match. A printing with no oracle id matches nothing.
     fn fetch_printings(
         &self,
         wanted: &Wanted,
     ) -> impl Future<Output = Result<Lookups, anyhow::Error>> + Send;
 
-    /// Writes `cards` into `user_id`'s collection in one transaction, the user's row locked so
+    /// Writes `cards` into `user_id`'s collection in one transaction, under a lock per user so
     /// two imports run one after the other. `Add` sums copies into a row already there and joins
     /// tags; `Replace` sets each row to the import's and removes every row the import doesn't
     /// hold.

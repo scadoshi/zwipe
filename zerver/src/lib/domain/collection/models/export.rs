@@ -1,9 +1,9 @@
 //! Reading a ManaBox or Archidekt collection export: the header row says whose it is, and each
 //! card row becomes an [`ExportRow`]. The reader goes a row at a time and keeps only the parsed
-//! fields. Every cell loses its control characters; a cell past the cap, a row past the cap or
-//! a tag list past its caps turns the whole file down. A value the reader doesn't know (a finish,
-//! condition, language, price or date) is not given rather than an error, so one odd cell never
-//! sinks a row.
+//! fields. Every cell loses its control characters and bidi or zero-width marks; a cell past the
+//! cap, a row past the cap or a tag list past its caps turns the whole file down. A value the
+//! reader doesn't know (a finish, condition, language, price or date) is not given rather than
+//! an error, so one odd cell never sinks a row.
 
 use chrono::{DateTime, NaiveDate, Utc};
 use csv::{ReaderBuilder, StringRecord};
@@ -11,7 +11,7 @@ use uuid::Uuid;
 use zwipe_core::domain::collection::limits::{MAX_CELL_CHARS, MAX_ROWS};
 use zwipe_core::domain::collection::{
     CardCondition, CardLanguage, CollectionQuantity, CollectionSource, CollectionTags, Finish,
-    ImportCollectionError, PurchaseCurrency, PurchasePrice,
+    ImportCollectionError, PurchaseCurrency, PurchasePrice, strip_unseen,
 };
 
 /// A read export: whose it is and its card rows, in file order.
@@ -118,9 +118,9 @@ impl Columns {
     }
 }
 
-/// `cell` without control characters.
+/// `cell` without control characters, bidi or zero-width marks.
 fn clean(cell: &str) -> String {
-    cell.chars().filter(|c| !c.is_control()).collect()
+    strip_unseen(cell)
 }
 
 /// Reads `csv`, a whole export with its header row first.
@@ -147,9 +147,10 @@ pub fn read(csv: &str) -> Result<Export, ImportCollectionError> {
     }
     let (source, columns) = Columns::of(&header)?;
     let mut rows = Vec::new();
+    let mut lines = Lines::new(csv);
     for record in records {
         let record = record.map_err(|e| malformed(&e))?;
-        let line = record.position().map_or(0, csv::Position::line);
+        let line = lines.at(record.position().map_or(0, csv::Position::byte));
         check_cells(&record, line)?;
         if record.iter().all(|cell| cell.trim().is_empty()) {
             continue;
@@ -163,6 +164,43 @@ pub fn read(csv: &str) -> Result<Export, ImportCollectionError> {
         return Err(ImportCollectionError::NoRows);
     }
     Ok(Export { source, rows })
+}
+
+/// The line each record starts on, counted forward as the reader moves on: the CSV reader's own
+/// count drifts on `\r\n` endings.
+struct Lines<'csv> {
+    text: &'csv str,
+    /// The offset counted up to, and the line it is on.
+    at: (usize, u64),
+}
+
+impl<'csv> Lines<'csv> {
+    fn new(text: &'csv str) -> Self {
+        Self { text, at: (0, 1) }
+    }
+
+    /// The line a record the reader says starts at `byte` begins on. The reader's offset can sit
+    /// on the line break before the record, so the breaks there are passed over first. Never
+    /// before the last one asked for.
+    fn at(&mut self, byte: u64) -> u64 {
+        let byte = usize::try_from(byte)
+            .unwrap_or(usize::MAX)
+            .min(self.text.len());
+        let byte = self
+            .text
+            .as_bytes()
+            .get(byte..)
+            .and_then(|rest| rest.iter().position(|b| *b != b'\r' && *b != b'\n'))
+            .map_or(self.text.len(), |skip| byte.saturating_add(skip));
+        let (from, line) = self.at;
+        let passed = self
+            .text
+            .get(from..byte)
+            .map_or(0, |gap| gap.matches('\n').count());
+        let line = line.saturating_add(u64::try_from(passed).unwrap_or(u64::MAX));
+        self.at = (byte.max(from), line);
+        line
+    }
 }
 
 /// The CSV reader's error as the line it stopped on.
@@ -349,6 +387,17 @@ Meren of Clan Nel Toth,TDC,Tarkir: Dragonstorm Commander,297,foil,mythic,2,10463
     }
 
     #[test]
+    fn bidi_and_zero_width_marks_never_reach_a_name() {
+        let csv =
+            "Name,Set code,Collector number,Quantity\n\u{202e}Sol\u{200f} Ring\u{2069},c21,1,1\n";
+        let export = read(csv).unwrap();
+        let [row] = export.rows.as_slice() else {
+            panic!("{export:?}")
+        };
+        assert_eq!(row.name.as_deref(), Some("Sol Ring"));
+    }
+
+    #[test]
     fn a_file_it_cant_take_is_turned_down_whole() {
         assert_eq!(read(""), Err(ImportCollectionError::Empty));
         assert_eq!(read(",,\n"), Err(ImportCollectionError::Empty));
@@ -402,6 +451,13 @@ Meren of Clan Nel Toth,TDC,Tarkir: Dragonstorm Commander,297,foil,mythic,2,10463
             .map(|(head, rest)| format!("{head}{rest}"))
             .unwrap();
         assert_eq!(read(&at_cap).map(|e| e.rows.len()), Ok(MAX_ROWS));
+    }
+
+    #[test]
+    fn each_row_names_its_own_line_whatever_the_line_endings() {
+        let csv = "Name,Set code,Quantity\r\nA,c21,1\r\nB,c21,1\nC,c21,1\r\n\nD,c21,1\n";
+        let lines: Vec<u64> = read(csv).unwrap().rows.iter().map(|row| row.line).collect();
+        assert_eq!(lines, [2, 3, 4, 6]);
     }
 
     #[test]

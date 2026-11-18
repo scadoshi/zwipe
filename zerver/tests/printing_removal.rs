@@ -632,3 +632,71 @@ async fn ungraded_owned_rows_merge_on_their_own_key(pool: sqlx::PgPool) {
         "both removed ungraded rows merged into the ungraded regular row, the graded row untouched"
     );
 }
+
+/// A moved row takes its card from the printing it lands on, not the one it left.
+#[sqlx::test]
+async fn a_moved_row_takes_the_replacement_s_card(pool: sqlx::PgPool) {
+    let p = printings();
+    let (app, _, _) = seeded(pool, &p).await;
+    sqlx::query(
+        "INSERT INTO collection_cards (user_id, scryfall_data_id, oracle_id, finish, quantity) \
+         SELECT id, $1, $2, 'nonfoil', 1 FROM users WHERE username = 'remover'",
+    )
+    .bind(p.promo.id())
+    .bind(Uuid::new_v4())
+    .execute(&app.pool)
+    .await
+    .unwrap();
+
+    let _ = service(&app.pool)
+        .remove_deleted_printings(&p.bulk(), RemovalMode::Apply)
+        .await
+        .unwrap();
+
+    let held: Vec<(Uuid, Uuid)> =
+        sqlx::query_as("SELECT scryfall_data_id, oracle_id FROM collection_cards")
+            .fetch_all(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(held, vec![(p.regular.id(), p.regular.oracle_id().unwrap())]);
+}
+
+/// A row whose printing's logged replacement no longer exists stays where it is, and the sweep
+/// keeps that printing for it.
+#[sqlx::test]
+async fn an_owned_row_whose_replacement_is_gone_stays_on_its_printing(pool: sqlx::PgPool) {
+    let p = printings();
+    let (app, _, _) = seeded(pool, &p).await;
+    own(&app.pool, &p.held, "nonfoil", 2, &["kept"]).await;
+    // An older run logged the held card's printing as moving to a printing that has since gone.
+    sqlx::query(
+        "INSERT INTO removed_printings (id, oracle_id, replacement_id) VALUES ($1, $2, $3)",
+    )
+    .bind(p.held.id())
+    .bind(p.held.oracle_id())
+    .bind(Uuid::new_v4())
+    .execute(&app.pool)
+    .await
+    .unwrap();
+
+    let report = service(&app.pool)
+        .remove_deleted_printings(&p.bulk(), RemovalMode::Apply)
+        .await
+        .unwrap();
+
+    assert_eq!(report.counts.map(|c| c.remapped_collection_cards), Some(0));
+    assert_eq!(
+        collection(&app.pool).await,
+        vec![(
+            p.held.id(),
+            "nonfoil".to_owned(),
+            2,
+            vec!["kept".to_owned()]
+        )],
+        "the row is still owned, on its own printing"
+    );
+    assert!(
+        stored(&app.pool).await.contains(&p.held.id()),
+        "and the printing stays for it"
+    );
+}

@@ -26,16 +26,28 @@ const TAG_SEPARATOR: char = '\u{1f}';
 /// A printing found by a key: the key's two parts, its id and its oracle id.
 type KeyedPrinting = (String, String, Uuid, Uuid);
 
-/// A name's printings: the name (and set), how many printings carry it, and the first one's id
-/// and oracle id.
-type NameCount = (String, String, i64, Uuid, Uuid);
-
-fn name_match(count: i64, id: Uuid, oracle_id: Uuid) -> NameMatch {
-    if count == 1 {
-        NameMatch::One(Printing { id, oracle_id })
-    } else {
-        NameMatch::Many
+/// The name-within-set and name-alone matches among `rows` (`(lowercased name, set, id, oracle
+/// id)`): one printing is a match, more is [`NameMatch::Many`].
+fn name_matches(
+    rows: Vec<(String, String, Uuid, Uuid)>,
+) -> (
+    HashMap<(String, String), NameMatch>,
+    HashMap<String, NameMatch>,
+) {
+    let mut by_name_set: HashMap<(String, String), NameMatch> = HashMap::new();
+    let mut by_name: HashMap<String, NameMatch> = HashMap::new();
+    for (name, set, id, oracle_id) in rows {
+        let printing = Printing { id, oracle_id };
+        by_name
+            .entry(name.clone())
+            .and_modify(|held| *held = NameMatch::Many)
+            .or_insert(NameMatch::One(printing));
+        by_name_set
+            .entry((name, set))
+            .and_modify(|held| *held = NameMatch::Many)
+            .or_insert(NameMatch::One(printing));
     }
+    (by_name_set, by_name)
 }
 
 impl CollectionRepository for Postgres {
@@ -80,49 +92,20 @@ impl CollectionRepository for Postgres {
                 .map(|(set, number, id, oracle_id)| ((set, number), Printing { id, oracle_id }))
                 .collect();
         }
-        if !wanted.name_sets.is_empty() {
-            let (names, sets): (Vec<&str>, Vec<&str>) = wanted
-                .name_sets
-                .iter()
-                .map(|(name, set)| (name.as_str(), set.as_str()))
-                .unzip();
-            let rows: Vec<NameCount> = query_as(
-                "SELECT lower(sd.name), sd.set, count(*), \
-                     (array_agg(sd.id ORDER BY sd.id))[1], (array_agg(sd.oracle_id ORDER BY sd.id))[1] \
-                 FROM scryfall_data sd \
-                 JOIN UNNEST($1::text[], $2::text[]) AS w(name, set) \
-                   ON lower(sd.name) = w.name AND sd.set = w.set \
-                 WHERE sd.oracle_id IS NOT NULL \
-                 GROUP BY lower(sd.name), sd.set",
-            )
-            .bind(&names)
-            .bind(&sets)
-            .fetch_all(&self.pool)
-            .await
-            .context("collection printings by name and set")?;
-            lookups.by_name_set = rows
-                .into_iter()
-                .map(|(name, set, count, id, oracle_id)| {
-                    ((name, set), name_match(count, id, oracle_id))
-                })
-                .collect();
-        }
         if !wanted.names.is_empty() {
-            let rows: Vec<(String, i64, Uuid, Uuid)> = query_as(
-                "SELECT lower(name), count(*), \
-                     (array_agg(id ORDER BY id))[1], (array_agg(oracle_id ORDER BY id))[1] \
-                 FROM scryfall_data \
-                 WHERE lower(name) = ANY($1) AND oracle_id IS NOT NULL \
-                 GROUP BY lower(name)",
+            // Every printing of the wanted names in one indexed lookup; the name-within-set and
+            // name-alone matches are both counted from it.
+            let rows: Vec<(String, String, Uuid, Uuid)> = query_as(
+                "SELECT lower(name), set, id, oracle_id FROM scryfall_data \
+                 WHERE lower(name) = ANY($1) AND oracle_id IS NOT NULL",
             )
             .bind(&wanted.names)
             .fetch_all(&self.pool)
             .await
             .context("collection printings by name")?;
-            lookups.by_name = rows
-                .into_iter()
-                .map(|(name, count, id, oracle_id)| (name, name_match(count, id, oracle_id)))
-                .collect::<HashMap<_, _>>();
+            let (by_name_set, by_name) = name_matches(rows);
+            lookups.by_name_set = by_name_set;
+            lookups.by_name = by_name;
         }
         Ok(lookups)
     }
@@ -135,15 +118,13 @@ impl CollectionRepository for Postgres {
     ) -> Result<Applied, anyhow::Error> {
         let arrays = ImportArrays::of(cards);
         let mut tx = self.pool.begin().await.context("collection import begin")?;
-        // One import at a time per collection.
-        let owner: Option<Uuid> = query_scalar("SELECT id FROM users WHERE id = $1 FOR UPDATE")
+        // One import at a time per collection, held to the end of the transaction. An advisory
+        // lock keyed on the user, so the user's own row stays free for their other writes.
+        query("SELECT pg_advisory_xact_lock(hashtext('collection_import'), hashtext($1::text))")
             .bind(user_id)
-            .fetch_optional(&mut *tx)
+            .execute(&mut *tx)
             .await
             .context("collection import lock")?;
-        if owner.is_none() {
-            anyhow::bail!("collection import for a user that doesn't exist");
-        }
         let removed = if mode.is_replace() {
             query(REMOVE_MISSING)
                 .bind(user_id)

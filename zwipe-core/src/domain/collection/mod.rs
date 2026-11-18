@@ -19,4 +19,4 @@ pub use language::CardLanguage;
 pub use purchase::{InvalidPurchasePrice, PurchaseCurrency, PurchasePrice};
 pub use quantity::{CollectionQuantity, InvalidCollectionQuantity};
 pub use source::CollectionSource;
-pub use tag::{CollectionTag, CollectionTags, InvalidCollectionTags};
+pub use tag::{CollectionTag, CollectionTags, InvalidCollectionTags, is_unseen, strip_unseen};

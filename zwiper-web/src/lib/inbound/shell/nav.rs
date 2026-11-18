@@ -49,6 +49,7 @@ impl Back {
             })),
             Route::DeckList {}
             | Route::Activity {}
+            | Route::Collection {}
             | Route::Playstyle {}
             | Route::Account {}
             | Route::Config {}
@@ -127,7 +128,10 @@ pub const fn section_of(route: &Route) -> Option<Section> {
         Route::Account {} => Some(Section::Account),
         Route::Config {} => Some(Section::Config),
         Route::PrivacyPolicy {} | Route::About {} => Some(Section::About),
-        Route::Login {}
+        // Collection is web only, so not one of the shared menu's sections: its nav link lights
+        // itself.
+        Route::Collection {}
+        | Route::Login {}
         | Route::Register {}
         | Route::ForgotPassword {}
         | Route::SharedDeck { .. }
