@@ -911,8 +911,8 @@ a.nav-dropdown-item.active:visited {
     margin-top: 0;
 }
 
-/* The theme sheets' search field, over the themes in a bar that stays at
-   the top of the sheet's scroll. The bar spans the sheet body's padding in
+/* The theme sheets' search field, a theme row's size, over the themes in a
+   bar that stays at the top of the sheet's scroll. The bar spans the sheet body's padding in
    the body's own fill, so the themes pass under it; the first group's chip
    sits under it as it would under the title bar. */
 .theme-search-bar {
@@ -929,13 +929,13 @@ a.nav-dropdown-item.active:visited {
     width: 100%;
     box-sizing: border-box;
     margin: 0;
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-2) var(--space-4);
     background-color: var(--bg-primary);
     border: 1px solid var(--ink-text-muted, var(--text-muted));
     border-radius: 0.4rem;
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 400;
     box-shadow: var(--shadow-sm);
 }
@@ -943,6 +943,10 @@ a.nav-dropdown-item.active:visited {
 /* Focus draws a 2px ring in the accent, which clears 3:1 on every panel,
    in place of the browser's; a hover lifts the edge where the device
    hovers. */
+.theme-search-bar .input-clear-wrap {
+    margin-bottom: 0;
+}
+
 .theme-search:focus {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
