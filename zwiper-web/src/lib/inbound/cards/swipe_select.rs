@@ -663,6 +663,7 @@ fn SwipeSelectBody(
     use_effect(use_reactive!(
         |offers_filter| filter_offered.set(offers_filter)
     ));
+    let send_to = try_use_context::<components::SendTo>();
     // The swipe screen's letter keys, each the same action as its dock
     // button; the swipes come through the swipe keys above, and there is no
     // Synergy here.
@@ -674,6 +675,12 @@ fn SwipeSelectBody(
                 Some(Shortcut::Printings) => {
                     if let Some(card) = stack.peek().current() {
                         open_on_shown_face(handed, faces, card.scryfall_data.id, printing_open);
+                    }
+                }
+                Some(Shortcut::SendTo) => {
+                    if let (Some(send_to), Some(card)) = (send_to, stack.peek().current().cloned())
+                    {
+                        send_to.open_for(card);
                     }
                 }
                 Some(Shortcut::Details) => {

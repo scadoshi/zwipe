@@ -15,8 +15,8 @@ use zwipe_ui::shortcuts::{
     card_rows_groups, commander_maybeboard_groups, deck_cards_groups, examples_groups, rows_of,
 };
 pub use zwipe_ui::shortcuts::{
-    CardKey, DeckAction, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, QUICK_ADD_KEY, UNDO_COMBO,
-    card_key, deck_action_key, flow_key, global_key, undo_letter,
+    CardKey, DeckAction, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, QUICK_ADD_KEY, SEND_TO_KEY,
+    UNDO_COMBO, card_key, deck_action_key, flow_key, global_key, undo_letter,
 };
 
 /// What a key does on a swipe screen (Add, Remove, Commander swipe): the same action as its
@@ -27,6 +27,8 @@ pub enum Shortcut {
     Swipe(Swipe),
     /// Opens Printings for the card on top.
     Printings,
+    /// Opens Send to for the card on top.
+    SendTo,
     /// Shows or hides the card details.
     Details,
     /// Flips the card on top to its other face, for a card with two.
@@ -56,7 +58,8 @@ pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
         return Some(Shortcut::Swipe(swipe));
     }
     let shortcut = match key {
-        "p" | "P" => Shortcut::Printings,
+        "p" => Shortcut::Printings,
+        shortcuts::SEND_TO_KEY => Shortcut::SendTo,
         "r" | "R" => Shortcut::Refresh,
         "s" | "S" => Shortcut::Synergy,
         _ => return None,
@@ -158,8 +161,9 @@ pub fn sheet_groups(screen: &ShortcutsScreen) -> Vec<SheetGroup> {
                 labels.up.map(|up| (&["↑", "k"][..], up)),
                 Some((&["↓", "j", "u", UNDO_COMBO][..], labels.down)),
             ];
-            let card: [SheetRow; 3] = [
+            let card: [SheetRow; 4] = [
                 (&["p"], "Printings"),
+                shortcuts::SEND_TO_ROW,
                 (&["d"], "Card details"),
                 (&["v"], FLIP_ROW),
             ];
@@ -234,7 +238,7 @@ mod tests {
             ("/", Shortcut::FilterByName),
             ("r", Shortcut::Refresh),
             ("s", Shortcut::Synergy),
-            ("P", Shortcut::Printings),
+            ("P", Shortcut::SendTo),
             ("S", Shortcut::Synergy),
         ] {
             assert_eq!(swipe_screen_shortcut(key), Some(shortcut), "{key}");
@@ -365,6 +369,7 @@ mod tests {
                     "Shift+H" => "H",
                     "Shift+S" => "S",
                     "Shift+F" => "F",
+                    "Shift+P" => "P",
                     "↑" => "ArrowUp",
                     "↓" => "ArrowDown",
                     "←" => "ArrowLeft",
@@ -401,6 +406,7 @@ mod tests {
                 "To the top",
                 "To the bottom",
                 "Printings",
+                "Send to",
                 "Card details",
                 FLIP_ROW,
                 "Filter",
@@ -437,6 +443,7 @@ mod tests {
             "↑" => "ArrowUp".to_owned(),
             "↓" => "ArrowDown".to_owned(),
             "Shift+H" => "H".to_owned(),
+            "Shift+P" => "P".to_owned(),
             other => other.to_owned(),
         };
         for (keys, does) in rows
@@ -502,7 +509,7 @@ mod tests {
     #[test]
     fn the_card_row_screens_list_their_cursor_keys_then_the_card_keys() {
         let rows = sheet_rows(&ShortcutsScreen::CardRows(ListLayout::One));
-        let actions: Vec<&str> = rows.iter().take(9).map(|(_, does)| *does).collect();
+        let actions: Vec<&str> = rows.iter().take(10).map(|(_, does)| *does).collect();
         assert_eq!(
             actions,
             [
@@ -513,6 +520,7 @@ mod tests {
                 "To the bottom",
                 "Open the card",
                 "Printings",
+                "Send to",
                 zwipe_ui::shortcuts::card_read_rows()[1].1,
                 FLIP_ROW,
             ]
@@ -610,6 +618,7 @@ mod tests {
                     "←" => "ArrowLeft",
                     "↓" => "ArrowDown",
                     "Shift+H" => "H",
+                    "Shift+P" => "P",
                     other => other,
                 };
                 let works = match swipe_screen_shortcut(key) {
@@ -617,6 +626,7 @@ mod tests {
                     _ => card_key(key).is_some_and(|k| k != CardKey::Filter),
                 } || global_key(key).is_some()
                     || page_key_label(label)
+                    || key == SEND_TO_KEY
                     || key == "Esc";
                 assert!(works, "{label} for {does}");
             }

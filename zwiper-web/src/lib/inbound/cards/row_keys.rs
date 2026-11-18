@@ -28,6 +28,8 @@ pub(crate) const ROW_KEYS: [&str; 8] = ["p", "P", "i", "I", "v", "V", "d", "D"];
 pub(crate) enum RowKey {
     /// `p`: the card's Printings.
     Printings,
+    /// Shift+P: Send to, for the card.
+    SendTo,
     /// `i`: the card's image.
     Image,
     /// `v`: the card's other face, or a meld half's Meld.
@@ -46,7 +48,8 @@ pub(crate) fn row_key(key: &str) -> Option<RowKey> {
         Some(CardKey::Filter | CardKey::FilterByName) | None => {}
     }
     match key {
-        "p" | "P" => Some(RowKey::Printings),
+        "p" => Some(RowKey::Printings),
+        shortcuts::SEND_TO_KEY => Some(RowKey::SendTo),
         "i" | "I" => Some(RowKey::Image),
         _ => None,
     }
@@ -97,6 +100,7 @@ pub(crate) fn use_card_row_keys_and(
     let details = try_use_context::<StackDetails>();
     let faces = try_use_context::<RowFaces>();
     let melds = try_use_context::<MeldSource>();
+    let send_to = try_use_context::<components::SendTo>();
     use_offer_shortcuts(sheet);
     use_page_keys_through(
         STACK_DETAILS_CLASS,
@@ -134,6 +138,11 @@ pub(crate) fn use_card_row_keys_and(
                     RowKey::Printings => {
                         if let Some(CardOverlays { mut printing, .. }) = overlays {
                             printing.set(Some(card));
+                        }
+                    }
+                    RowKey::SendTo => {
+                        if let Some(send_to) = send_to {
+                            send_to.open_for(card);
                         }
                     }
                     RowKey::Image => {
@@ -211,6 +220,7 @@ mod tests {
     #[test]
     fn the_keys_are_p_i_v_and_d_and_nothing_that_edits() {
         assert_eq!(row_key("p"), Some(RowKey::Printings));
+        assert_eq!(row_key("P"), Some(RowKey::SendTo));
         assert_eq!(row_key("I"), Some(RowKey::Image));
         for key in ["f", "m", "s", "S", "-", "+", "u", "/", "Enter"] {
             assert_eq!(row_key(key), None, "{key}");
