@@ -14,6 +14,9 @@ use crate::domain::card::models::scryfall_data::colors::Color;
 /// offsets, sorts and every other search field are refused as unknown, and the server builds the
 /// query itself. Each list holds at most [`MAX_LOOKUP_CHIPS`] values, and a lookup names at least
 /// one thing to match. Colors are kept once each, in WUBRG order.
+///
+/// Unlike other requests, unknown fields are refused: an old server refuses a newer client's
+/// body with a 422, so a new field ships on the server before any client sends it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RawCardLookup")]
 pub struct HttpCardLookup {
