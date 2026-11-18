@@ -544,7 +544,7 @@ fn SharedDeckView(
             filter_open,
             on_reset_filter,
             sources,
-            row_currency: PriceCurrency::Usd,
+            row_currency: rows_currency(&deck),
             currency,
             stats: Some(stats.clone()),
             metrics: metrics.clone(),
@@ -588,6 +588,11 @@ fn SharedDeckView(
     }
 }
 
+/// The currency the rows and their group totals price in: the deck's own, as on the owner's page.
+fn rows_currency(deck: &HttpSharedDeck) -> PriceCurrency {
+    deck.currency()
+}
+
 /// The head's price chip: the main board plus the command zone at each card's chosen printing,
 /// in `currency`, the one Budget shows. `None` when nothing is priced in it.
 fn head_price(
@@ -620,6 +625,17 @@ mod tests {
             "a network failure keeps Retry"
         );
         assert!(token_id(&Uuid::nil().to_string()).is_ok());
+    }
+
+    #[test]
+    fn rows_and_group_totals_price_in_the_deck_s_currency() {
+        let mut deck: HttpSharedDeck = serde_json::from_str(
+            r#"{"name":"Krenko","format":"commander","commander":null,"partner_commander":null,"background":null,"signature_spell":null,"entries":[]}"#,
+        )
+        .expect("the fixture deck parses");
+        assert_eq!(rows_currency(&deck), PriceCurrency::Usd, "no currency set");
+        deck.price_target_currency = Some(PriceCurrency::Eur);
+        assert_eq!(rows_currency(&deck), PriceCurrency::Eur);
     }
 
     #[test]
