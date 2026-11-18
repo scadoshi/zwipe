@@ -98,6 +98,7 @@ const SPIKE_CSS: &str = r"
 .cs-results { width: 100%; grid-template-columns: repeat(auto-fit, minmax(12.5rem, 15rem)); justify-content: center; }
 .cs-metrics { width: 100%; max-width: 20rem; }
 .cs-rates { grid-template-columns: minmax(0, 1fr) auto auto; row-gap: var(--space-2); padding: var(--space-3); }
+.cs-sample { padding: 0 var(--space-3) var(--space-3); }
 @media (min-width: 900px) {
   .cs-metrics { position: fixed; top: var(--web-dock-panel-top); left: 1rem; z-index: 40; width: var(--web-dock-panel-width); max-width: none; }
   .cs-list { max-width: 60rem; }
@@ -289,7 +290,7 @@ fn SpikeScreen(open: Open, look: String) -> Element {
                                     }
                                 }
                             }
-                            div { class: "web-playstyle-fold-body",
+                            div { class: "cs-sample",
                                 span { class: "stat-chip", "Sample numbers" }
                             }
                         }
