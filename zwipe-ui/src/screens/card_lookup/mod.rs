@@ -1,11 +1,14 @@
 //! The card screen: one card opened by its name's slug (`/card/<slug>`) or one printing by its id
 //! (`/card/<slug>/<id>`), signed in or out.
 //!
-//! A name opens the card when one card has it, a short list when several do (each to its own
-//! printing link), and [`NOT_FOUND`] when none does. A printing link loads by its id alone, and a
+//! A name opens the card when one playable card has it, a short list when several do (each to
+//! its own printing link), and [`NOT_FOUND`] when none does; a token or art card that shares a
+//! playable card's name stays out of the count, and a card whose full name it is wins over cards
+//! it only names the front face of. A printing link loads by its id alone, and a
 //! stale slug in it is swapped for the card's own. Send to signed out goes to Login and comes
 //! back to the card with the sheet asked for; the screen opens it once and drops the ask from
-//! the route, so Back or a reload never opens it again. Share copies the card's link: the name's
+//! the route, so Back or a reload never opens it again; on a list, the ask goes with the card
+//! picked from it. Share copies the card's link: the name's
 //! link for a card opened by name, the printing's link for a printing, which is where a name
 //! several cards share leads.
 //!
@@ -17,6 +20,7 @@ mod tests;
 
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::criteria::PLAYABLE_LAYOUTS;
 use zwipe_core::domain::card::slug::{self, CardSlug};
 
 use crate::generation::{Generation, Ticket};
@@ -215,6 +219,11 @@ impl State {
                 if !self.fetch.is_current(ticket) {
                     return Vec::new();
                 }
+                let slug = match &self.open {
+                    Some(Open::Named { slug }) => slug.clone(),
+                    Some(Open::Printing { .. }) | None => String::new(),
+                };
+                let cards = named_matches(cards, &slug);
                 self.shown = match cards.len() {
                     0 => Shown::NotFound,
                     1 => cards
@@ -263,11 +272,9 @@ impl State {
                 let Some(picked) = self.cards().iter().find(|c| c.scryfall_data.id == id) else {
                     return Vec::new();
                 };
-                vec![Effect::Navigate(Destination::Printing {
-                    slug: own_printing_slug(picked),
-                    id,
-                    send: false,
-                })]
+                let slug = own_printing_slug(picked);
+                let send = std::mem::take(&mut self.send_pending);
+                vec![Effect::Navigate(Destination::Printing { slug, id, send })]
             }
             Action::SendTo { signed_in } => {
                 let Some(card) = self.card().cloned() else {
@@ -329,9 +336,10 @@ impl State {
         }
     }
 
-    /// Opens the asked-for Send to, once, when one card shows.
+    /// Opens the asked-for Send to, once, when one card shows. On a list the ask waits for the
+    /// pick ([`Action::Pick`]), which carries it to that card's printing.
     fn send_if_asked(&mut self) -> Vec<Effect> {
-        if !self.send_pending || self.shown == Shown::Loading {
+        if !self.send_pending || matches!(self.shown, Shown::Loading | Shown::Several(_)) {
             return Vec::new();
         }
         self.send_pending = false;
@@ -400,6 +408,26 @@ impl State {
     pub fn message(&self) -> Option<&'static str> {
         (self.shown == Shown::NotFound).then_some(NOT_FOUND)
     }
+}
+
+/// The cards the name `slug` opens, in the server's order: its playable ones (search's playable
+/// layouts), so a token or art card that shares the name never makes a list of one real card,
+/// and of those the ones whose full name is `slug`, so `bind` is Bind and not Bind // Liberate.
+/// A front face counts only when no full name matches, and a name with no playable card keeps
+/// every match.
+fn named_matches(cards: Vec<Card>, slug: &str) -> Vec<Card> {
+    let (playable, others): (Vec<Card>, Vec<Card>) = cards
+        .into_iter()
+        .partition(|c| PLAYABLE_LAYOUTS.contains(&c.scryfall_data.layout.as_str()));
+    let pool = if playable.is_empty() {
+        others
+    } else {
+        playable
+    };
+    let (full, fronts): (Vec<Card>, Vec<Card>) = pool.into_iter().partition(|c| {
+        slug::card_slug(&c.scryfall_data.name).is_some_and(|own| own.as_str() == slug)
+    });
+    if full.is_empty() { fronts } else { full }
 }
 
 /// The slug segment of `card`'s printing link ([`slug::printing_path`]'s).
