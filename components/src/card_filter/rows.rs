@@ -371,7 +371,8 @@ fn settle(mut keystrokes: Signal<u32>, commit: impl FnOnce() + 'static) {
 }
 
 /// Clicks the open sheet's main action two frames on, once the sheet has drawn the value Enter
-/// wrote, so Apply is on when that value changed the draft.
+/// wrote, so Apply is on when that value changed the draft. It finds the sheet from the focused
+/// element then, so focus that leaves the sheet in those two frames applies nothing.
 const APPLY_AFTER_DRAW_JS: &str = "requestAnimationFrame(() => requestAnimationFrame(() => { const sheet = document.activeElement && document.activeElement.closest('.bottom-sheet.show'); const action = sheet && sheet.querySelector('.sheet-enter'); if (action && !action.disabled) action.click(); }))";
 
 /// Enter in a number box: writes `typed` to the draft at once instead of when typing rests. A
