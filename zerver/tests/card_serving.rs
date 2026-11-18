@@ -986,3 +986,54 @@ async fn the_closest_names_still_lead_where_nothing_popular_is_further_down(pool
         ]
     );
 }
+
+/// The printing ids in a search result, in order.
+fn ids(results: &serde_json::Value) -> Vec<Uuid> {
+    results
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["scryfall_data"]["id"].as_str().unwrap().parse().unwrap())
+        .collect()
+}
+
+#[sqlx::test]
+async fn tied_cards_come_back_in_printing_order_on_every_search(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("tiebreaker").await;
+    // Printing ids run opposite to oracle ids, so storage order (by oracle id) is not id order.
+    let cards: Vec<_> = (0u128..12)
+        .map(|i| {
+            card(&format!("Twin {i:02}"))
+                .with_ids(
+                    Uuid::from_u128(0x578_0000 | 11u128.checked_sub(i).unwrap()),
+                    Some(Uuid::from_u128(0x578_1000 | i)),
+                )
+                .cmc(2.0)
+                .type_line("Creature — Elf")
+        })
+        .collect();
+    let mut by_id: Vec<Uuid> = cards.iter().map(common::CardFixture::id).collect();
+    by_id.sort();
+    seed_cards(&pool, &cards).await;
+
+    for body in [
+        json!({ "cmc_equals": 2.0, "order_by": "Cmc", "limit": 12 }),
+        json!({ "cmc_equals": 2.0, "order_by": "Cmc", "direction": "descending", "limit": 12 }),
+        json!({ "cmc_equals": 2.0, "limit": 12 }),
+    ] {
+        let (status, first) = app
+            .post(SEARCH_CARDS_ROUTE, body.clone(), Some(&token))
+            .await;
+        assert_eq!(status, StatusCode::OK, "{first}");
+        let (_, second) = app
+            .post(SEARCH_CARDS_ROUTE, body.clone(), Some(&token))
+            .await;
+        assert_eq!(ids(&first), ids(&second), "two identical searches: {body}");
+        assert_eq!(
+            ids(&first),
+            by_id,
+            "ties fall back to the printing id: {body}"
+        );
+    }
+}
