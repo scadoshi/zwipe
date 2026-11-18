@@ -4,8 +4,8 @@
 //! On a wide window the profile's Summary is the hero at the top of zite's
 //! page and every profile section is a fold, each open on entry, with Staples
 //! beside them. Below the breakpoint it is the app's single column with the
-//! profile as one accordion, Color map open, and Staples' chip rows inside
-//! their panel.
+//! profile as one accordion, Color map open. Staples' chip rows sit above
+//! its panel at every width.
 
 mod chips;
 mod profile;
@@ -128,7 +128,7 @@ pub fn Playstyle() -> Element {
                             }
                             if !staples.is_empty() {
                                 div { class: "web-playstyle-list",
-                                    StaplesPanel { staples, deck_count: deck_count(), decks: staple_decks, expanded_card, wide: wide() }
+                                    StaplesPanel { staples, deck_count: deck_count(), decks: staple_decks, expanded_card }
                                 }
                             }
                         }

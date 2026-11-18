@@ -86,11 +86,9 @@ fn TagTableGhost() -> Element {
     }
 }
 
-/// A card list: its header (the title and `actions` ghosts), then `rows`
-/// below the filter rows `filters`, which sit inside the panel below the
-/// breakpoint.
+/// A card list: its header (the title and `actions` ghosts), then its rows.
 #[component]
-fn ListGhost(title: u8, swipe: bool, filters: Option<Element>) -> Element {
+fn ListGhost(title: u8, swipe: bool) -> Element {
     rsx! {
         div { class: "maybeboard-list card-group",
             div { class: "card-group-header card-group-header-with-hint",
@@ -101,9 +99,6 @@ fn ListGhost(title: u8, swipe: bool, filters: Option<Element>) -> Element {
                     }
                     GhostHint {}
                 }
-            }
-            if let Some(filters) = filters {
-                div { class: "web-card-group-filters", {filters} }
             }
             for i in 0..LIST_ROWS {
                 div { key: "{i}", class: "skeleton-card-row web-ghost-card-row",
@@ -118,7 +113,7 @@ fn ListGhost(title: u8, swipe: bool, filters: Option<Element>) -> Element {
 /// The page while it loads, in the loaded page's layout: on a wide window
 /// Summary beside Colors, Card roles beside Oracle tags, then Staples across
 /// the page with its chip rows above it; below the breakpoint the accordion
-/// with Colors open, then Staples with its chip rows inside.
+/// with Colors open, then Staples with its chip rows above it too.
 #[component]
 pub fn PlaystyleSkeleton(wide: bool) -> Element {
     let staples = rsx! {
@@ -147,10 +142,8 @@ pub fn PlaystyleSkeleton(wide: bool) -> Element {
                 }
                 div { class: "web-playstyle-list",
                     div { class: "web-playstyle-cell web-playstyle-staples",
-                        if wide {
-                            div { class: "deck-controls", {staples.clone()} }
-                        }
-                        ListGhost { title: 7, swipe: false, filters: (!wide).then_some(staples) }
+                        div { class: "deck-controls", {staples} }
+                        ListGhost { title: 7, swipe: false }
                     }
                 }
             }
