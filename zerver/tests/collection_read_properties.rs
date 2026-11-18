@@ -4,8 +4,7 @@
 
 #![expect(
     clippy::unwrap_used,
-    clippy::indexing_slicing,
-    reason = "a test: generators unwrap and index, and a panic is the failure report"
+    reason = "a test: generators unwrap, and a panic is the failure report"
 )]
 
 use chrono::{DateTime, Utc};
@@ -177,11 +176,8 @@ fn cell(source: CollectionSource, column: &str, card: &Card) -> String {
             word
         }
         "Quantity" => card.quantity.to_string(),
-        "Scryfall ID" => card
-            .scryfall_id
-            .map(|id| id.to_string())
-            .unwrap_or_default(),
-        "Purchase price" | "Purchase Price" => card.price_cents.map(price).unwrap_or_default(),
+        "Scryfall ID" => card.scryfall_id.map_or_default(|id| id.to_string()),
+        "Purchase price" | "Purchase Price" => card.price_cents.map_or_default(price),
         "Purchase price currency" => "USD".to_owned(),
         "Condition" if manabox => card.condition.as_str().to_owned(),
         "Condition" => archidekt_condition(card.condition).to_owned(),
@@ -415,10 +411,10 @@ proptest! {
     }
 }
 
-/// Guards all or nothing for a cell that opens a quote and never closes it: the reader must not
-/// fold the lines after it into that cell and keep the rest of the file.
+/// Guards all or nothing for a cell that opens a quote and never closes it: the reader turns the
+/// file down rather than fold the lines after it into that cell. On the last line, with nothing
+/// after it, the cell is one odd row of its own, so either way no row is lost.
 #[test]
-#[ignore = "waits for scotland's unclosed-quote fix"]
 fn an_unclosed_quote_never_swallows_the_lines_after_it() {
     proptest!(|(
         (source, columns) in app_and_columns(),
