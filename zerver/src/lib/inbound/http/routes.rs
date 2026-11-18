@@ -412,6 +412,7 @@ pub fn public_routes() -> Router<AppState> {
                     "/card",
                     Router::new()
                         .route("/{scryfall_data_id}", get(card::get_card))
+                        .route("/named/{name_slug}", get(card::get_named_cards))
                         .route("/featured-flavor", get(card::get_featured_flavor))
                         .route("/{oracle_id}/printings", get(card::get_printings))
                         .route("/artists", get(card::get_artists))

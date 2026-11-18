@@ -23,6 +23,7 @@ use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::criteria::PLAYABLE_LAYOUTS;
 use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
+use zwipe_core::domain::card::slug::CardSlug;
 use zwipe_core::domain::deck::Format;
 use zwipe_core::domain::deck::requests::import_deck_cards;
 use zwipe_core::domain::deck::tag_profile::{PROFILE_EXCLUDED_TAG_PREFIX, PROFILE_TAG_LIMIT};
@@ -1840,6 +1841,35 @@ impl CardRepository for MyPostgres {
         let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
+    }
+
+    async fn fetch_named_cards(&self, slug: &CardSlug) -> Result<Vec<Card>, GetCardError> {
+        // One row per card from latest_cards, so each is the printing search shows. A card
+        // matches by its full name on any printing, else by its front face; playable is the
+        // search's own playable filter.
+        let db_rows: Vec<DatabaseScryfallData> = query_as(
+            "SELECT lc.* FROM ( \
+                 SELECT oracle_id, bool_or(name_slug = $1) AS full_match FROM scryfall_data \
+                 WHERE name_slug = $1 OR front_slug = $1 GROUP BY oracle_id \
+             ) named JOIN latest_cards lc ON lc.oracle_id = named.oracle_id \
+             ORDER BY named.full_match DESC, (lc.layout = ANY($2)) DESC, lc.name, lc.id",
+        )
+        .bind(slug.as_str())
+        .bind(PLAYABLE_LAYOUTS)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| GetScryfallDataError::Database(e.into()))?;
+        let scryfall_data: Vec<ScryfallData> = db_rows
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(GetScryfallDataError::Database)?;
+        if scryfall_data.is_empty() {
+            return Ok(vec![]);
+        }
+        let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
+        Ok(card_profiles.sleeve(scryfall_data))
     }
 
     async fn fetch_latest_cards_by_oracle_ids(

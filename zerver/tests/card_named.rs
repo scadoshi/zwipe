@@ -2,11 +2,17 @@
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
-#![expect(clippy::unwrap_used, reason = "a test: a panic is the failure report")]
+#![expect(
+    clippy::unwrap_used,
+    clippy::indexing_slicing,
+    reason = "a test: a panic is the failure report"
+)]
 
 mod common;
 
+use axum::http::{Method, StatusCode, header};
 use common::{card, seed_cards};
+use uuid::Uuid;
 use zwipe::domain::card::models::zervice_metrics::ZerviceMetrics;
 use zwipe::domain::card::ports::CardRepository;
 use zwipe::domain::card::requests::get_scryfall_data::GetScryfallData;
@@ -62,5 +68,111 @@ async fn the_sync_stores_the_name_and_front_face_slugs(pool: sqlx::PgPool) {
             ),
             ("_____".to_owned(), None, None),
         ]
+    );
+}
+
+/// The names `GET /api/card/named/{slug}` answers, in order, and its `Cache-Control`.
+async fn named(app: &common::TestApp, slug: &str) -> (Vec<String>, Option<String>) {
+    let (status, headers, body) = app
+        .send_raw(
+            Method::GET,
+            &format!("/api/card/named/{slug}"),
+            None,
+            None,
+            &[],
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{slug}: {body}");
+    let names = body
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["scryfall_data"]["name"].as_str().unwrap().to_owned())
+        .collect();
+    let cache = headers
+        .get(header::CACHE_CONTROL)
+        .map(|v| v.to_str().unwrap().to_owned());
+    (names, cache)
+}
+
+#[sqlx::test]
+async fn a_full_name_match_ranks_before_a_front_face(pool: sqlx::PgPool) {
+    seed_cards(
+        &pool,
+        &[
+            card("Bind // Liberate").oracle(Some(Uuid::from_u128(0xb1))),
+            card("Bind").oracle(Some(Uuid::from_u128(0xb2))),
+        ],
+    )
+    .await;
+    let app = common::TestApp::new(pool);
+    let (names, cache) = named(&app, "bind").await;
+    assert_eq!(names, ["Bind", "Bind // Liberate"]);
+    assert_eq!(cache.as_deref(), Some("public, max-age=3600"));
+    assert_eq!(named(&app, "bind-liberate").await.0, ["Bind // Liberate"]);
+}
+
+#[sqlx::test]
+async fn a_multi_faced_card_answers_to_its_front_face(pool: sqlx::PgPool) {
+    seed_cards(&pool, &[card("Delver of Secrets // Insectile Aberration")]).await;
+    let app = common::TestApp::new(pool);
+    let want = ["Delver of Secrets // Insectile Aberration"];
+    assert_eq!(named(&app, "delver-of-secrets").await.0, want);
+    assert_eq!(
+        named(&app, "delver-of-secrets-insectile-aberration")
+            .await
+            .0,
+        want
+    );
+}
+
+#[sqlx::test]
+async fn a_shared_slug_answers_every_card_playable_first_one_printing_each(pool: sqlx::PgPool) {
+    let growth = Uuid::from_u128(0x6a);
+    seed_cards(
+        &pool,
+        &[
+            card("Rampant Growth")
+                .oracle(Some(Uuid::from_u128(0x6b)))
+                .token(),
+            card("Rampant, Growth").oracle(Some(Uuid::from_u128(0x6c))),
+            card("Rampant Growth")
+                .oracle(Some(growth))
+                .set("m10", "Magic 2010"),
+            card("Rampant Growth")
+                .oracle(Some(growth))
+                .set("m11", "Magic 2011"),
+        ],
+    )
+    .await;
+    let app = common::TestApp::new(pool);
+    let (names, _) = named(&app, "rampant-growth").await;
+    assert_eq!(names.len(), 3, "one per card: {names:?}");
+    assert_eq!(
+        names.last().map(String::as_str),
+        Some("Rampant Growth"),
+        "the token last: {names:?}"
+    );
+    assert!(names.contains(&"Rampant, Growth".to_owned()), "{names:?}");
+}
+
+#[sqlx::test]
+async fn no_such_card_and_a_malformed_slug_answer_an_empty_list(pool: sqlx::PgPool) {
+    seed_cards(&pool, &[card("Sol Ring")]).await;
+    let app = common::TestApp::new(pool);
+    assert_eq!(
+        named(&app, "no-such-card").await.0,
+        Vec::<String>::new(),
+        "no-such-card"
+    );
+    assert_eq!(
+        named(&app, "Sol-Ring").await.0,
+        Vec::<String>::new(),
+        "Sol-Ring"
+    );
+    assert_eq!(
+        named(&app, "sol--ring").await.0,
+        Vec::<String>::new(),
+        "sol--ring"
     );
 }

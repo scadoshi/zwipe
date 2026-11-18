@@ -9,6 +9,7 @@ use zwipe_core::domain::card::card_role::{self, CardRole};
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::card::slug::CardSlug;
 
 use crate::domain::card::models::printing_removal::{self, RemovalMode, RemovalReport};
 use crate::domain::card::models::search_card::error::SearchCardsError;
@@ -240,6 +241,10 @@ impl<R: CardRepository> CardService for Service<R> {
 
     async fn fetch_printings(&self, oracle_id: uuid::Uuid) -> Result<Vec<Card>, GetCardError> {
         self.repo.fetch_printings(oracle_id).await
+    }
+
+    async fn fetch_named_cards(&self, slug: &CardSlug) -> Result<Vec<Card>, GetCardError> {
+        self.repo.fetch_named_cards(slug).await
     }
 
     async fn search_cards(
