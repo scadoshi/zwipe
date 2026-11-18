@@ -72,8 +72,9 @@ got="$(VERIFY_TEMPLATE_URL=postgres:///other bash -c ". '$DIR/common.sh'; RUN_DI
 [ "$got" = "postgres:///other" ] || fail "VERIFY_TEMPLATE_URL wins -> $got"
 
 # down.sh stops a pid only when it is a zerver: a reused pid, or another tool's, is left alone.
-cp "$(command -v sleep)" "$scratch/zerver"
-"$scratch/zerver" 30 &
+# A sleep named as a zerver: macOS kills a copied system binary at launch (its signature), so
+# the name is set with exec -a instead of a copy.
+(exec -a "$scratch/zerver" sleep 30) &
 zerver_pid=$!
 sleep 30 &
 other_pid=$!
