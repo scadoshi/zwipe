@@ -43,6 +43,9 @@ pub enum ImportCollectionError {
         /// Which cap.
         reason: InvalidCollectionTags,
     },
+    /// A `request_id` an import in the last day already used, sent with another file or mode.
+    #[error("this import's id was already used for a different import")]
+    RequestReused,
 }
 
 #[cfg(test)]

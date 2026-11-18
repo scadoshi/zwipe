@@ -1,3 +1,4 @@
+use uuid::Uuid;
 use zwipe_core::http::contracts::collection::UnmatchedRow;
 
 use super::*;
@@ -234,5 +235,62 @@ fn a_landed_import_says_the_collection_changed_and_a_failed_one_does_not() {
     assert!(
         landed.contains(&Effect::CollectionChanged),
         "the In my collection chip reads the new collection: {landed:?}"
+    );
+}
+
+fn request_id(effects: &[Effect]) -> Uuid {
+    match effects {
+        [Effect::ImportCollection { request_id, .. }] => *request_id,
+        other => panic!("one import: {other:?}"),
+    }
+}
+
+#[test]
+fn sending_one_pick_again_carries_its_request_id() {
+    let mut state = State::new();
+    picked(&mut state);
+    let first = state.update(Action::Submit);
+    let _ = state.update(Action::Failed {
+        ticket: sent(&first),
+    });
+    let again = state.update(Action::Submit);
+    assert_eq!(
+        request_id(&again),
+        request_id(&first),
+        "a lost reply's send again is the same import"
+    );
+}
+
+#[test]
+fn a_new_pick_or_mode_is_a_new_import() {
+    let mut state = State::new();
+    picked(&mut state);
+    let first = state.update(Action::Submit);
+    let _ = state.update(Action::Failed {
+        ticket: sent(&first),
+    });
+
+    picked(&mut state);
+    let repicked = state.update(Action::Submit);
+    assert_ne!(request_id(&repicked), request_id(&first), "a new pick");
+    let _ = state.update(Action::Failed {
+        ticket: sent(&repicked),
+    });
+
+    let _ = state.update(Action::PickMode(ImportMode::Replace));
+    let _ = state.update(Action::Submit);
+    let replaced = state.update(Action::ConfirmReplace);
+    assert_ne!(request_id(&replaced), request_id(&repicked), "a new mode");
+    let _ = state.update(Action::Failed {
+        ticket: sent(&replaced),
+    });
+
+    let _ = state.update(Action::PickMode(ImportMode::Replace));
+    let _ = state.update(Action::Submit);
+    let same_mode = state.update(Action::ConfirmReplace);
+    assert_eq!(
+        request_id(&same_mode),
+        request_id(&replaced),
+        "picking the mode it already has changes nothing"
     );
 }

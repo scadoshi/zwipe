@@ -8,6 +8,7 @@
 #[cfg(test)]
 mod tests;
 
+use uuid::Uuid;
 use zwipe_core::domain::collection::CollectionSource;
 use zwipe_core::domain::collection::limits::MAX_BODY_BYTES;
 use zwipe_core::domain::deck::ImportMode;
@@ -121,6 +122,9 @@ pub enum Effect {
         csv: String,
         /// Whether the import adds or replaces.
         mode: ImportMode,
+        /// The import's id, the same on every send of one pick in one mode, so a server that
+        /// ran it already answers its result again instead of adding its copies twice.
+        request_id: Uuid,
     },
     /// Asks the user to confirm a replace: the client opens a dialog with [`REPLACE_TITLE`] and
     /// [`REPLACE_BODY`], and answers with [`Action::ConfirmReplace`] if the user goes ahead.
@@ -132,11 +136,12 @@ pub enum Effect {
     CollectionChanged,
 }
 
-/// The picked file.
+/// The picked file, and its import's id in the picked mode.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Picked {
     name: String,
     text: String,
+    request_id: Uuid,
 }
 
 /// Where the import stands.
@@ -172,7 +177,16 @@ impl State {
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         match action {
-            Action::PickMode(mode) => self.mode = mode,
+            Action::PickMode(mode) => {
+                // Another mode is another import, whose result a server mustn't answer with the
+                // last one's.
+                if mode != self.mode
+                    && let Some(file) = self.file.as_mut()
+                {
+                    file.request_id = Uuid::new_v4();
+                }
+                self.mode = mode;
+            }
             // A refused pick replaces the last one too, so Import never sends a file the field
             // no longer names.
             Action::PickFile { name, text } => {
@@ -180,7 +194,11 @@ impl State {
                     self.file = None;
                     return vec![Effect::Toast(Toast::normal(ToastKind::Error, TOO_BIG))];
                 }
-                self.file = Some(Picked { name, text });
+                self.file = Some(Picked {
+                    name,
+                    text,
+                    request_id: Uuid::new_v4(),
+                });
             }
             Action::PickedTooBig => {
                 self.file = None;
@@ -224,12 +242,14 @@ impl State {
 
     /// Starts the import with the picked file.
     fn send(&mut self) -> Option<Effect> {
-        let csv = self.file.as_ref()?.text.clone();
+        let file = self.file.as_ref()?;
+        let (csv, request_id) = (file.text.clone(), file.request_id);
         self.phase = Phase::Importing;
         Some(Effect::ImportCollection {
             ticket: self.tickets.next_ticket(),
             csv,
             mode: self.mode,
+            request_id,
         })
     }
 

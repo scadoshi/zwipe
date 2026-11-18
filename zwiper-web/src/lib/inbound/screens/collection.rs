@@ -53,9 +53,18 @@ impl Driver {
 
     fn perform(self, effect: Effect) {
         match effect {
-            Effect::ImportCollection { ticket, csv, mode } => {
+            Effect::ImportCollection {
+                ticket,
+                csv,
+                mode,
+                request_id,
+            } => {
                 spawn(async move {
-                    let request = HttpImportCollection { csv, mode };
+                    let request = HttpImportCollection {
+                        csv,
+                        mode,
+                        request_id: Some(request_id),
+                    };
                     let reply = self
                         .authed
                         .try_run("import_collection", |c, s| async move {

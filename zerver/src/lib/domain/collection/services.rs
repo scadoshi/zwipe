@@ -6,7 +6,7 @@ use zwipe_core::http::contracts::collection::{HttpCollectionImportSummary, HttpC
 
 use crate::domain::collection::models::export_file;
 use crate::domain::collection::models::import::{
-    self, ImportCollection, ImportCollectionFailure, Wanted,
+    self, ImportCollection, ImportCollectionFailure, ImportOutcome, Wanted,
 };
 use crate::domain::collection::models::rows::{
     ExportFailure, SetRow, SetRowFailure, SortKey, StoredPage, StoredRow,
@@ -36,6 +36,7 @@ impl<R: CollectionRepository> CollectionService for Service<R> {
             mode,
             source,
             rows,
+            request,
         } = request;
         let rows_read = rows.len();
         let lookups = self.repo.fetch_printings(&Wanted::of(&rows)).await?;
@@ -43,10 +44,14 @@ impl<R: CollectionRepository> CollectionService for Service<R> {
         if resolved.cards.is_empty() {
             return Err(ImportCollectionError::NothingMatched.into());
         }
-        let applied = self
+        let applied = match self
             .repo
-            .apply_import(user_id, mode, &resolved.cards)
-            .await?;
+            .apply_import(user_id, mode, &resolved.cards, request.as_ref())
+            .await?
+        {
+            ImportOutcome::Applied(applied) | ImportOutcome::Repeated(applied) => applied,
+            ImportOutcome::IdReused => return Err(ImportCollectionError::RequestReused.into()),
+        };
         Ok(import::summary(source, rows_read, resolved, applied))
     }
 

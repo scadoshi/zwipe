@@ -19,7 +19,7 @@ use zwipe_core::http::contracts::collection::HttpCollectionSummary;
 
 use crate::domain::collection::models::export_file::ExportLine;
 use crate::domain::collection::models::import::{
-    Applied, CollectionCard, Lookups, NameMatch, Printing, Wanted,
+    Applied, CollectionCard, ImportOutcome, ImportRequest, Lookups, NameMatch, Printing, Wanted,
 };
 use crate::domain::collection::models::rows::{
     ExportFailure, SetRow, SetRowFailure, SortKey, StoredPage, StoredRow,
@@ -123,16 +123,24 @@ impl CollectionRepository for Postgres {
         user_id: Uuid,
         mode: ImportMode,
         cards: &[CollectionCard],
-    ) -> Result<Applied, anyhow::Error> {
+        request: Option<&ImportRequest>,
+    ) -> Result<ImportOutcome, anyhow::Error> {
         let arrays = ImportArrays::of(cards);
         let mut tx = self.pool.begin().await.context("collection import begin")?;
         // One import at a time per collection, held to the end of the transaction. An advisory
-        // lock keyed on the user, so the user's own row stays free for their other writes.
+        // lock keyed on the user, so the user's own row stays free for their other writes. It
+        // also orders a repeat behind the import it repeats, so it finds that one's record.
         query("SELECT pg_advisory_xact_lock(hashtext('collection_import'), hashtext($1::text))")
             .bind(user_id)
             .execute(&mut *tx)
             .await
             .context("collection import lock")?;
+        if let Some(request) = request
+            && let Some(earlier) = earlier_import(&mut tx, user_id, request).await?
+        {
+            tx.rollback().await.context("collection import rollback")?;
+            return Ok(earlier);
+        }
         let removed = if mode.is_replace() {
             query(REMOVE_MISSING)
                 .bind(user_id)
@@ -170,16 +178,19 @@ impl CollectionRepository for Postgres {
         .fetch_one(&mut *tx)
         .await
         .context("collection import count")?;
-        tx.commit().await.context("collection import commit")?;
-
         let added = inserted.iter().filter(|fresh| **fresh).count();
         let count = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
-        Ok(Applied {
+        let applied = Applied {
             added: count(added),
             updated: count(inserted.len().saturating_sub(added)),
             removed: u32::try_from(removed).unwrap_or(u32::MAX),
             cards: cards_after,
-        })
+        };
+        if let Some(request) = request {
+            record_import(&mut tx, user_id, request, applied).await?;
+        }
+        tx.commit().await.context("collection import commit")?;
+        Ok(ImportOutcome::Applied(applied))
     }
 
     async fn fetch_summary(&self, user_id: Uuid) -> Result<HttpCollectionSummary, anyhow::Error> {
@@ -560,6 +571,71 @@ fn export_line(columns: ExportColumns) -> Result<ExportLine, anyhow::Error> {
         added_at: row.added_at,
         tags: row.tags,
     })
+}
+
+/// What an import with `request`'s id in the last day did, after deleting `user_id`'s records
+/// older than a day: the same import repeated, or the id reused for another. `None` when no
+/// import used it.
+async fn earlier_import(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    user_id: Uuid,
+    request: &ImportRequest,
+) -> Result<Option<ImportOutcome>, anyhow::Error> {
+    query(
+        "DELETE FROM collection_import_requests \
+         WHERE user_id = $1 AND created_at <= now() - interval '1 day'",
+    )
+    .bind(user_id)
+    .execute(&mut **tx)
+    .await
+    .context("collection import requests expire")?;
+    let earlier: Option<(Vec<u8>, i32, i32, i32, i64)> = query_as(
+        "SELECT body_sha256, added, updated, removed, cards \
+         FROM collection_import_requests WHERE user_id = $1 AND request_id = $2",
+    )
+    .bind(user_id)
+    .bind(request.id)
+    .fetch_optional(&mut **tx)
+    .await
+    .context("collection import request")?;
+    Ok(earlier.map(|(hash, added, updated, removed, cards)| {
+        if hash != request.body_sha256 {
+            return ImportOutcome::IdReused;
+        }
+        let count = |n: i32| u32::try_from(n).unwrap_or(0);
+        ImportOutcome::Repeated(Applied {
+            added: count(added),
+            updated: count(updated),
+            removed: count(removed),
+            cards,
+        })
+    }))
+}
+
+/// Records what the import under `request` did, so the same import sent again answers it.
+async fn record_import(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    user_id: Uuid,
+    request: &ImportRequest,
+    applied: Applied,
+) -> Result<(), anyhow::Error> {
+    let stored = |n: u32| i32::try_from(n).unwrap_or(i32::MAX);
+    query(
+        "INSERT INTO collection_import_requests \
+             (user_id, request_id, body_sha256, added, updated, removed, cards) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+    )
+    .bind(user_id)
+    .bind(request.id)
+    .bind(request.body_sha256.as_slice())
+    .bind(stored(applied.added))
+    .bind(stored(applied.updated))
+    .bind(stored(applied.removed))
+    .bind(applied.cards)
+    .execute(&mut **tx)
+    .await
+    .context("collection import request record")?;
+    Ok(())
 }
 
 /// A replace's removal: every row of the user's the import doesn't hold.

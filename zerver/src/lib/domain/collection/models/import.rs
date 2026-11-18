@@ -6,6 +6,7 @@
 use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 use zwipe_core::domain::collection::limits::MAX_UNMATCHED_LISTED;
 use zwipe_core::domain::collection::{
@@ -262,6 +263,50 @@ pub struct ImportCollection {
     pub source: CollectionSource,
     /// The card rows read.
     pub rows: Vec<ExportRow>,
+    /// The client's id for the import, when it sent one.
+    pub request: Option<ImportRequest>,
+}
+
+/// A client's id for one import, with a hash of what it sent, so the same import sent again is
+/// told apart from the id reused for another.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ImportRequest {
+    /// The client's `request_id`.
+    pub id: Uuid,
+    /// SHA-256 of the mode and the file.
+    pub body_sha256: [u8; 32],
+}
+
+impl ImportRequest {
+    /// The request for `id`, hashing `mode` and `csv`.
+    #[must_use]
+    pub fn new(id: Uuid, mode: ImportMode, csv: &str) -> Self {
+        let mut hash = Sha256::new();
+        let label: &[u8] = if mode.is_replace() {
+            b"replace\n"
+        } else {
+            b"add\n"
+        };
+        hash.update(label);
+        hash.update(csv.as_bytes());
+        Self {
+            id,
+            body_sha256: hash.finalize().into(),
+        }
+    }
+}
+
+/// What the repository did with an import.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ImportOutcome {
+    /// It wrote the rows.
+    Applied(Applied),
+    /// An import with the same request in the last day already wrote them: this is what that
+    /// one did, and nothing was written now.
+    Repeated(Applied),
+    /// An import in the last day used the request's id for a different mode or file; nothing
+    /// was written.
+    IdReused,
 }
 
 /// An import that changed nothing.

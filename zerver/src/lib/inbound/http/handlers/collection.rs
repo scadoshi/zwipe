@@ -20,7 +20,9 @@ use zwipe_core::http::contracts::collection::{
 use crate::domain::card::ports::CardService;
 use crate::domain::card::requests::get_scryfall_data::ScryfallDataIds;
 use crate::domain::collection::models::export;
-use crate::domain::collection::models::import::{ImportCollection, ImportCollectionFailure};
+use crate::domain::collection::models::import::{
+    ImportCollection, ImportCollectionFailure, ImportRequest,
+};
 use crate::domain::collection::models::rows::{
     ExportFailure, SetRow, SetRowFailure, SortKey, StoredRow,
 };
@@ -58,15 +60,23 @@ pub async fn import_collection(
     State(state): State<AppState>,
     Json(body): Json<HttpImportCollection>,
 ) -> Result<(StatusCode, Json<HttpCollectionImportSummary>), ApiError> {
-    let HttpImportCollection { csv, mode } = body;
-    let read = tokio::task::spawn_blocking(move || export::read(&csv))
-        .await
-        .map_err(To500::to_500)??;
+    let HttpImportCollection {
+        csv,
+        mode,
+        request_id,
+    } = body;
+    let (read, request) = tokio::task::spawn_blocking(move || {
+        let request = request_id.map(|id| ImportRequest::new(id, mode, &csv));
+        export::read(&csv).map(|read| (read, request))
+    })
+    .await
+    .map_err(To500::to_500)??;
     let request = ImportCollection {
         user_id: user.id,
         mode,
         source: read.source,
         rows: read.rows,
+        request,
     };
     let summary = state.collection_service.import_collection(request).await?;
     Ok((StatusCode::OK, Json(summary)))

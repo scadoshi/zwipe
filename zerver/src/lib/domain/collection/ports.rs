@@ -9,7 +9,8 @@ use zwipe_core::http::contracts::collection::{HttpCollectionImportSummary, HttpC
 
 use crate::domain::collection::models::export_file::ExportLine;
 use crate::domain::collection::models::import::{
-    Applied, CollectionCard, ImportCollection, ImportCollectionFailure, Lookups, Wanted,
+    CollectionCard, ImportCollection, ImportCollectionFailure, ImportOutcome, ImportRequest,
+    Lookups, Wanted,
 };
 use crate::domain::collection::models::rows::{
     ExportFailure, SetRow, SetRowFailure, SortKey, StoredPage, StoredRow,
@@ -28,13 +29,16 @@ pub trait CollectionRepository: Clone + Send + Sync + 'static {
     /// Writes `cards` into `user_id`'s collection in one transaction, under a lock per user so
     /// two imports run one after the other. `Add` sums copies into a row already there and joins
     /// tags; `Replace` sets each row to the import's and removes every row the import doesn't
-    /// hold.
+    /// hold. With a `request`, an import that used its id in the last day decides first: the
+    /// same request answers what that import did and writes nothing, and another mode or file
+    /// writes nothing either. A written import records what it did under the request.
     fn apply_import(
         &self,
         user_id: Uuid,
         mode: ImportMode,
         cards: &[CollectionCard],
-    ) -> impl Future<Output = Result<Applied, anyhow::Error>> + Send;
+        request: Option<&ImportRequest>,
+    ) -> impl Future<Output = Result<ImportOutcome, anyhow::Error>> + Send;
 
     /// How many distinct cards and printings `user_id`'s collection holds.
     fn fetch_summary(

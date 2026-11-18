@@ -4,6 +4,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::domain::card::Card;
 use crate::domain::collection::{
@@ -20,6 +21,12 @@ pub struct HttpImportCollection {
     /// `add` puts the export on top of the collection, summing copies of a printing it already
     /// holds; `replace` makes the collection exactly the export.
     pub mode: ImportMode,
+    /// The client's id for this import, the same on every send of one picked file. A server
+    /// that has run an import with it in the last day answers that import's result again and
+    /// writes nothing, so a send whose reply was lost can't add the file's copies twice; the
+    /// same id with a different file or mode is turned down. Absent imports every time.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub request_id: Option<Uuid>,
 }
 
 /// What the caller's collection holds. A client offers "In my collection" only when it holds
