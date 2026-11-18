@@ -97,6 +97,13 @@ pub const GET_DECK_TAGS_ROUTE: &str = "/api/deck/tags";
 /// The user's deck count and color map.
 pub const PLAYSTYLE_ROUTE: &str = "/api/deck/playstyle";
 
+// == collection ==
+
+/// Imports a collection export.
+pub const IMPORT_COLLECTION_ROUTE: &str = "/api/collection/import";
+/// How many cards and printings the caller's collection holds.
+pub const COLLECTION_SUMMARY_ROUTE: &str = "/api/collection/summary";
+
 // == suggested commanders ==
 
 /// Ranked commander suggestions; the `limit` query caps how many.
@@ -172,6 +179,12 @@ pub fn clone_deck_route(source_deck_id: Uuid) -> String {
 #[must_use]
 pub fn share_deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/share")
+}
+
+/// The printings of the card `oracle_id` that the caller's collection holds.
+#[must_use]
+pub fn collection_printings_route(oracle_id: Uuid) -> String {
+    format!("/api/collection/printings/{oracle_id}")
 }
 
 #[must_use]
@@ -281,6 +294,7 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Patch, CHANGE_PASSWORD_ROUTE, true),
     (Method::Patch, CHANGE_USERNAME_ROUTE, true),
     (Method::Delete, CLEAR_COMMANDER_MAYBEBOARD_ROUTE, true),
+    (Method::Get, COLLECTION_SUMMARY_ROUTE, true),
     (Method::Post, COMMANDER_DISMISSALS_ROUTE, true),
     (Method::Delete, COMMANDER_DISMISSALS_ROUTE, true),
     (Method::Get, COMMANDER_SUGGESTIONS_ROUTE, true),

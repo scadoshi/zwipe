@@ -5,6 +5,9 @@
 #[cfg(test)]
 mod tests;
 
+use std::collections::HashSet;
+use std::hash::BuildHasher;
+
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
@@ -35,6 +38,9 @@ pub const SAVE: &str = "Save";
 
 /// The body when the fetch failed, beside its Retry.
 pub const LOAD_FAILED: &str = "Couldn't load printings";
+
+/// The chip that narrows the printings to those in the user's collection.
+pub const ONLY_MINE: &str = "Only mine";
 
 /// Whether the sheet can hand a printing back.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
@@ -86,6 +92,22 @@ pub enum Action {
     },
     /// Retry, under a failed fetch: sends it again.
     Retry,
+    /// The user's owned printings of the card `oracle_id` arrived. A client fetches them only
+    /// when the user has a collection, so without them [`ONLY_MINE`] never shows.
+    OwnedLoaded {
+        /// The card they belong to.
+        oracle_id: Uuid,
+        /// The owned printings' ids.
+        owned: Vec<Uuid>,
+    },
+    /// [`ONLY_MINE`] turned on or off, with printing `at` showing. Does nothing unless
+    /// [`State::offers_only_mine`] holds.
+    OnlyMine {
+        /// Whether it is on.
+        on: bool,
+        /// The index of the showing printing.
+        at: usize,
+    },
     /// The Back button, with printing `at` showing.
     Back {
         /// The index of the showing printing.
@@ -142,7 +164,18 @@ pub struct State {
     /// again.
     failed: Option<(Uuid, Uuid)>,
     loading: bool,
-    initial: usize,
+    /// Where the opening printing sits in `printings`; `None` when [`ONLY_MINE`] hides it, so
+    /// every printing listed differs from it.
+    initial: Option<usize>,
+    /// The printing the sheet opened on.
+    opened: Option<Uuid>,
+    /// The user's owned printings, with the card they belong to.
+    owned: Option<(Uuid, HashSet<Uuid>)>,
+    /// Whether [`ONLY_MINE`] is on.
+    only_mine: bool,
+    /// Where turning [`ONLY_MINE`] on placed the sheet when it hides the opening printing: leaving
+    /// from there says nothing, since the user picked nothing.
+    placed: Option<usize>,
     generation: Generation,
 }
 
@@ -165,7 +198,11 @@ impl State {
             pending: None,
             failed: None,
             loading: false,
-            initial: 0,
+            initial: None,
+            opened: None,
+            owned: None,
+            only_mine: false,
+            placed: None,
             generation: Generation::default(),
         }
     }
@@ -192,6 +229,24 @@ impl State {
                 Some((oracle_id, printing_id)) => self.fetch(oracle_id, printing_id),
                 None => Vec::new(),
             },
+            Action::OwnedLoaded { oracle_id, owned } => {
+                self.owned = Some((oracle_id, owned.into_iter().collect()));
+                Vec::new()
+            }
+            Action::OnlyMine { on, at } => {
+                if on == self.only_mine || !self.offers_only_mine() {
+                    return Vec::new();
+                }
+                let showing = self.visible(at).map(|card| card.scryfall_data.id);
+                self.only_mine = on;
+                self.relist();
+                let at = showing
+                    .and_then(|id| self.printings.iter().position(|p| p.scryfall_data.id == id))
+                    .or(self.initial)
+                    .unwrap_or(0);
+                self.placed = self.initial.is_none().then_some(at);
+                vec![Effect::Show(at)]
+            }
             Action::Back { at } => self.leave(at, ToastKind::Info),
             Action::Dismiss { at } => self.leave(at, ToastKind::Warning),
             Action::Save { at } => {
@@ -214,10 +269,11 @@ impl State {
         let Some(oracle_id) = oracle_id else {
             return Vec::new();
         };
+        self.opened = Some(printing_id);
+        self.only_mine = false;
         if self.cached_for == Some(oracle_id) {
-            self.printings = shown_printings(&self.fetched, printing_id);
-            self.initial = position(&self.printings, printing_id);
-            return vec![Effect::Rewind(self.initial)];
+            self.relist();
+            return vec![Effect::Rewind(self.initial())];
         }
         self.fetch(oracle_id, printing_id)
     }
@@ -240,18 +296,18 @@ impl State {
         let Some((oracle_id, printing_id)) = self.pending.take() else {
             return Vec::new();
         };
-        self.printings = shown_printings(&printings, printing_id);
-        self.initial = position(&self.printings, printing_id);
+        self.opened = Some(printing_id);
         self.fetched = printings;
         self.cached_for = Some(oracle_id);
         self.loading = false;
-        vec![Effect::Show(self.initial)]
+        self.relist();
+        vec![Effect::Show(self.initial())]
     }
 
     /// Closes the sheet, toasting [`UNCHANGED`] as `kind` when a different printing shows and Save could have kept it.
     fn leave(&self, at: usize, kind: ToastKind) -> Vec<Effect> {
         let mut effects = Vec::new();
-        if self.mode == Mode::Pick && self.has_changed(at) {
+        if self.mode == Mode::Pick && self.has_moved(at) {
             effects.push(Effect::Toast(Toast::quick(kind, UNCHANGED)));
         }
         effects.push(Effect::Close);
@@ -283,7 +339,51 @@ impl State {
     /// The index the sheet opened on: the card's own printing, or the first when the list lacks it.
     #[must_use]
     pub fn initial(&self) -> usize {
-        self.initial
+        self.initial.unwrap_or(0)
+    }
+
+    /// Whether [`ONLY_MINE`] shows: the user owns a printing of this card among those listed.
+    #[must_use]
+    pub fn offers_only_mine(&self) -> bool {
+        self.opened.is_some() && offers_only_mine(&self.fetched, self.owned_here())
+    }
+
+    /// Whether [`ONLY_MINE`] is on.
+    #[must_use]
+    pub fn only_mine(&self) -> bool {
+        self.only_mine
+    }
+
+    /// The owned printings when they belong to the card the sheet lists.
+    fn owned_here(&self) -> Option<&HashSet<Uuid>> {
+        match (&self.owned, self.cached_for) {
+            (Some((oracle_id, owned)), Some(listed)) if *oracle_id == listed => Some(owned),
+            _ => None,
+        }
+    }
+
+    /// Lists the fetch again for the opening printing, narrowed to the owned printings while
+    /// [`ONLY_MINE`] is on, and finds where the opening printing sits.
+    fn relist(&mut self) {
+        let Some(keep) = self.opened else {
+            return;
+        };
+        let owned = if self.only_mine {
+            self.owned_here()
+        } else {
+            None
+        };
+        let printings = listed(&self.fetched, keep, owned);
+        let at = printings.iter().position(|p| p.scryfall_data.id == keep);
+        // The full list always holds the opening printing; when it doesn't, the first slot
+        // stands for it, as it always has.
+        self.initial = if self.only_mine {
+            at
+        } else {
+            Some(at.unwrap_or(0))
+        };
+        self.placed = None;
+        self.printings = printings;
     }
 
     /// The printing at `at`, if the list reaches it.
@@ -295,7 +395,16 @@ impl State {
     /// Whether printing `at` is not the one the sheet opened on.
     #[must_use]
     pub fn has_changed(&self, at: usize) -> bool {
-        !self.printings.is_empty() && at != self.initial
+        !self.printings.is_empty() && Some(at) != self.initial
+    }
+
+    /// Whether the user moved to printing `at` from where the sheet put them: off the opening
+    /// printing, or, when [`ONLY_MINE`] hides it, off where turning it on placed them.
+    fn has_moved(&self, at: usize) -> bool {
+        match self.initial {
+            Some(_) => self.has_changed(at),
+            None => !self.printings.is_empty() && Some(at) != self.placed,
+        }
     }
 
     /// Whether the sheet has a Save button at all.
@@ -330,10 +439,27 @@ pub fn shown_printings(all: &[Card], keep: Uuid) -> Vec<Card> {
         .collect()
 }
 
-/// Where `printing_id` sits in `printings`, or the first slot when it is missing.
-fn position(printings: &[Card], printing_id: Uuid) -> usize {
-    printings
-        .iter()
-        .position(|p| p.scryfall_data.id == printing_id)
-        .unwrap_or(0)
+/// The printings a sheet lists for `keep`: [`shown_printings`], or with `owned` every owned
+/// printing of `all`, an imageless one too (it shows as its stock card), so a printing the user
+/// owns is never hidden from [`ONLY_MINE`].
+#[must_use]
+pub fn listed<S: BuildHasher>(
+    all: &[Card],
+    keep: Uuid,
+    owned: Option<&HashSet<Uuid, S>>,
+) -> Vec<Card> {
+    match owned {
+        Some(owned) => all
+            .iter()
+            .filter(|p| owned.contains(&p.scryfall_data.id))
+            .cloned()
+            .collect(),
+        None => shown_printings(all, keep),
+    }
+}
+
+/// Whether a sheet offers [`ONLY_MINE`]: `owned` holds a printing of the card among `all`.
+#[must_use]
+pub fn offers_only_mine<S: BuildHasher>(all: &[Card], owned: Option<&HashSet<Uuid, S>>) -> bool {
+    owned.is_some_and(|owned| all.iter().any(|p| owned.contains(&p.scryfall_data.id)))
 }

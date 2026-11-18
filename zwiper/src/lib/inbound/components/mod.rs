@@ -10,6 +10,8 @@ pub mod auth;
 pub mod card_search;
 /// App-wide cache of slow-changing filter catalogs (artists, sets, oracle tags…).
 pub mod catalog_cache;
+/// What the signed-in user's collection holds, for "In my collection".
+pub mod collection;
 /// Generation counter that keeps a stale async reply from landing over a newer one.
 pub mod generation;
 /// A full-screen picker's backdrop, mounted only while it shows.

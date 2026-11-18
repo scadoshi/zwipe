@@ -40,7 +40,7 @@ use zwipe_ui::toast::{Toast, ToastKind};
 use self::rows::{SectionRows, bump};
 use crate::icons::{CHECK, ERASER};
 use crate::keys::SHEET_ENTER_OR_CLOSE;
-use crate::{DockAction, DrawerSheet, SheetDim, use_overlay_back};
+use crate::{Chip, DockAction, DrawerSheet, SheetDim, use_overlay_back};
 
 /// The attribute of the name field `/` focuses, the Name section's "Name contains" box.
 const NAME_FIELD: &str = "data-filter-name";
@@ -255,7 +255,24 @@ pub fn CardFilterPanel(
     let unchanged = draft.read().unchanged();
     let shown_sections = Section::shown(config.show_format);
     let sources = config.sources.clone();
+    let show_owned = config.show_owned;
+    let owned_on = draft.read().owned_only();
     let body = rsx! {
+        // "In my collection" sits above the sections: only a host whose search runs on the
+        // server shows it, and only once the user has a collection.
+        if show_owned {
+            div { class: "keyword-chips card-filter-owned",
+                span { class: "stat-chip stat-chip-p1 chip-row-label", "{card_filter::COLLECTION}" }
+                Chip {
+                    selected: owned_on,
+                    onclick: move |_| {
+                        draft.write().toggle_owned();
+                        bump(epoch);
+                    },
+                    "{card_filter::IN_MY_COLLECTION}"
+                }
+            }
+        }
         div { class: "accordion card-filter-accordion", id: "filter-accordion",
             for section in shown_sections {
                 {

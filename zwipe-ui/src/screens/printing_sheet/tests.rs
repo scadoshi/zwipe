@@ -1,3 +1,6 @@
+use std::collections::HashSet;
+use std::hash::RandomState;
+
 use super::*;
 use crate::test_support::card;
 
@@ -413,4 +416,174 @@ fn the_sheet_hides_imageless_printings_but_the_one_it_opened_on_even_from_its_ca
         "it opens on the stock card"
     );
     assert_eq!(state.printings().len(), 3, "which shows, being the deck's");
+}
+
+/// The ids of `all` at `at`, as a set of owned printings.
+fn owned_of(all: &[Card], at: &[usize]) -> Vec<Uuid> {
+    at.iter().map(|i| all[*i].scryfall_data.id).collect()
+}
+
+/// The ids the sheet lists.
+fn listed_ids(state: &State) -> Vec<Uuid> {
+    state
+        .printings()
+        .iter()
+        .map(|c| c.scryfall_data.id)
+        .collect()
+}
+
+#[test]
+fn only_mine_is_offered_once_an_owned_printing_is_known_and_lists_just_those() {
+    let all = printings();
+    let oracle_id = all[0].scryfall_data.oracle_id.unwrap();
+    let mut state = loaded_on(Mode::Pick, &all, 0);
+    assert!(!state.offers_only_mine(), "nothing known yet");
+    assert_eq!(
+        state.update(Action::OnlyMine { on: true, at: 0 }),
+        NONE,
+        "not offered: no change"
+    );
+    assert_eq!(state.printings().len(), 3);
+
+    let owned = owned_of(&all, &[1, 2]);
+    assert_eq!(
+        state.update(Action::OwnedLoaded {
+            oracle_id,
+            owned: owned.clone()
+        }),
+        NONE
+    );
+    assert!(state.offers_only_mine());
+    assert!(!state.only_mine(), "offered, but off until tapped");
+
+    // On, from the opening printing (not owned): the list narrows and shows its first.
+    assert_eq!(
+        state.update(Action::OnlyMine { on: true, at: 0 }),
+        [Effect::Show(0)]
+    );
+    assert!(state.only_mine());
+    assert_eq!(listed_ids(&state), owned);
+    assert!(
+        state.can_save(0),
+        "an owned printing other than the deck's saves"
+    );
+
+    // Off again, from the second owned printing: the full list, on that same printing.
+    assert_eq!(
+        state.update(Action::OnlyMine { on: false, at: 1 }),
+        [Effect::Show(2)]
+    );
+    assert_eq!(state.printings().len(), 3);
+    assert!(!state.can_save(0), "the opening printing is unchanged");
+}
+
+#[test]
+fn owned_printings_of_another_card_or_none_listed_never_offer_it() {
+    let all = printings();
+    let mut state = loaded_on(Mode::Pick, &all, 0);
+    let elsewhere = card("Lightning Bolt");
+    let _ = state.update(Action::OwnedLoaded {
+        oracle_id: elsewhere.scryfall_data.oracle_id.unwrap(),
+        owned: vec![all[1].scryfall_data.id],
+    });
+    assert!(
+        !state.offers_only_mine(),
+        "another card's owned ids never count"
+    );
+    let _ = state.update(Action::OwnedLoaded {
+        oracle_id: all[0].scryfall_data.oracle_id.unwrap(),
+        owned: vec![Uuid::nil()],
+    });
+    assert!(
+        !state.offers_only_mine(),
+        "owning none of the listed printings offers nothing"
+    );
+}
+
+#[test]
+fn reopening_starts_with_only_mine_off() {
+    let all = printings();
+    let oracle_id = all[0].scryfall_data.oracle_id.unwrap();
+    let mut state = loaded_on(Mode::Pick, &all, 0);
+    let _ = state.update(Action::OwnedLoaded {
+        oracle_id,
+        owned: owned_of(&all, &[1]),
+    });
+    let _ = state.update(Action::OnlyMine { on: true, at: 0 });
+    let _ = open(&mut state, &all[0]);
+    assert!(!state.only_mine());
+    assert_eq!(state.printings().len(), 3);
+}
+
+#[test]
+fn the_pure_listing_narrows_only_with_owned_ids() {
+    let all = printings();
+    let keep = all[0].scryfall_data.id;
+    assert_eq!(listed::<RandomState>(&all, keep, None).len(), 3);
+    let owned: HashSet<Uuid> = owned_of(&all, &[2]).into_iter().collect();
+    let mine = listed(&all, keep, Some(&owned));
+    assert_eq!(mine.len(), 1);
+    assert_eq!(mine[0].scryfall_data.id, all[2].scryfall_data.id);
+    assert!(offers_only_mine(&all, Some(&owned)));
+    assert!(!offers_only_mine::<RandomState>(&all, None));
+}
+
+#[test]
+fn only_mine_shows_an_owned_printing_the_full_list_leaves_out() {
+    let mut all = printings();
+    all[1] = imageless(all[1].clone());
+    let oracle_id = all[0].scryfall_data.oracle_id.unwrap();
+    let mut state = loaded_on(Mode::Pick, &all, 0);
+    assert_eq!(
+        state.printings().len(),
+        2,
+        "the full list drops the imageless one"
+    );
+    let owned = owned_of(&all, &[1]);
+    let _ = state.update(Action::OwnedLoaded {
+        oracle_id,
+        owned: owned.clone(),
+    });
+    assert!(
+        state.offers_only_mine(),
+        "owning only the dropped printing still offers it"
+    );
+    let _ = state.update(Action::OnlyMine { on: true, at: 0 });
+    assert_eq!(listed_ids(&state), owned, "it shows, as its stock card");
+}
+
+#[test]
+fn back_under_only_mine_toasts_only_after_the_user_moves() {
+    let all = printings();
+    let oracle_id = all[0].scryfall_data.oracle_id.unwrap();
+    let mut state = loaded_on(Mode::Pick, &all, 0);
+    let _ = state.update(Action::OwnedLoaded {
+        oracle_id,
+        owned: owned_of(&all, &[1, 2]),
+    });
+    let placed = state.update(Action::OnlyMine { on: true, at: 0 });
+    assert_eq!(placed, [Effect::Show(0)]);
+    assert!(
+        state.can_save(0),
+        "an owned printing other than the deck's saves"
+    );
+    assert_eq!(
+        state.update(Action::Back { at: 0 }),
+        [Effect::Close],
+        "nothing picked: the hidden opening printing alone never says unchanged"
+    );
+    let mut state = loaded_on(Mode::Pick, &all, 0);
+    let _ = state.update(Action::OwnedLoaded {
+        oracle_id,
+        owned: owned_of(&all, &[1, 2]),
+    });
+    let _ = state.update(Action::OnlyMine { on: true, at: 0 });
+    assert_eq!(
+        state.update(Action::Back { at: 1 }),
+        [
+            Effect::Toast(Toast::quick(ToastKind::Info, UNCHANGED)),
+            Effect::Close
+        ],
+        "moved to another printing and left without saving"
+    );
 }

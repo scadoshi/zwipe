@@ -280,6 +280,7 @@ async fn an_applied_run_remaps_every_reference_then_removes(pool: sqlx::PgPool) 
             removed: 3,
             remapped_deck_cards: 2,
             remapped_slots: 2,
+            remapped_collection_cards: 0,
         })
     );
     assert_eq!(
@@ -433,5 +434,269 @@ async fn an_id_an_older_client_still_holds_lands_on_its_replacement(pool: sqlx::
             .iter()
             .any(|row| row.0 == p.regular.id()),
         "the card's row is gone"
+    );
+}
+
+/// Adds a collection row for the deck's owner: `copies` of `printing` in `finish`, near mint and
+/// English, tagged `tags`.
+async fn own(
+    pool: &sqlx::PgPool,
+    printing: &CardFixture,
+    finish: &str,
+    copies: i32,
+    tags: &[&str],
+) {
+    own_as(
+        pool,
+        printing,
+        finish,
+        Some(("near_mint", "en")),
+        copies,
+        tags,
+    )
+    .await;
+}
+
+/// [`own`], with the condition and language given as a pair, or neither when `graded` is `None`.
+async fn own_as(
+    pool: &sqlx::PgPool,
+    printing: &CardFixture,
+    finish: &str,
+    graded: Option<(&str, &str)>,
+    copies: i32,
+    tags: &[&str],
+) {
+    sqlx::query(
+        "INSERT INTO collection_cards \
+             (user_id, scryfall_data_id, oracle_id, finish, condition, language, quantity, tags) \
+         SELECT id, $1, $2, $3, $4, $5, $6, $7 FROM users WHERE username = 'remover'",
+    )
+    .bind(printing.id())
+    .bind(printing.oracle_id())
+    .bind(finish)
+    .bind(graded.map(|g| g.0))
+    .bind(graded.map(|g| g.1))
+    .bind(copies)
+    .bind(tags.iter().map(ToString::to_string).collect::<Vec<_>>())
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
+/// The owner's collection as `(printing, finish, copies, tags sorted)`, by printing then finish.
+async fn collection(pool: &sqlx::PgPool) -> Vec<(Uuid, String, i32, Vec<String>)> {
+    let mut rows: Vec<(Uuid, String, i32, Vec<String>)> = sqlx::query_as(
+        "SELECT scryfall_data_id, finish, quantity, tags FROM collection_cards ORDER BY scryfall_data_id, finish",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap();
+    for row in &mut rows {
+        row.3.sort();
+    }
+    rows
+}
+
+#[sqlx::test]
+async fn an_owned_printing_moves_with_its_copies_and_an_owned_last_printing_stays(
+    pool: sqlx::PgPool,
+) {
+    let p = printings();
+    let (app, _, _) = seeded(pool, &p).await;
+    // Two copies of Ashling's promo, which merge into the one regular copy already owned, a foil
+    // promo that moves on its own, and the unheld card, whose card has no other printing.
+    own(&app.pool, &p.promo, "nonfoil", 2, &["trade"]).await;
+    own(&app.pool, &p.regular, "nonfoil", 1, &["binder", "trade"]).await;
+    own(&app.pool, &p.promo, "foil", 1, &[]).await;
+    own(&app.pool, &p.unheld, "nonfoil", 3, &[]).await;
+
+    let report = service(&app.pool)
+        .remove_deleted_printings(&p.bulk(), RemovalMode::Apply)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        report.counts,
+        Some(RemovalCounts {
+            removed: 2,
+            remapped_deck_cards: 2,
+            remapped_slots: 2,
+            remapped_collection_cards: 2,
+        }),
+        "the promo and the lone card go; the owned unheld card stays"
+    );
+    assert!(
+        report
+            .plan
+            .kept
+            .iter()
+            .any(|k| k.printing.id == p.unheld.id() && k.references.collection_cards == 1),
+        "the owned card with no other printing is kept: {:?}",
+        report.plan.kept
+    );
+    let mut want = vec![
+        (p.regular.id(), "foil".to_owned(), 1, Vec::new()),
+        (
+            p.regular.id(),
+            "nonfoil".to_owned(),
+            3,
+            vec!["binder".to_owned(), "trade".to_owned()],
+        ),
+        (p.unheld.id(), "nonfoil".to_owned(), 3, Vec::new()),
+    ];
+    want.sort();
+    assert_eq!(
+        collection(&app.pool).await,
+        want,
+        "every copy is still owned, merged where two rows met"
+    );
+}
+
+/// A collection row as `(printing, condition, language, copies, tags)`.
+type OwnedRow = (Uuid, Option<String>, Option<String>, i32, Vec<String>);
+
+/// A row with no condition or language is one key of its own: a second such row of the same
+/// printing is the same key, and two removed printings of one card that meet on the replacement
+/// with no grade merge into the replacement's ungraded row. Tags merge without regard to case,
+/// the first spelling and order kept.
+#[sqlx::test]
+async fn ungraded_owned_rows_merge_on_their_own_key(pool: sqlx::PgPool) {
+    let p = printings();
+    let (app, _, _) = seeded(pool, &p).await;
+    // A second removed printing of Ashling, so two removed rows meet on one replacement key.
+    let promo2 = card("Ashling, Rekindled")
+        .oracle(p.promo.oracle_id())
+        .set("pecl", "Lorwyn Eclipsed Promos")
+        .collector_number("125p")
+        .promo(true)
+        .usd("6.00");
+    seed_cards(&app.pool, std::slice::from_ref(&promo2)).await;
+    own_as(&app.pool, &p.promo, "nonfoil", None, 2, &["Trade"]).await;
+    own_as(&app.pool, &promo2, "nonfoil", None, 1, &["binder"]).await;
+    own_as(
+        &app.pool,
+        &p.regular,
+        "nonfoil",
+        None,
+        4,
+        &["trade", "deck"],
+    )
+    .await;
+    own(&app.pool, &p.regular, "nonfoil", 1, &[]).await;
+
+    let duplicate = sqlx::query(
+        "INSERT INTO collection_cards (user_id, scryfall_data_id, oracle_id, finish, quantity) \
+         SELECT id, $1, $2, 'nonfoil', 1 FROM users WHERE username = 'remover'",
+    )
+    .bind(p.regular.id())
+    .bind(p.regular.oracle_id())
+    .execute(&app.pool)
+    .await;
+    assert!(
+        duplicate.is_err(),
+        "a second ungraded row of one printing is the same key"
+    );
+
+    let report = service(&app.pool)
+        .remove_deleted_printings(&p.bulk(), RemovalMode::Apply)
+        .await
+        .unwrap();
+    assert_eq!(report.counts.map(|c| c.remapped_collection_cards), Some(2));
+
+    let rows: Vec<OwnedRow> = sqlx::query_as(
+        "SELECT scryfall_data_id, condition, language, quantity, tags FROM collection_cards \
+         ORDER BY condition NULLS FIRST",
+    )
+    .fetch_all(&app.pool)
+    .await
+    .unwrap();
+    let tags = |list: &[&str]| list.iter().map(ToString::to_string).collect::<Vec<_>>();
+    assert_eq!(
+        rows,
+        vec![
+            (
+                p.regular.id(),
+                None,
+                None,
+                7,
+                tags(&["trade", "deck", "binder"])
+            ),
+            (
+                p.regular.id(),
+                Some("near_mint".to_owned()),
+                Some("en".to_owned()),
+                1,
+                Vec::new()
+            ),
+        ],
+        "both removed ungraded rows merged into the ungraded regular row, the graded row untouched"
+    );
+}
+
+/// A moved row takes its card from the printing it lands on, not the one it left.
+#[sqlx::test]
+async fn a_moved_row_takes_the_replacement_s_card(pool: sqlx::PgPool) {
+    let p = printings();
+    let (app, _, _) = seeded(pool, &p).await;
+    sqlx::query(
+        "INSERT INTO collection_cards (user_id, scryfall_data_id, oracle_id, finish, quantity) \
+         SELECT id, $1, $2, 'nonfoil', 1 FROM users WHERE username = 'remover'",
+    )
+    .bind(p.promo.id())
+    .bind(Uuid::new_v4())
+    .execute(&app.pool)
+    .await
+    .unwrap();
+
+    let _ = service(&app.pool)
+        .remove_deleted_printings(&p.bulk(), RemovalMode::Apply)
+        .await
+        .unwrap();
+
+    let held: Vec<(Uuid, Uuid)> =
+        sqlx::query_as("SELECT scryfall_data_id, oracle_id FROM collection_cards")
+            .fetch_all(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(held, vec![(p.regular.id(), p.regular.oracle_id().unwrap())]);
+}
+
+/// A row whose printing's logged replacement no longer exists stays where it is, and the sweep
+/// keeps that printing for it.
+#[sqlx::test]
+async fn an_owned_row_whose_replacement_is_gone_stays_on_its_printing(pool: sqlx::PgPool) {
+    let p = printings();
+    let (app, _, _) = seeded(pool, &p).await;
+    own(&app.pool, &p.held, "nonfoil", 2, &["kept"]).await;
+    // An older run logged the held card's printing as moving to a printing that has since gone.
+    sqlx::query(
+        "INSERT INTO removed_printings (id, oracle_id, replacement_id) VALUES ($1, $2, $3)",
+    )
+    .bind(p.held.id())
+    .bind(p.held.oracle_id())
+    .bind(Uuid::new_v4())
+    .execute(&app.pool)
+    .await
+    .unwrap();
+
+    let report = service(&app.pool)
+        .remove_deleted_printings(&p.bulk(), RemovalMode::Apply)
+        .await
+        .unwrap();
+
+    assert_eq!(report.counts.map(|c| c.remapped_collection_cards), Some(0));
+    assert_eq!(
+        collection(&app.pool).await,
+        vec![(
+            p.held.id(),
+            "nonfoil".to_owned(),
+            2,
+            vec!["kept".to_owned()]
+        )],
+        "the row is still owned, on its own printing"
+    );
+    assert!(
+        stored(&app.pool).await.contains(&p.held.id()),
+        "and the printing stays for it"
     );
 }

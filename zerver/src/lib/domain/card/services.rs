@@ -272,6 +272,7 @@ impl<R: CardRepository> CardService for Service<R> {
                 crate::domain::card::ports::DeckServeContext {
                     exclude_universes_beyond,
                     universes_beyond_exception_set_names,
+                    owner: Some(user_id),
                     ..Default::default()
                 },
             )

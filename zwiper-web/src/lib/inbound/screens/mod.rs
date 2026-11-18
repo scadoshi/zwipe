@@ -4,6 +4,7 @@ pub mod about;
 pub mod account;
 pub mod activity;
 pub mod auth;
+pub mod collection;
 pub mod commander_maybeboard;
 pub mod config;
 pub mod deck;

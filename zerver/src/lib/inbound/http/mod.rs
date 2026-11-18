@@ -26,11 +26,12 @@ use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::timeout::TimeoutLayer;
 use uuid::Uuid;
+use zwipe_core::domain::collection::limits::MAX_BODY_BYTES;
 use zwipe_core::http::paths::CHANGELOG_ROUTE;
 
 use crate::domain::auth::access_token::JwtSecret;
 use crate::domain::auth::ports::AuthService;
-use crate::wiring::{Auth, Cards, Decks, Health, Metrics, Users};
+use crate::wiring::{Auth, Cards, Collections, Decks, Health, Metrics, Users};
 
 // == error ==
 
@@ -169,7 +170,7 @@ async fn public_changelog_cors(request: Request, next: Next) -> Response {
 
 // == server ==
 
-/// Largest request body accepted on any route, in bytes (2 MiB).
+/// Largest request body accepted on any route but the collection routes, in bytes (2 MiB).
 const REQUEST_BODY_LIMIT: usize = 2 * 1024 * 1024;
 
 /// How long a request may run before it is answered with 408.
@@ -205,6 +206,7 @@ pub struct AppState {
     pub card_service: Arc<Cards>,
     pub deck_service: Arc<Decks>,
     pub metrics_service: Arc<Metrics>,
+    pub collection_service: Arc<Collections>,
     /// Per-user debounce cache for `users.last_active_at` bumps.
     pub last_active_cache: Arc<DashMap<Uuid, Instant>>,
     /// The hour's featured flavor card, deadline-pinned to the top of the
@@ -219,6 +221,25 @@ pub struct AppState {
     pub swipe_cap: Arc<swipe_cap::SwipeCap>,
     /// Draws shared decks' preview images and keeps recent ones.
     pub share_preview: Arc<share_preview::SharePreview>,
+}
+
+/// Every service the server holds.
+#[derive(Debug)]
+pub struct Services {
+    /// Registration, login and sessions.
+    pub auth: Auth,
+    /// Profiles and settings.
+    pub users: Users,
+    /// Health checks.
+    pub health: Health,
+    /// Card search and lookups.
+    pub cards: Cards,
+    /// Decks and their cards.
+    pub decks: Decks,
+    /// Usage events and counters.
+    pub metrics: Metrics,
+    /// Collections.
+    pub collections: Collections,
 }
 
 /// Axum HTTP server with pre-configured routes and middleware.
@@ -258,7 +279,7 @@ pub fn build_router(
     // Layer order is innermost-first, outermost-last. Request flows outer→inner;
     // response flows inner→outer. Effective stack: SetRequestId → PropagateRequestId
     // → trace → CatchPanic → Compression → Cors → security_headers → Timeout(30s)
-    // → RequestBodyLimit(2 MiB, innermost).
+    // → RequestBodyLimit (innermost: 2 MiB, or the collection routes' own cap).
     let x_request_id = header::HeaderName::from_static("x-request-id");
     let cookie_origins =
         handlers::auth::cookie_session::CookieOrigins(allowed_origins.clone().into());
@@ -266,14 +287,23 @@ pub fn build_router(
         .merge(
             // last-active layer wraps private routes only: it peeks the Bearer
             // token, so it must sit where every request carries one
-            routes::private_routes(jwt_secret).layer(axum::middleware::from_fn_with_state(
-                state.clone(),
-                middleware::track_last_active,
-            )),
+            routes::private_routes(jwt_secret.clone())
+                .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
+                .layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    middleware::track_last_active,
+                )),
         )
-        .merge(routes::public_routes())
+        .merge(
+            routes::collection_routes(jwt_secret)
+                .layer(RequestBodyLimitLayer::new(MAX_BODY_BYTES))
+                .layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    middleware::track_last_active,
+                )),
+        )
+        .merge(routes::public_routes().layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT)))
         .layer(axum::Extension(cookie_origins))
-        .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
             REQUEST_TIMEOUT,
@@ -314,23 +344,25 @@ impl HttpServer {
     /// # Errors
     ///
     /// Fails when the listener can't bind to the configured address.
-    pub async fn new(
-        auth_service: Auth,
-        user_service: Users,
-        health_service: Health,
-        card_service: Cards,
-        deck_service: Decks,
-        metrics_service: Metrics,
-        config: HttpServerConfig<'_>,
-    ) -> anyhow::Result<Self> {
-        let jwt_secret = auth_service.jwt_secret().clone();
+    pub async fn new(services: Services, config: HttpServerConfig<'_>) -> anyhow::Result<Self> {
+        let Services {
+            auth,
+            users,
+            health,
+            cards,
+            decks,
+            metrics,
+            collections,
+        } = services;
+        let jwt_secret = auth.jwt_secret().clone();
         let state = AppState {
-            auth_service: Arc::new(auth_service),
-            user_service: Arc::new(user_service),
-            health_service: Arc::new(health_service),
-            card_service: Arc::new(card_service),
-            deck_service: Arc::new(deck_service),
-            metrics_service: Arc::new(metrics_service),
+            auth_service: Arc::new(auth),
+            user_service: Arc::new(users),
+            health_service: Arc::new(health),
+            card_service: Arc::new(cards),
+            deck_service: Arc::new(decks),
+            metrics_service: Arc::new(metrics),
+            collection_service: Arc::new(collections),
             last_active_cache: Arc::new(DashMap::new()),
             featured_flavor: Arc::new(cache::TtlSlot::new()),
             min_client_version: Arc::from(config.min_client_version.as_str()),

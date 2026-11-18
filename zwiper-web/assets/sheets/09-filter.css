@@ -555,6 +555,11 @@
   margin-top: 0;
 }
 
+/* "In my collection" sits above the sections, spaced from them as they are from each other. */
+.card-filter-owned {
+  margin-bottom: var(--space-2);
+}
+
 .accordion-item:last-child {
   border-bottom: none;
 }

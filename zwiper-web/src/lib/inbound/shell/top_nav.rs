@@ -9,6 +9,7 @@
 use components::{BackArrow, Decode, InfoButton, NavBar, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_core::domain::logo;
+use zwipe_ui::screens::collection_import;
 
 use crate::inbound::app::EscBack;
 use crate::inbound::chrome::leave_guard::LeaveDialog;
@@ -106,8 +107,9 @@ fn nav_hint(page: Memo<Option<PageTitle>>) -> Option<Callback<()>> {
 }
 
 /// The nav for a signed-in user over the matched screen: the app's menu at
-/// every width. A wide window shows Decks, Playstyle, Activity and
-/// Commander maybeboard as pills, the current one lit, then the footer's
+/// every width, with Collection after it, a web-only screen. A wide window
+/// shows Decks, Playstyle, Activity, Commander maybeboard and Collection as
+/// pills, the current one lit, then the footer's
 /// icons, the screen's `?` and Log out in the bar, with the mark the way
 /// Home. Below the
 /// breakpoint the same list folds behind the hamburger over the footer row.
@@ -141,6 +143,9 @@ pub fn Shell() -> Element {
                             li { key: "{section.label()}",
                                 NavLink { to: route_of(section), label: section.label(), current: current == Some(section), open }
                             }
+                        }
+                        li {
+                            NavLink { to: Route::Collection {}, label: collection_import::TITLE, current: route == Route::Collection {}, open }
                         }
                     },
                     trailing: rsx! {

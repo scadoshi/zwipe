@@ -77,6 +77,9 @@ pub struct DeckServeContext<'a> {
     /// user's whitelisted franchises, expanded via `universe`). Overlapped
     /// against `printing_set_names`.
     pub universes_beyond_exception_set_names: Vec<String>,
+    /// The searching user, whose collection an `owned_only` query reads. `None` on
+    /// paths with no user: an `owned_only` query there matches nothing.
+    pub owner: Option<uuid::Uuid>,
 }
 
 /// Database port for MTG card operations.

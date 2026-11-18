@@ -12,11 +12,12 @@ use tower_governor::GovernorLayer;
 use tower_governor::errors::GovernorError;
 use tower_governor::governor::GovernorConfigBuilder;
 use tower_http::set_header::SetResponseHeaderLayer;
+use zwipe_core::domain::collection::limits::MAX_BODY_BYTES;
 
 use crate::domain::auth::models::access_token::JwtSecret;
 use crate::inbound::http::AppState;
 use crate::inbound::http::handlers::{
-    auth, card, changelog, client, deck, deck_card, health, metrics, user,
+    auth, card, changelog, client, collection, deck, deck_card, health, metrics, user,
 };
 use crate::inbound::http::limiter_purge::{LIMITER_PURGE_EVERY, purging};
 use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor};
@@ -239,13 +240,14 @@ pub fn public_routes() -> Router<AppState> {
     // Per IP, 20 at once, then one more each second: the card lookup is a real search open to
     // signed-out callers. A search box debounced at 250ms sends up to 4 a second, 3 more than the
     // refill, so the burst carries about 6 seconds of steady typing before a 429.
-    let public_lookup_config = Arc::new(
+    let public_lookup_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(1))
             .burst_size(20)
             .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 30 req / 2s per IP: public marketing aggregates. CF cache absorbs most
     // traffic; this guards origin if someone bypasses CF or warms many POPs.
@@ -548,6 +550,14 @@ pub fn public_routes() -> Router<AppState> {
         )
 }
 
+/// The general per-account limit every private route sits behind, one request back every
+/// [`PRIVATE_PERIOD`] up to [`PRIVATE_BURST`]: 500 per 5 minutes (about 1.67 a second),
+/// generous for swiping, keyed by user id.
+const PRIVATE_PERIOD: Duration = Duration::from_millis(600);
+
+/// See [`PRIVATE_PERIOD`].
+const PRIVATE_BURST: u32 = 500;
+
 /// Routes that require `AuthenticatedUser` (JWT Bearer token).
 ///
 /// # Panics
@@ -563,11 +573,10 @@ pub fn public_routes() -> Router<AppState> {
     reason = "one router tree: each per-user limiter, then the routes it guards"
 )]
 pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
-    // 500 req / 5min (~1.67/s avg): generous for swiping, keyed by user ID
     let private_config = purging(
         GovernorConfigBuilder::default()
-            .period(Duration::from_millis(600))
-            .burst_size(500)
+            .period(PRIVATE_PERIOD)
+            .burst_size(PRIVATE_BURST)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
@@ -636,7 +645,6 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
             .expect("rate limit config: burst_size and period must be non-zero"),
         LIMITER_PURGE_EVERY,
     );
-
     Router::new()
         .nest(
             "/api",
@@ -660,6 +668,14 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                                     .error_handler(unauthorized_on_missing_key),
                             ),
                         ),
+                )
+                // The collection's reads ride the private limits; its import, with its own
+                // body cap and limits, is in collection_routes.
+                .nest(
+                    "/collection",
+                    Router::new()
+                        .route("/summary", get(collection::collection_summary))
+                        .route("/printings/{oracle_id}", get(collection::owned_printings)),
                 )
                 .nest(
                     "/user",
@@ -808,6 +824,72 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                                         .delete(deck_card::delete_deck_card),
                                 ),
                         ),
+                ),
+        )
+        .layer(GovernorLayer::new(private_config).error_handler(unauthorized_on_missing_key))
+        .layer(private_no_store_layer())
+}
+
+/// The collection routes. They take bodies up to [`MAX_BODY_BYTES`], so they sit outside the
+/// 2 MiB cap the other routes share and carry their own; the private routes' per-account limit
+/// and no-store header apply here too.
+///
+/// # Panics
+///
+/// Never in practice: a governor config only fails to build on a zero period or burst, and every
+/// one here is a non-zero constant.
+#[expect(
+    clippy::expect_used,
+    reason = "every governor config has a non-zero period and burst, so finish never returns None"
+)]
+pub fn collection_routes(jwt_secret: JwtSecret) -> Router<AppState> {
+    // Its own bucket on purpose: an import's calls never spend the account's budget for the
+    // rest of the app, and the import's own limits below are far tighter.
+    let private_config = purging(
+        GovernorConfigBuilder::default()
+            .period(PRIVATE_PERIOD)
+            .burst_size(PRIVATE_BURST)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
+    );
+    // burst 3, then 1 per 20 s, per account and per address: an import reads a whole file and
+    // writes up to 50,000 rows in one transaction.
+    let collection_import_user_config = purging(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(20))
+            .burst_size(3)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret))
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
+    );
+    let collection_import_ip_config = purging(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(20))
+            .burst_size(3)
+            .key_extractor(CfConnectingIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
+    );
+
+    Router::new()
+        .nest(
+            "/api/collection",
+            Router::new()
+                .route(
+                    "/import",
+                    post(collection::import_collection).layer(
+                        GovernorLayer::new(collection_import_user_config)
+                            .error_handler(unauthorized_on_missing_key),
+                    ),
+                )
+                .layer(DefaultBodyLimit::max(MAX_BODY_BYTES))
+                .layer(
+                    GovernorLayer::new(collection_import_ip_config)
+                        .error_handler(stable_rate_limit),
                 ),
         )
         .layer(GovernorLayer::new(private_config).error_handler(unauthorized_on_missing_key))

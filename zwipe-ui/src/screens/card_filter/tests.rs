@@ -16,6 +16,7 @@ fn config(show_format: bool, validate: bool, reset: ResetRule) -> SheetConfig {
         reset,
         sources: Sources::default(),
         deck_format: None,
+        show_owned: false,
     }
 }
 
@@ -520,4 +521,40 @@ fn the_copy_matches_the_app() {
     assert_eq!(APPLY, "Apply");
     assert_eq!(RESET, "Reset");
     assert_eq!(LISTS_FAILED, "Filter lists didn't load, trying again");
+}
+
+#[test]
+fn in_my_collection_is_offered_only_after_a_summary_with_something_in_it() {
+    use zwipe_core::http::contracts::collection::HttpCollectionSummary;
+    assert!(
+        !offers_owned(None),
+        "no reply yet, a failure, or an older server with no summary route"
+    );
+    let empty = HttpCollectionSummary {
+        cards: 0,
+        printings: 0,
+    };
+    assert!(!offers_owned(Some(&empty)), "an empty collection");
+    let some = HttpCollectionSummary {
+        cards: 1,
+        printings: 1,
+    };
+    assert!(offers_owned(Some(&some)));
+    assert_eq!(IN_MY_COLLECTION, "In my collection");
+}
+
+#[test]
+fn a_hidden_in_my_collection_never_reaches_the_server() {
+    let mut saved = CardQueryBuilder::default();
+    saved
+        .set_name_contains("elf".to_owned())
+        .set_owned_only(true);
+    assert!(as_sent(&saved, true).owned_only(), "offered: sent as set");
+    let sent = as_sent(&saved, false);
+    assert!(!sent.owned_only(), "not offered: dropped");
+    assert_eq!(
+        sent.name_contains(),
+        Some("elf"),
+        "and nothing else changes"
+    );
 }

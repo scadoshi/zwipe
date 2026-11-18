@@ -2494,6 +2494,27 @@ body {
 
 /* ---- Import, Export ---- */
 
+/* Collection's file field: the File chip, then the field filling the rest of the row, on one
+   line at every width; a long file name ends in an ellipsis. */
+.collection-file {
+    flex-wrap: nowrap;
+}
+
+.collection-file > label.input {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The file input is hidden; its keyboard focus rings the field it opens. */
+.collection-file > input[type="file"]:focus-visible + label.input {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
 @media (min-width: 900px) {
     /* Import and Export run the column's width: the controls, then the
        input or the decklist, then Import's results under it. The phone's
@@ -2547,6 +2568,11 @@ body {
     .web-export-body textarea,
     .web-export-body .skeleton-export-textarea {
         min-height: calc(100vh - 26rem) !important;
+    }
+
+    /* Collection's file field stops at a field's width. */
+    .collection-file > label.input {
+        max-width: var(--web-field-max);
     }
 }
 

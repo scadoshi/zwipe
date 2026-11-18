@@ -11,6 +11,8 @@ pub mod call;
 pub mod card;
 /// Changelog endpoint (release history).
 pub mod changelog;
+/// Collection reads: what a collection holds, and a card's owned printings.
+pub mod collection;
 /// Deck CRUD operations.
 pub mod deck;
 /// Deck-card relationship operations (add/remove cards from decks).
