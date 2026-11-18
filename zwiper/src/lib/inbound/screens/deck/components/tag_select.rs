@@ -69,8 +69,8 @@ pub(crate) fn TagSelect(
     let target_slug = target.as_ref().map(|t| t.slug.clone());
     let picked = selected.clone();
     // Enter adds the top match and keeps the picker open for the next.
-    let add_target = move |()| {
-        let Some(tag) = target.clone() else {
+    let add_target = move |typed: String| {
+        let Some(tag) = pickers::deck_tag_on_enter(&catalog, &typed).cloned() else {
             return;
         };
         if pickers::enter_adds_tag(&picked, &tag.slug) {

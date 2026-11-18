@@ -89,8 +89,13 @@ pub(crate) fn OracleTagSelect(
     let target_slug = target.as_ref().map(|t| t.slug.clone());
     let picked = sel.clone();
     // Enter adds the top match and keeps the picker open for the next.
-    let add_target = move |()| {
-        let Some(tag) = target.clone() else {
+    let add_target = move |typed: String| {
+        let tag = {
+            let read = cell.read();
+            let all: &[OracleTag] = read.loaded().map_or(&[], Vec::as_slice);
+            pickers::oracle_tag_on_enter(all, &picked, &typed)
+        };
+        let Some(tag) = tag else {
             return;
         };
         if pickers::enter_adds_tag(&picked, &tag.slug) {

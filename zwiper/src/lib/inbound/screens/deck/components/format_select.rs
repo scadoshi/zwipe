@@ -62,8 +62,8 @@ pub(crate) fn FormatSelect(
     };
     let target = enter_target(&query(), &results).copied();
     // Enter picks the top match and saves, as a format is a single choice.
-    let pick_target = move |()| {
-        if let Some(format) = target {
+    let pick_target = move |typed: String| {
+        if let Some(format) = pickers::format_on_enter(&typed) {
             focused.set(Some(format));
             if pickers::enter_picks_format(selected_format, format) {
                 on_tap.call(format);
