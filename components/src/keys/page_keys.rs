@@ -44,7 +44,7 @@ fn use_keys_under_guard(guard: String, on_key: Callback<String>) {
         });
     });
     use_drop(move || {
-        document::eval(&PAGE_KEYS_DROP_JS.replace("__ID__", &id.to_string()));
+        document::eval(&page_keys_drop_js(id));
     });
 }
 
@@ -80,9 +80,7 @@ document.addEventListener('keydown', onKey);
 pub fn use_undo_key(on_undo: Callback<()>) {
     let id = use_hook(Uuid::new_v4);
     use_hook(move || {
-        let script = UNDO_KEY_JS
-            .replace("__ID__", &id.to_string())
-            .replace("__GUARD__", &guard::guard_js_with_modifiers());
+        let script = undo_key_js(id, &guard::guard_js_with_modifiers());
         spawn(async move {
             let mut presses = document::eval(&script);
             while presses.recv::<bool>().await.is_ok() {
@@ -91,7 +89,7 @@ pub fn use_undo_key(on_undo: Callback<()>) {
         });
     });
     use_drop(move || {
-        document::eval(&UNDO_KEY_DROP_JS.replace("__ID__", &id.to_string()));
+        document::eval(&undo_key_drop_js(id));
     });
 }
 
@@ -111,12 +109,7 @@ pub fn use_scoped_keys(
             .map(|key| format!("'{key}'"))
             .collect::<Vec<_>>()
             .join(", ");
-        let script = SCOPED_KEYS_JS
-            .replace("__KEY__", guard::PRESSED_KEY)
-            .replace("__ID__", &id.to_string())
-            .replace("__KEYS__", &names)
-            .replace("__SCOPE__", scope)
-            .replace("__GUARD__", &guard::guard_js());
+        let script = scoped_keys_js(id, &names, scope, &guard::guard_js());
         spawn(async move {
             let mut presses = document::eval(&script);
             while let Ok(key) = presses.recv::<String>().await {
@@ -125,7 +118,7 @@ pub fn use_scoped_keys(
         });
     });
     use_drop(move || {
-        document::eval(&SCOPED_KEYS_DROP_JS.replace("__ID__", &id.to_string()));
+        document::eval(&scoped_keys_drop_js(id));
     });
 }
 
@@ -136,57 +129,81 @@ pub fn focus_by_id(id: &str) {
     ));
 }
 
-/// Registers one scoped key listener.
-const SCOPED_KEYS_JS: &str = r"
-const onKey = (e) => {
-    if (![__KEYS__].includes(__KEY__) || !__GUARD__) return;
+/// Registers one scoped key listener, registration `id`, answering `names` (quoted
+/// `KeyboardEvent.key` names, comma-separated) while focus sits in `scope` or on nothing and `guard`
+/// holds.
+fn scoped_keys_js(id: Uuid, names: &str, scope: &str, guard: &str) -> String {
+    let key = guard::PRESSED_KEY;
+    format!(
+        r"
+const onKey = (e) => {{
+    if (![{names}].includes({key}) || !{guard}) return;
     const at = document.activeElement;
-    if (at && at !== document.body && !at.closest('__SCOPE__')) return;
+    if (at && at !== document.body && !at.closest('{scope}')) return;
     e.preventDefault();
-    dioxus.send(__KEY__);
-};
-window['__zwipeScopedKey__ID__'] = onKey;
+    dioxus.send({key});
+}};
+window['__zwipeScopedKey{id}'] = onKey;
 document.addEventListener('keydown', onKey);
-";
+"
+    )
+}
 
-/// Removes one scoped key listener.
-const SCOPED_KEYS_DROP_JS: &str = r"
-const onKey = window['__zwipeScopedKey__ID__'];
+/// Removes scoped key listener `id`.
+fn scoped_keys_drop_js(id: Uuid) -> String {
+    format!(
+        r"
+const onKey = window['__zwipeScopedKey{id}'];
 if (onKey) document.removeEventListener('keydown', onKey);
-delete window['__zwipeScopedKey__ID__'];
-";
+delete window['__zwipeScopedKey{id}'];
+"
+    )
+}
 
-/// Removes one screen's key listener.
-const PAGE_KEYS_DROP_JS: &str = r"
-const onKey = window['__zwipePageKey__ID__'];
+/// Removes screen key listener `id`.
+fn page_keys_drop_js(id: Uuid) -> String {
+    format!(
+        r"
+const onKey = window['__zwipePageKey{id}'];
 if (onKey) document.removeEventListener('keydown', onKey);
-delete window['__zwipePageKey__ID__'];
-window.__zwipePageKeys = (window.__zwipePageKeys || []).filter((id) => id !== '__ID__');
-";
+delete window['__zwipePageKey{id}'];
+window.__zwipePageKeys = (window.__zwipePageKeys || []).filter((id) => id !== '{id}');
+"
+    )
+}
 
-/// Registers one screen's Ctrl+Z listener.
-const UNDO_KEY_JS: &str = r"
+/// Registers one screen's Ctrl+Z listener, registration `id`, which answers while it is the newest
+/// and `guard` holds.
+fn undo_key_js(id: Uuid, guard: &str) -> String {
+    format!(
+        r"
 window.__zwipeUndoKeys = window.__zwipeUndoKeys || [];
-window.__zwipeUndoKeys.push('__ID__');
-const onKey = (e) => {
+window.__zwipeUndoKeys.push('{id}');
+const onKey = (e) => {{
     const stack = window.__zwipeUndoKeys;
-    if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
+    if (!stack.length || stack[stack.length - 1] !== '{id}') return;
     if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'z') return;
-    if (!__GUARD__) return;
+    if (!{guard}) return;
     e.preventDefault();
     dioxus.send(true);
-};
-window['__zwipeUndoKey__ID__'] = onKey;
+}};
+window['__zwipeUndoKey{id}'] = onKey;
 document.addEventListener('keydown', onKey);
-";
+"
+    )
+}
 
-/// Removes one screen's Ctrl+Z listener.
-const UNDO_KEY_DROP_JS: &str = r"
-const onKey = window['__zwipeUndoKey__ID__'];
+/// Removes Ctrl+Z listener `id`.
+fn undo_key_drop_js(id: Uuid) -> String {
+    format!(
+        r"
+const onKey = window['__zwipeUndoKey{id}'];
 if (onKey) document.removeEventListener('keydown', onKey);
-delete window['__zwipeUndoKey__ID__'];
-window.__zwipeUndoKeys = (window.__zwipeUndoKeys || []).filter((id) => id !== '__ID__');
-";
+delete window['__zwipeUndoKey{id}'];
+window.__zwipeUndoKeys = (window.__zwipeUndoKeys || []).filter((id) => id !== '{id}');
+"
+    )
+}
 
 #[cfg(test)]
 mod tests {
