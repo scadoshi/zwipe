@@ -66,6 +66,7 @@ pub fn SendToHost(send_to: SendTo) -> Element {
                     1,
                     Some(board.display_name().to_owned()),
                 );
+                let oracle_id = sent.scryfall_data.oracle_id;
                 spawn_write(async move {
                     let added = authed
                         .try_run_quiet("send_to", |c, s| async move {
@@ -77,10 +78,23 @@ pub fn SendToHost(send_to: SendTo) -> Element {
                             send_to::sent(&target.name, board),
                             ToastOptions::default().duration(TOAST_QUICK),
                         ),
-                        Err(e) => toast.error(
-                            failure_message(&e, &target.name),
-                            ToastOptions::default().duration(TOAST_NORMAL),
-                        ),
+                        Err(e) => {
+                            // A duplicate names the board that holds the card, read from the deck.
+                            let holding = match (&e, oracle_id) {
+                                (ClientError::Conflict(_), Some(oracle_id)) => authed
+                                    .try_run_quiet("send_to_board", |c, s| async move {
+                                        c.fetch_deck(target.id, &s).await
+                                    })
+                                    .await
+                                    .ok()
+                                    .and_then(|deck| send_to::holding_board(&deck.entries, oracle_id)),
+                                _ => None,
+                            };
+                            toast.error(
+                                failure_message(&e, &target.name, holding),
+                                ToastOptions::default().duration(TOAST_NORMAL),
+                            );
+                        }
                     }
                 });
             },
@@ -88,11 +102,11 @@ pub fn SendToHost(send_to: SendTo) -> Element {
     }
 }
 
-/// What a failed send toasts: the deck by name when it already holds the card, else the
-/// error's own plain words.
-fn failure_message(error: &ClientError, deck: &str) -> String {
+/// What a failed send toasts: the deck by name, and the board when it is known, when it already
+/// holds the card, else the error's own plain words.
+fn failure_message(error: &ClientError, deck: &str, board: Option<Board>) -> String {
     if matches!(error, ClientError::Conflict(_)) {
-        send_to::already_in(deck)
+        send_to::already_in(deck, board)
     } else {
         error.to_user_message()
     }
@@ -120,9 +134,20 @@ mod tests {
     #[test]
     fn a_duplicate_names_the_deck_it_went_to_and_other_errors_keep_their_words() {
         let duplicate = ClientError::Conflict("That card is already in this deck".to_owned());
-        assert_eq!(failure_message(&duplicate, "Krenko"), "Already in Krenko");
+        assert_eq!(
+            failure_message(&duplicate, "Krenko", Some(Board::Maybeboard)),
+            "Already in Krenko's maybeboard"
+        );
+        assert_eq!(
+            failure_message(&duplicate, "Krenko", None),
+            "Already in Krenko",
+            "the board unknown"
+        );
         let limit = ClientError::UnprocessableEntity("Card limit reached".to_owned());
-        assert_eq!(failure_message(&limit, "Krenko"), limit.to_user_message());
+        assert_eq!(
+            failure_message(&limit, "Krenko", None),
+            limit.to_user_message()
+        );
     }
 
     #[test]
