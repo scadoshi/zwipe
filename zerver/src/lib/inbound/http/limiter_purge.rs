@@ -102,6 +102,8 @@ mod tests {
         );
     }
 
+    /// Reads `routes.rs` only: a limiter built in another file escapes it, so a split-out
+    /// router adds its file here.
     #[test]
     fn every_limiter_the_routes_build_purges() {
         let routes = include_str!("routes.rs");
