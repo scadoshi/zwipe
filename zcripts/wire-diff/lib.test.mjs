@@ -38,8 +38,28 @@ test("masked paths read the same whatever they hold, and an absent one stays abs
     entries: [{ updated_at: "t1", id: 1 }, { id: 2 }],
   };
   assert.deepEqual(normalize(body, rules), {
-    access_token: { value: "<masked>", expires_at: "x" },
-    entries: [{ updated_at: "<masked>", id: 1 }, { id: 2 }],
+    access_token: { value: "<masked:string>", expires_at: "x" },
+    entries: [{ updated_at: "<masked:string>", id: 1 }, { id: 2 }],
+  });
+});
+
+test("a masked value hides what it holds but not its kind", () => {
+  const rules = { mask: ["/updated_at"] };
+  const main = { status: 200, body: normalize({ updated_at: "2026-11-18T00:00:00Z" }, rules) };
+  const later = { status: 200, body: normalize({ updated_at: "2026-11-19T00:00:00Z" }, rules) };
+  const gone = { status: 200, body: normalize({ updated_at: null }, rules) };
+  assert.deepEqual(diff(main, later), [], "a new time is the same kind");
+  assert.deepEqual(diff(main, gone), [
+    { path: "/updated_at", kind: "value", main: "<masked:string>", cand: "<masked:null>" },
+  ]);
+});
+
+test("a key holding / or ~ keeps to one path segment", () => {
+  const main = { status: 200, body: { tags: { "a/b": 1, "c~d": 1 } } };
+  const cand = { status: 200, body: { tags: { "a/b": 2, "c~d": 1 } } };
+  assert.deepEqual(diff(main, cand).map((d) => d.path), ["/tags/a~1b"]);
+  assert.deepEqual(normalize(main.body, { mask: ["/tags/c~0d"] }), {
+    tags: { "a/b": 1, "c~d": "<masked:number>" },
   });
 });
 
@@ -74,6 +94,7 @@ test("a difference passes only when approved.json lists its route, path and kind
     verdict.stale.map((a) => [a.route, a.path]),
     [["/api/deck/{deck_id}", "/name"], ["/api/user", "/x"]],
   );
+  assert.deepEqual(verdict.incomplete, []);
 });
 
 test("an approval without a reason or an approver doesn't count", () => {
@@ -82,6 +103,8 @@ test("an approval without a reason or an approver doesn't count", () => {
     { route: "/api/user", path: "/x", kind: "added", reason: "", approved_by: "composer" },
   ]);
   assert.equal(verdict.unapproved.length, 1);
+  assert.deepEqual(verdict.incomplete.map((a) => a.path), ["/x"], "it's unfinished, not stale");
+  assert.deepEqual(verdict.stale, []);
 });
 
 test("an approval for one field doesn't pass another on the same route", () => {
