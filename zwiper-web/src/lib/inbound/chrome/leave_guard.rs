@@ -112,8 +112,29 @@ fn hold(held: Held) -> bool {
     })
 }
 
-/// On the browser's back or forward while armed, puts the screen's URL back
-/// and holds the move. Returns whether it did.
+#[cfg(test)]
+thread_local! {
+    /// How many times [`retitle`] ran.
+    static RETITLED: Cell<usize> = const { Cell::new(0) };
+}
+
+/// Sets the page's title to another string and back. The browser keeps showing the title of the
+/// entry a back or forward went to until the title changes, and setting the same string again is
+/// no change. It runs from the browser's popstate, outside any component, so it goes through the
+/// document itself rather than an eval.
+fn retitle() {
+    #[cfg(test)]
+    RETITLED.with(|r| r.set(r.get().saturating_add(1)));
+    #[cfg(target_arch = "wasm32")]
+    if let Some(document) = web_sys::window().and_then(|w| w.document()) {
+        let title = document.title();
+        document.set_title(&format!("{title}\u{200b}"));
+        document.set_title(&title);
+    }
+}
+
+/// On the browser's back or forward while armed, puts the screen's URL and
+/// title back and holds the move. Returns whether it did.
 fn undo_pop() -> bool {
     let inner = GUARD.with(|g| {
         g.copy.get()?;
@@ -126,6 +147,7 @@ fn undo_pop() -> bool {
         return false;
     };
     inner.push(route);
+    retitle();
     hold(Held::Popped)
 }
 
@@ -569,6 +591,11 @@ mod tests {
     }
 
     #[component]
+    fn Bare() -> Element {
+        rsx! {}
+    }
+
+    #[component]
     fn Sheet() -> Element {
         let open = use_signal(|| true);
         components::use_overlay_back(open);
@@ -692,6 +719,33 @@ mod tests {
             "nothing open, so the guard's turn"
         );
         assert!(undo_pop(), "the guard holds the next back");
+        arm(None);
+    }
+
+    #[test]
+    fn an_undone_back_puts_the_screens_title_back_on_the_tab() {
+        let inner: Rc<dyn History> = Rc::new(MemoryHistory::with_initial_path("/decks/1"));
+        let guarded = GuardedHistory::new(Rc::clone(&inner));
+        guarded.push("/decks/1/edit".to_owned());
+        arm(Some(COPY));
+        let mut dom = VirtualDom::new(Bare);
+        dom.rebuild_in_place();
+        let before = RETITLED.with(Cell::get);
+
+        inner.go_back();
+        assert!(dom.in_runtime(undo_pop), "the guard holds the back");
+
+        assert_eq!(
+            inner.current_route(),
+            "/decks/1/edit",
+            "the edit screen's URL is back"
+        );
+        assert_eq!(
+            RETITLED.with(Cell::get),
+            before.saturating_add(1),
+            "the tab's title is set again"
+        );
+        GUARD.with(|g| g.held.borrow_mut().take());
         arm(None);
     }
 }
