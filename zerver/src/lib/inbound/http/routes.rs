@@ -224,6 +224,16 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // A burst of 20, then one a second per IP: the card lookup is a real search open to
+    // signed-out callers, and a search box debounced at 250ms stays under it.
+    let public_lookup_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(1))
+            .burst_size(20)
+            .key_extractor(CfConnectingIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
     // 30 req / 2s per IP: public marketing aggregates. CF cache absorbs most
     // traffic; this guards origin if someone bypasses CF or warms many POPs.
     let public_marketing_config = Arc::new(
@@ -439,6 +449,12 @@ pub fn public_routes() -> Router<AppState> {
                                 .error_handler(stable_rate_limit),
                         )
                         .layer(hourly_cache_layer()),
+                )
+                .route(
+                    "/card/lookup",
+                    post(card::lookup_cards).layer(
+                        GovernorLayer::new(public_lookup_config).error_handler(stable_rate_limit),
+                    ),
                 )
                 .nest(
                     "/marketing",

@@ -84,6 +84,8 @@ pub const GET_ORACLE_TAGS_ROUTE: &str = "/api/card/oracle-tags";
 pub const GET_UB_FRANCHISES_ROUTE: &str = "/api/card/ub-franchises";
 pub const GET_SETS_ROUTE: &str = "/api/card/sets";
 pub const GET_LANGUAGES_ROUTE: &str = "/api/card/languages";
+/// The card lookup: a narrow card search open to signed-out callers, limited per address.
+pub const CARD_LOOKUP_ROUTE: &str = "/api/card/lookup";
 
 // == deck ==
 
@@ -273,6 +275,7 @@ pub fn import_deck_cards_route(deck_id: Uuid) -> String {
 /// Fixed paths only. The id-carrying routes are functions, so the test builds
 /// those itself. Health routes are absent: they have no `Endpoint`.
 pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
+    (Method::Post, CARD_LOOKUP_ROUTE, false),
     (Method::Get, CHANGELOG_ROUTE, false),
     (Method::Patch, CHANGE_EMAIL_ROUTE, true),
     (Method::Patch, CHANGE_PASSWORD_ROUTE, true),
