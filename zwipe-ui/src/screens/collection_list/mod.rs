@@ -9,9 +9,10 @@
 //! [`timing::QUANTITY_FLUSH`], so a burst of taps is one write. A row has one write out at a
 //! time; a step made meanwhile goes when it lands. 0 removes the row once the write lands, and the
 //! next page starts one row earlier for it; a page already out when a row goes is asked again
-//! from there. A failed write puts the saved count back and replays the steps made since. Edits are kept apart from the pages, so a new search
-//! never drops one still waiting to save. A row holding a finish, condition or language this
-//! build doesn't know can't be edited, since the server refuses those values.
+//! from there. A failed write puts the saved count back and replays the steps made since. Edits
+//! are kept apart from the pages, so a new search never drops one still waiting to save. A row
+//! holding a finish, condition or language this build doesn't know can't be edited, since the
+//! server refuses those values.
 //!
 //! The model holds the list and the edits; the client fetches, saves, runs the timers, draws the
 //! rows and saves the export's file. Import is its own model, [`super::collection_import`].
