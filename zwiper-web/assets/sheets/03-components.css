@@ -3593,10 +3593,13 @@ html[data-wipe="left"]::view-transition-new(root) {
 /* The sheet is the folded menu's descendant, so the menu stays painted
    while the sheet is up and folds in plain sight as the sheet rises. It
    stays painted through the slide away too: its own fade would ghost
-   the sliding sheet and its visibility would cut the slide short. */
+   the sliding sheet and its visibility would cut the slide short. It
+   holds still as well, since a transform on the panel would place the
+   fixed sheet in the panel's box rather than the window. */
 .nav-panel:has(.theme-picker-sheet .bottom-sheet:is(.show, .bottom-sheet-leaving)) {
     opacity: 1;
     visibility: visible;
+    transform: none;
 }
 
 /* Short viewports (landscape phones): the open menu spans the full height, so
