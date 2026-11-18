@@ -1,0 +1,420 @@
+use zwipe_core::domain::collection::{
+    CardCondition, CardLanguage, CollectionQuantity, CollectionTags, Finish,
+};
+use zwipe_core::http::contracts::collection::{
+    CollectionCard, HttpCollectionExport, HttpCollectionPage, HttpSetCollectionCardReply,
+};
+
+use super::*;
+use crate::test_support::card;
+
+fn row(name: &str, copies: i32) -> CollectionCard {
+    CollectionCard {
+        card: card(name),
+        finish: Finish::Nonfoil,
+        condition: Some(CardCondition::NearMint),
+        language: Some(CardLanguage::En),
+        quantity: CollectionQuantity::new(copies).unwrap(),
+        tags: CollectionTags::default(),
+        added_at: None,
+    }
+}
+
+fn page(cards: Vec<CollectionCard>, total: i64, next_offset: Option<u32>) -> HttpCollectionPage {
+    HttpCollectionPage {
+        cards,
+        total,
+        next_offset,
+    }
+}
+
+/// Opens the screen and answers its first page with `cards`.
+fn opened(cards: Vec<CollectionCard>, next_offset: Option<u32>) -> State {
+    let mut state = State::new();
+    let effects = state.update(Action::Open);
+    let [
+        Effect::FetchPage {
+            ticket,
+            offset: 0,
+            search,
+        },
+    ] = effects.as_slice()
+    else {
+        panic!("{effects:?}");
+    };
+    assert!(search.is_empty());
+    let total = i64::try_from(cards.len()).unwrap();
+    let _ = state.update(Action::PageLoaded {
+        ticket: *ticket,
+        page: Box::new(page(cards, total, next_offset)),
+    });
+    state
+}
+
+fn key_of(state: &State, name: &str) -> RowKey {
+    state
+        .rows()
+        .iter()
+        .find(|r| r.card.card.scryfall_data.name == name)
+        .map(|r| r.key)
+        .unwrap()
+}
+
+fn shown(state: &State, name: &str) -> Option<i32> {
+    state
+        .rows()
+        .iter()
+        .find(|r| r.card.card.scryfall_data.name == name)
+        .map(|r| r.copies)
+}
+
+/// Steps `key` by `delta` and answers the flush wait, returning the write it sends.
+fn stepped(state: &mut State, key: RowKey, delta: i32) -> (Ticket, HttpSetCollectionCard) {
+    let effects = state.update(Action::Step { key, delta });
+    let [Effect::FlushAfter { ticket, wait }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(*wait, timing::QUANTITY_FLUSH);
+    let effects = state.update(Action::Flush(*ticket));
+    let [Effect::SetCopies { ticket, set }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    (*ticket, set.clone())
+}
+
+#[test]
+fn opening_loads_the_first_page_and_lists_it() {
+    let state = opened(vec![row("Sol Ring", 2), row("Lightning Bolt", 4)], None);
+    assert_eq!(state.status(), Status::List);
+    assert_eq!(state.rows().len(), 2);
+    assert_eq!(state.total(), 2);
+}
+
+#[test]
+fn an_empty_collection_points_to_import() {
+    let state = opened(Vec::new(), None);
+    assert_eq!(state.status(), Status::Empty);
+}
+
+#[test]
+fn the_first_page_failing_offers_retry() {
+    let mut state = State::new();
+    let effects = state.update(Action::Open);
+    let [Effect::FetchPage { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let _ = state.update(Action::PageFailed { ticket: *ticket });
+    assert_eq!(state.status(), Status::Failed);
+    let effects = state.update(Action::Retry);
+    assert!(
+        matches!(effects.as_slice(), [Effect::FetchPage { offset: 0, .. }]),
+        "{effects:?}"
+    );
+    assert_eq!(state.status(), Status::Loading);
+}
+
+#[test]
+fn nearing_the_end_asks_for_the_next_page_once() {
+    let mut state = opened(vec![row("A", 1)], Some(50));
+    let effects = state.update(Action::NearEnd);
+    let [
+        Effect::FetchPage {
+            ticket, offset: 50, ..
+        },
+    ] = effects.as_slice()
+    else {
+        panic!("{effects:?}");
+    };
+    let ticket = *ticket;
+    assert_eq!(state.update(Action::NearEnd), [], "one page out at a time");
+    let _ = state.update(Action::PageLoaded {
+        ticket,
+        page: Box::new(page(vec![row("B", 1)], 2, None)),
+    });
+    assert_eq!(state.rows().len(), 2);
+    assert_eq!(state.update(Action::NearEnd), [], "the last page is in");
+}
+
+#[test]
+fn a_later_page_failing_keeps_the_list_and_tries_again_on_the_next_scroll() {
+    let mut state = opened(vec![row("A", 1)], Some(50));
+    let effects = state.update(Action::NearEnd);
+    let [Effect::FetchPage { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let effects = state.update(Action::PageFailed { ticket: *ticket });
+    assert!(
+        matches!(effects.as_slice(), [Effect::Toast(_)]),
+        "{effects:?}"
+    );
+    assert_eq!(state.status(), Status::List);
+    assert!(matches!(
+        state.update(Action::NearEnd).as_slice(),
+        [Effect::FetchPage { offset: 50, .. }]
+    ));
+}
+
+#[test]
+fn typing_searches_after_a_rest_from_the_first_page() {
+    let mut state = opened(vec![row("Sol Ring", 1)], Some(50));
+    let effects = state.update(Action::Type("bolt".to_owned()));
+    let [Effect::SearchAfter { ticket, wait }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(*wait, timing::QUICK_ADD_DEBOUNCE);
+    let effects = state.update(Action::Search(*ticket));
+    let [
+        Effect::FetchPage {
+            ticket,
+            offset: 0,
+            search,
+        },
+    ] = effects.as_slice()
+    else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(search.as_str(), "bolt");
+    assert_eq!(state.status(), Status::Loading);
+    let _ = state.update(Action::PageLoaded {
+        ticket: *ticket,
+        page: Box::new(page(Vec::new(), 0, None)),
+    });
+    assert_eq!(
+        state.status(),
+        Status::NoMatch,
+        "a search with nothing is not an empty collection"
+    );
+}
+
+#[test]
+fn a_page_for_an_older_search_is_dropped() {
+    let mut state = opened(vec![row("Sol Ring", 1)], Some(50));
+    let effects = state.update(Action::NearEnd);
+    let [Effect::FetchPage { ticket: old, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let old = *old;
+    let effects = state.update(Action::Type("bolt".to_owned()));
+    let [Effect::SearchAfter { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let _ = state.update(Action::Search(*ticket));
+    let _ = state.update(Action::PageLoaded {
+        ticket: old,
+        page: Box::new(page(vec![row("Old", 1)], 9, None)),
+    });
+    assert_eq!(state.rows().len(), 0, "the old search's page doesn't land");
+    assert_eq!(state.status(), Status::Loading);
+}
+
+#[test]
+fn only_the_last_keystroke_searches() {
+    let mut state = opened(vec![row("Sol Ring", 1)], None);
+    let effects = state.update(Action::Type("bo".to_owned()));
+    let [Effect::SearchAfter { ticket: early, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let early = *early;
+    let _ = state.update(Action::Type("bol".to_owned()));
+    assert_eq!(state.update(Action::Search(early)), []);
+}
+
+#[test]
+fn a_search_too_long_matches_nothing_without_asking() {
+    let mut state = opened(vec![row("Sol Ring", 1)], None);
+    let effects = state.update(Action::Type("a".repeat(101)));
+    let [Effect::SearchAfter { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(state.update(Action::Search(*ticket)), []);
+    assert_eq!(state.status(), Status::NoMatch);
+}
+
+#[test]
+fn stepping_shows_the_count_at_once_and_saves_the_row_after_a_rest() {
+    let mut state = opened(vec![row("Sol Ring", 2)], None);
+    let key = key_of(&state, "Sol Ring");
+    let first = state.update(Action::Step { key, delta: 1 });
+    let [Effect::FlushAfter { ticket: early, .. }] = first.as_slice() else {
+        panic!("{first:?}");
+    };
+    let early = *early;
+    assert_eq!(shown(&state, "Sol Ring"), Some(3));
+    let _ = state.update(Action::Step { key, delta: 1 });
+    assert_eq!(shown(&state, "Sol Ring"), Some(4));
+    assert_eq!(
+        state.update(Action::Flush(early)),
+        [],
+        "a newer step owns the wait"
+    );
+
+    let (ticket, set) = stepped(&mut state, key, 1);
+    assert_eq!(set.quantity.get(), 5, "the burst goes as one write");
+    assert_eq!(set.finish, Finish::Nonfoil);
+    assert_eq!(set.condition, Some(CardCondition::NearMint));
+    assert_eq!(set.language, Some(CardLanguage::En));
+    let mut saved = row("Sol Ring", 5);
+    saved.card.scryfall_data.id = key.printing;
+    let effects = state.update(Action::Saved {
+        ticket,
+        reply: Box::new(HttpSetCollectionCardReply { card: Some(saved) }),
+    });
+    assert_eq!(effects, [Effect::CollectionChanged]);
+    assert_eq!(shown(&state, "Sol Ring"), Some(5));
+}
+
+#[test]
+fn copies_stay_between_zero_and_the_most() {
+    let mut state = opened(
+        vec![row("Sol Ring", 1), row("Plains", CollectionQuantity::MAX)],
+        None,
+    );
+    let sol = key_of(&state, "Sol Ring");
+    let _ = state.update(Action::Step {
+        key: sol,
+        delta: -5,
+    });
+    assert_eq!(shown(&state, "Sol Ring"), Some(0));
+    let plains = key_of(&state, "Plains");
+    let _ = state.update(Action::Step {
+        key: plains,
+        delta: 1,
+    });
+    assert_eq!(shown(&state, "Plains"), Some(CollectionQuantity::MAX));
+}
+
+#[test]
+fn zero_removes_the_row_once_saved_and_the_next_page_starts_one_earlier() {
+    let mut state = opened(vec![row("Sol Ring", 1), row("Bolt", 1)], Some(50));
+    let key = key_of(&state, "Sol Ring");
+    let (ticket, set) = stepped(&mut state, key, -1);
+    assert_eq!(set.quantity.get(), 0);
+    assert_eq!(state.rows().len(), 2, "shown at 0 until the write lands");
+    let effects = state.update(Action::Saved {
+        ticket,
+        reply: Box::new(HttpSetCollectionCardReply { card: None }),
+    });
+    assert_eq!(effects, [Effect::CollectionChanged]);
+    assert_eq!(state.rows().len(), 1);
+    assert_eq!(state.total(), 1);
+    assert!(matches!(
+        state.update(Action::NearEnd).as_slice(),
+        [Effect::FetchPage { offset: 49, .. }]
+    ));
+}
+
+#[test]
+fn a_failed_write_puts_the_saved_count_back() {
+    let mut state = opened(vec![row("Sol Ring", 2)], None);
+    let key = key_of(&state, "Sol Ring");
+    let (ticket, _) = stepped(&mut state, key, -2);
+    let effects = state.update(Action::SaveFailed { ticket });
+    assert!(
+        matches!(effects.as_slice(), [Effect::Toast(_)]),
+        "{effects:?}"
+    );
+    assert_eq!(shown(&state, "Sol Ring"), Some(2));
+    assert_eq!(state.rows().len(), 1);
+}
+
+#[test]
+fn a_step_during_a_write_is_sent_when_it_lands() {
+    let mut state = opened(vec![row("Sol Ring", 2)], None);
+    let key = key_of(&state, "Sol Ring");
+    let (ticket, _) = stepped(&mut state, key, 1);
+    let effects = state.update(Action::Step { key, delta: 1 });
+    let [Effect::FlushAfter { ticket: wait, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(
+        state.update(Action::Flush(*wait)),
+        [],
+        "one write per row at a time"
+    );
+    let mut saved = row("Sol Ring", 3);
+    saved.card.scryfall_data.id = key.printing;
+    let effects = state.update(Action::Saved {
+        ticket,
+        reply: Box::new(HttpSetCollectionCardReply { card: Some(saved) }),
+    });
+    let [Effect::CollectionChanged, Effect::SetCopies { set, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(set.quantity.get(), 4);
+    assert_eq!(shown(&state, "Sol Ring"), Some(4));
+}
+
+#[test]
+fn an_edit_waiting_to_save_survives_a_new_search() {
+    let mut state = opened(vec![row("Sol Ring", 2)], None);
+    let key = key_of(&state, "Sol Ring");
+    let effects = state.update(Action::Step { key, delta: 1 });
+    let [Effect::FlushAfter { ticket: wait, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let wait = *wait;
+    let effects = state.update(Action::Type("bolt".to_owned()));
+    let [Effect::SearchAfter { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let _ = state.update(Action::Search(*ticket));
+    let effects = state.update(Action::Flush(wait));
+    let [Effect::SetCopies { set, .. }] = effects.as_slice() else {
+        panic!("the edit still saves: {effects:?}");
+    };
+    assert_eq!(set.quantity.get(), 3);
+}
+
+#[test]
+fn a_row_with_a_value_this_build_doesn_t_know_is_not_edited() {
+    let mut odd = row("Sol Ring", 2);
+    odd.language = Some(CardLanguage::Unknown);
+    let mut state = opened(vec![odd, row("Bolt", 1)], None);
+    let key = key_of(&state, "Sol Ring");
+    assert!(!state.rows()[0].editable);
+    assert_eq!(state.update(Action::Step { key, delta: 1 }), []);
+    assert_eq!(shown(&state, "Sol Ring"), Some(2));
+    assert!(state.rows()[1].editable);
+}
+
+#[test]
+fn export_hands_the_file_to_the_client_once_at_a_time() {
+    let mut state = opened(vec![row("Sol Ring", 1)], None);
+    let effects = state.update(Action::Export);
+    let [Effect::Export { ticket }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let ticket = *ticket;
+    assert!(state.exporting());
+    assert_eq!(state.update(Action::Export), [], "one export out at a time");
+    let effects = state.update(Action::Exported {
+        ticket,
+        export: HttpCollectionExport {
+            file_name: "zwipe-collection.csv".to_owned(),
+            csv: "Name\nSol Ring\n".to_owned(),
+        },
+    });
+    assert_eq!(
+        effects,
+        [Effect::Download {
+            file_name: "zwipe-collection.csv".to_owned(),
+            text: "Name\nSol Ring\n".to_owned(),
+        }]
+    );
+    assert!(!state.exporting());
+}
+
+#[test]
+fn a_failed_export_toasts() {
+    let mut state = opened(vec![row("Sol Ring", 1)], None);
+    let effects = state.update(Action::Export);
+    let [Effect::Export { ticket }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let effects = state.update(Action::ExportFailed { ticket: *ticket });
+    assert!(
+        matches!(effects.as_slice(), [Effect::Toast(_)]),
+        "{effects:?}"
+    );
+    assert!(!state.exporting());
+}
