@@ -340,12 +340,18 @@ fn back_after_escape<T>(closed: bool, back: Option<T>) -> Option<T> {
 /// open over it, as Enter in one of its fields does.
 ///
 /// Escape is marked taken, so no later listener closes the same overlay
-/// again, and sends once the key's dispatch is over, so a dialog the close
-/// opens (a picker asking before it discards) draws after the kit's
-/// listener has passed on this same key and doesn't take it as a dismiss.
+/// again. With a dialog open it is taken too: a help closing over a sheet
+/// hands focus back to the sheet within the same key, and the kit's sheet
+/// Esc would close the sheet as well. The root's send waits until the key's
+/// dispatch is over, so a dialog the close opens (a picker asking before it
+/// discards) draws after the kit's listener has passed on this same key and
+/// doesn't take it as a dismiss.
 const KEYS_JS: &str = r#"
 document.addEventListener('keydown', (e) => {
-    if (document.querySelector('.alert-dialog[data-state="open"]')) return;
+    if (document.querySelector('.alert-dialog[data-state="open"]')) {
+        if (e.key === 'Escape') e.preventDefault();
+        return;
+    }
     const focus = document.activeElement;
     const inField = focus && focus.closest('input, textarea, select, [contenteditable="true"]');
     if (e.key === 'Escape') {
@@ -478,6 +484,21 @@ mod tests {
         assert!(
             KEYS_JS.contains("if (e.key === 'Escape') {\n        e.preventDefault();"),
             "{KEYS_JS}"
+        );
+    }
+
+    #[test]
+    fn esc_that_closes_a_help_over_a_sheet_leaves_the_sheet_open() {
+        // The help closes and hands focus back to the sheet within the same key, so the kit's
+        // sheet Esc, which skips a taken key, would otherwise close the sheet too.
+        let guard = KEYS_JS
+            .split("if (document.querySelector('.alert-dialog[data-state=\"open\"]')) {")
+            .nth(1)
+            .and_then(|rest| rest.split("return;").next())
+            .unwrap_or_default();
+        assert!(
+            guard.contains("if (e.key === 'Escape') e.preventDefault();"),
+            "with a dialog open, Escape is marked taken before the root steps aside: {KEYS_JS}"
         );
     }
 

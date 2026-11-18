@@ -8,7 +8,9 @@
 //! filters the grid by name for quick jumps.
 
 use components::hint::ContentHintDialog;
-use components::{Chip, DockAction, icons, use_overlay_back_action, use_picker_search};
+use components::{
+    Chip, DockAction, PickerChoice, PickerSearch, icons, use_overlay_back_action, use_picker_search,
+};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 use zwipe_ui::deck::pickers::{self, Picker};
@@ -62,6 +64,20 @@ pub(crate) fn TagSelect(
     } else {
         Vec::new()
     };
+    let target = pickers::deck_tag_on_enter(&catalog, &query()).cloned();
+    let target_slug = target.as_ref().map(|t| t.slug.clone());
+    let picked = selected.clone();
+    // Enter adds the top match and keeps the picker open for the next.
+    let add_target = move |typed: String| {
+        let Some(tag) = pickers::deck_tag_on_enter(&catalog, &typed).cloned() else {
+            return;
+        };
+        if pickers::enter_adds_tag(&picked, &tag.slug) {
+            on_toggle.call(tag.slug.clone());
+        }
+        focused.set(Some(tag));
+        query.set(String::new());
+    };
 
     rsx! {
         div { class: "{screen_class}", style: layer().map(|z| format!("--overlay-z: {z};")),
@@ -89,18 +105,11 @@ pub(crate) fn TagSelect(
                             }
                         }
 
-                        div { class: "chip-row",
-                            label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: "tag-search", "Search" }
-                            input { class: "input input-compact",
-                                id: "tag-search",
-                                r#type: "text",
-                                placeholder: "Search tags",
-                                value: "{query()}",
-                                autocapitalize: "none",
-                                autocorrect: "off",
-                                spellcheck: "false",
-                                oninput: move |event| query.set(event.value()),
-                            }
+                        PickerSearch {
+                            id: "tag-search",
+                            placeholder: "Search tags",
+                            query,
+                            on_enter: add_target,
                         }
 
                         div { class: "tag-def-bar",
@@ -125,16 +134,17 @@ pub(crate) fn TagSelect(
                                     let view = tag;
                                     let is_selected = selected.contains(&slug);
                                     rsx! {
-                                        Chip {
-                                            key: "{slug}",
-                                            selected: is_selected,
-                                            onclick: move |_| {
-                                                focused.set(Some(view.clone()));
-                                                // Clear the search so the full grid returns after picking.
-                                                query.set(String::new());
-                                                on_toggle.call(slug.clone());
-                                            },
-                                            "{label}"
+                                        PickerChoice { key: "{slug}", target: target_slug.as_deref() == Some(slug.as_str()),
+                                            Chip {
+                                                selected: is_selected,
+                                                onclick: move |_| {
+                                                    focused.set(Some(view.clone()));
+                                                    // Clear the search so the full grid returns after picking.
+                                                    query.set(String::new());
+                                                    on_toggle.call(slug.clone());
+                                                },
+                                                "{label}"
+                                            }
                                         }
                                     }
                                 }
