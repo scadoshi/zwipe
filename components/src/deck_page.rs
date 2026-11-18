@@ -299,6 +299,10 @@ pub fn FeaturedCard(
                 div {
                     class: "deck-head-card-image floatable float-on-hover",
                     "data-row": "{id}",
+                    // The settle animator keys this by its own name, read before `data-row`, so
+                    // a star that adds or takes the card here never slides the card's stack slot
+                    // from up here.
+                    "data-settle-key": "head-card:{id}",
                     // A stop of the keyboard cursor, the row above the cards; Enter opens it as a
                     // click does.
                     tabindex: "0",
@@ -631,6 +635,37 @@ mod tests {
                 r#"class="deck-head-card-image floatable float-on-hover" data-row="{id}""#
             )),
             "{html}"
+        );
+    }
+
+    #[test]
+    fn a_featured_card_settles_by_its_own_key_never_its_stack_card_s() {
+        thread_local! {
+            static SHOWN: std::cell::RefCell<Option<Card>> = const { std::cell::RefCell::new(None) };
+        }
+        fn app() -> Element {
+            let card = SHOWN
+                .with(|shown| shown.borrow().clone())
+                .expect("a card to show");
+            rsx! {
+                FeaturedCard { card, role: "Commander".to_owned() }
+            }
+        }
+        let shown = card("Atraxa");
+        let id = shown.scryfall_data.id;
+        SHOWN.with(|slot| *slot.borrow_mut() = Some(shown));
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        let (_, image) = html
+            .split_once(r#"class="deck-head-card-image"#)
+            .expect("the head image");
+        let (image, _) = image.split_once('>').expect("its tag");
+        // The settle animator reads data-settle-key before data-row, so the head image and the
+        // same card's stack slot are two things to it, never one.
+        assert!(
+            image.contains(&format!(r#"data-settle-key="head-card:{id}""#)),
+            "{image}"
         );
     }
 
