@@ -3491,18 +3491,12 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
     margin-left: 0;
 }
 
-/* The Unpriced entry's cards take a line of their own under its count, in the same row, in the
-   panels' fold. Shut, the fold gives back the row's gap above it, which the cards' own top
+/* The Unpriced entry's cards take a line of their own under its chip, in the same row, in the tag
+   chips' reveal. Shut, the reveal gives back the row's gap above it, which the cards' own top
    padding takes again once it opens. */
 .deck-warning-row > .deck-unpriced-fold {
     flex-basis: 100%;
     margin-top: calc(-1 * var(--space-2));
-}
-
-/* It sits inside the open Warnings section, whose open rule reaches every fold under it, so a
-   shut one clips its own cards again as it closes. */
-.collapsible.deck-unpriced-fold:not(.open) > .collapsible-inner {
-    overflow: hidden;
 }
 
 .deck-unpriced-fold .deck-unpriced-chips {

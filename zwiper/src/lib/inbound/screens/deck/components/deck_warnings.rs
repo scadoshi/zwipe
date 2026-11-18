@@ -67,8 +67,8 @@ pub(crate) fn DeckWarnings(
     }
 }
 
-/// The Unpriced entry: a chip with the panels' caret that says how many cards have no price and
-/// lays them out as chips under it, in its row. It starts with them hidden.
+/// The Unpriced entry: a chip that says how many cards have no price and, selected, lays them out
+/// as chips under it in its row, as a role's tag chips reveal theirs. It starts unselected.
 #[component]
 fn UnpricedRow(cards: Vec<Card>, currency: PriceCurrency, on_open: EventHandler<Uuid>) -> Element {
     let mut shown = use_signal(|| false);
@@ -76,19 +76,12 @@ fn UnpricedRow(cards: Vec<Card>, currency: PriceCurrency, on_open: EventHandler<
     rsx! {
         // One row: the chips wrap onto their own line under the count, inside it.
         div { class: "settings-row deck-warning-row",
-            Chip { selected: false, onclick: move |_| shown.toggle(),
-                span {
-                    class: "card-row-arrow",
-                    style: if shown() { "transform:rotate(90deg);" } else { "transform:rotate(0deg);" },
-                    "▸"
-                }
-                "{line}"
-            }
-            // The panels' fold, so the cards ease open and shut; shut, they take no focus.
+            Chip { selected: shown(), onclick: move |_| shown.toggle(), "{line}" }
+            // The tag chips' reveal, so the cards ease open and shut; shut, they take no focus.
             div {
-                class: if shown() { "collapsible open deck-unpriced-fold" } else { "collapsible deck-unpriced-fold" },
+                class: if shown() { "keyword-reveal open deck-unpriced-fold" } else { "keyword-reveal deck-unpriced-fold" },
                 inert: (!shown()).then_some("true"),
-                div { class: "collapsible-inner",
+                div { class: "keyword-reveal-inner",
                     div { class: "chip-row deck-unpriced-chips",
                         for card in cards {
                             Chip {
