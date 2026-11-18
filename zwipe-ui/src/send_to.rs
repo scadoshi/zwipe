@@ -163,6 +163,17 @@ pub fn targets(decks: &[Target], current: Option<Uuid>, query: &str) -> Vec<Targ
         .collect()
 }
 
+/// The deck Enter in the search sends to for the text `typed`: the first of [`targets`] for that
+/// text while it has any, so Enter that lands before the list redraws still acts on it.
+#[must_use]
+pub fn target_on_enter(decks: &[Target], current: Option<Uuid>, typed: &str) -> Option<Target> {
+    if typed.trim().is_empty() {
+        None
+    } else {
+        targets(decks, current, typed).into_iter().next()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -335,6 +346,32 @@ mod tests {
         assert_eq!(
             sent("Krenko", Board::Sideboard),
             "Sent to Krenko, sideboard"
+        );
+    }
+
+    /// Enter reads the deck search as typed, so it sends to that text's first deck, never the
+    /// first deck drawn for the text before it.
+    #[test]
+    fn enter_sends_to_the_first_deck_for_the_text_as_typed() {
+        let decks = vec![deck(1, "Atraxa"), deck(2, "Krenko"), deck(3, "Kraum")];
+        assert_eq!(
+            targets(&decks, None, "kr").first(),
+            Some(&decks[1]),
+            "the stale top match"
+        );
+        assert_eq!(
+            target_on_enter(&decks, None, "krau"),
+            Some(decks[2].clone())
+        );
+        assert_eq!(
+            target_on_enter(&decks, Some(decks[2].id), "krau"),
+            None,
+            "never the deck it's on"
+        );
+        assert_eq!(
+            target_on_enter(&decks, None, " "),
+            None,
+            "a blank search has no target"
         );
     }
 }

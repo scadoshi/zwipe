@@ -15,10 +15,12 @@ use tower_http::set_header::SetResponseHeaderLayer;
 
 use crate::domain::auth::models::access_token::JwtSecret;
 use crate::inbound::http::AppState;
+use crate::inbound::http::family_limit::{Allowance, FamilyLimitLayer};
 use crate::inbound::http::handlers::{
     auth, card, changelog, client, deck, deck_card, health, metrics, user,
 };
-use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor};
+use crate::inbound::http::limiter_purge::{LIMITER_PURGE_EVERY, purging};
+use crate::inbound::http::middleware::UserIdKeyExtractor;
 
 /// Largest crash report body accepted, in bytes. A report is about 2 KB of
 /// truncated panic text, and the route takes it unauthenticated.
@@ -148,168 +150,135 @@ fn private_no_store_layer() -> SetResponseHeaderLayer<HeaderValue> {
 ///
 /// # Panics
 ///
-/// Never in practice: a governor config only fails to build on a zero period
-/// or burst, and every one here is a non-zero constant.
-#[expect(
-    clippy::expect_used,
-    reason = "every governor config has a non-zero period and burst, so finish never returns None"
-)]
+/// Never in practice: a limit only fails to build on a zero period or burst
+/// ([`FamilyLimitLayer::new`]), and every one here is a non-zero constant.
 #[expect(
     clippy::too_many_lines,
     reason = "one router tree: each public limiter, then the routes it guards"
 )]
 pub fn public_routes() -> Router<AppState> {
     // 5 req / 30s: tight limit, brute-force target
-    let login_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(6))
-            .burst_size(5)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: a burst of 10, the same refill; a brute-force rate stays per network.
+    let login_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(6), 5),
+        Allowance::new(Duration::from_secs(6), 10),
+        stable_rate_limit,
     );
     // 5 req / 1hr: rarely needed legitimately
-    let register_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_mins(12))
-            .burst_size(5)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: a burst of 10, the same refill, for a household or office signing up together.
+    let register_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_mins(12), 5),
+        Allowance::new(Duration::from_mins(12), 10),
+        stable_rate_limit,
     );
     // 20 req / 1min: clients refresh on cold start
-    let refresh_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(3))
-            .burst_size(20)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: double the burst and the rate, since every app on the network refreshes on
+    // cold start.
+    let refresh_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(3), 20),
+        Allowance::new(Duration::from_millis(1500), 40),
+        stable_rate_limit,
     );
     // 5 req / 1hr per IP: password reset is rare
-    let forgot_password_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_mins(12))
-            .burst_size(5)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: a burst of 10, the same refill.
+    let forgot_password_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_mins(12), 5),
+        Allowance::new(Duration::from_mins(12), 10),
+        stable_rate_limit,
     );
     // 10 req / 1hr per IP: verify-email, confirm-email-change, reset-password and its check
-    let verify_reset_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(360))
-            .burst_size(10)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: a burst of 20, the same refill.
+    let verify_reset_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(360), 10),
+        Allowance::new(Duration::from_secs(360), 20),
+        stable_rate_limit,
     );
     // 60 req / min per IP: card metadata is public and CF-cached, but a tight
     // limit guards the origin from someone bypassing CF to scrape directly.
-    let public_card_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(1))
-            .burst_size(60)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: double the burst and the rate.
+    let public_card_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(1), 60),
+        Allowance::new(Duration::from_millis(500), 120),
+        stable_rate_limit,
     );
     // A burst of 10, then one every 3s per IP: each example page is a real card search, heavier
     // than the catalog reads, and Cloudflare caches repeat pages for an hour.
-    let public_examples_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(3))
-            .burst_size(10)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: double the burst and the rate.
+    let public_examples_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(3), 10),
+        Allowance::new(Duration::from_millis(1500), 20),
+        stable_rate_limit,
     );
     // 30 req / 2s per IP: public marketing aggregates. CF cache absorbs most
     // traffic; this guards origin if someone bypasses CF or warms many POPs.
-    let public_marketing_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(2))
-            .burst_size(30)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: double the burst and the rate.
+    let public_marketing_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(2), 30),
+        Allowance::new(Duration::from_secs(1), 60),
+        stable_rate_limit,
     );
     // 30 req / 2s per IP: min-version gate poll. ~30-byte payload hit once a
     // minute per app; modest cap guards origin without risking lockout noise.
-    let public_client_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(2))
-            .burst_size(30)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: double the burst and the rate.
+    let public_client_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(2), 30),
+        Allowance::new(Duration::from_secs(1), 60),
+        stable_rate_limit,
     );
     // 30 req / 2s per IP: public changelog. Fetched once per app launch and
     // Cloudflare edge-caches it, so origin traffic is tiny; this guards the
     // origin if someone bypasses CF or warms many POPs.
-    let public_changelog_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(2))
-            .burst_size(30)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: double the burst and the rate.
+    let public_changelog_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(2), 30),
+        Allowance::new(Duration::from_secs(1), 60),
+        stable_rate_limit,
     );
     // 10 req / min per IP: pre-auth funnel events. A legitimate session
     // fires a handful ever (app opened, register viewed/submitted); this is
     // an unauthenticated write, so keep the row-spam ceiling low.
-    let anonymous_event_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(6))
-            .burst_size(10)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: double the burst and the rate, one session per device.
+    let anonymous_event_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(6), 10),
+        Allowance::new(Duration::from_secs(3), 20),
+        stable_rate_limit,
     );
     // Burst 2, then 1 req / min per IP: crash reports. A legitimate client
     // posts at most one per launch; this is an unauthenticated write that
     // inserts a row per call, so it gets the strictest limiter (the crash_id
     // upsert makes anything past it idempotent).
-    let crash_report_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(60))
-            .burst_size(2)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: double the burst and the rate, one report per device.
+    let crash_report_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(60), 2),
+        Allowance::new(Duration::from_secs(30), 4),
+        stable_rate_limit,
     );
     // 30 req / 2s per IP: public shared-deck reads. A page load fetches once
     // and CF may cache briefly; this guards origin against token scanning.
-    let public_share_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(2))
-            .burst_size(30)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: double the burst and the rate.
+    let public_share_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(2), 30),
+        Allowance::new(Duration::from_secs(1), 60),
+        stable_rate_limit,
     );
     // 30 req / minute per IP, burst 10: shared decks' preview images. A
     // render costs ~100ms of CPU plus art fetches, so this sits inside the
     // share routes' own limit; Cloudflare's edge serves repeat requests, so
     // origin only sees a link's first unfurls.
-    let share_preview_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(2))
-            .burst_size(10)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: double the burst and the rate.
+    let share_preview_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(2), 10),
+        Allowance::new(Duration::from_secs(1), 20),
+        stable_rate_limit,
     );
     // 30 req / 2s per IP: health checks. Generous for frequent polling
     // (manual curls, uptime monitors) while capping unauthenticated floods,
     // notably /health/database which pings Postgres.
-    let health_config = Arc::new(
-        GovernorConfigBuilder::default()
-            .period(Duration::from_secs(2))
-            .burst_size(30)
-            .key_extractor(CfConnectingIpKeyExtractor)
-            .finish()
-            .expect("rate limit config: burst_size and period must be non-zero"),
+    // IPv6 /64: double the burst and the rate.
+    let health_limit = FamilyLimitLayer::new(
+        Allowance::new(Duration::from_secs(2), 30),
+        Allowance::new(Duration::from_secs(1), 60),
+        stable_rate_limit,
     );
 
     Router::new()
@@ -320,7 +289,7 @@ pub fn public_routes() -> Router<AppState> {
                 .route("/", get(health::are_server_and_database_running))
                 .route("/server", get(health::is_server_running))
                 .route("/database", get(health::are_server_and_database_running))
-                .layer(GovernorLayer::new(health_config).error_handler(stable_rate_limit)),
+                .layer(health_limit),
         )
         .nest(
             "/api",
@@ -328,84 +297,47 @@ pub fn public_routes() -> Router<AppState> {
                 .nest(
                     "/auth",
                     Router::new()
-                        .route(
-                            "/register",
-                            post(auth::register_user).layer(
-                                GovernorLayer::new(register_config)
-                                    .error_handler(stable_rate_limit),
-                            ),
-                        )
+                        .route("/register", post(auth::register_user).layer(register_limit))
                         .route(
                             "/login",
-                            post(auth::authenticate_user).layer(
-                                GovernorLayer::new(Arc::clone(&login_config))
-                                    .error_handler(stable_rate_limit),
-                            ),
+                            post(auth::authenticate_user).layer(login_limit.clone()),
                         )
                         .route(
                             "/refresh",
-                            post(auth::refresh_session).layer(
-                                GovernorLayer::new(Arc::clone(&refresh_config))
-                                    .error_handler(stable_rate_limit),
-                            ),
+                            post(auth::refresh_session).layer(refresh_limit.clone()),
                         )
                         // The browser's session, its refresh token in an
                         // HttpOnly cookie. Shares the app routes' limits.
-                        .route(
-                            "/cookie/login",
-                            post(auth::cookie_login).layer(
-                                GovernorLayer::new(login_config).error_handler(stable_rate_limit),
-                            ),
-                        )
+                        .route("/cookie/login", post(auth::cookie_login).layer(login_limit))
                         .route(
                             "/cookie/refresh",
-                            post(auth::cookie_refresh).layer(
-                                GovernorLayer::new(Arc::clone(&refresh_config))
-                                    .error_handler(stable_rate_limit),
-                            ),
+                            post(auth::cookie_refresh).layer(refresh_limit.clone()),
                         )
                         // Public: the cookie alone logs the browser out when its
                         // access token can't be had, so no bearer is required.
                         .route(
                             "/cookie/logout",
-                            post(auth::cookie_logout).layer(
-                                GovernorLayer::new(refresh_config).error_handler(stable_rate_limit),
-                            ),
+                            post(auth::cookie_logout).layer(refresh_limit),
                         )
                         .route(
                             "/verify-email",
-                            post(auth::verify_email).layer(
-                                GovernorLayer::new(Arc::clone(&verify_reset_config))
-                                    .error_handler(stable_rate_limit),
-                            ),
+                            post(auth::verify_email).layer(verify_reset_limit.clone()),
                         )
                         .route(
                             "/confirm-email-change",
-                            post(auth::confirm_email_change).layer(
-                                GovernorLayer::new(Arc::clone(&verify_reset_config))
-                                    .error_handler(stable_rate_limit),
-                            ),
+                            post(auth::confirm_email_change).layer(verify_reset_limit.clone()),
                         )
                         .route(
                             "/forgot-password",
-                            post(auth::request_password_reset).layer(
-                                GovernorLayer::new(forgot_password_config)
-                                    .error_handler(stable_rate_limit),
-                            ),
+                            post(auth::request_password_reset).layer(forgot_password_limit),
                         )
                         .route(
                             "/reset-password/check",
-                            post(auth::check_reset_token).layer(
-                                GovernorLayer::new(Arc::clone(&verify_reset_config))
-                                    .error_handler(stable_rate_limit),
-                            ),
+                            post(auth::check_reset_token).layer(verify_reset_limit.clone()),
                         )
                         .route(
                             "/reset-password",
-                            post(auth::reset_password).layer(
-                                GovernorLayer::new(verify_reset_config)
-                                    .error_handler(stable_rate_limit),
-                            ),
+                            post(auth::reset_password).layer(verify_reset_limit),
                         ),
                 )
                 .nest(
@@ -424,64 +356,44 @@ pub fn public_routes() -> Router<AppState> {
                         .route("/oracle-words", get(card::get_oracle_words))
                         .route("/languages", get(card::get_languages))
                         .route("/sets", get(card::get_sets))
-                        .layer(
-                            GovernorLayer::new(public_card_config).error_handler(stable_rate_limit),
-                        )
+                        .layer(public_card_limit)
                         .layer(hourly_cache_layer()),
                 )
                 .nest(
                     "/card/oracle-tag",
                     Router::new()
                         .route("/{slug}/examples", get(card::get_oracle_tag_examples))
-                        .layer(
-                            GovernorLayer::new(public_examples_config)
-                                .error_handler(stable_rate_limit),
-                        )
+                        .layer(public_examples_limit)
                         .layer(hourly_cache_layer()),
                 )
                 .nest(
                     "/marketing",
                     Router::new()
                         .route("/stats", get(metrics::get_public_metrics))
-                        .layer(
-                            GovernorLayer::new(public_marketing_config)
-                                .error_handler(stable_rate_limit),
-                        )
+                        .layer(public_marketing_limit)
                         .layer(hourly_cache_layer()),
                 )
                 .nest(
                     "/client",
                     Router::new()
                         .route("/min-version", get(client::get_min_client_version))
-                        .layer(
-                            GovernorLayer::new(public_client_config)
-                                .error_handler(stable_rate_limit),
-                        ),
+                        .layer(public_client_limit),
                 )
                 // The handler sets its own Cache-Control (no-cache plus an
                 // ETag), so the hourly layer stays off this route.
                 .route(
                     "/changelog",
-                    get(changelog::get_changelog).layer(
-                        GovernorLayer::new(public_changelog_config)
-                            .error_handler(stable_rate_limit),
-                    ),
+                    get(changelog::get_changelog).layer(public_changelog_limit),
                 )
                 .nest(
                     "/metrics",
                     Router::new()
                         .route("/anonymous", post(metrics::record_anonymous_event))
-                        .layer(
-                            GovernorLayer::new(anonymous_event_config)
-                                .error_handler(stable_rate_limit),
-                        )
+                        .layer(anonymous_event_limit)
                         .merge(
                             Router::new()
                                 .route("/crash", post(metrics::record_crash))
-                                .layer(
-                                    GovernorLayer::new(crash_report_config)
-                                        .error_handler(stable_rate_limit),
-                                )
+                                .layer(crash_report_limit)
                                 .layer(DefaultBodyLimit::max(CRASH_REPORT_BODY_LIMIT)),
                         ),
                 )
@@ -491,15 +403,9 @@ pub fn public_routes() -> Router<AppState> {
                         .route("/deck/{token}", get(deck::get_shared_deck))
                         .route(
                             "/deck/{token}/preview.png",
-                            get(deck::get_shared_deck_preview).layer(
-                                GovernorLayer::new(share_preview_config)
-                                    .error_handler(stable_rate_limit),
-                            ),
+                            get(deck::get_shared_deck_preview).layer(share_preview_limit),
                         )
-                        .layer(
-                            GovernorLayer::new(public_share_config)
-                                .error_handler(stable_rate_limit),
-                        ),
+                        .layer(public_share_limit),
                 ),
         )
 }
@@ -520,70 +426,77 @@ pub fn public_routes() -> Router<AppState> {
 )]
 pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
     // 500 req / 5min (~1.67/s avg): generous for swiping, keyed by user ID
-    let private_config = Arc::new(
+    let private_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_millis(600))
             .burst_size(500)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // burst 2, then 1 req/30min: account mutations are done once; 2 attempts covers typos
-    let sensitive_config = Arc::new(
+    let sensitive_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_mins(30))
             .burst_size(2)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // burst 20, then 1 req/10s: commander autocomplete needs headroom for fast typers
-    let card_search_config = Arc::new(
+    let card_search_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(10))
             .burst_size(20)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // burst 1, then 1 req/60s: resend verification: a fast multi-click sends
     // one email, the rest get 429. Window matches the client cooldown timer.
-    let resend_verification_config = Arc::new(
+    let resend_verification_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(60))
             .burst_size(1)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // The same for a pending email change's link, on its own budget so one
     // resend does not hold up the other.
-    let resend_email_change_config = Arc::new(
+    let resend_email_change_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(60))
             .burst_size(1)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // 12 req/min: clients flush usage every ~30s; this gives ample headroom
-    let metrics_usage_config = Arc::new(
+    let metrics_usage_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(5))
             .burst_size(12)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
     // burst 5, then 1 req/min: each import is a fetch from Archidekt made
     // from this origin's address, so one user cannot spend its reputation.
-    let archidekt_import_config = Arc::new(
+    let archidekt_import_config = purging(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(60))
             .burst_size(5)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
     );
 
     Router::new()
