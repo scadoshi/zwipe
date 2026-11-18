@@ -140,7 +140,6 @@ mod tests {
                 ClientError::TooManyRequests(String::new()),
                 "api_too_many_requests",
             ),
-            (ClientError::Conflict(String::new()), "api_conflict"),
             (ClientError::BadRequest(String::new()), "api_bad_request"),
             (
                 ClientError::PayloadTooLarge(String::new()),
@@ -176,6 +175,18 @@ mod tests {
             report.platform,
             zwipe_core::domain::auth::models::platform::ClientPlatform::CURRENT.as_str()
         );
+        assert!(buffer.snapshot_and_zero().is_none());
+    }
+
+    #[test]
+    fn a_send_to_a_deck_that_has_the_card_is_never_counted_as_an_error() {
+        let buffer = UsageBuffer::new();
+        let already =
+            ClientError::Conflict(zwipe_core::http::messages::CARD_ALREADY_IN_DECK.to_owned());
+        buffer.report_error("deck_view", "send_to", "send_card", &already);
+        let full =
+            ClientError::UnprocessableEntity(zwipe_core::http::messages::CARD_LIMIT.to_owned());
+        buffer.report_error("deck_view", "send_to", "send_card", &full);
         assert!(buffer.snapshot_and_zero().is_none());
     }
 

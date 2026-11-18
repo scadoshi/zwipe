@@ -3,6 +3,8 @@
 //! user. Changing one here changes what the server sends, so a client still
 //! matching the old text falls back to showing it raw.
 
+use crate::domain::deck::requests::import_deck_cards::TooManyImportLines;
+
 /// An Archidekt import whose link holds no deck id.
 pub const ARCHIDEKT_BAD_LINK: &str = "could not parse an archidekt deck id from the url";
 
@@ -42,3 +44,48 @@ pub const CARD_ALREADY_IN_DECK: &str = "card and deck combination already exist"
 
 /// A password past the server's verify cap.
 pub const PASSWORD_TOO_LONG: &str = "password too long";
+
+/// Every message above: each is an answer the user can act on, never a failure of the app.
+pub const USER_FIXABLE: [&str; 12] = [
+    ARCHIDEKT_BAD_LINK,
+    ARCHIDEKT_NOT_FOUND,
+    ARCHIDEKT_TOO_LARGE,
+    CARD_LIMIT,
+    UNVERIFIED_CARD_LIMIT,
+    DECK_NAME_TAKEN,
+    CLONE_NAME_TAKEN,
+    USERNAME_TAKEN,
+    USERNAME_IN_USE,
+    EMAIL_IN_USE,
+    CARD_ALREADY_IN_DECK,
+    PASSWORD_TOO_LONG,
+];
+
+/// Whether `server` is word for word one of the [`USER_FIXABLE`] messages or the
+/// [`TooManyImportLines`] refusal, a paste the user can shorten.
+#[must_use]
+pub fn is_user_fixable(server: &str) -> bool {
+    USER_FIXABLE.contains(&server) || server == TooManyImportLines.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_message_here_is_user_fixable_and_only_word_for_word() {
+        let source = include_str!("messages.rs");
+        let (messages, _) = source
+            .split_once("/// Every message above")
+            .unwrap_or_default();
+        assert_eq!(
+            messages.matches("\npub const ").count(),
+            USER_FIXABLE.len(),
+            "each message declared above the list is in it"
+        );
+        assert!(is_user_fixable(&TooManyImportLines.to_string()));
+        assert!(is_user_fixable(CARD_ALREADY_IN_DECK));
+        assert!(!is_user_fixable("card limit reached"));
+        assert!(!is_user_fixable(""));
+    }
+}

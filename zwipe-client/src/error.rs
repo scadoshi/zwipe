@@ -183,6 +183,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn every_user_fixable_message_has_plain_words() {
+        for server in messages::USER_FIXABLE {
+            assert!(plain_message(server).is_some(), "{server}");
+        }
+        assert!(plain_message(&TooManyImportLines.to_string()).is_some());
+    }
+
+    #[test]
     fn a_failure_with_no_message_still_says_something() {
         // A route the server doesn't have yet answers 404 with an empty body.
         for message in ["", "   ", "\n"] {

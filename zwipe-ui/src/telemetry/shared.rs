@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::http::contracts::metrics::{HttpUsageBatch, PileEndKind};
+use zwipe_core::http::messages;
 
 use super::{ErrorKind, HandledError, SwipeDirection, UsageBuffer};
 
@@ -17,6 +18,20 @@ pub enum Failure {
     Decode(String),
     /// The server answered with this status and message.
     Status(u16, String),
+}
+
+impl Failure {
+    /// Whether the server gave an answer the user can act on rather than failing: a 409, which says the request clashes with what the user already has (a card already in the deck, a name taken), or a 4xx carrying one of the server's [user-fixable messages](messages::is_user_fixable) (a full deck, a password too long, a private Archidekt deck). The screen still shows it; it is not an error of the app.
+    #[must_use]
+    pub fn is_expected(&self) -> bool {
+        match self {
+            Self::Status(409, _) => true,
+            Self::Status(status, message) => {
+                (400..500).contains(status) && messages::is_user_fixable(message)
+            }
+            Self::Network(_) | Self::Decode(_) => false,
+        }
+    }
 }
 
 impl ErrorKind {
@@ -109,7 +124,7 @@ impl SharedUsageBuffer {
         }
     }
 
-    /// Reports a failure the user was just shown, and logs it, so the client log and the server table tell one story. `screen`, `component` and `action` come from [`vocabulary`](super::vocabulary); `component` is [`component::NONE`](super::vocabulary::component::NONE) when the screen itself showed it. A [`Failure::Network`] is logged only.
+    /// Reports a failure the user was just shown, and logs it, so the client log and the server table tell one story. `screen`, `component` and `action` come from [`vocabulary`](super::vocabulary); `component` is [`component::NONE`](super::vocabulary::component::NONE) when the screen itself showed it. A [`Failure::Network`] is logged only, and an [expected answer](Failure::is_expected) is logged at debug and never counted.
     pub fn report_error(
         &self,
         screen: &'static str,
@@ -117,6 +132,10 @@ impl SharedUsageBuffer {
         action: &'static str,
         failure: &Failure,
     ) {
+        if failure.is_expected() {
+            tracing::debug!(screen, component, action, "answer shown: {failure:?}");
+            return;
+        }
         let (kind, message) = match failure {
             Failure::Network(message) => {
                 tracing::warn!(
@@ -161,6 +180,8 @@ impl SharedUsageBuffer {
 
 #[cfg(test)]
 mod tests {
+    use zwipe_core::domain::deck::requests::import_deck_cards::TooManyImportLines;
+
     use super::*;
 
     fn buffer() -> SharedUsageBuffer {
@@ -174,7 +195,6 @@ mod tests {
             (401, "api_unauthorized"),
             (403, "api_forbidden"),
             (404, "api_not_found"),
-            (409, "api_conflict"),
             (413, "api_payload_too_large"),
             (422, "api_unprocessable"),
             (429, "api_too_many_requests"),
@@ -211,6 +231,61 @@ mod tests {
         assert_eq!(report.platform, "web");
         assert_eq!(report.client_version, "9.9.9");
         assert!(buffer.snapshot_and_zero().is_none());
+    }
+
+    #[test]
+    fn an_expected_answer_is_logged_never_counted_as_an_error() {
+        let expected = [
+            Failure::Status(409, messages::CARD_ALREADY_IN_DECK.to_owned()),
+            Failure::Status(409, "any clash with the current state".to_owned()),
+            Failure::Status(422, messages::CARD_LIMIT.to_owned()),
+            Failure::Status(422, messages::UNVERIFIED_CARD_LIMIT.to_owned()),
+            Failure::Status(422, messages::PASSWORD_TOO_LONG.to_owned()),
+            Failure::Status(422, TooManyImportLines.to_string()),
+            Failure::Status(404, messages::ARCHIDEKT_NOT_FOUND.to_owned()),
+        ];
+        for failure in expected {
+            assert!(failure.is_expected(), "{failure:?}");
+            let buffer = buffer();
+            buffer.report_error("deck_view", "send_to", "send_card", &failure);
+            assert!(buffer.snapshot_and_zero().is_none(), "{failure:?}");
+        }
+    }
+
+    #[test]
+    fn the_errors_dashboard_leaves_out_every_expected_answer() {
+        let sql = include_str!("../../../zcripts/metrics/errors.sql");
+        let (_, filter) = sql.split_once("\n\\set expected '").unwrap();
+        let filter = filter.lines().next().unwrap();
+        assert!(filter.contains("kind = ''api_conflict''"), "{filter}");
+        let fixable = messages::USER_FIXABLE
+            .map(str::to_owned)
+            .into_iter()
+            .chain([TooManyImportLines.to_string()]);
+        for message in fixable {
+            // psql's quoting doubles each quote, and SQL's doubles it again.
+            let quoted = format!("''{}''", message.replace('\'', "''''"));
+            assert!(filter.contains(&quoted), "{message} in {filter}");
+        }
+    }
+
+    #[test]
+    fn a_real_failure_is_still_counted() {
+        let failures = [
+            Failure::Status(500, messages::CARD_LIMIT.to_owned()),
+            Failure::Status(503, String::new()),
+            Failure::Status(422, "name must be at most 64 characters".to_owned()),
+            Failure::Status(404, "deck not found".to_owned()),
+            Failure::Status(400, String::new()),
+            Failure::Status(401, String::new()),
+            Failure::Decode("expected value at line 1 column 1".to_owned()),
+        ];
+        for failure in failures {
+            assert!(!failure.is_expected(), "{failure:?}");
+            let buffer = buffer();
+            buffer.report_error("deck_view", "", "load_deck", &failure);
+            assert!(buffer.snapshot_and_zero().is_some(), "{failure:?}");
+        }
     }
 
     #[test]
