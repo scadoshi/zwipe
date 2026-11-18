@@ -1,9 +1,10 @@
 //! Collection's list, under the import: the collection a page at a time, searched by card name,
 //! each row a card row whose stepper sets its copies, and Export in the list's header.
 //!
-//! Rows open the details deck rows do, through the screen's overlays and hover preview. One
-//! printing can hold several rows (finish, condition, language), so each row is keyed by its
-//! own id, and the row keys act on the row that id names.
+//! Rows open the details deck rows do, Send to included (it adds the row's printing to the deck
+//! picked), through the screen's overlays and hover preview. One printing can hold several rows
+//! (finish, condition, language), so each row is keyed by its own id, and the row keys act on the
+//! row that id names.
 
 use components::{
     Button, ButtonVariant, CardListFold, ClearWrap, CopyCap, HoverStackHost, LoadFailed,
@@ -254,6 +255,7 @@ pub fn CollectionList() -> Element {
                             expanded_card,
                             row_key: row.key.id(),
                             qty_tags: row_tags(&row),
+                            send_to: true,
                             on_qty_change: row.editable.then(|| {
                                 let key = row.key;
                                 EventHandler::new(move |delta: i32| {
