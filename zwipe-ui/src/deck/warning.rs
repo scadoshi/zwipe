@@ -59,6 +59,12 @@ pub fn labels(fix: Fix) -> Vec<String> {
     }
 }
 
+/// The Unpriced warning's chip while its cards are hidden.
+pub const SHOW_UNPRICED: &str = "Show";
+
+/// The Unpriced warning's chip while its cards show.
+pub const HIDE_UNPRICED: &str = "Hide";
+
 /// The deck's cards with no price in `currency`, one per printing in deck order: the mainboard's,
 /// then each command-zone card not also on the mainboard. These are the copies the Budget's total
 /// and average leave out, as [`DeckMetrics`](zwipe_core::domain::deck::DeckMetrics) counts them.

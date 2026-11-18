@@ -67,8 +67,9 @@ pub(crate) fn DeckWarnings(
     }
 }
 
-/// The Unpriced entry: a chip that says how many cards have no price and, selected, lays them out
-/// as chips under it in its row, as a role's tag chips reveal theirs. It starts unselected.
+/// The Unpriced entry: how many cards have no price, and on the right a Show chip that, selected
+/// and reading Hide, lays the cards out as chips under it in its row, as a role's tag chips reveal
+/// theirs. It starts unselected.
 #[component]
 fn UnpricedRow(cards: Vec<Card>, currency: PriceCurrency, on_open: EventHandler<Uuid>) -> Element {
     let mut shown = use_signal(|| false);
@@ -76,7 +77,10 @@ fn UnpricedRow(cards: Vec<Card>, currency: PriceCurrency, on_open: EventHandler<
     rsx! {
         // One row: the chips wrap onto their own line under the count, inside it.
         div { class: "settings-row deck-warning-row",
-            Chip { selected: shown(), onclick: move |_| shown.toggle(), "{line}" }
+            span { class: "text-muted", "{line}" }
+            Chip { selected: shown(), onclick: move |_| shown.toggle(),
+                if shown() { {warning::HIDE_UNPRICED} } else { {warning::SHOW_UNPRICED} }
+            }
             // The tag chips' reveal, so the cards ease open and shut; shut, they take no focus.
             div {
                 class: if shown() { "keyword-reveal open deck-unpriced-fold" } else { "keyword-reveal deck-unpriced-fold" },

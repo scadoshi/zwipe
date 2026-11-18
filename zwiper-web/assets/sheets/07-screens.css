@@ -3486,12 +3486,7 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
     white-space: nowrap;
 }
 
-/* The Unpriced entry's chip stands where a warning's text does, at the left. */
-.deck-warning-row > .chip {
-    margin-left: 0;
-}
-
-/* The Unpriced entry's cards take a line of their own under its chip, in the same row, in the tag
+/* The Unpriced entry's cards take a line of their own under its line, in the same row, in the tag
    chips' reveal. Shut, the reveal gives back the row's gap above it, which the cards' own top
    padding takes again once it opens. */
 .deck-warning-row > .deck-unpriced-fold {
