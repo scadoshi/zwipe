@@ -810,7 +810,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     d.in_deck.insert(oracle_id);
                 }
             }
-            mb_stack.write().remove_current();
+            mb_stack.write().remove_current_wrapping();
             let mut line = OneLine::default();
             line.confirm_as(
                 Tone::Success,
