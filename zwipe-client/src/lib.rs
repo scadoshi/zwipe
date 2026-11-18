@@ -294,4 +294,258 @@ mod tests {
             started.elapsed()
         );
     }
+
+    /// How a scripted server meets one request: drops the connection without answering, as a
+    /// reply lost on the way back, or answers with a status and a JSON body.
+    enum Answer {
+        Lost,
+        Reply(&'static str, String),
+    }
+
+    /// One request off `socket`: its head and its body, whole.
+    #[expect(
+        clippy::unwrap_used,
+        clippy::indexing_slicing,
+        reason = "a test helper: a malformed request fails the test"
+    )]
+    async fn read_request(socket: &mut tokio::net::TcpStream) -> String {
+        let mut seen = Vec::new();
+        let mut buf = vec![0_u8; 8192];
+        loop {
+            let read = socket.read(&mut buf).await.unwrap();
+            seen.extend_from_slice(&buf[..read]);
+            let text = String::from_utf8_lossy(&seen).to_string();
+            if let Some(end) = text.find("\r\n\r\n") {
+                let length = text[..end]
+                    .lines()
+                    .find_map(|line| {
+                        line.to_lowercase()
+                            .strip_prefix("content-length:")
+                            .map(|n| n.trim().parse::<usize>().unwrap())
+                    })
+                    .unwrap_or(0);
+                if seen.len() >= end.saturating_add(4).saturating_add(length) || read == 0 {
+                    return text;
+                }
+            } else if read == 0 {
+                return text;
+            }
+        }
+    }
+
+    /// A server that meets one request per connection with each of `answers` in turn, then
+    /// answers with every request it read.
+    #[expect(
+        clippy::unwrap_used,
+        reason = "a test helper: a socket error fails the test"
+    )]
+    async fn scripted(listener: TcpListener, answers: Vec<Answer>) -> Vec<String> {
+        let mut requests = Vec::new();
+        for answer in answers {
+            let Ok(Ok((mut socket, _))) =
+                tokio::time::timeout(Duration::from_secs(2), listener.accept()).await
+            else {
+                break;
+            };
+            requests.push(read_request(&mut socket).await);
+            if let Answer::Reply(status, body) = answer {
+                let reply = format!(
+                    "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
+                );
+                socket.write_all(reply.as_bytes()).await.unwrap();
+            }
+        }
+        while let Ok(Ok((mut socket, _))) =
+            tokio::time::timeout(Duration::from_millis(300), listener.accept()).await
+        {
+            requests.push(read_request(&mut socket).await);
+        }
+        requests
+    }
+
+    /// The deck id a create or clone request carried in its body.
+    #[expect(
+        clippy::unwrap_used,
+        clippy::indexing_slicing,
+        reason = "a test helper: a body without an id fails the test"
+    )]
+    fn sent_id(request: &str) -> Uuid {
+        let body = request.split("\r\n\r\n").nth(1).unwrap();
+        let json: serde_json::Value = serde_json::from_str(body).unwrap();
+        json["id"].as_str().unwrap().parse().unwrap()
+    }
+
+    /// A deck profile as the server writes it, with id `id`.
+    fn profile_json(id: Uuid) -> String {
+        serde_json::json!({
+            "id": id, "name": "Krenko", "user_id": "00000000-0000-0000-0000-000000000001",
+            "commander_id": null, "partner_commander_id": null, "background_id": null,
+            "signature_spell_id": null, "commander_name": null, "partner_commander_name": null,
+            "background_name": null, "signature_spell_name": null, "commander_art_url": null,
+            "partner_commander_art_url": null, "background_art_url": null,
+            "signature_spell_art_url": null, "format": null, "tags": [], "power_level": null,
+            "other_tags": [], "oracle_tags": [], "land_target": null, "price_target": null,
+            "price_target_currency": null, "share_token": null, "card_count": 0,
+            "color_identity": [], "updated_at": "2026-11-18T18:10:45.746246Z",
+        })
+        .to_string()
+    }
+
+    fn create_body() -> zwipe_core::http::contracts::deck::HttpCreateDeckProfile {
+        zwipe_core::http::contracts::deck::HttpCreateDeckProfile::builder("Krenko").build()
+    }
+
+    #[tokio::test]
+    async fn each_create_goes_out_under_a_fresh_random_deck_id() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let first = Uuid::from_u128(1);
+        let server = tokio::spawn(scripted(
+            listener,
+            vec![
+                Answer::Reply("201 Created", profile_json(first)),
+                Answer::Reply("201 Created", profile_json(first)),
+            ],
+        ));
+        let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
+
+        client
+            .create_deck_profile(&create_body(), &session())
+            .await
+            .unwrap();
+        client
+            .create_deck_profile(&create_body(), &session())
+            .await
+            .unwrap();
+
+        let requests = server.await.unwrap();
+        assert_eq!(requests.len(), 2, "{requests:?}");
+        let (a, b) = (sent_id(&requests[0]), sent_id(&requests[1]));
+        assert_ne!(a, b, "two taps, two ids");
+        assert_eq!(a.get_version_num(), 4, "a random id, not a timestamped one");
+    }
+
+    #[tokio::test]
+    async fn a_create_whose_reply_is_lost_answers_the_deck_it_made() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let (tx, rx) = tokio::sync::oneshot::channel::<Uuid>();
+        // The create lands but its reply is lost; the lookup by id finds the deck.
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let create = read_request(&mut socket).await;
+            let id = sent_id(&create);
+            drop(socket);
+            tx.send(id).unwrap();
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let lookup = read_request(&mut socket).await;
+            let body = profile_json(id);
+            let reply = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            socket.write_all(reply.as_bytes()).await.unwrap();
+            lookup
+        });
+        let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
+
+        let created = client.create_deck_profile(&create_body(), &session()).await;
+
+        let id = rx.await.unwrap();
+        let lookup = server.await.unwrap();
+        assert!(
+            lookup.starts_with(&format!(
+                "GET {} ",
+                zwipe_core::http::paths::deck_profile_route(id)
+            )),
+            "the lookup asks for the id the create sent: {lookup}"
+        );
+        assert_eq!(created.unwrap().id, id, "found means created");
+    }
+
+    #[tokio::test]
+    async fn a_create_whose_reply_is_lost_and_did_not_land_answers_the_network_error() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(scripted(
+            listener,
+            vec![
+                Answer::Lost,
+                Answer::Reply(
+                    "404 Not Found",
+                    r#"{"message":"deck not found"}"#.to_owned(),
+                ),
+            ],
+        ));
+        let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
+
+        let created = client.create_deck_profile(&create_body(), &session()).await;
+
+        assert!(
+            matches!(created, Err(ClientError::Network(_))),
+            "not found means the create didn't land: {created:?}"
+        );
+        let requests = server.await.unwrap();
+        assert_eq!(requests.len(), 2, "one create, one lookup: {requests:?}");
+        assert!(
+            requests[1].contains(&sent_id(&requests[0]).to_string()),
+            "{requests:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_create_the_server_answers_with_an_error_is_not_looked_up() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(scripted(
+            listener,
+            vec![Answer::Reply(
+                "409 Conflict",
+                r#"{"message":"deck name taken"}"#.to_owned(),
+            )],
+        ));
+        let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
+
+        let created = client.create_deck_profile(&create_body(), &session()).await;
+
+        assert!(
+            matches!(created, Err(ClientError::Conflict(_))),
+            "{created:?}"
+        );
+        assert_eq!(server.await.unwrap().len(), 1, "no lookup");
+    }
+
+    #[tokio::test]
+    async fn a_clone_whose_reply_is_lost_answers_the_copy_it_made() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let clone = read_request(&mut socket).await;
+            let id = sent_id(&clone);
+            drop(socket);
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let _lookup = read_request(&mut socket).await;
+            let body = profile_json(id);
+            let reply = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            socket.write_all(reply.as_bytes()).await.unwrap();
+            id
+        });
+        let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
+        let body = zwipe_core::http::contracts::deck::HttpCloneDeck {
+            new_name: "Krenko copy".to_owned(),
+            id: None,
+        };
+
+        let cloned = client
+            .clone_deck(Uuid::from_u128(7), &body, &session())
+            .await;
+
+        let id = server.await.unwrap();
+        assert_eq!(cloned.unwrap().deck_id, id, "found means cloned");
+    }
 }
