@@ -310,6 +310,46 @@ fn keep_cycles_past_the_card_and_wraps() {
     assert_eq!(top(&state).as_deref(), Some("Opt"), "the stack cycles");
 }
 
+/// The names of the cards the swipe stack draws, from the cursor.
+fn drawn(state: &State) -> Vec<String> {
+    state
+        .window()
+        .iter()
+        .map(|c| c.scryfall_data.name.clone())
+        .collect()
+}
+
+#[test]
+fn a_pile_ending_on_remove_or_move_deals_the_kept_cards_again() {
+    for last in [Action::Remove, Action::Move] {
+        let mut state = loaded(deck_of(&["Bolt", "Opt", "Shock"]));
+        let _ = state.update(Action::Keep);
+        let _ = state.update(Action::Remove);
+        let effects = state.update(last.clone());
+        assert_eq!(
+            drawn(&state),
+            ["Bolt"],
+            "{last:?}: the kept card comes round again, as after a keep"
+        );
+        assert_eq!(top(&state).as_deref(), Some("Bolt"), "{last:?}");
+        assert_eq!(state.status(), Status::Loaded, "{last:?}");
+        assert!(
+            !toasts(&effects).iter().any(|t| t.text == NO_CARDS_LEFT),
+            "{last:?}: a kept card is left, so the pile hasn't run out"
+        );
+    }
+}
+
+#[test]
+fn undo_after_the_pile_wraps_brings_the_last_removal_back_on_top() {
+    let mut state = loaded(deck_of(&["Bolt", "Opt"]));
+    let _ = state.update(Action::Keep);
+    let recorded = swipe_and_land(&mut state, Action::Remove);
+    assert_eq!(drawn(&state), ["Bolt"]);
+    let _ = undo_with(&mut state, Some(recorded));
+    assert_eq!(drawn(&state), ["Opt", "Bolt"], "Opt is back on top");
+}
+
 #[test]
 fn a_swipe_on_an_empty_stack_does_nothing() {
     let mut state = loaded(deck_of(&[]));

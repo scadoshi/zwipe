@@ -554,7 +554,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 entries
                     .write()
                     .retain(|e| e.deck_card.scryfall_data_id != card_id);
-                stack.write().remove_current();
+                stack.write().remove_current_wrapping();
                 let mut line = OneLine::default();
                 line.confirm(Tone::Success, "Removed from deck");
                 for signal in crossings(&before) {
@@ -621,7 +621,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         e.deck_card.mvp_at = None;
                     }
                 }
-                stack.write().remove_current();
+                stack.write().remove_current_wrapping();
                 let mut line = OneLine::default();
                 line.confirm(Tone::Info, message);
                 for signal in crossings(&before) {
