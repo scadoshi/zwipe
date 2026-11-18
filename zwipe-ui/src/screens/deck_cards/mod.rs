@@ -430,6 +430,11 @@ pub enum Action {
         /// The ticket from the effect this answers.
         ticket: Ticket,
     },
+    /// The [`Effect::UndoSend`] holding `ticket` found the card moved or gone, and left it.
+    UndoLeftAlone {
+        /// The ticket from the effect this answers.
+        ticket: Ticket,
+    },
     /// The [`Effect::PatchProfile`] holding `ticket` went through.
     ProfilePatched {
         /// The ticket from the effect this answers.
@@ -549,6 +554,21 @@ pub enum Effect {
         request: Box<HttpPatchDeckCard>,
         /// Which write this is.
         op: Op,
+    },
+    /// Takes back what a Send to added to another deck: reads the card's row there, then lowers
+    /// it by `copies` or deletes it ([`send_to::send_undo`]); answers with [`Action::Deleted`],
+    /// [`Action::UndoLeftAlone`] when the row moved boards or left, or [`Action::Failed`].
+    UndoSend {
+        /// The ticket to hand back.
+        ticket: Ticket,
+        /// The deck the card went to.
+        deck_id: Uuid,
+        /// The card's printing id.
+        card_id: Uuid,
+        /// The board it went to.
+        board: Board,
+        /// The copies it sent.
+        copies: i32,
     },
     /// Deletes a deck card; answers with [`Action::Deleted`] or [`Action::Failed`].
     DeleteCard {
@@ -726,6 +746,7 @@ fn first_write(effects: &[Effect]) -> Option<Ticket> {
     effects.iter().find_map(|e| {
         if let Effect::PatchCard { ticket, .. }
         | Effect::DeleteCard { ticket, .. }
+        | Effect::UndoSend { ticket, .. }
         | Effect::CreateCard { ticket, .. }
         | Effect::PatchProfile { ticket, .. } = e
         {
@@ -996,6 +1017,7 @@ impl State {
                 let _ = self.settle(ticket);
                 Vec::new()
             }
+            Action::UndoLeftAlone { ticket } => self.undo_left_alone(ticket),
             Action::ProfilePatched { ticket } => self.profile_patched(ticket),
             Action::ChangeQuantity { card_id, delta } => self.tap(card_id, delta, true),
             Action::MoveTo { card_id, board } => {
@@ -1983,16 +2005,10 @@ impl State {
             UndoAction::SentTo {
                 card_id,
                 deck_id: target,
+                board,
+                copies,
                 ..
-            } => {
-                let ticket = self.request(Pending::Quiet);
-                vec![Effect::DeleteCard {
-                    ticket,
-                    deck_id: target,
-                    card_id,
-                    op: Op::Undo,
-                }]
-            }
+            } => vec![self.undo_send(target, card_id, board, copies)],
             UndoAction::CommandZonePrintingChanged { slot, old_card, .. } => {
                 let request = slot.update_request(Some(old_card.scryfall_data.id));
                 *self.zone.slot_mut(slot) = Some(*old_card);
@@ -2007,6 +2023,29 @@ impl State {
                     },
                 ]
             }
+        }
+    }
+
+    /// Settles an undo whose card had moved on, with [`ALREADY_CHANGED`] and nothing to retry.
+    fn undo_left_alone(&mut self, ticket: Ticket) -> Vec<Effect> {
+        let _ = self.settle(ticket);
+        self.undoing.retain(|u| u.ticket != ticket);
+        vec![Effect::Toast(Toast::quick(
+            ToastKind::Info,
+            ALREADY_CHANGED,
+        ))]
+    }
+
+    /// Undo's take-back of the `copies` a Send to put on `board` in the deck `target`, which
+    /// leaves this deck as it is.
+    fn undo_send(&mut self, target: Uuid, card_id: Uuid, board: Board, copies: i32) -> Effect {
+        let ticket = self.request(Pending::Quiet);
+        Effect::UndoSend {
+            ticket,
+            deck_id: target,
+            card_id,
+            board,
+            copies,
         }
     }
 

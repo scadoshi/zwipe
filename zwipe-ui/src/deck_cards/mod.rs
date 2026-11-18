@@ -619,6 +619,8 @@ mod tests {
             card_name: "Sol Ring".to_owned(),
             deck_id: Uuid::from_u128(2),
             deck_name: "Krenko".to_owned(),
+            board: Board::Maybeboard,
+            copies: 1,
         };
         assert_eq!(undo_message(&sent), "Removed Sol Ring from Krenko");
         assert!(

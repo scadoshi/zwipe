@@ -33,6 +33,7 @@ use zwipe_ui::deck_cards::{FeaturedOpen, Write, Zone, featured_open};
 use zwipe_ui::filter;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_cards::{self, Action, Destination, Effect, Op, StackGroup, State};
+use zwipe_ui::send_to::{self, SendUndo};
 use zwipe_ui::stores::undo::UndoAction as SharedUndo;
 
 use super::components::card_row::{
@@ -129,11 +130,15 @@ fn to_app_undo(action: SharedUndo) -> UndoAction {
             card_name,
             deck_id,
             deck_name,
+            board,
+            copies,
         } => UndoAction::SentTo {
             card_id,
             card_name,
             deck_id,
             deck_name,
+            board,
+            copies,
         },
     }
 }
@@ -204,11 +209,15 @@ fn to_shared_undo(action: UndoAction) -> SharedUndo {
             card_name,
             deck_id,
             deck_name,
+            board,
+            copies,
         } => SharedUndo::SentTo {
             card_id,
             card_name,
             deck_id,
             deck_name,
+            board,
+            copies,
         },
     }
 }
@@ -292,6 +301,13 @@ impl Driver {
             | Effect::PatchCard { .. }
             | Effect::DeleteCard { .. }
             | Effect::PatchProfile { .. }) => self.request(effect),
+            Effect::UndoSend {
+                ticket,
+                deck_id,
+                card_id,
+                board,
+                copies,
+            } => self.undo_send(ticket, deck_id, card_id, board, copies),
             Effect::Debounce { ticket, wait } => {
                 spawn(async move {
                     time::sleep(wait).await;
@@ -409,6 +425,7 @@ impl Driver {
             | Effect::CreateCard { .. }
             | Effect::PatchCard { .. }
             | Effect::DeleteCard { .. }
+            | Effect::UndoSend { .. }
             | Effect::PatchProfile { .. }
             | Effect::Flush { .. }
             | Effect::RecordRemoval { .. }
@@ -524,6 +541,7 @@ impl Driver {
             }
             Effect::OfferHint(_)
             | Effect::FetchDeck { .. }
+            | Effect::UndoSend { .. }
             | Effect::FetchTokens { .. }
             | Effect::Debounce { .. }
             | Effect::SearchCards { .. }
@@ -547,6 +565,42 @@ impl Driver {
     /// aborts (reported and toasted); the profile and command zone fetches
     /// keep their tolerant handling inside. The profile goes to the model as
     /// soon as it lands, so the header draws before the cards.
+    /// Takes back what a Send to added to the deck `deck_id`: reads the card's row there, then
+    /// lowers it by `copies` or deletes it, or leaves a row that moved boards or left.
+    fn undo_send(self, ticket: Ticket, deck_id: Uuid, card_id: Uuid, board: Board, copies: i32) {
+        let authed = self.authed;
+        spawn(async move {
+            let took_back = authed
+                .try_run(Op::Undo.name(), |c, s| async move {
+                    let deck = c.fetch_deck(deck_id, &s).await?;
+                    let row = deck
+                        .entries
+                        .iter()
+                        .find(|e| e.deck_card.scryfall_data_id == card_id)
+                        .map(|e| &e.deck_card);
+                    match send_to::send_undo(row, board, copies) {
+                        None => Ok(false),
+                        Some(SendUndo::Remove) => c
+                            .delete_undone_deck_card(deck_id, card_id, &s)
+                            .await
+                            .map(|()| true),
+                        Some(SendUndo::Lower(quantity)) => {
+                            let request = HttpPatchDeckCard::new(Some(*quantity), None);
+                            c.update_deck_card(deck_id, card_id, &request, &s)
+                                .await
+                                .map(|_| true)
+                        }
+                    }
+                })
+                .await;
+            self.dispatch(match took_back {
+                Ok(true) => Action::Deleted { ticket },
+                Ok(false) => Action::UndoLeftAlone { ticket },
+                Err(_) => Action::Failed { ticket },
+            });
+        });
+    }
+
     fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
         // The deck the route holds answers at once, with no fetch and no ghost.
         let held = self

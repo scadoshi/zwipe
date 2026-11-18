@@ -453,11 +453,15 @@ fn into_shared(action: UndoAction) -> shared_undo::UndoAction {
             card_name,
             deck_id,
             deck_name,
+            board,
+            copies,
         } => shared_undo::UndoAction::SentTo {
             card_id,
             card_name,
             deck_id,
             deck_name,
+            board,
+            copies,
         },
     }
 }
@@ -532,11 +536,15 @@ fn from_shared(action: shared_undo::UndoAction) -> UndoAction {
             card_name,
             deck_id,
             deck_name,
+            board,
+            copies,
         } => UndoAction::SentTo {
             card_id,
             card_name,
             deck_id,
             deck_name,
+            board,
+            copies,
         },
     }
 }
