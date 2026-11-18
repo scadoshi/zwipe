@@ -5,7 +5,7 @@
 use chrono::NaiveDate;
 use components::{
     BarChart, BarOrientation, CardListFold, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell,
-    HeatGrid, HeatHit, HeatReadout, LabelCase, OtagDef, RoleTags, use_heat_pick,
+    HeatGrid, HeatHit, HeatReadout, HeatWeekdays, LabelCase, OtagDef, RoleTags, use_heat_pick,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -48,6 +48,10 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
     let layout = activity::heat_layout(through, &days);
     let width = LEFT + components::heat_span(layout.columns);
     let height = TOP + components::heat_span(HEAT_ROWS);
+    let weekdays: Vec<(usize, String)> = WEEKDAY_LABELS
+        .iter()
+        .map(|&(row, name)| (row, name.to_owned()))
+        .collect();
     let tags: Vec<[String; 3]> = layout.cells.iter().map(activity::day_tags).collect();
     let grid: Vec<HeatCell> = layout
         .cells
@@ -100,15 +104,7 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
                         width: "{LEFT}",
                         height: "{height}",
                         view_box: "0 0 {LEFT} {height}",
-                        for (row, name) in WEEKDAY_LABELS {
-                            text {
-                                key: "p{row}",
-                                class: "heat-label",
-                                x: "0",
-                                y: "{TOP + components::heat_span(row) + HEAT_CELL - 2.0}",
-                                "{name}"
-                            }
-                        }
+                        HeatWeekdays { labels: weekdays.clone(), top: TOP }
                     }
                 }
                 svg {
@@ -126,15 +122,7 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
                             "{name}"
                         }
                     }
-                    for (row, name) in WEEKDAY_LABELS {
-                        text {
-                            key: "d{row}",
-                            class: "heat-label",
-                            x: "0",
-                            y: "{TOP + components::heat_span(row) + HEAT_CELL - 2.0}",
-                            "{name}"
-                        }
-                    }
+                    HeatWeekdays { labels: weekdays, top: TOP }
                     HeatGrid { cells: grid, left: LEFT, top: TOP, on_enter, on_tap }
                 }
                 if let Some((text, left, top)) = hover() {
