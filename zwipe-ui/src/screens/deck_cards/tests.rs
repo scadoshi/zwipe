@@ -2384,3 +2384,34 @@ fn an_undo_of_a_flag_that_already_changed_back_is_spent() {
         "nothing to undo: the card is already unflagged: {effects:?}"
     );
 }
+
+#[test]
+fn flagged_turns_itself_off_when_the_last_flag_goes_and_an_undo_leaves_it_off() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let _ = flag_and_land(&mut state, ring);
+    let _ = state.update(Action::ToggleFlaggedOnly);
+    assert!(state.flagged_only());
+
+    let unflagged = flag_and_land(&mut state, ring);
+    assert!(
+        !state.flagged_only(),
+        "with nothing flagged the deck shows again"
+    );
+    let undo = undo_records(&unflagged)
+        .pop()
+        .expect("the unflag records undo");
+    let effects = state.update(Action::Undo(Box::new(undo)));
+    let Some(Effect::PatchCard { ticket, .. }) = effects.last() else {
+        panic!("undo patches: {effects:?}");
+    };
+    let _ = state.update(Action::Patched {
+        ticket: *ticket,
+        deck_card: Box::new(state.entries[0].deck_card.clone()),
+    });
+    assert!(
+        state.entries[0].deck_card.flagged,
+        "the undo flags it again"
+    );
+    assert!(!state.flagged_only(), "and leaves Flagged off");
+}

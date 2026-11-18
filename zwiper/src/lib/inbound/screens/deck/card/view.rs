@@ -1237,9 +1237,9 @@ pub fn View(deck_id: Uuid) -> Element {
                             }
                             Chip {
                                 selected: flagged_only,
-                                disabled: flagged_count == 0 && !flagged_only,
+                                disabled: flagged_count == 0,
                                 onclick: move |_| driver.dispatch(Action::ToggleFlaggedOnly),
-                                "{zwipe_ui::deck_cards::flagged_label(flagged_count)}"
+                                {zwipe_ui::deck_cards::FLAGGED}
                             }
                             Button {
                                 variant: ButtonVariant::Action,

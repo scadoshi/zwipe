@@ -922,6 +922,12 @@ impl State {
             self.hint = HintOffer::Offered;
             effects.push(Effect::OfferHint(OneTimeHint::DeckCards));
         }
+        if self.shown.flagged_only
+            && !deck_cards::flagged_only_stays(true, deck_cards::flagged_ids(&self.entries).len())
+        {
+            self.shown.flagged_only = false;
+            effects.splice(0..0, [Effect::Collapse, Effect::Refilter]);
+        }
         keep_one(&mut effects, toast_line);
         effects
     }

@@ -352,7 +352,7 @@ pub fn FeaturedCard(
 /// order. The host holds every signal; `show_tokens`
 /// is `None` for a list with no tokens, `show_zone` is `None` for a deck
 /// with no command zone, `show_flagged` (the toggle and how many cards are
-/// flagged) is `None` where the viewer isn't the owner, and `on_change` fires when a row
+/// flagged; grayed out with none) is `None` where the viewer isn't the owner, and `on_change` fires when a row
 /// changes what the list shows. With `on_fold_all` the Show row ends in the
 /// fold-all button, which shuts every group, or opens every group once
 /// `all_folded`. `art_disabled` grays out the Art chip and keeps its state,
@@ -428,12 +428,12 @@ pub fn DeckControls(
             if let Some((mut flagged_only, count)) = show_flagged {
                 Chip {
                     selected: flagged_only(),
-                    disabled: count == 0 && !flagged_only(),
+                    disabled: count == 0,
                     onclick: move |_| {
                         flagged_only.toggle();
                         changed();
                     },
-                    "{zwipe_ui::deck_cards::flagged_label(count)}"
+                    {zwipe_ui::deck_cards::FLAGGED}
                 }
             }
             if let Some(on_fold_all) = on_fold_all {

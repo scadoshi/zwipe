@@ -298,6 +298,15 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         deck_cards::pass(&shown, &zone, &filter.read(), group_by())
     });
     let flagged = use_memo(move || deck_cards::flagged_ids(&entries.read()));
+    // Flagged turns itself off once the last flag goes, so the deck shows again.
+    use_effect(move || {
+        let count = flagged.read().len();
+        let on = *flagged_only.peek();
+        if on && !deck_cards::flagged_only_stays(on, count) {
+            let mut flagged_only = flagged_only;
+            flagged_only.set(false);
+        }
+    });
     use_context_provider(|| components::Flagged(flagged.into()));
     let meta = use_memo(move || deck_cards::listing::meta_of(&entries.read()));
 

@@ -534,10 +534,14 @@ pub fn undo_message(action: &UndoAction) -> String {
     }
 }
 
-/// The Flagged chip's words: how many of the deck's cards are flagged.
+/// The Show chip that narrows the deck to its flagged cards.
+pub const FLAGGED: &str = "Flagged";
+
+/// Whether Flagged stays on, `on` now with `flagged` cards flagged: it turns itself off once
+/// nothing is flagged, and never back on by itself.
 #[must_use]
-pub fn flagged_label(count: usize) -> String {
-    format!("Flagged {count}")
+pub const fn flagged_only_stays(on: bool, flagged: usize) -> bool {
+    on && flagged > 0
 }
 
 /// The printing ids of the flagged cards in `entries`.
@@ -624,7 +628,14 @@ mod tests {
     fn the_flagged_chip_counts_and_narrows_to_the_flagged_cards() {
         let mut list = entries();
         list[0].deck_card.flagged = true;
-        assert_eq!(flagged_label(flagged_ids(&list).len()), "Flagged 1");
+        assert_eq!(FLAGGED, "Flagged");
+        assert_eq!(flagged_ids(&list).len(), 1);
+        assert!(flagged_only_stays(true, 1));
+        assert!(
+            !flagged_only_stays(true, 0),
+            "it turns off with nothing flagged"
+        );
+        assert!(!flagged_only_stays(false, 1), "and never turns itself on");
         let narrowed = shown_flagged(&list, true);
         assert_eq!(narrowed.len(), 1);
         assert_eq!(narrowed[0].card.scryfall_data.name, "Zebra");
