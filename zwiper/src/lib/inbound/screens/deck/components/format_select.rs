@@ -74,7 +74,7 @@ pub(crate) fn FormatSelect(
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
                         }
 
-                        input { class: "input",
+                        input { class: "input input-compact",
                             id: "format-search",
                             r#type: "text",
                             placeholder: "Search formats",

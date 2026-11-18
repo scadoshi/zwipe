@@ -103,7 +103,7 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                         filled: !query().is_empty(),
                         on_clear: move |()| query.set(String::new()),
                         input {
-                            class: "input",
+                            class: "input input-compact",
                             id: SEARCH_ID,
                             r#type: "text",
                             placeholder: "Search tags or descriptions",

@@ -119,7 +119,7 @@ pub(crate) fn OracleTagSelect(
                             }
                         }
 
-                        input { class: "input",
+                        input { class: "input input-compact",
                             id: "oracle-tag-search",
                             r#type: "text",
                             placeholder: "Search all Oracle tags",

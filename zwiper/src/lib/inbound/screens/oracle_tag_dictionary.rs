@@ -156,7 +156,7 @@ pub fn OracleTagDictionary(open: Signal<bool>, on_use: EventHandler<String>) -> 
                                 span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
                             }
                             input {
-                                class: "input",
+                                class: "input input-compact",
                                 id: "oracle-tag-dictionary-search",
                                 r#type: "text",
                                 placeholder: model::SEARCH_PLACEHOLDER,

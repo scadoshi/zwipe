@@ -120,7 +120,7 @@ pub fn PickerSearch(
             filled: !query.read().is_empty(),
             on_clear: move |()| query.set(String::new()),
             input {
-                class: "input",
+                class: "input input-compact",
                 id,
                 r#type: "text",
                 placeholder,

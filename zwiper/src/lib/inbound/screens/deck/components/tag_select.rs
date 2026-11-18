@@ -90,7 +90,7 @@ pub(crate) fn TagSelect(
                             }
                         }
 
-                        input { class: "input",
+                        input { class: "input input-compact",
                             id: "tag-search",
                             r#type: "text",
                             placeholder: "Search tags",
