@@ -18,8 +18,8 @@ pub struct InvalidPurchasePrice;
 pub struct PurchasePrice(i64);
 
 impl PurchasePrice {
-    /// The largest price `NUMERIC(12, 2)` holds, in cents.
-    pub const MAX_CENTS: i64 = 9_999_999_999;
+    /// The largest price `NUMERIC(12, 2)` holds, 9,999,999,999.99, in cents.
+    pub const MAX_CENTS: i64 = 999_999_999_999;
 
     /// A price of `cents`.
     ///
@@ -59,13 +59,19 @@ impl FromStr for PurchasePrice {
     type Err = InvalidPurchasePrice;
 
     /// Reads an export's cell: digits, then optionally a point or a comma and one or two more
-    /// (`0.41`, `12`, `3,5`), with a leading currency symbol or trailing code dropped. Anything
-    /// else, a sign or a third decimal included, is not a price.
+    /// (`0.41`, `12`, `3,5`), after an optional currency symbol and before an optional space and
+    /// three-letter code (`$4.99`, `0.50 USD`). Anything else, a sign or a third decimal
+    /// included, is not a price.
     fn from_str(cell: &str) -> Result<Self, Self::Err> {
-        let amount = cell
-            .trim()
-            .trim_start_matches(['$', '€', '£', '¥'])
-            .trim_end_matches(|c: char| c.is_ascii_alphabetic() || c == ' ');
+        let cell = cell.trim().trim_start_matches(['$', '€', '£', '¥']);
+        let amount = match cell.rsplit_once(' ') {
+            Some((amount, code))
+                if code.len() == 3 && code.chars().all(|c| c.is_ascii_alphabetic()) =>
+            {
+                amount.trim_end()
+            }
+            _ => cell,
+        };
         let (whole, fraction) = match amount.split_once(['.', ',']) {
             Some((whole, fraction)) => (whole, fraction),
             None => (amount, ""),

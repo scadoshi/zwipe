@@ -8,10 +8,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum InvalidCollectionTags {
     /// More than [`CollectionTags::MAX`] distinct tags.
-    #[error("more than 20 tags")]
+    #[error("more than {max} tags", max = CollectionTags::MAX)]
     TooMany,
     /// A tag longer than [`CollectionTag::MAX_CHARS`] characters.
-    #[error("a tag is over 40 characters")]
+    #[error("a tag is over {max} characters", max = CollectionTag::MAX_CHARS)]
     TooLong,
     /// A tag with nothing in it once trimmed.
     #[error("an empty tag")]

@@ -10,4 +10,8 @@ pub enum CollectionSource {
     ManaBox,
     /// Archidekt's collection export.
     Archidekt,
+    /// A value this build doesn't know, from a newer server. The server never stores or sends
+    /// it for a value it knows.
+    #[serde(other)]
+    Unknown,
 }

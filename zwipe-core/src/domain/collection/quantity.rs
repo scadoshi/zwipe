@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// A count outside 1 to [`CollectionQuantity::MAX`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
-#[error("must be between 1 and 9999")]
+#[error("must be between 1 and {max}", max = CollectionQuantity::MAX)]
 pub struct InvalidCollectionQuantity;
 
 /// Copies of one printing in a collection row: 1 to [`CollectionQuantity::MAX`]. The database

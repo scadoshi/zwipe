@@ -45,6 +45,10 @@ pub enum CardLanguage {
     Ph,
     /// Quenya.
     Qya,
+    /// A value this build doesn't know, from a newer server. The server never stores or sends
+    /// it for a value it knows.
+    #[serde(other)]
+    Unknown,
 }
 
 impl CardLanguage {
@@ -92,6 +96,7 @@ impl CardLanguage {
             Self::Sa => "sa",
             Self::Ph => "ph",
             Self::Qya => "qya",
+            Self::Unknown => "unknown",
         }
     }
 }

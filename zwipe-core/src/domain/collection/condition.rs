@@ -31,6 +31,10 @@ pub enum CardCondition {
     Poor,
     /// Damaged (TCGplayer).
     Damaged,
+    /// A value this build doesn't know, from a newer server. The server never stores or sends
+    /// it for a value it knows.
+    #[serde(other)]
+    Unknown,
 }
 
 impl CardCondition {
@@ -62,6 +66,7 @@ impl CardCondition {
             Self::HeavilyPlayed => "heavily_played",
             Self::Poor => "poor",
             Self::Damaged => "damaged",
+            Self::Unknown => "unknown",
         }
     }
 }

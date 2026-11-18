@@ -18,6 +18,10 @@ pub enum Finish {
     Foil,
     /// Etched foil.
     Etched,
+    /// A value this build doesn't know, from a newer server. The server never stores or sends
+    /// it for a value it knows.
+    #[serde(other)]
+    Unknown,
 }
 
 impl Finish {
@@ -28,6 +32,7 @@ impl Finish {
             Self::Nonfoil => "nonfoil",
             Self::Foil => "foil",
             Self::Etched => "etched",
+            Self::Unknown => "unknown",
         }
     }
 }
