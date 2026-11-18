@@ -184,11 +184,7 @@ impl Authed {
     /// How a write on `key` that ended in `result` reads once a lost earlier try is counted, for
     /// a caller that makes its own failure message; [`run_write`](Self::run_write) uses it.
     pub fn settle<T>(&self, key: WriteKey, result: &Result<T, ClientError>) -> Verdict {
-        let answer = match result {
-            Ok(_) => Answer::Done,
-            Err(ClientError::Network(_)) => Answer::Network,
-            Err(e) => e.status().map_or(Answer::Failed, Answer::Status),
-        };
+        let answer = answer_of(result);
         match self.unconfirmed {
             Some(mut unconfirmed) => unconfirmed.write().settle(key, answer),
             None if result.is_ok() => Verdict::Done,
@@ -220,6 +216,16 @@ impl Authed {
             self.toast
                 .error(message, ToastOptions::default().duration(TOAST_NORMAL));
         }
+    }
+}
+
+/// How a write's `result` ended, for [`Unconfirmed::settle`]: a call made outside [`Authed`]
+/// settles through it too.
+pub(crate) fn answer_of<T>(result: &Result<T, ClientError>) -> Answer {
+    match result {
+        Ok(_) => Answer::Done,
+        Err(ClientError::Network(_)) => Answer::Network,
+        Err(e) => e.status().map_or(Answer::Failed, Answer::Status),
     }
 }
 
