@@ -10,12 +10,9 @@
 
 use std::collections::HashSet;
 
-use components::deck_cursor::use_card_list_cursor;
-use components::keys::focus_by_id;
 use components::{
     AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap, DangerZoneAction,
-    DialogAction, HoverStackHost, TOAST_LONG, TOAST_QUICK, spawn_write, use_hover_stack,
-    use_mounted,
+    DialogAction, TOAST_LONG, TOAST_QUICK, spawn_write, use_mounted,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -34,16 +31,12 @@ use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
 use crate::domain::commander_maybeboard;
 use crate::inbound::caches::CreateDeckSeed;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_row::{CardOverlaysHost, CardRow, ShowRowArt, use_card_overlays};
-use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
-use crate::inbound::cards::row_keys::use_card_row_keys_and;
-use crate::inbound::cards::stack_view::use_row_faces;
+use crate::inbound::cards::card_row::{CardRow, ShowRowArt};
 use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::{
     GhostActionRow, GhostButton, GhostChipRow, GhostList, GhostShowRow, GhostText,
 };
-use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
 use crate::inbound::router::Route;
 use crate::inbound::telemetry;
 use crate::outbound::maybeboard_sort_store::MaybeboardSortStore;
@@ -53,7 +46,7 @@ use crate::outbound::timer;
 const LIST_TITLE: &str = "Maybeboard";
 
 /// The Quick add input's id, for `q`.
-const QUICK_ADD_ID: &str = "commander-maybeboard-search";
+pub(super) const QUICK_ADD_ID: &str = "commander-maybeboard-search";
 
 /// The saved list and its load state. Entries live in a signal so Remove
 /// and Quick add edit the list in place. Each load takes a ticket, and an
@@ -124,35 +117,19 @@ impl SavedList {
     }
 }
 
-/// What a key does on the commander maybeboard.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ScreenKey {
-    /// Focuses Quick add's search.
-    QuickAdd,
-    /// Opens the filter.
-    Filter,
-    /// Opens the filter at its Name section, the name field focused.
-    FilterByName,
-}
-
-/// The screen action `key` stands for: `q` Quick add, `f` the filter and `/` the filter at its name
-/// field ([`shortcuts::card_key`]).
-fn screen_key(key: &str) -> Option<ScreenKey> {
-    match shortcuts::card_key(key) {
-        Some(CardKey::Filter) => Some(ScreenKey::Filter),
-        Some(CardKey::FilterByName) => Some(ScreenKey::FilterByName),
-        _ => (key == shortcuts::QUICK_ADD_KEY).then_some(ScreenKey::QuickAdd),
-    }
-}
-
-/// The Maybeboard list, narrowed by the screen's `filter`, which `f` and `/`
-/// open through `filter_open`.
+/// The Maybeboard list over `entries`, the screen's copy of the saved
+/// commanders, narrowed by the screen's `filter`. A row opens into
+/// `expanded_card`, which the screen's card keys share.
 #[component]
 #[expect(
     clippy::wildcard_enum_match_arm,
     reason = "keyboard_types::Key is a foreign enum of every key; only the keys handled act"
 )]
-pub fn MaybeboardPanel(filter: Signal<CardQueryBuilder>, mut filter_open: Signal<bool>) -> Element {
+pub(super) fn MaybeboardPanel(
+    entries: Signal<Vec<Card>>,
+    filter: Signal<CardQueryBuilder>,
+    expanded_card: Signal<Option<Uuid>>,
+) -> Element {
     let navigator = use_navigator();
     let session: Signal<Option<Session>> = use_context();
     let seed: CreateDeckSeed = use_context();
@@ -166,11 +143,6 @@ pub fn MaybeboardPanel(filter: Signal<CardQueryBuilder>, mut filter_open: Signal
 
     let mut show_row_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_row_art));
-    let examples = use_otag_reveals();
-    let overlays = use_card_overlays();
-    let hover_stack = use_hover_stack();
-    let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
-    use_row_faces();
 
     let mut query = use_signal(String::new);
     let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
@@ -178,7 +150,7 @@ pub fn MaybeboardPanel(filter: Signal<CardQueryBuilder>, mut filter_open: Signal
     let mut sort: Signal<Sort> = use_signal(|| MaybeboardSortStore::browser().load());
 
     let mut list = SavedList {
-        entries: use_signal(Vec::new),
+        entries,
         is_loading: use_signal(|| true),
         load_failed: use_signal(|| false),
         reload: use_signal(|| 0u32),
@@ -377,24 +349,6 @@ pub fn MaybeboardPanel(filter: Signal<CardQueryBuilder>, mut filter_open: Signal
         });
     });
 
-    // A printing swap is display only: the maybeboard is keyed by oracle, and
-    // a refetch returns the preferred printing. A Create deck after the swap
-    // carries the picked printing.
-    let mut expanded_for_save = expanded_card;
-    let on_printing_save = move |new_card: Card| {
-        let target = new_card.scryfall_data.oracle_id;
-        if target.is_some() {
-            expanded_for_save.set(Some(new_card.scryfall_data.id));
-            if let Some(slot) = entries
-                .write()
-                .iter_mut()
-                .find(|c| c.scryfall_data.oracle_id == target)
-            {
-                *slot = new_card;
-            }
-        }
-    };
-
     // The Show pips narrow in memory, every picked color in the identity,
     // then the applied filter, then its sort; saved order stands without
     // one. The quick add input never narrows the list.
@@ -414,20 +368,6 @@ pub fn MaybeboardPanel(filter: Signal<CardQueryBuilder>, mut filter_open: Signal
         let shown = Cards::from(sort().sorted(shown.into()));
         shown.sorted(applied.sort(), applied.direction()).into()
     });
-    let screen_keys = Callback::new(move |key: String| match screen_key(&key) {
-        Some(ScreenKey::QuickAdd) => focus_by_id(QUICK_ADD_ID),
-        Some(ScreenKey::Filter) => filter_open.set(true),
-        Some(ScreenKey::FilterByName) => components::open_at_name(filter_open),
-        None => {}
-    });
-    use_card_row_keys_and(
-        filtered,
-        expanded_card,
-        ShortcutsScreen::CommanderMaybeboard,
-        Some(screen_keys),
-    );
-    // The arrow keys and h, j, k and l move a cursor through the rows.
-    use_card_list_cursor();
     let filtered = filtered();
     let colors = selected_colors();
     let has_entries = !entries().is_empty();
@@ -438,7 +378,6 @@ pub fn MaybeboardPanel(filter: Signal<CardQueryBuilder>, mut filter_open: Signal
     rsx! {
             div {
                 class: "web-commanders-list",
-                onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
                 div { class: "flex-col web-maybeboard",
                     if is_loading() {
                         div { class: "chip-row",
@@ -644,9 +583,6 @@ pub fn MaybeboardPanel(filter: Signal<CardQueryBuilder>, mut filter_open: Signal
             ],
             "Every commander on your maybeboard will be removed. This can't be undone."
         }
-        HoverStackHost { stack: hover_stack }
-        CardOverlaysHost { overlays, on_printing_save }
-        OtagExamplesHost { examples }
         // Commanders not saved yet: up saves one here, right starts a deck
         // with it.
         SwipeSelect {
@@ -716,40 +652,6 @@ fn maybeboard_actions(card: Card, on_create: Callback<Card>, on_remove: Callback
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn q_focuses_quick_add_and_f_and_slash_open_the_filter_as_everywhere() {
-        assert_eq!(screen_key("q"), Some(ScreenKey::QuickAdd));
-        assert_eq!(screen_key("/"), Some(ScreenKey::FilterByName));
-        for byte in b' '..=b'~' {
-            let key = char::from(byte).to_string();
-            assert_eq!(
-                screen_key(&key) == Some(ScreenKey::Filter),
-                shortcuts::card_key(&key) == Some(CardKey::Filter),
-                "{key}"
-            );
-            assert_eq!(
-                screen_key(&key) == Some(ScreenKey::FilterByName),
-                shortcuts::card_key(&key) == Some(CardKey::FilterByName),
-                "{key}"
-            );
-        }
-    }
-
-    #[test]
-    fn shift_h_lists_the_filter_and_quick_add_keys_that_work_here() {
-        let listed: Vec<&str> = shortcuts::sheet_rows(&ShortcutsScreen::CommanderMaybeboard)
-            .into_iter()
-            .flat_map(|(keys, _)| keys.iter().copied())
-            .collect();
-        for key in ["f", "/", "q"] {
-            assert!(listed.contains(&key), "{key} is listed: {listed:?}");
-            assert!(screen_key(key).is_some(), "{key} works here");
-        }
-        for key in ["p", "i", "v", "d", "Enter", "Shift+H"] {
-            assert!(listed.contains(&key), "{key} is listed: {listed:?}");
-        }
-    }
 
     #[test]
     fn a_pick_takes_focus_off_the_box_so_a_phone_s_keyboard_drops() {

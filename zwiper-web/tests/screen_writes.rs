@@ -1,5 +1,6 @@
 //! Every server write on the deck and commander screens (Add, Remove, the commander swipes,
-//! the deck editor, Quick add, the deck view, Playstyle and the Commanders screen's two lists) runs in
+//! the deck editor, Quick add, the deck view, Playstyle, the suggested commanders both Playstyle and
+//! Commanders show, and Commanders' Maybeboard) runs in
 //! `spawn_write`, never in a task that ends with the screen, so leaving mid-write or
 //! mid-undo never drops one.
 
@@ -38,8 +39,8 @@ const SCREENS: [(&str, &str); 9] = [
         include_str!("../src/lib/inbound/screens/commanders/maybeboard.rs"),
     ),
     (
-        "Commanders' Suggested",
-        include_str!("../src/lib/inbound/screens/commanders/suggested.rs"),
+        "suggested commanders",
+        include_str!("../src/lib/inbound/screens/playstyle/suggestions.rs"),
     ),
 ];
 
