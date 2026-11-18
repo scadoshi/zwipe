@@ -105,6 +105,7 @@ pub fn SendToSheet(
             },
             div { class: "tag-controls",
                 div { class: "chip-row send-to-boards",
+                    span { class: "stat-chip stat-chip-p1 chip-row-label", {TITLE} }
                     for choice in BOARDS {
                         Chip {
                             key: "{send_to::chip_label(choice)}",
@@ -113,9 +114,6 @@ pub fn SendToSheet(
                             {send_to::chip_label(choice)}
                         }
                     }
-                }
-                div { class: "tag-controls-head",
-                    label { class: "tag-search-label", r#for: SEARCH_ID, "Search" }
                 }
                 PickerSearch { id: SEARCH_ID, placeholder: SEARCH_PLACEHOLDER, query }
             }

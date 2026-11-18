@@ -108,7 +108,9 @@ fn PickerBody(search_id: &'static str, search_key: bool, children: Element) -> E
     }
 }
 
-/// The search input every picker leads with, its `×` easing in as text is typed.
+/// The search every picker leads with: its `Search` label chip on the left and the filter's
+/// compact field on the same line, as Quick add's row, the field's `×` easing in as text is
+/// typed.
 #[component]
 pub fn PickerSearch(
     id: &'static str,
@@ -116,19 +118,22 @@ pub fn PickerSearch(
     mut query: Signal<String>,
 ) -> Element {
     rsx! {
-        ClearWrap {
-            filled: !query.read().is_empty(),
-            on_clear: move |()| query.set(String::new()),
-            input {
-                class: "input input-compact",
-                id,
-                r#type: "text",
-                placeholder,
-                value: "{query}",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| query.set(event.value()),
+        div { class: "chip-row",
+            label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: id, "Search" }
+            ClearWrap {
+                filled: !query.read().is_empty(),
+                on_clear: move |()| query.set(String::new()),
+                input {
+                    class: "input input-compact",
+                    id,
+                    r#type: "text",
+                    placeholder,
+                    value: "{query}",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| query.set(event.value()),
+                }
             }
         }
     }

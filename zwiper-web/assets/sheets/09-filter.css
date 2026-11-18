@@ -183,6 +183,11 @@
     margin-bottom: 0;
 }
 
+.chip-row > .input-compact {
+    flex: 1 1 0%;
+    min-width: 0;
+}
+
 .quick-add-results {
     margin-top: var(--space-2);
 }

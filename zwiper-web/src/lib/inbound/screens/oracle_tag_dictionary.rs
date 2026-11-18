@@ -96,22 +96,22 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
         rsx! {
             div { class: "web-dict-browse",
                 div { class: "dict-controls",
-                    div { class: "tag-controls-head",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
-                    }
-                    ClearWrap {
-                        filled: !query().is_empty(),
-                        on_clear: move |()| query.set(String::new()),
-                        input {
-                            class: "input input-compact",
-                            id: SEARCH_ID,
-                            r#type: "text",
-                            placeholder: "Search tags or descriptions",
-                            value: "{query()}",
-                            autocapitalize: "none",
-                            autocorrect: "off",
-                            spellcheck: "false",
-                            oninput: move |event| query.set(event.value()),
+                    div { class: "chip-row",
+                        label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: SEARCH_ID, "Search" }
+                        ClearWrap {
+                            filled: !query().is_empty(),
+                            on_clear: move |()| query.set(String::new()),
+                            input {
+                                class: "input input-compact",
+                                id: SEARCH_ID,
+                                r#type: "text",
+                                placeholder: "Search tags or descriptions",
+                                value: "{query()}",
+                                autocapitalize: "none",
+                                autocorrect: "off",
+                                spellcheck: "false",
+                                oninput: move |event| query.set(event.value()),
+                            }
                         }
                     }
                     div { class: "dict-letter-rail scroll-fade-x",
@@ -251,10 +251,10 @@ fn DictionarySkeleton() -> Element {
     rsx! {
         div { class: "web-dict-browse",
             div { class: "dict-controls",
-                div { class: "tag-controls-head",
+                div { class: "chip-row",
                     span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
+                    div { class: "skeleton-bar dict-skeleton-search" }
                 }
-                div { class: "skeleton-bar dict-skeleton-search" }
                 div { class: "dict-letter-rail scroll-fade-x",
                     for i in 0..12 {
                         GhostChip { key: "{i}", chars: 1, button: true }
