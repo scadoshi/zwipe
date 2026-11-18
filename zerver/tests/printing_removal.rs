@@ -446,14 +446,36 @@ async fn own(
     copies: i32,
     tags: &[&str],
 ) {
+    own_as(
+        pool,
+        printing,
+        finish,
+        Some(("near_mint", "en")),
+        copies,
+        tags,
+    )
+    .await;
+}
+
+/// [`own`], with the condition and language given as a pair, or neither when `graded` is `None`.
+async fn own_as(
+    pool: &sqlx::PgPool,
+    printing: &CardFixture,
+    finish: &str,
+    graded: Option<(&str, &str)>,
+    copies: i32,
+    tags: &[&str],
+) {
     sqlx::query(
         "INSERT INTO collection_cards \
              (user_id, scryfall_data_id, oracle_id, finish, condition, language, quantity, tags) \
-         SELECT id, $1, $2, $3, 'near_mint', 'en', $4, $5 FROM users WHERE username = 'remover'",
+         SELECT id, $1, $2, $3, $4, $5, $6, $7 FROM users WHERE username = 'remover'",
     )
     .bind(printing.id())
     .bind(printing.oracle_id())
     .bind(finish)
+    .bind(graded.map(|g| g.0))
+    .bind(graded.map(|g| g.1))
     .bind(copies)
     .bind(tags.iter().map(ToString::to_string).collect::<Vec<_>>())
     .execute(pool)
@@ -527,5 +549,86 @@ async fn an_owned_printing_moves_with_its_copies_and_an_owned_last_printing_stay
         collection(&app.pool).await,
         want,
         "every copy is still owned, merged where two rows met"
+    );
+}
+
+/// A collection row as `(printing, condition, language, copies, tags)`.
+type OwnedRow = (Uuid, Option<String>, Option<String>, i32, Vec<String>);
+
+/// A row with no condition or language is one key of its own: a second such row of the same
+/// printing is the same key, and two removed printings of one card that meet on the replacement
+/// with no grade merge into the replacement's ungraded row. Tags merge without regard to case,
+/// the first spelling and order kept.
+#[sqlx::test]
+async fn ungraded_owned_rows_merge_on_their_own_key(pool: sqlx::PgPool) {
+    let p = printings();
+    let (app, _, _) = seeded(pool, &p).await;
+    // A second removed printing of Ashling, so two removed rows meet on one replacement key.
+    let promo2 = card("Ashling, Rekindled")
+        .oracle(p.promo.oracle_id())
+        .set("pecl", "Lorwyn Eclipsed Promos")
+        .collector_number("125p")
+        .promo(true)
+        .usd("6.00");
+    seed_cards(&app.pool, std::slice::from_ref(&promo2)).await;
+    own_as(&app.pool, &p.promo, "nonfoil", None, 2, &["Trade"]).await;
+    own_as(&app.pool, &promo2, "nonfoil", None, 1, &["binder"]).await;
+    own_as(
+        &app.pool,
+        &p.regular,
+        "nonfoil",
+        None,
+        4,
+        &["trade", "deck"],
+    )
+    .await;
+    own(&app.pool, &p.regular, "nonfoil", 1, &[]).await;
+
+    let duplicate = sqlx::query(
+        "INSERT INTO collection_cards (user_id, scryfall_data_id, oracle_id, finish, quantity) \
+         SELECT id, $1, $2, 'nonfoil', 1 FROM users WHERE username = 'remover'",
+    )
+    .bind(p.regular.id())
+    .bind(p.regular.oracle_id())
+    .execute(&app.pool)
+    .await;
+    assert!(
+        duplicate.is_err(),
+        "a second ungraded row of one printing is the same key"
+    );
+
+    let report = service(&app.pool)
+        .remove_deleted_printings(&p.bulk(), RemovalMode::Apply)
+        .await
+        .unwrap();
+    assert_eq!(report.counts.map(|c| c.remapped_collection_cards), Some(2));
+
+    let rows: Vec<OwnedRow> = sqlx::query_as(
+        "SELECT scryfall_data_id, condition, language, quantity, tags FROM collection_cards \
+         ORDER BY condition NULLS FIRST",
+    )
+    .fetch_all(&app.pool)
+    .await
+    .unwrap();
+    let tags = |list: &[&str]| list.iter().map(ToString::to_string).collect::<Vec<_>>();
+    assert_eq!(
+        rows,
+        vec![
+            (
+                p.regular.id(),
+                None,
+                None,
+                7,
+                tags(&["trade", "deck", "binder"])
+            ),
+            (
+                p.regular.id(),
+                Some("near_mint".to_owned()),
+                Some("en".to_owned()),
+                1,
+                Vec::new()
+            ),
+        ],
+        "both removed ungraded rows merged into the ungraded regular row, the graded row untouched"
     );
 }

@@ -290,7 +290,8 @@ async fn apply_batch(
 
 /// Moves every collection row on a removed printing with a live replacement onto that
 /// replacement. Rows that meet on the same printing, finish, condition and language merge: copies
-/// add up to the most a row holds, tags join up to the most a row carries, and the earliest date
+/// add up to the most a row holds, tags join without regard to case (the first spelling and order
+/// kept, the row already there first) up to the most a row carries, and the earliest date
 /// added stays, with the purchase price of the earliest row that has one. Returns how many rows
 /// moved.
 async fn remap_collection(
@@ -319,18 +320,23 @@ async fn remap_collection(
               purchase_price, purchase_currency, added_at) \
          SELECT g.user_id, g.replacement_id, g.oracle_id, g.finish, g.condition, g.language, \
                 g.quantity, \
-                COALESCE((SELECT (array_agg(DISTINCT tag ORDER BY tag))[1:20] \
-                          FROM moved m, unnest(m.tags) AS tag \
-                          WHERE m.user_id = g.user_id AND m.replacement_id = g.replacement_id \
-                            AND m.finish = g.finish \
-                            AND m.condition IS NOT DISTINCT FROM g.condition \
-                            AND m.language IS NOT DISTINCT FROM g.language), '{{}}'), \
+                COALESCE((SELECT (array_agg(tag ORDER BY pos))[1:20] FROM ( \
+                              SELECT DISTINCT ON (lower(t.tag)) t.tag, row_number() OVER ( \
+                                  ORDER BY m.added_at NULLS LAST, m.scryfall_data_id, t.ord) AS pos \
+                              FROM moved m, unnest(m.tags) WITH ORDINALITY AS t(tag, ord) \
+                              WHERE m.user_id = g.user_id AND m.replacement_id = g.replacement_id \
+                                AND m.finish = g.finish \
+                                AND m.condition IS NOT DISTINCT FROM g.condition \
+                                AND m.language IS NOT DISTINCT FROM g.language \
+                              ORDER BY lower(t.tag), pos) AS kept), '{{}}'), \
                 g.purchase_price, g.purchase_currency, g.added_at \
          FROM grouped g \
          ON CONFLICT (user_id, scryfall_data_id, finish, condition, language) DO UPDATE SET \
              quantity = LEAST(cc.quantity + EXCLUDED.quantity, 9999), \
-             tags = COALESCE((SELECT (array_agg(DISTINCT tag ORDER BY tag))[1:20] \
-                              FROM unnest(cc.tags || EXCLUDED.tags) AS tag), '{{}}'), \
+             tags = COALESCE((SELECT (array_agg(tag ORDER BY ord))[1:20] FROM ( \
+                                  SELECT DISTINCT ON (lower(t.tag)) t.tag, t.ord \
+                                  FROM unnest(cc.tags || EXCLUDED.tags) WITH ORDINALITY AS t(tag, ord) \
+                                  ORDER BY lower(t.tag), t.ord) AS kept), '{{}}'), \
              purchase_price = COALESCE(cc.purchase_price, EXCLUDED.purchase_price), \
              purchase_currency = CASE WHEN cc.purchase_price IS NULL \
                  THEN EXCLUDED.purchase_currency ELSE cc.purchase_currency END, \
