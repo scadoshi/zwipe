@@ -7,8 +7,9 @@
 //!
 //! A step shows the new count at once and saves the row once steps rest for
 //! [`timing::QUANTITY_FLUSH`], so a burst of taps is one write. A row has one write out at a
-//! time; a step made meanwhile goes when it lands. 0 removes the row once the write lands, and a
-//! failed write puts the saved count back. Edits are kept apart from the pages, so a new search
+//! time; a step made meanwhile goes when it lands. 0 removes the row once the write lands, and the
+//! next page starts one row earlier for it; a page already out when a row goes is asked again
+//! from there. A failed write puts the saved count back and replays the steps made since. Edits are kept apart from the pages, so a new search
 //! never drops one still waiting to save. A row holding a finish, condition or language this
 //! build doesn't know can't be edited, since the server refuses those values.
 //!
@@ -244,6 +245,8 @@ struct Edit {
     wait: Option<Ticket>,
     /// The write out.
     writing: Option<Ticket>,
+    /// The count the write out sent, to replay the steps made since if it fails.
+    written: i32,
 }
 
 /// The list for one visit to Collection.
@@ -255,6 +258,10 @@ pub struct State {
     next_offset: Option<u32>,
     /// The page out, with nothing else asked until it settles.
     page_out: Option<Ticket>,
+    /// The offset the page out was asked from.
+    page_offset: u32,
+    /// Rows removed since the page out was asked for, which shift its rows on the server.
+    removed_while_out: u32,
     /// The box's text.
     text: String,
     /// The search the pages are for.
@@ -307,9 +314,16 @@ impl State {
         match action {
             Action::Open => self.restart(),
             Action::PageLoaded { ticket, page } => {
-                if self.page_out == Some(ticket) {
-                    self.land(*page);
+                if self.page_out != Some(ticket) {
+                    return Vec::new();
                 }
+                if self.removed_while_out > 0 {
+                    // The server may have cut the page before or after a removal; asked again
+                    // now, from where the removals leave it, it can't skip or repeat a row.
+                    let offset = self.page_offset.saturating_sub(self.removed_while_out);
+                    return vec![self.fetch(offset)];
+                }
+                self.land(*page);
                 Vec::new()
             }
             Action::PageFailed { ticket } => self.page_failed(ticket),
@@ -383,6 +397,8 @@ impl State {
     fn fetch(&mut self, offset: u32) -> Effect {
         let ticket = self.tickets.next_ticket();
         self.page_out = Some(ticket);
+        self.page_offset = offset;
+        self.removed_while_out = 0;
         Effect::FetchPage {
             ticket,
             search: self.search.clone(),
@@ -397,6 +413,9 @@ impl State {
         self.next_offset = page.next_offset;
         for card in page.cards {
             let key = RowKey::of(&card);
+            if self.rows.iter().any(|r| r.key == key) {
+                continue;
+            }
             let copies = self
                 .edits
                 .get(&key)
@@ -456,6 +475,7 @@ impl State {
             saved: row.copies,
             wait: None,
             writing: None,
+            written: row.copies,
         });
         edit.shown = edit
             .shown
@@ -495,6 +515,7 @@ impl State {
         let edit = self.edits.get_mut(&key)?;
         let quantity = SetQuantity::new(edit.shown).ok()?;
         edit.writing = Some(ticket);
+        edit.written = edit.shown;
         Some(Effect::SetCopies {
             ticket,
             set: HttpSetCollectionCard {
@@ -545,6 +566,9 @@ impl State {
         let before = self.rows.len();
         self.rows.retain(|r| r.key != key);
         if self.rows.len() < before {
+            if self.page_out.is_some() {
+                self.removed_while_out = self.removed_while_out.saturating_add(1);
+            }
             self.total = self.total.saturating_sub(1);
             self.next_offset = self.next_offset.map(|n| n.saturating_sub(1));
             if self.rows.is_empty() && self.next_offset.is_none() {
@@ -557,21 +581,35 @@ impl State {
         }
     }
 
+    /// Puts the saved count back, then replays the steps made while the write was out: sent at
+    /// once, or by the flush still waiting on them.
     fn save_failed(&mut self, ticket: Ticket) -> Vec<Effect> {
-        let Some(key) = self
+        let Some((&key, edit)) = self
             .edits
-            .iter()
+            .iter_mut()
             .find(|(_, edit)| edit.writing == Some(ticket))
-            .map(|(&key, _)| key)
         else {
             return Vec::new();
         };
-        let Some(edit) = self.edits.remove(&key) else {
-            return Vec::new();
-        };
+        edit.writing = None;
+        let since = edit.shown.saturating_sub(edit.written);
+        edit.shown = edit
+            .saved
+            .saturating_add(since)
+            .clamp(0, CollectionQuantity::MAX);
+        let edit = *edit;
         if let Some(row) = self.rows.iter_mut().find(|r| r.key == key) {
-            row.copies = edit.saved;
+            row.copies = edit.shown;
         }
-        vec![Effect::Toast(Toast::normal(ToastKind::Error, SAVE_FAILED))]
+        let mut effects = vec![Effect::Toast(Toast::normal(ToastKind::Error, SAVE_FAILED))];
+        if edit.wait.is_some() {
+            return effects;
+        }
+        if edit.shown == edit.saved {
+            self.edits.remove(&key);
+        } else {
+            effects.extend(self.write(key));
+        }
+        effects
     }
 }

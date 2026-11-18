@@ -418,3 +418,107 @@ fn a_failed_export_toasts() {
     );
     assert!(!state.exporting());
 }
+
+/// A row removed while the next page is out: the server may have cut that page before or after
+/// the removal, so it is asked again from the offset the removal leaves, and no row repeats or
+/// goes missing at the seam.
+#[test]
+fn a_removal_while_a_page_is_out_asks_for_that_page_again_one_earlier() {
+    let mut state = opened(vec![row("A", 1), row("B", 1)], Some(2));
+    let key = key_of(&state, "A");
+    let (write, _) = stepped(&mut state, key, -1);
+    let effects = state.update(Action::NearEnd);
+    let [
+        Effect::FetchPage {
+            ticket: out,
+            offset: 2,
+            ..
+        },
+    ] = effects.as_slice()
+    else {
+        panic!("{effects:?}");
+    };
+    let out = *out;
+    let _ = state.update(Action::Saved {
+        ticket: write,
+        reply: Box::new(HttpSetCollectionCardReply { card: None }),
+    });
+    let b = state.rows()[0].card.clone();
+    let effects = state.update(Action::PageLoaded {
+        ticket: out,
+        page: Box::new(page(vec![b, row("C", 1)], 3, None)),
+    });
+    let [
+        Effect::FetchPage {
+            ticket, offset: 1, ..
+        },
+    ] = effects.as_slice()
+    else {
+        panic!("the page is asked again one earlier: {effects:?}");
+    };
+    assert_eq!(state.rows().len(), 1, "the cut page doesn't land");
+    let b = state.rows()[0].card.clone();
+    let _ = state.update(Action::PageLoaded {
+        ticket: *ticket,
+        page: Box::new(page(vec![b, row("C", 1)], 2, None)),
+    });
+    let names: Vec<&str> = state
+        .rows()
+        .iter()
+        .map(|r| r.card.card.scryfall_data.name.as_str())
+        .collect();
+    assert_eq!(names, ["B", "C"], "a row already listed isn't listed twice");
+}
+
+/// A failed write restores the saved count, then replays the steps made while it was out.
+#[test]
+fn a_failed_write_keeps_the_step_queued_behind_it() {
+    let mut state = opened(vec![row("Sol Ring", 2)], None);
+    let key = key_of(&state, "Sol Ring");
+    let (ticket, _) = stepped(&mut state, key, 1);
+    let effects = state.update(Action::Step { key, delta: 1 });
+    let [Effect::FlushAfter { ticket: wait, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(
+        state.update(Action::Flush(*wait)),
+        [],
+        "waits on the write out"
+    );
+    assert_eq!(shown(&state, "Sol Ring"), Some(4));
+
+    let effects = state.update(Action::SaveFailed { ticket });
+    let [Effect::Toast(_), Effect::SetCopies { set, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(
+        set.quantity.get(),
+        3,
+        "the saved 2 plus the one step made since"
+    );
+    assert_eq!(shown(&state, "Sol Ring"), Some(3));
+}
+
+/// A failed write with a step still resting leaves the send to that step's flush.
+#[test]
+fn a_failed_write_with_a_step_still_resting_sends_on_its_flush() {
+    let mut state = opened(vec![row("Sol Ring", 2)], None);
+    let key = key_of(&state, "Sol Ring");
+    let (ticket, _) = stepped(&mut state, key, 1);
+    let effects = state.update(Action::Step { key, delta: 1 });
+    let [Effect::FlushAfter { ticket: wait, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let wait = *wait;
+    let effects = state.update(Action::SaveFailed { ticket });
+    assert!(
+        matches!(effects.as_slice(), [Effect::Toast(_)]),
+        "{effects:?}"
+    );
+    assert_eq!(shown(&state, "Sol Ring"), Some(3));
+    let effects = state.update(Action::Flush(wait));
+    let [Effect::SetCopies { set, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(set.quantity.get(), 3);
+}
