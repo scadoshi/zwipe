@@ -8,11 +8,13 @@
 // each side. A step:
 //   {"name": "fetch deck", "as": "tester", "method": "GET", "route": "/api/deck/{deck_id}",
 //    "path": "/api/deck/{{deck}}", "body": {...}, "query": "?undo=true",
-//    "capture": {"deck": "/0/id"}, "mask": ["/id"]}
+//    "capture": {"deck": "/0/id"}, "mask": ["/id"], "sort": [{"path": "", "by": "/scryfall_data/id"}]}
 // "as" names an account signed in by an earlier {"login": ...} step, or "none". "route" is the
 // route's template, which approved.json matches on. "{{name}}" in "path" or "body" is a value an
 // earlier step captured on that same server. "mask" adds to normalize.json's masks for this
 // step: values that differ between the servers by design, such as a row the step creates.
+// "sort" sorts an array whose order the server doesn't fix (ties in a search) before comparing;
+// only for those, since an order that is the contract has to compare as it comes.
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -86,14 +88,17 @@ for (const [index, raw] of script.steps.entries()) {
   for (const [name, server] of Object.entries(servers)) {
     replies[name] = await send(server, step, index + 1);
     // Captured from the reply with its unordered arrays sorted, so both servers take the same row.
-    const sorted = normalize(replies[name].body, { sort: rules.sort });
+    const sorted = normalize(replies[name].body, { sort: [...(rules.sort ?? []), ...(step.sort ?? [])] });
     for (const [key, pointer] of Object.entries(step.capture ?? {})) {
       const value = at(sorted, pointer);
       if (value !== undefined) server.vars[key] = typeof value === "string" ? value : JSON.stringify(value);
     }
     if (step.login && step.token) server.tokens[step.login] = at(replies[name].body, step.token);
   }
-  const stepRules = { ...rules, mask: [...(rules.mask ?? []), ...(step.mask ?? [])] };
+  const stepRules = {
+    mask: [...(rules.mask ?? []), ...(step.mask ?? [])],
+    sort: [...(rules.sort ?? []), ...(step.sort ?? [])],
+  };
   const found = diff(
     { status: replies.main.status, body: normalize(replies.main.body, stepRules) },
     { status: replies.cand.status, body: normalize(replies.cand.body, stepRules) },

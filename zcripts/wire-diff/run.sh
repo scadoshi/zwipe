@@ -5,6 +5,8 @@
 #
 #   zcripts/wire-diff/run.sh [candidate-ref] [main-ref]     (defaults: HEAD, origin/main)
 #
+# It builds committed trees: uncommitted changes in the checkout aren't part of the candidate.
+#
 # Env: VERIFY_TEMPLATE_URL (the dev database to copy, as the verify skill takes it),
 # MAIN_PORT / CAND_PORT (3201 / 3202), WIRE_DIR (/tmp/wire-diff), KEEP=1 keeps the databases.
 set -euo pipefail
@@ -53,8 +55,14 @@ for side in main cand; do
   rm -rf "${WIRE_DIR:?}/$side"
   mkdir -p "$WIRE_DIR/$side"
   git -C "$ROOT" archive "$sha" | tar -x -C "$WIRE_DIR/$side"
+  # git archive stamps files with the commit's time, which cargo would read as older than a
+  # build of another commit in the same target dir: a new commit gets fresh times, so it rebuilds.
+  if [ "$(cat "$WIRE_DIR/target-$side.sha" 2>/dev/null)" != "$sha" ]; then
+    find "$WIRE_DIR/$side" -type f -exec touch {} +
+  fi
   step "build $side's zerver"
   (cd "$WIRE_DIR/$side" && SQLX_OFFLINE=true CARGO_TARGET_DIR="$WIRE_DIR/target-$side" cargo build -q --bin zerver)
+  echo "$sha" >"$WIRE_DIR/target-$side.sha"
 done
 
 step "seeded database from $TEMPLATE_DB"
@@ -67,7 +75,10 @@ psql_admin "drop database if exists $SEEDED"
 psql_admin "create database $SEEDED template \"$TEMPLATE_DB\""
 SEEDED_URL="$(with_db "$TEMPLATE" "$SEEDED")"
 (cd "$WIRE_DIR/main" && DATABASE_URL="$SEEDED_URL" sqlx migrate run --source zerver/migrations >/dev/null)
-DATABASE_URL="$SEEDED_URL" "$ROOT/zcripts/seed/seed.sh" small --reset >/dev/null
+# Main's own seed when it has one, so the seed matches the schema it runs on.
+SEED_SH="$WIRE_DIR/main/zcripts/seed/seed.sh"
+[ -x "$SEED_SH" ] || SEED_SH="$ROOT/zcripts/seed/seed.sh"
+DATABASE_URL="$SEEDED_URL" "$SEED_SH" small --reset >/dev/null
 
 for side in main cand; do
   db="zwipe_wire_$side"

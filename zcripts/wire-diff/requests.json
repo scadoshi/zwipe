@@ -16,7 +16,11 @@
    "name": "changelog",
    "method": "GET",
    "route": "/api/changelog",
-   "path": "/api/changelog"
+   "path": "/api/changelog",
+   "mask": [
+    "/releases",
+    "/upcoming"
+   ]
   },
   {
    "name": "public metrics",
@@ -232,7 +236,13 @@
     "card": "/0/scryfall_data/id",
     "card_oracle": "/0/scryfall_data/oracle_id"
    },
-   "as": "tester"
+   "as": "tester",
+   "sort": [
+    {
+     "path": "",
+     "by": "/scryfall_data/id"
+    }
+   ]
   },
   {
    "name": "search commanders",

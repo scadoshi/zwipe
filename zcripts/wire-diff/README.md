@@ -8,7 +8,7 @@ Run it by hand before a wire change merges:
 zcripts/wire-diff/run.sh [candidate-ref] [main-ref]     # defaults: HEAD, origin/main
 ```
 
-It exits 0 when every difference is approved, and 1 otherwise, printing each unapproved one with its route, path and both values.
+It builds committed trees, so commit what you want tested: uncommitted changes in the checkout aren't part of the candidate. It exits 0 when every difference is approved, and 1 otherwise, printing each unapproved one with its route, path and both values.
 
 ## What it does, and what it costs
 
@@ -16,7 +16,7 @@ It exits 0 when every difference is approved, and 1 otherwise, printing each una
 |---|---|
 | Exports each ref with `git archive` into `/tmp/wire-diff/{main,cand}` (no worktrees) | ~1s |
 | Builds each zerver in its own target dir | ~1 min cold, seconds warm |
-| Copies the dev database, migrates it with main's migrations, seeds it (`zcripts/seed/seed.sh small --reset`) | ~15s |
+| Copies the dev database, migrates it with main's migrations, seeds it with main's `zcripts/seed/seed.sh small --reset` (the checkout's until main has one) | ~15s |
 | Copies that twice and migrates each copy with its own ref's migrations, so a migration change shows as a wire change | ~10s |
 | Starts both zervers (:3201 and :3202) and replays `requests.json` (87 steps) | ~20s |
 | Stops both and drops the three databases (`KEEP=1` keeps them) | ~1s |
@@ -26,7 +26,8 @@ It uses the verify skill's template lookup and the seed's local-only guard, so i
 ## The files
 
 - `requests.json`: the steps, in order. Each step is one request, sent to main and then to the candidate. It covers every call `zwipe-client` makes, written the way the shipped clients send them, signed in as the seeded accounts or signed out. A step can capture a value from its reply (`{"deck": "/0/id"}`) for later steps to use as `{{deck}}`. Each server keeps its own captures, since rows a step creates get different ids on each side.
-- `normalize.json`: values that change from run to run (tokens, the health timestamp), masked on every step, and arrays whose order isn't fixed, sorted before comparing. A step's own `mask` adds the values it creates (a new deck's id and times). A masked value keeps its JSON kind, so a field turning `null` still shows.
+- `normalize.json`: values that change from run to run (tokens, the health timestamp), masked on every step. A step's own `mask` adds the values it creates (a new deck's id and times). A masked value keeps its JSON kind, so a field turning `null` still shows. A step's `sort` sorts an array whose order the server doesn't fix before comparing; it's opt-in per step, since an order that is the contract has to compare as it comes. Only the card search step sorts today: the search breaks no ties, so two identical databases list "Sol Ring" printings in different orders. Issue 578 adds a tiebreak; once it lands, drop that step's `sort`.
+- The changelog step compares by shape only: its `upcoming` and `releases` are masked, since nearly every commit adds a line there.
 - `approved.json`: the differences a change means to make. One entry per difference: `route` (the template from requests.json), `path` (a JSON pointer; `*` stands for any one segment), `kind` (`added`, `removed`, `type`, `value` or `status`), `reason` and `approved_by`. An entry missing a field doesn't count. An entry nothing matches any more is reported as stale; delete it.
 - `lib.mjs` and `lib.test.mjs`: the comparison, tested with `node --test zcripts/wire-diff/lib.test.mjs`.
 
