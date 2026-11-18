@@ -119,7 +119,10 @@ impl Driver {
     /// Sends the clone and feeds its reply back. Returns whether it went
     /// through.
     async fn run_clone(self, ticket: Ticket, deck_id: Uuid, name: String) -> bool {
-        let body = HttpCloneDeck { new_name: name };
+        let body = HttpCloneDeck {
+            new_name: name,
+            id: None,
+        };
         let reply = self
             .authed
             .run_at(
