@@ -155,9 +155,8 @@ impl FilterDraft {
             ApplyAction::RefuseEmpty => {
                 ApplyOutcome::Refused(Toast::quick(ToastKind::Warning, "Filter is already empty"))
             }
-            ApplyAction::Commit { cleared: true } => self.applied("Filter cleared"),
-            ApplyAction::NoChange | ApplyAction::Commit { cleared: false } => {
-                if self.at_default() {
+            ApplyAction::NoChange | ApplyAction::Commit { .. } => {
+                if self.draft == self.reset_from(&self.snapshot) {
                     self.applied("Filter cleared")
                 } else {
                     self.applied("Filter applied")
@@ -166,17 +165,13 @@ impl FilterDraft {
         }
     }
 
-    /// Whether the draft is what Reset gives on this host: blank, or Add's deck default.
-    fn at_default(&self) -> bool {
-        let mut draft = self.draft.clone();
-        let reset = match &self.config.reset {
-            ResetRule::Plain => {
-                return self.draft.is_empty() && self.draft.sort().is_none();
-            }
-            ResetRule::AddSearch(context) => context.reset_search(&mut draft),
-            ResetRule::AddMaybeboard => super::reset_maybeboard(&mut draft),
-        };
-        reset.is_err()
+    /// What Reset would stage on this host over `filter`: `filter` itself when it already is
+    /// the host's default.
+    fn reset_from(&self, filter: &CardQueryBuilder) -> CardQueryBuilder {
+        let mut staged = filter.clone();
+        // A filter already at the default stays as it is.
+        let _ = reset_rule(&self.config.reset, &mut staged);
+        staged
     }
 
     /// The draft committed with a success toast.
@@ -196,15 +191,7 @@ impl FilterDraft {
 
     /// Reset: stages the host's default in the draft for Apply to commit.
     pub fn reset(&mut self) -> Toast {
-        let result = match &self.config.reset {
-            ResetRule::Plain => {
-                self.draft.clear();
-                Ok(())
-            }
-            ResetRule::AddSearch(context) => context.reset_search(&mut self.draft),
-            ResetRule::AddMaybeboard => super::reset_maybeboard(&mut self.draft),
-        };
-        match result {
+        match reset_rule(&self.config.reset, &mut self.draft) {
             Ok(()) => Toast::quick(ToastKind::Info, "Filter reset"),
             Err(AlreadyDefault) => Toast::quick(ToastKind::Warning, "Filter already at default"),
         }
@@ -269,6 +256,22 @@ impl FilterDraft {
             }
         }
         Ok(())
+    }
+}
+
+/// Applies `rule`'s Reset to `filter`.
+///
+/// # Errors
+///
+/// Returns [`AlreadyDefault`] when `filter` already is the rule's default.
+fn reset_rule(rule: &ResetRule, filter: &mut CardQueryBuilder) -> Result<(), AlreadyDefault> {
+    match rule {
+        ResetRule::Plain => {
+            filter.clear();
+            Ok(())
+        }
+        ResetRule::AddSearch(context) => context.reset_search(filter),
+        ResetRule::AddMaybeboard => super::reset_maybeboard(filter),
     }
 }
 
@@ -355,6 +358,36 @@ mod tests {
             panic!("applies");
         };
         assert_eq!(toast.text, "Filter applied", "a narrowing isn't a clear");
+    }
+
+    /// A change Reset ignores, Synergy on Add or the price currency on a plain host, is an edit
+    /// like any other: Apply says applied, since the filter didn't go back to what Reset gives.
+    #[test]
+    fn a_synergy_or_currency_change_alone_says_applied() {
+        use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+
+        for reset in [
+            ResetRule::AddSearch(AddContext::default()),
+            ResetRule::AddMaybeboard,
+        ] {
+            let config = SheetConfig {
+                reset: reset.clone(),
+                ..SheetConfig::default()
+            };
+            let mut draft = FilterDraft::new(&CardQueryBuilder::default(), config);
+            draft.draft.set_synergy(true);
+            let ApplyOutcome::Applied { toast, .. } = draft.apply() else {
+                panic!("applies on {reset:?}");
+            };
+            assert_eq!(toast.text, "Filter applied", "{reset:?}");
+        }
+
+        let mut draft = FilterDraft::new(&CardQueryBuilder::default(), SheetConfig::default());
+        draft.draft.set_price_currency(PriceCurrency::Eur);
+        let ApplyOutcome::Applied { toast, .. } = draft.apply() else {
+            panic!("applies");
+        };
+        assert_eq!(toast.text, "Filter applied");
     }
 
     #[test]
