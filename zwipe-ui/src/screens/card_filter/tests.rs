@@ -542,3 +542,19 @@ fn in_my_collection_is_offered_only_after_a_summary_with_something_in_it() {
     assert!(offers_owned(Some(&some)));
     assert_eq!(IN_MY_COLLECTION, "In my collection");
 }
+
+#[test]
+fn a_hidden_in_my_collection_never_reaches_the_server() {
+    let mut saved = CardQueryBuilder::default();
+    saved
+        .set_name_contains("elf".to_owned())
+        .set_owned_only(true);
+    assert!(as_sent(&saved, true).owned_only(), "offered: sent as set");
+    let sent = as_sent(&saved, false);
+    assert!(!sent.owned_only(), "not offered: dropped");
+    assert_eq!(
+        sent.name_contains(),
+        Some("elf"),
+        "and nothing else changes"
+    );
+}

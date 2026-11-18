@@ -40,7 +40,7 @@ use zwipe_ui::filter::AddContext;
 use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
 use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::hint::Role;
-use zwipe_ui::screens::add_cards;
+use zwipe_ui::screens::{add_cards, card_filter};
 use zwipe_ui::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, MAX_CARDS_IN_STACK, MaybeboardAction,
     NO_CARDS_LEFT, NO_CARDS_MATCH, STACK_WARNING_EVERY, StackAction,
@@ -268,13 +268,20 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             return;
         }
         revealing.set(None);
-        let builder = normalized(&filter.peek());
+        // With "In my collection" saved on, the summary landing re-runs the search with it;
+        // otherwise the summary changes nothing here and must not re-deal the pile.
+        let offered = if filter.peek().owned_only() {
+            offers_owned()
+        } else {
+            *offers_owned.peek()
+        };
+        let builder = card_filter::as_sent(&normalized(&filter.peek()), offered);
         let first = *first_run.peek();
         if first {
             first_run.set(false);
             let parked = stacks.write().take(deck_id);
             if let Some(parked) = parked
-                && normalized(&parked.filter) == builder
+                && card_filter::as_sent(&normalized(&parked.filter), offered) == builder
                 && !parked.cards.is_empty()
             {
                 exhausted.set(parked.exhausted);
@@ -426,7 +433,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         if *loading_more.peek() {
             return;
         }
-        let Ok(query) = normalized(&filter.peek()).build() else {
+        let Ok(query) =
+            card_filter::as_sent(&normalized(&filter.peek()), *offers_owned.peek()).build()
+        else {
             return;
         };
         loading_more.set(true);
@@ -934,7 +943,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             fetch_context.call(());
             return;
         }
-        let Ok(query) = normalized(&filter.peek()).build() else {
+        let Ok(query) =
+            card_filter::as_sent(&normalized(&filter.peek()), *offers_owned.peek()).build()
+        else {
             toast.warning("Filter is empty".to_string(), quick);
             return;
         };

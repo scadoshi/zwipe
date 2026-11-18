@@ -298,6 +298,8 @@ pub(crate) fn SwipeSelect(
         on_close,
         said: use_signal(|| None),
     };
+    // The model sends a saved "In my collection" only while the sheet offers it.
+    use_effect(move || driver.dispatch(Action::OffersOwned(offers_owned())));
     let hint_open = driver.hint_open;
     let entering = driver.entering;
 

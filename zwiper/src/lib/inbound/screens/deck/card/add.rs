@@ -611,6 +611,8 @@ pub fn Add(deck_id: Uuid) -> Element {
         hint_open: use_signal(|| false),
         said: use_signal(|| None),
     };
+    // The model sends a saved "In my collection" only while the sheet offers it.
+    use_effect(move || driver.dispatch(Action::OffersOwned(offers_owned())));
 
     // Load runs in the first render so the hint opens with the screen.
     use_hook(move || {

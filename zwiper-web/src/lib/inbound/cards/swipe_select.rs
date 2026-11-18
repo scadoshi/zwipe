@@ -59,6 +59,7 @@ use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::Generation;
 use zwipe_ui::hint::{Role, SwipeSelectMode};
 use zwipe_ui::playstyle::empty_identity_line;
+use zwipe_ui::screens::card_filter;
 use zwipe_ui::screens::swipe_select::{empty_pile_line, filter_lit};
 use zwipe_ui::stack::{CardStack, Direction, NO_CARDS_LEFT, StackAction};
 use zwipe_ui::telemetry::vocabulary::component;
@@ -250,6 +251,7 @@ pub fn SwipeSelect(
     let authed = use_authed().in_component(component::SWIPE_SELECT);
     let usage = telemetry::use_usage();
     let toast = use_toast();
+    let offers_owned = use_offers_owned();
     let pile = Pile {
         stack: use_signal(CardStack::default),
         suggestions: use_signal(Vec::new),
@@ -303,8 +305,8 @@ pub fn SwipeSelect(
         spawn(async move {
             for _ in 0..EXCLUDED_PAGE_RETRIES {
                 let at = *offset.peek();
-                let Some(filter) = page_query(mode, &user_filter.peek(), commander.as_ref(), at)
-                else {
+                let sent = card_filter::as_sent(&user_filter.peek(), *offers_owned.peek());
+                let Some(filter) = page_query(mode, &sent, commander.as_ref(), at) else {
                     break;
                 };
                 if session.peek().is_some() {
@@ -393,8 +395,8 @@ pub fn SwipeSelect(
             suggestions.set(held.suggestions);
             return;
         }
-        let Some(filter) = page_query(mode, &user_filter.peek(), commander_for_deal.as_ref(), 0)
-        else {
+        let sent = card_filter::as_sent(&user_filter.peek(), *offers_owned.peek());
+        let Some(filter) = page_query(mode, &sent, commander_for_deal.as_ref(), 0) else {
             return;
         };
         if session.peek().is_some() {
@@ -503,6 +505,7 @@ pub fn SwipeSelect(
                         refreshes.set(next);
                     },
                     user_filter,
+                    offers_owned: offers_owned(),
                     suggested_identity,
                     pile_empty,
                     suggested_filter,
@@ -533,9 +536,10 @@ fn SwipeSelectBody(
     pile_empty: bool,
     suggested_filter: Option<Element>,
     user_filter: Signal<CardQueryBuilder>,
+    /// Whether the Filter sheet offers "In my collection".
+    offers_owned: bool,
 ) -> Element {
     let toast = use_toast();
-    let offers_owned = use_offers_owned();
     let confirm = use_swipe_confirm();
     // A write lands even after the screen goes; its confirmation waits on this.
     let mounted = use_mounted();
@@ -933,7 +937,7 @@ fn SwipeSelectBody(
                 filter: user_filter,
                 // The pile is the server's commander search, which reads the collection.
                 config: SheetConfig {
-                    show_owned: offers_owned(),
+                    show_owned: offers_owned,
                     ..SheetConfig::default()
                 },
                 quiet_reset: true,

@@ -1635,3 +1635,68 @@ fn undoing_a_promote_that_then_fails_sends_nothing() {
     );
     assert_eq!(top(&state).as_deref(), Some("Maybe"));
 }
+
+/// The query of the search among `effects`.
+fn search_query_of(effects: &[Effect]) -> Option<CardQuery> {
+    effects.iter().find_map(|e| {
+        if let Effect::Search { query, .. } = e {
+            Some(query.clone())
+        } else {
+            None
+        }
+    })
+}
+
+#[test]
+fn a_saved_in_my_collection_filters_only_once_the_chip_is_offered() {
+    let built = commander_deck(&["Sol Ring"]);
+    let mut saved = CardQueryBuilder::default();
+    saved.set_owned_only(true);
+    let mut state = State::new();
+    let effects = state.update(Action::Load {
+        deck_id: built.deck_profile.id,
+        filter: Some(saved),
+        parked: None,
+    });
+    let effects = state.update(Action::DeckLoaded {
+        ticket: ticket_of(&effects),
+        deck: Box::new(built),
+    });
+    // The client hands the filter it was given back, as it does after a rerun.
+    let given = effects
+        .iter()
+        .find_map(|e| {
+            if let Effect::SetFilter(filter) = e {
+                Some(filter.clone())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert!(given.owned_only(), "the saved choice stays in the filter");
+    let effects = state.update(Action::Filter(given));
+    let first = search_query_of(&effects).expect("the deck's first search");
+    assert!(
+        !first.owned_only(),
+        "no chip offered yet: the hidden flag never filters"
+    );
+
+    let effects = state.update(Action::OffersOwned(true));
+    let narrowed = search_query_of(&effects).expect("the chip showing re-runs the search");
+    assert!(
+        narrowed.owned_only(),
+        "with the chip offered the saved choice applies"
+    );
+    assert_eq!(
+        state.update(Action::OffersOwned(true)),
+        NOTHING,
+        "the same answer again changes nothing"
+    );
+}
+
+#[test]
+fn the_summary_landing_never_re_deals_a_pile_with_no_collection_filter() {
+    let built = commander_deck(&["Sol Ring"]);
+    let (mut state, _) = with_deck(&built);
+    assert!(!has_search(&state.update(Action::OffersOwned(true))));
+}
