@@ -12,7 +12,9 @@ use zwipe_ui::send_to::{
     self, BOARDS, LOADING, NO_DECKS, NO_MATCH, SEARCH_PLACEHOLDER, TITLE, Target,
 };
 
-use crate::{Chip, PickerSearch, PickerSheet, use_overlay_back_action, use_picker_search};
+use crate::{
+    Chip, PickerChoice, PickerSearch, PickerSheet, use_overlay_back_action, use_picker_search,
+};
 
 /// The open Send to: whether the sheet is open, and the card it sends. Provided by the client
 /// above its signed-in screens.
@@ -87,6 +89,18 @@ pub fn SendToSheet(
     let shown = decks
         .as_deref()
         .map(|decks| send_to::targets(decks, current, &query()));
+    // The list, its highlight and Enter all read the search through the same rules.
+    let target = decks
+        .as_deref()
+        .and_then(|decks| send_to::target_on_enter(decks, current, &query()));
+    let target_id = target.as_ref().map(|t| t.id);
+    // Enter sends to the first deck for the search as typed, which can be ahead of the list.
+    let all_decks = decks.unwrap_or_default();
+    let send_target = move |typed: String| {
+        if let Some(target) = send_to::target_on_enter(&all_decks, current, &typed) {
+            on_send.call((target, board()));
+        }
+    };
     let empty_line = if query().trim().is_empty() {
         NO_DECKS
     } else {
@@ -115,7 +129,12 @@ pub fn SendToSheet(
                         }
                     }
                 }
-                PickerSearch { id: SEARCH_ID, placeholder: SEARCH_PLACEHOLDER, query }
+                PickerSearch {
+                    id: SEARCH_ID,
+                    placeholder: SEARCH_PLACEHOLDER,
+                    query,
+                    on_enter: send_target,
+                }
             }
             div { class: "tag-grid send-to-decks",
                 match shown {
@@ -127,14 +146,15 @@ pub fn SendToSheet(
                     },
                     Some(shown) => rsx! {
                         for target in shown {
-                            Chip {
-                                key: "{target.id}",
-                                selected: false,
-                                onclick: {
-                                    let target = target.clone();
-                                    move |_| on_send.call((target.clone(), board()))
-                                },
-                                "{target.name}"
+                            PickerChoice { key: "{target.id}", target: target_id == Some(target.id),
+                                Chip {
+                                    selected: false,
+                                    onclick: {
+                                        let target = target.clone();
+                                        move |_| on_send.call((target.clone(), board()))
+                                    },
+                                    "{target.name}"
+                                }
                             }
                         }
                     },

@@ -19,6 +19,7 @@ mod common;
 use axum::http::StatusCode;
 use common::{TestApp, card, seed_cards};
 use serde_json::json;
+use sqlx::AssertSqlSafe;
 use uuid::Uuid;
 
 /// Reads the `name` off every card in a search result (a `Vec<Card>`).
@@ -984,5 +985,248 @@ async fn the_closest_names_still_lead_where_nothing_popular_is_further_down(pool
             "Lightning Helix",
             "Redirect Lightning"
         ]
+    );
+}
+
+/// The printing ids in a search result, in order.
+fn ids(results: &serde_json::Value) -> Vec<Uuid> {
+    results
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["scryfall_data"]["id"].as_str().unwrap().parse().unwrap())
+        .collect()
+}
+
+#[sqlx::test]
+async fn tied_cards_come_back_in_printing_order_on_every_search(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("tiebreaker").await;
+    // Printing ids run opposite to oracle ids, so storage order (by oracle id) is not id order.
+    let cards: Vec<_> = (0u128..12)
+        .map(|i| {
+            card(&format!("Twin {i:02}"))
+                .with_ids(
+                    Uuid::from_u128(0x578_0000 | 11u128.checked_sub(i).unwrap()),
+                    Some(Uuid::from_u128(0x578_1000 | i)),
+                )
+                .cmc(2.0)
+                .type_line("Creature — Elf")
+        })
+        .collect();
+    let mut by_id: Vec<Uuid> = cards.iter().map(common::CardFixture::id).collect();
+    by_id.sort();
+    seed_cards(&pool, &cards).await;
+
+    for body in [
+        json!({ "cmc_equals": 2.0, "order_by": "Cmc", "limit": 12 }),
+        json!({ "cmc_equals": 2.0, "order_by": "Cmc", "direction": "descending", "limit": 12 }),
+        json!({ "cmc_equals": 2.0, "limit": 12 }),
+    ] {
+        let (status, first) = app
+            .post(SEARCH_CARDS_ROUTE, body.clone(), Some(&token))
+            .await;
+        assert_eq!(status, StatusCode::OK, "{first}");
+        let (_, second) = app
+            .post(SEARCH_CARDS_ROUTE, body.clone(), Some(&token))
+            .await;
+        assert_eq!(ids(&first), ids(&second), "two identical searches: {body}");
+        assert_eq!(
+            ids(&first),
+            by_id,
+            "ties fall back to the printing id: {body}"
+        );
+    }
+}
+
+#[sqlx::test]
+async fn a_card_with_tied_printings_shows_its_lowest_collector_number(pool: sqlx::PgPool) {
+    // Eight cards, each with two printings alike on every key the pick weighs, inserted in
+    // alternating order so no insertion order can pick right by chance.
+    let mut fixtures = Vec::new();
+    let mut want = Vec::new();
+    for i in 0u128..8 {
+        let oracle = Uuid::from_u128(0x578_2000 | i);
+        // The lower number has the higher id, so the id can't pick it, and "100" sorts before
+        // "99" as text.
+        let low = card(&format!("Tied {i}"))
+            .with_ids(Uuid::from_u128(0x578_4000 | i), Some(oracle))
+            .collector_number("99");
+        let high = card(&format!("Tied {i}"))
+            .with_ids(Uuid::from_u128(0x578_3000 | i), Some(oracle))
+            .collector_number("100");
+        want.push((oracle, low.id()));
+        if i % 2 == 0 {
+            fixtures.extend([high, low]);
+        } else {
+            fixtures.extend([low, high]);
+        }
+    }
+    seed_cards(&pool, &fixtures).await;
+    for (oracle, low) in want {
+        let picked: Uuid = sqlx::query_scalar("SELECT id FROM latest_cards WHERE oracle_id = $1")
+            .bind(oracle)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(picked, low, "the tie goes to collector number 99");
+    }
+}
+
+#[sqlx::test]
+async fn a_promo_search_shows_the_lowest_collector_number_among_tied_promos(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("promotie").await;
+    app.verify_email(&uid).await;
+    let ring = Uuid::from_u128(0x578_5000);
+    // The lower number has the higher id, so the id can't pick it, and "100" sorts before "99"
+    // as text.
+    let low = card("Sol Ring")
+        .with_ids(Uuid::from_u128(0x578_5002), Some(ring))
+        .set("sld", "Secret Lair Drop")
+        .collector_number("99")
+        .promo(true);
+    let high = card("Sol Ring")
+        .with_ids(Uuid::from_u128(0x578_5001), Some(ring))
+        .set("sld", "Secret Lair Drop")
+        .collector_number("100")
+        .promo(true);
+    seed_cards(
+        &pool,
+        &[
+            card("Sol Ring")
+                .oracle(Some(ring))
+                .set("fdc", "Foundations Commander"),
+            high,
+            low.clone(),
+        ],
+    )
+    .await;
+    let (status, deck) = app
+        .post(DECK_ROUTE, json!({ "name": "No Format" }), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    let did: Uuid = deck["id"].as_str().unwrap().parse().unwrap();
+
+    let (status, body) = app
+        .post(
+            &search_deck_cards_route(did),
+            json!({ "name_contains": "Sol Ring", "promo": true }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "serve: {body}");
+    let served: Vec<&str> = body["cards"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["scryfall_data"]["id"].as_str().unwrap())
+        .collect();
+    let want = low.id().to_string();
+    assert_eq!(served, vec![want.as_str()], "the tie goes to 99: {body}");
+}
+
+#[sqlx::test]
+async fn a_deck_on_a_pick_the_tiebreak_changes_keeps_its_printing(pool: sqlx::PgPool) {
+    let oracle = Uuid::from_u128(0x578_6000);
+    // The old view's pick: tied with the other on every key but the collector number, which
+    // the tiebreak gives to the other.
+    let old_pick = card("Ashling the Pilgrim")
+        .with_ids(Uuid::from_u128(0x578_6002), Some(oracle))
+        .collector_number("100");
+    let new_pick = card("Ashling the Pilgrim")
+        .with_ids(Uuid::from_u128(0x578_6001), Some(oracle))
+        .collector_number("99");
+    let ring = card("Sol Ring").with_ids(
+        Uuid::from_u128(0x578_6101),
+        Some(Uuid::from_u128(0x578_6100)),
+    );
+    seed_cards(&pool, &[old_pick.clone(), new_pick.clone(), ring.clone()]).await;
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("keeper").await;
+    app.verify_email(&uid).await;
+    let (status, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({ "name": "Ashling", "format": "commander" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    let did: Uuid = deck["id"].as_str().unwrap().parse().unwrap();
+    for printing in [&old_pick, &ring] {
+        sqlx::query(
+            "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) \
+             VALUES ($1, $2, $3, 1, 'deck')",
+        )
+        .bind(did)
+        .bind(printing.id())
+        .bind(printing.oracle_id())
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    sqlx::query("UPDATE decks SET commander_id = $2 WHERE id = $1")
+        .bind(did)
+        .bind(old_pick.id())
+        .execute(&pool)
+        .await
+        .unwrap();
+    // The view as it stood before the tiebreak, holding the old pick.
+    sqlx::raw_sql(AssertSqlSafe(format!(
+        "DROP MATERIALIZED VIEW latest_cards; \
+         CREATE MATERIALIZED VIEW latest_cards AS SELECT * FROM scryfall_data \
+         WHERE id IN ('{}', '{}')",
+        old_pick.id(),
+        ring.id()
+    )))
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::raw_sql(include_str!(
+        "../migrations/20261118180000_latest_cards_printing_tiebreak.sql"
+    ))
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let picked: Uuid = sqlx::query_scalar("SELECT id FROM latest_cards WHERE oracle_id = $1")
+        .bind(oracle)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(picked, new_pick.id(), "the tiebreak changed the pick");
+    let row: Uuid = sqlx::query_scalar(
+        "SELECT scryfall_data_id FROM deck_cards WHERE deck_id = $1 AND oracle_id = $2",
+    )
+    .bind(did)
+    .bind(oracle)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(row, old_pick.id(), "the deck row keeps its printing");
+    let commander: Option<Uuid> =
+        sqlx::query_scalar("SELECT commander_id FROM decks WHERE id = $1")
+            .bind(did)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        commander,
+        Some(old_pick.id()),
+        "the commander keeps its printing"
+    );
+
+    let (status, page) = app.get(&deck_route(did), Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "the deck page answers: {page}");
+    let shown = page.to_string();
+    assert!(
+        shown.contains(&old_pick.id().to_string()),
+        "the deck page shows the row's own printing: {page}"
+    );
+    assert!(
+        !shown.contains(&new_pick.id().to_string()),
+        "and not the new pick: {page}"
     );
 }
