@@ -12,7 +12,7 @@ use crate::domain::collection::models::import::{
     Applied, CollectionCard, ImportCollection, ImportCollectionFailure, Lookups, Wanted,
 };
 use crate::domain::collection::models::rows::{
-    ExportFailure, SetRow, SetRowFailure, StoredPage, StoredRow,
+    ExportFailure, SetRow, SetRowFailure, SortKey, StoredPage, StoredRow,
 };
 
 /// Database port for collections.
@@ -56,14 +56,14 @@ pub trait CollectionRepository: Clone + Send + Sync + 'static {
         row: &SetRow,
     ) -> impl Future<Output = Result<Option<StoredRow>, SetRowFailure>> + Send;
 
-    /// The page of `user_id`'s rows from `offset`, `limit` long, whose card names hold `name`
-    /// (ignoring case and accents; every row when it is empty), sorted by name, then set,
-    /// collector number, finish, condition and language.
+    /// The page of `user_id`'s rows after `after` (from the start without one), `limit` long,
+    /// whose card names hold `name` (ignoring case and accents; every row when it is empty), in
+    /// [`SortKey`]'s order.
     fn fetch_page(
         &self,
         user_id: Uuid,
         name: &CollectionSearch,
-        offset: u32,
+        after: Option<&SortKey>,
         limit: CollectionPageSize,
     ) -> impl Future<Output = Result<StoredPage, anyhow::Error>> + Send;
 
@@ -107,7 +107,7 @@ pub trait CollectionService: Clone + Send + Sync + 'static {
         &self,
         user_id: Uuid,
         name: &CollectionSearch,
-        offset: u32,
+        after: Option<&SortKey>,
         limit: CollectionPageSize,
     ) -> impl Future<Output = Result<StoredPage, anyhow::Error>> + Send;
 

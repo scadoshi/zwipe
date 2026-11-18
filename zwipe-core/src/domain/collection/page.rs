@@ -116,9 +116,74 @@ impl From<CollectionPageSize> for u32 {
     }
 }
 
+/// Text that is not a collection cursor: empty, past [`CollectionCursor::MAX_CHARS`], or holding
+/// anything but lowercase hex digits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[error("not a collection cursor")]
+pub struct InvalidCollectionCursor;
+
+/// Where the next page of a collection list starts: the server's mark after the last row it sent,
+/// opaque to a client, which only hands it back. Lowercase hex, 1 to
+/// [`CollectionCursor::MAX_CHARS`] characters.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct CollectionCursor(String);
+
+impl CollectionCursor {
+    /// The longest cursor.
+    pub const MAX_CHARS: usize = 2048;
+
+    /// The cursor `text`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidCollectionCursor`] for empty text, text past
+    /// [`CollectionCursor::MAX_CHARS`], or any character but `0`-`9` and `a`-`f`.
+    pub fn new(text: &str) -> Result<Self, InvalidCollectionCursor> {
+        let hex = text
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b));
+        if text.is_empty() || text.len() > Self::MAX_CHARS || !hex {
+            return Err(InvalidCollectionCursor);
+        }
+        Ok(Self(text.to_owned()))
+    }
+
+    /// The cursor's text.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl TryFrom<String> for CollectionCursor {
+    type Error = InvalidCollectionCursor;
+
+    fn try_from(text: String) -> Result<Self, Self::Error> {
+        Self::new(&text)
+    }
+}
+
+impl From<CollectionCursor> for String {
+    fn from(cursor: CollectionCursor) -> Self {
+        cursor.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_cursor_is_lowercase_hex_within_its_cap() {
+        assert!(CollectionCursor::new("0a1b2c").is_ok());
+        for bad in ["", "0A", "xyz", "12 34", "&offset=1"] {
+            assert!(CollectionCursor::new(bad).is_err(), "{bad:?}");
+        }
+        assert!(CollectionCursor::new(&"a".repeat(2048)).is_ok());
+        assert!(CollectionCursor::new(&"a".repeat(2049)).is_err());
+        assert!(serde_json::from_str::<CollectionCursor>("\"ZZ\"").is_err());
+    }
 
     #[test]
     fn a_search_drops_what_draws_nothing_and_caps_its_length() {

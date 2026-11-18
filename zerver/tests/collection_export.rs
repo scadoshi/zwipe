@@ -19,7 +19,7 @@ use chrono::{DateTime, Utc};
 use common::{CardFixture, TestApp, card, seed_cards};
 use serde_json::{Value, json};
 use uuid::Uuid;
-use zwipe_core::http::paths::{EXPORT_COLLECTION_ROUTE, IMPORT_COLLECTION_ROUTE};
+use zwipe_core::http::paths::{COLLECTION_ROUTE, EXPORT_COLLECTION_ROUTE, IMPORT_COLLECTION_ROUTE};
 
 static PEER: AtomicU8 = AtomicU8::new(1);
 
@@ -124,6 +124,18 @@ async fn an_export_imports_back_to_the_same_collection(pool: sqlx::PgPool) {
     assert!(
         csv.starts_with("Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Signed,Condition,Language,Proxy,Purchase price currency,Added,Tags\n"),
         "ManaBox's header, then Tags: {csv}"
+    );
+
+    let (status, found) = app
+        .get(
+            &format!("{COLLECTION_ROUTE}?name=aardwolf&limit=10"),
+            Some(&alice),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{found}");
+    assert_eq!(
+        found["total"], 1,
+        "an imported row is found by its stored name: {found}"
     );
 
     let summary = import(&app, &bob, csv).await;

@@ -22,7 +22,7 @@ use crate::domain::collection::models::import::{
     Applied, CollectionCard, Lookups, NameMatch, Printing, Wanted,
 };
 use crate::domain::collection::models::rows::{
-    ExportFailure, SetRow, SetRowFailure, StoredPage, StoredRow,
+    ExportFailure, SetRow, SetRowFailure, SortKey, StoredPage, StoredRow,
 };
 use crate::domain::collection::ports::CollectionRepository;
 use crate::outbound::sqlx::postgres::Postgres;
@@ -247,7 +247,7 @@ impl CollectionRepository for Postgres {
         &self,
         user_id: Uuid,
         name: &CollectionSearch,
-        offset: u32,
+        after: Option<&SortKey>,
         limit: CollectionPageSize,
     ) -> Result<StoredPage, anyhow::Error> {
         // Built from constants only; the user and the search are bound.
@@ -257,22 +257,56 @@ impl CollectionRepository for Postgres {
             .fetch_one(&self.pool)
             .await
             .context("collection page count")?;
-        let columns: Vec<RowColumns> = query_as(AssertSqlSafe(format!(
-            "SELECT {ROW_COLUMNS} {PAGE_MATCH} \
-             {ROW_ORDER} LIMIT $3 OFFSET $4"
-        )))
-        .bind(user_id)
-        .bind(name.as_str())
-        .bind(i64::from(limit.get()))
-        .bind(i64::from(offset))
-        .fetch_all(&self.pool)
-        .await
-        .context("collection page")?;
+        // One past the page, so a page that has rows after it is told apart. The name bound
+        // first lets the list index start at the cursor; the whole key then picks the rows after
+        // it.
+        let wanted = i64::from(limit.get()).saturating_add(1);
+        let after_clause = if after.is_some() {
+            format!(
+                " AND cc.card_name >= $4 AND ({SORT_KEY}) > ($4, $5, $6::numeric, $7, $8, $9, $10, $11)"
+            )
+        } else {
+            String::new()
+        };
+        // Built from constants only; every value is bound.
+        let sql = format!(
+            "SELECT {ROW_COLUMNS}, {SORT_KEY_COLUMNS} {PAGE_MATCH}{after_clause} \
+             ORDER BY {SORT_KEY} LIMIT $3"
+        );
+        let mut page = query_as::<_, PageColumns>(AssertSqlSafe(sql))
+            .bind(user_id)
+            .bind(name.as_str())
+            .bind(wanted);
+        if let Some(key) = after {
+            page = page
+                .bind(&key.card_name)
+                .bind(&key.set_code)
+                .bind(&key.number)
+                .bind(&key.collector_number)
+                .bind(&key.finish)
+                .bind(&key.condition)
+                .bind(&key.language)
+                .bind(key.scryfall_data_id);
+        }
+        let mut columns: Vec<(RowColumns, SortKey)> = page
+            .fetch_all(&self.pool)
+            .await
+            .context("collection page")?
+            .into_iter()
+            .map(page_row)
+            .collect();
+        let more = columns.len() > usize::try_from(limit.get()).unwrap_or(usize::MAX);
+        columns.truncate(usize::try_from(limit.get()).unwrap_or(usize::MAX));
+        let next = if more {
+            columns.last().map(|(_, key)| key.clone())
+        } else {
+            None
+        };
         let rows = columns
             .into_iter()
-            .map(stored_row)
+            .map(|(row, _)| stored_row(row))
             .collect::<Result<_, _>>()?;
-        Ok(StoredPage { rows, total })
+        Ok(StoredPage { rows, total, next })
     }
 
     async fn fetch_export_lines(&self, user_id: Uuid) -> Result<Vec<ExportLine>, ExportFailure> {
@@ -343,11 +377,77 @@ const ROW_COLUMNS: &str = "cc.scryfall_data_id, cc.finish, cc.condition, cc.lang
 const REMOVE_ROW: &str = "DELETE FROM collection_cards WHERE user_id = $1 AND scryfall_data_id = $2 \
      AND finish = $3 AND condition IS NOT DISTINCT FROM $4 AND language IS NOT DISTINCT FROM $5";
 
-/// The rows a list's search matches: the user's, whose card names hold `$2` ignoring case and
-/// accents, every row when `$2` is empty. `strpos`, not `LIKE`, so `%` and `_` are text.
-const PAGE_MATCH: &str = "FROM collection_cards cc JOIN scryfall_data sd ON sd.id = cc.scryfall_data_id \
+/// The rows a list's search matches: the user's, whose stored folded card names hold `$2` folded
+/// the same way (lower case, accents off), every row when `$2` is empty. `strpos`, not `LIKE`, so
+/// `%` and `_` are text. Only the user's rows are read, through the list index.
+const PAGE_MATCH: &str = "FROM collection_cards cc \
      WHERE cc.user_id = $1 \
-       AND ($2 = '' OR strpos(lower(f_unaccent(sd.name)), lower(f_unaccent($2))) > 0)";
+       AND ($2 = '' OR strpos(cc.search_name, lower(f_unaccent($2))) > 0)";
+
+/// A row's place in the list, the order [`SortKey`] describes, from the row's stored columns.
+const SORT_KEY: &str = "cc.card_name, cc.set_code, \
+     COALESCE(substring(cc.collector_number FROM '^[0-9]+')::numeric, 'Infinity'), \
+     cc.collector_number, cc.finish, COALESCE(cc.condition, ''), COALESCE(cc.language, ''), \
+     cc.scryfall_data_id";
+
+/// [`SORT_KEY`] as columns a [`SortKey`] reads, the number as text and without the printing,
+/// which [`ROW_COLUMNS`] already holds.
+const SORT_KEY_COLUMNS: &str = "cc.card_name, cc.set_code, \
+     COALESCE(substring(cc.collector_number FROM '^[0-9]+')::numeric, 'Infinity')::text, \
+     cc.collector_number, cc.finish, COALESCE(cc.condition, ''), COALESCE(cc.language, '')";
+
+/// A page row: [`ROW_COLUMNS`], then [`SORT_KEY_COLUMNS`] but the printing, which the row's own
+/// first column already holds.
+type PageColumns = (
+    Uuid,
+    String,
+    Option<String>,
+    Option<String>,
+    i32,
+    Vec<String>,
+    Option<DateTime<Utc>>,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+);
+
+/// A page row's stored columns and its place in the list.
+fn page_row(columns: PageColumns) -> (RowColumns, SortKey) {
+    let (
+        id,
+        finish,
+        condition,
+        language,
+        quantity,
+        tags,
+        added_at,
+        card_name,
+        set_code,
+        number,
+        collector_number,
+        finish_key,
+        condition_key,
+        language_key,
+    ) = columns;
+    let key = SortKey {
+        card_name,
+        set_code,
+        number,
+        collector_number,
+        finish: finish_key,
+        condition: condition_key,
+        language: language_key,
+        scryfall_data_id: id,
+    };
+    (
+        (id, finish, condition, language, quantity, tags, added_at),
+        key,
+    )
+}
 
 /// The one variant of `all` whose stored spelling (`as_str`) is `text`.
 fn stored<T: Copy>(all: &[T], as_str: fn(T) -> &'static str, text: &str) -> Option<T> {
@@ -388,11 +488,11 @@ fn stored_row(columns: RowColumns) -> Result<StoredRow, anyhow::Error> {
     })
 }
 
-/// The list's order: by card name, then set, collector number (its number first), finish,
-/// condition and language, then printing.
-const ROW_ORDER: &str = "ORDER BY sd.name, sd.set, \
-     substring(sd.collector_number FROM '^[0-9]+')::numeric NULLS LAST, sd.collector_number, \
-     cc.finish, cc.condition NULLS FIRST, cc.language NULLS FIRST, cc.scryfall_data_id";
+/// The list's order, which the export keeps too.
+const ROW_ORDER: &str = "ORDER BY cc.card_name, cc.set_code, \
+     COALESCE(substring(cc.collector_number FROM '^[0-9]+')::numeric, 'Infinity'), \
+     cc.collector_number, cc.finish, COALESCE(cc.condition, ''), COALESCE(cc.language, ''), \
+     cc.scryfall_data_id";
 
 /// An export line's columns, in the export query's order: the card's name, set code, set name,
 /// collector number and rarity, then [`ROW_COLUMNS`], then the price in cents and its currency.

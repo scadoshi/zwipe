@@ -12,7 +12,7 @@
 use uuid::Uuid;
 
 use crate::domain::card::oracle_tag_examples::OracleTagSlug;
-use crate::domain::collection::{CollectionPageSize, CollectionSearch};
+use crate::domain::collection::{CollectionCursor, CollectionPageSize, CollectionSearch};
 use crate::domain::share_link::encode_segment;
 use crate::http::endpoint::Method;
 
@@ -180,18 +180,18 @@ pub fn share_deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/share")
 }
 
-/// The page of the caller's collection from `offset`, `limit` rows long, of the rows whose card
-/// names hold `name` (every row when it is empty): [`COLLECTION_ROUTE`] with its query, the search
-/// percent-encoded.
+/// The page of the caller's collection after the cursor `after` (from the start without one),
+/// `limit` rows long, of the rows whose card names hold `name` (every row when it is empty):
+/// [`COLLECTION_ROUTE`] with its query, the search percent-encoded.
 #[must_use]
 pub fn collection_page_route(
     name: &CollectionSearch,
-    offset: u32,
+    after: Option<&CollectionCursor>,
     limit: CollectionPageSize,
 ) -> String {
     format!(
         "{COLLECTION_ROUTE}?{}",
-        collection_page_query(name, offset, limit)
+        collection_page_query(name, after, limit)
     )
 }
 
@@ -200,16 +200,18 @@ pub fn collection_page_route(
 #[must_use]
 pub fn collection_page_query(
     name: &CollectionSearch,
-    offset: u32,
+    after: Option<&CollectionCursor>,
     limit: CollectionPageSize,
 ) -> String {
-    let limit = limit.get();
-    if name.is_empty() {
-        format!("offset={offset}&limit={limit}")
-    } else {
-        let name = encode_segment(name.as_str());
-        format!("name={name}&offset={offset}&limit={limit}")
+    let mut parts = Vec::new();
+    if !name.is_empty() {
+        parts.push(format!("name={}", encode_segment(name.as_str())));
     }
+    if let Some(after) = after {
+        parts.push(format!("after={}", after.as_str()));
+    }
+    parts.push(format!("limit={}", limit.get()));
+    parts.join("&")
 }
 
 /// The printings of the card `oracle_id` that the caller's collection holds.
@@ -395,13 +397,14 @@ mod tests {
         let every = CollectionSearch::default();
         let page = CollectionPageSize::default();
         assert_eq!(
-            collection_page_route(&every, 0, page),
-            "/api/collection?offset=0&limit=50"
+            collection_page_route(&every, None, page),
+            "/api/collection?limit=50"
         );
         let search = CollectionSearch::new("Lim-Dûl's & co").unwrap();
+        let after = CollectionCursor::new("0a1b").unwrap();
         assert_eq!(
-            collection_page_route(&search, 100, page),
-            "/api/collection?name=Lim-D%C3%BBl%27s%20%26%20co&offset=100&limit=50"
+            collection_page_route(&search, Some(&after), page),
+            "/api/collection?name=Lim-D%C3%BBl%27s%20%26%20co&after=0a1b&limit=50"
         );
         let slug: OracleTagSlug = "spot-removal".parse().unwrap();
         assert_eq!(
