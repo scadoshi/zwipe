@@ -126,6 +126,8 @@ pub fn App() -> Element {
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
     use_context_provider(|| LoginPrefill(Signal::new(None)));
+    // The session's writes whose answer was lost, for every screen's run_write.
+    use_context_provider(|| Signal::new(zwipe_ui::write_repeat::Unconfirmed::default()));
     // The `?` buttons post here and the HintHost draws the topic.
     use_context_provider(|| Signal::new(None::<HintTopic>));
     // The splash plays once a tab session. While it plays the gate is

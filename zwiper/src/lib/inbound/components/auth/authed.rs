@@ -17,6 +17,7 @@ use dioxus::prelude::*;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::toast::RepeatGate;
+use zwipe_ui::write_repeat::{Answer, Unconfirmed, Verdict, WriteKey, Written};
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
@@ -41,6 +42,8 @@ pub struct Authed {
     usage_buffer: Signal<UsageBuffer>,
     toast: Toasts,
     screen: Screen,
+    /// The session's writes whose answer was lost, kept by the app; `None` outside it.
+    unconfirmed: Option<Signal<Unconfirmed>>,
 }
 
 // By hand: `Toasts` has no `Debug`.
@@ -65,6 +68,7 @@ pub fn use_authed(screen: Screen) -> Authed {
         usage_buffer: use_context(),
         toast: use_toast(),
         screen,
+        unconfirmed: try_use_context(),
     }
 }
 
@@ -220,6 +224,59 @@ impl Authed {
         }
     }
 
+    /// Runs a write `f` that acts on `key`, as [`run`](Self::run) does, except that the answer a
+    /// repeat gives once an earlier, lost try landed (an add's 409, a delete's 404) reads as
+    /// [`Written::LandedEarlier`] with no error toast. A network error is remembered for the
+    /// session, so the next try of the same write can tell.
+    pub async fn run_write<T, Fut>(
+        &self,
+        op: &'static str,
+        key: WriteKey,
+        f: impl FnOnce(ZwipeClient, Session) -> Fut,
+    ) -> Written<T>
+    where
+        Fut: Future<Output = Result<T, ClientError>>,
+    {
+        self.run_write_at(component::NONE, op, key, f).await
+    }
+
+    /// [`Self::run_write`] with a component breadcrumb, as [`Self::run_at`] is to [`Self::run`].
+    pub async fn run_write_at<T, Fut>(
+        &self,
+        component: &'static str,
+        op: &'static str,
+        key: WriteKey,
+        f: impl FnOnce(ZwipeClient, Session) -> Fut,
+    ) -> Written<T>
+    where
+        Fut: Future<Output = Result<T, ClientError>>,
+    {
+        let result = self.execute(component, op, Toasting::Quiet, f).await;
+        match (self.settle(key, &result), result) {
+            (Verdict::LandedEarlier, _) => Written::LandedEarlier,
+            (Verdict::Done | Verdict::Failed, Ok(value)) => Written::Done(value),
+            (Verdict::Done | Verdict::Failed, Err(e)) => {
+                self.toast_error(&e);
+                Written::Failed
+            }
+        }
+    }
+
+    /// How a write on `key` that ended in `result` reads once a lost earlier try is counted, for
+    /// a caller that makes its own failure message; [`run_write`](Self::run_write) uses it.
+    pub fn settle<T>(&self, key: WriteKey, result: &Result<T, ClientError>) -> Verdict {
+        let answer = match result {
+            Ok(_) => Answer::Done,
+            Err(ClientError::Network(_)) => Answer::Network,
+            Err(e) => e.status().map_or(Answer::Failed, Answer::Status),
+        };
+        match self.unconfirmed {
+            Some(mut unconfirmed) => unconfirmed.write().settle(key, answer),
+            None if result.is_ok() => Verdict::Done,
+            None => Verdict::Failed,
+        }
+    }
+
     fn report(
         &self,
         component: &'static str,
@@ -232,11 +289,16 @@ impl Authed {
             .peek()
             .report_error(self.screen.as_str(), component, op, e);
         if toasting == Toasting::Toast {
-            let message = e.to_user_message();
-            if admit_error_toast(&message) {
-                self.toast
-                    .error(message, ToastOptions::default().duration(TOAST_NORMAL));
-            }
+            self.toast_error(e);
+        }
+    }
+
+    /// Raises the error toast for `e`, unless one saying the same is up.
+    fn toast_error(&self, e: &ClientError) {
+        let message = e.to_user_message();
+        if admit_error_toast(&message) {
+            self.toast
+                .error(message, ToastOptions::default().duration(TOAST_NORMAL));
         }
     }
 }

@@ -103,3 +103,35 @@ fn a_success_clears_what_was_lost() {
     assert_eq!(writes.settle(add(), Answer::Done), Verdict::Done);
     assert_eq!(writes.settle(add(), Answer::Status(409)), Verdict::Failed);
 }
+
+#[test]
+fn a_landed_add_s_deck_card_is_the_one_its_request_made() {
+    use zwipe_core::domain::deck::Board;
+    use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+
+    let deck = Uuid::from_u128(1);
+    let sent = HttpCreateDeckCard {
+        scryfall_data_id: Uuid::from_u128(2).to_string(),
+        oracle_id: Uuid::from_u128(3).to_string(),
+        quantity: 1,
+        board: Some(Board::Maybeboard.display_name().to_owned()),
+        mvp_at: None,
+    };
+    let card = landed_deck_card(deck, &sent).unwrap();
+    assert_eq!(card.deck_id, deck);
+    assert_eq!(card.scryfall_data_id, Uuid::from_u128(2));
+    assert_eq!(card.oracle_id, Uuid::from_u128(3));
+    assert_eq!(*card.quantity, 1);
+    assert_eq!(card.board, Board::Maybeboard);
+    assert!(!card.flagged);
+
+    let main = HttpCreateDeckCard {
+        board: None,
+        ..sent
+    };
+    assert_eq!(
+        landed_deck_card(deck, &main).unwrap().board,
+        Board::Deck,
+        "no board is the main deck"
+    );
+}

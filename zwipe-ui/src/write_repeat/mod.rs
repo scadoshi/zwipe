@@ -14,6 +14,8 @@ mod tests;
 use std::collections::HashSet;
 
 use uuid::Uuid;
+use zwipe_core::domain::deck::{Board, DeckCard, Quantity};
+use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 
 /// What a write does, which decides what its repeat answers once the first try landed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -91,6 +93,18 @@ pub enum Verdict {
     Failed,
 }
 
+/// How a write ended for the screen that made it, a lost earlier try counted: a client's
+/// authed runner answers with it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Written<T> {
+    /// It went through, with its answer.
+    Done(T),
+    /// An earlier try, whose answer was lost, went through: its repeat answered as a repeat does.
+    LandedEarlier,
+    /// It failed; the error toast is up.
+    Failed,
+}
+
 /// The writes of this session whose last try ended in a network error.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Unconfirmed {
@@ -119,4 +133,24 @@ impl Unconfirmed {
             Answer::Status(_) | Answer::Failed => Verdict::Failed,
         }
     }
+}
+
+/// The deck card an add's request made in `deck`, for an add that [`Verdict::LandedEarlier`]: its
+/// repeat's 409 carries no body, so the client builds what the server made from what it sent, a
+/// fresh row with no star or flag. `None` when the request doesn't read back as one.
+#[must_use]
+pub fn landed_deck_card(deck: Uuid, sent: &HttpCreateDeckCard) -> Option<DeckCard> {
+    let board = match sent.board.as_deref() {
+        Some(board) => Board::try_from(board).ok()?,
+        None => Board::Deck,
+    };
+    Some(DeckCard {
+        deck_id: deck,
+        scryfall_data_id: sent.scryfall_data_id.parse().ok()?,
+        oracle_id: sent.oracle_id.parse().ok()?,
+        quantity: Quantity::new(sent.quantity).ok()?,
+        board,
+        mvp_at: sent.mvp_at,
+        flagged: false,
+    })
 }

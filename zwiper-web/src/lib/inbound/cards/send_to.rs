@@ -14,6 +14,7 @@ use zwipe_core::domain::deck::Board;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 use zwipe_ui::send_to::{self, SendUndo, Target};
 use zwipe_ui::telemetry::vocabulary::component;
+use zwipe_ui::write_repeat::{Verdict, WriteKey};
 
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::chrome::authed::use_authed;
@@ -77,8 +78,14 @@ pub fn SendToHost(send_to: SendTo) -> Element {
                             c.create_deck_card(target.id, &request, &s).await
                         })
                         .await;
+                    let key = WriteKey::add(target.id, sent.scryfall_data.id);
+                    // A lost earlier try that landed reads as sent.
+                    let added = match authed.settle(key, &added) {
+                        Verdict::LandedEarlier => Ok(()),
+                        Verdict::Done | Verdict::Failed => added.map(|_| ()),
+                    };
                     match added {
-                        Ok(_) => {
+                        Ok(()) => {
                             if let Some((from, entry)) = send_to::undo_entry(
                                 current,
                                 &target,

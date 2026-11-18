@@ -29,6 +29,7 @@ use zwipe_ui::screens::add_cards::{
 use zwipe_ui::stack;
 use zwipe_ui::stores::{parked, undo};
 use zwipe_ui::timing::PILE_REVEAL_FALLBACK;
+use zwipe_ui::write_repeat::{self, WriteKey, Written};
 
 use super::components::card_info::{CardDetailsSheet, CardSkeleton};
 use super::components::printing_sheet::PrintingSheet;
@@ -343,13 +344,21 @@ impl Driver {
         } else {
             "add_card"
         };
+        let key = WriteKey::add(deck_id, card.scryfall_data.id);
+        let sent = request.clone();
         spawn(async move {
             let added = authed
-                .run(operation, |c, s| async move {
+                .run_write(operation, key, |c, s| async move {
                     c.create_deck_card(deck_id, &request, &s).await
                 })
                 .await;
-            self.dispatch(match added {
+            let deck_card = match added {
+                Written::Done(deck_card) => Some(deck_card),
+                // A lost earlier try added it: the deck holds the row that request made.
+                Written::LandedEarlier => write_repeat::landed_deck_card(deck_id, &sent),
+                Written::Failed => None,
+            };
+            self.dispatch(match deck_card {
                 Some(deck_card) => Action::Added {
                     ticket,
                     deck_card: Box::new(deck_card),

@@ -35,6 +35,7 @@ use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_cards::{self, Action, Destination, Effect, Op, StackGroup, State};
 use zwipe_ui::send_to::{self, SendUndo};
 use zwipe_ui::stores::undo::UndoAction as SharedUndo;
+use zwipe_ui::write_repeat::{self, WriteKey, Written};
 
 use super::components::card_row::{
     CardRow, DeckFaces, DeckFlagToggle, OtagDescribe, OtagExamplesOpen, ShowRowArt,
@@ -457,12 +458,26 @@ impl Driver {
                 request,
                 op,
             } => {
+                let sent = request.clone();
                 spawn(async move {
                     let call = |c: ZwipeClient, s: Session| async move {
                         c.create_deck_card(deck_id, &request, &s).await
                     };
                     let created = if op == Op::QuickAddCard {
-                        authed.run_at(component::QUICK_ADD, op.name(), call).await
+                        let printing = sent.scryfall_data_id.parse().unwrap_or_default();
+                        let key = WriteKey::add(deck_id, printing);
+                        match authed
+                            .run_write_at(component::QUICK_ADD, op.name(), key, call)
+                            .await
+                        {
+                            Written::Done(deck_card) => Some(deck_card),
+                            // A lost earlier try added it: the deck holds the row that request
+                            // made.
+                            Written::LandedEarlier => {
+                                write_repeat::landed_deck_card(deck_id, &sent)
+                            }
+                            Written::Failed => None,
+                        }
                     } else {
                         authed.try_run(op.name(), call).await.ok()
                     };
