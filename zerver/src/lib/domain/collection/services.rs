@@ -1,11 +1,15 @@
 //! The collection service: matching an export's rows and writing them.
 
 use uuid::Uuid;
-use zwipe_core::domain::collection::ImportCollectionError;
+use zwipe_core::domain::collection::{CollectionPageSize, CollectionSearch, ImportCollectionError};
 use zwipe_core::http::contracts::collection::{HttpCollectionImportSummary, HttpCollectionSummary};
 
+use crate::domain::collection::models::export_file;
 use crate::domain::collection::models::import::{
     self, ImportCollection, ImportCollectionFailure, Wanted,
+};
+use crate::domain::collection::models::rows::{
+    ExportFailure, SetRow, SetRowFailure, StoredPage, StoredRow,
 };
 use crate::domain::collection::ports::{CollectionRepository, CollectionService};
 
@@ -56,5 +60,27 @@ impl<R: CollectionRepository> CollectionService for Service<R> {
         oracle_id: Uuid,
     ) -> Result<Vec<Uuid>, anyhow::Error> {
         self.repo.fetch_owned_printing_ids(user_id, oracle_id).await
+    }
+
+    async fn set_row(&self, row: &SetRow) -> Result<Option<StoredRow>, SetRowFailure> {
+        self.repo.set_row(row).await
+    }
+
+    async fn fetch_page(
+        &self,
+        user_id: Uuid,
+        name: &CollectionSearch,
+        offset: u32,
+        limit: CollectionPageSize,
+    ) -> Result<StoredPage, anyhow::Error> {
+        self.repo.fetch_page(user_id, name, offset, limit).await
+    }
+
+    async fn export(&self, user_id: Uuid) -> Result<String, ExportFailure> {
+        let lines = self.repo.fetch_export_lines(user_id).await?;
+        tokio::task::spawn_blocking(move || export_file::write(&lines))
+            .await
+            .map_err(anyhow::Error::from)?
+            .map_err(ExportFailure::Database)
     }
 }

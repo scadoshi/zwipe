@@ -1,20 +1,28 @@
-//! Collection repository: matching export rows to printings, and writing an import in one
-//! transaction. Every value is bound; no export text reaches SQL text.
+//! Collection repository: matching export rows to printings, writing an import in one
+//! transaction, giving one row its copies, and reading the rows a page at a time. Every value
+//! is bound; no export or search text reaches SQL text.
 
 use std::collections::HashMap;
 
 use anyhow::Context;
 use chrono::{DateTime, Utc};
-use sqlx::{query, query_as, query_scalar};
+use sqlx::{AssertSqlSafe, query, query_as, query_scalar};
 use uuid::Uuid;
+use zwipe_core::domain::card::scryfall_data::rarity::Rarity;
+use zwipe_core::domain::collection::limits::MAX_ROWS;
 use zwipe_core::domain::collection::{
-    CardCondition, CardLanguage, CollectionTag, PurchaseCurrency, PurchasePrice,
+    CardCondition, CardLanguage, CollectionPageSize, CollectionQuantity, CollectionSearch,
+    CollectionTag, CollectionTags, Finish, PurchaseCurrency, PurchasePrice,
 };
 use zwipe_core::domain::deck::ImportMode;
 use zwipe_core::http::contracts::collection::HttpCollectionSummary;
 
+use crate::domain::collection::models::export_file::ExportLine;
 use crate::domain::collection::models::import::{
     Applied, CollectionCard, Lookups, NameMatch, Printing, Wanted,
+};
+use crate::domain::collection::models::rows::{
+    ExportFailure, SetRow, SetRowFailure, StoredPage, StoredRow,
 };
 use crate::domain::collection::ports::CollectionRepository;
 use crate::outbound::sqlx::postgres::Postgres;
@@ -186,6 +194,114 @@ impl CollectionRepository for Postgres {
         Ok(HttpCollectionSummary { cards, printings })
     }
 
+    async fn set_row(&self, row: &SetRow) -> Result<Option<StoredRow>, SetRowFailure> {
+        let condition = row.condition.map(CardCondition::as_str);
+        let language = row.language.map(CardLanguage::as_str);
+        let mut tx = self.pool.begin().await.context("collection set begin")?;
+        query(LOCK)
+            .bind(row.user_id)
+            .execute(&mut *tx)
+            .await
+            .context("collection set lock")?;
+        let Some(copies) = row.quantity.row() else {
+            query(REMOVE_ROW)
+                .bind(row.user_id)
+                .bind(row.scryfall_data_id)
+                .bind(row.finish.as_str())
+                .bind(condition)
+                .bind(language)
+                .execute(&mut *tx)
+                .await
+                .context("collection set remove")?;
+            tx.commit().await.context("collection set commit")?;
+            return Ok(None);
+        };
+        // The oracle id comes from the printing, so a printing with no card writes nothing. The
+        // text is built from constants only; every value is bound.
+        let written: Option<RowColumns> = query_as(AssertSqlSafe(format!(
+            "INSERT INTO collection_cards AS cc \
+                 (user_id, scryfall_data_id, oracle_id, finish, condition, language, quantity) \
+             SELECT $1, sd.id, sd.oracle_id, $3, $4, $5, $6 FROM scryfall_data sd \
+             WHERE sd.id = $2 AND sd.oracle_id IS NOT NULL \
+             ON CONFLICT (user_id, scryfall_data_id, finish, condition, language) DO UPDATE SET \
+                 quantity = EXCLUDED.quantity, updated_at = now() \
+             RETURNING {ROW_COLUMNS}"
+        )))
+        .bind(row.user_id)
+        .bind(row.scryfall_data_id)
+        .bind(row.finish.as_str())
+        .bind(condition)
+        .bind(language)
+        .bind(copies.get())
+        .fetch_optional(&mut *tx)
+        .await
+        .context("collection set write")?;
+        let Some(written) = written else {
+            return Err(SetRowFailure::UnknownPrinting);
+        };
+        tx.commit().await.context("collection set commit")?;
+        Ok(Some(stored_row(written)?))
+    }
+
+    async fn fetch_page(
+        &self,
+        user_id: Uuid,
+        name: &CollectionSearch,
+        offset: u32,
+        limit: CollectionPageSize,
+    ) -> Result<StoredPage, anyhow::Error> {
+        // Built from constants only; the user and the search are bound.
+        let total: i64 = query_scalar(AssertSqlSafe(format!("SELECT count(*) {PAGE_MATCH}")))
+            .bind(user_id)
+            .bind(name.as_str())
+            .fetch_one(&self.pool)
+            .await
+            .context("collection page count")?;
+        let columns: Vec<RowColumns> = query_as(AssertSqlSafe(format!(
+            "SELECT {ROW_COLUMNS} {PAGE_MATCH} \
+             {ROW_ORDER} LIMIT $3 OFFSET $4"
+        )))
+        .bind(user_id)
+        .bind(name.as_str())
+        .bind(i64::from(limit.get()))
+        .bind(i64::from(offset))
+        .fetch_all(&self.pool)
+        .await
+        .context("collection page")?;
+        let rows = columns
+            .into_iter()
+            .map(stored_row)
+            .collect::<Result<_, _>>()?;
+        Ok(StoredPage { rows, total })
+    }
+
+    async fn fetch_export_lines(&self, user_id: Uuid) -> Result<Vec<ExportLine>, ExportFailure> {
+        // One past the cap, so a collection too big to import back is told apart without
+        // reading all of it.
+        let cap = i64::try_from(MAX_ROWS)
+            .unwrap_or(i64::MAX)
+            .saturating_add(1);
+        // Built from constants only; the user and the cap are bound.
+        let rows: Vec<ExportColumns> = query_as(AssertSqlSafe(format!(
+            "SELECT sd.name, sd.set, sd.set_name, sd.collector_number, sd.rarity, \
+                 {ROW_COLUMNS}, (cc.purchase_price * 100)::bigint, cc.purchase_currency \
+             FROM collection_cards cc JOIN scryfall_data sd ON sd.id = cc.scryfall_data_id \
+             WHERE cc.user_id = $1 {ROW_ORDER} LIMIT $2"
+        )))
+        .bind(user_id)
+        .bind(cap)
+        .fetch_all(&self.pool)
+        .await
+        .context("collection export")?;
+        if rows.len() > MAX_ROWS {
+            return Err(ExportFailure::TooManyRows);
+        }
+        rows.into_iter()
+            .map(export_line)
+            .collect::<Result<_, _>>()
+            .map_err(ExportFailure::Database)
+    }
+
     async fn fetch_owned_printing_ids(
         &self,
         user_id: Uuid,
@@ -201,6 +317,149 @@ impl CollectionRepository for Postgres {
         .await
         .context("owned printings")
     }
+}
+
+/// Takes the per-user collection lock to the end of the transaction, so an import and an edit of
+/// one collection run one after the other.
+const LOCK: &str =
+    "SELECT pg_advisory_xact_lock(hashtext('collection_import'), hashtext($1::text))";
+
+/// A stored row's columns, in [`ROW_COLUMNS`]' order.
+type RowColumns = (
+    Uuid,
+    String,
+    Option<String>,
+    Option<String>,
+    i32,
+    Vec<String>,
+    Option<DateTime<Utc>>,
+);
+
+/// The columns a [`StoredRow`] reads, prefixed `cc.`.
+const ROW_COLUMNS: &str = "cc.scryfall_data_id, cc.finish, cc.condition, cc.language, cc.quantity, \
+     cc.tags, cc.added_at";
+
+/// A set call's removal: the one row with this key.
+const REMOVE_ROW: &str = "DELETE FROM collection_cards WHERE user_id = $1 AND scryfall_data_id = $2 \
+     AND finish = $3 AND condition IS NOT DISTINCT FROM $4 AND language IS NOT DISTINCT FROM $5";
+
+/// The rows a list's search matches: the user's, whose card names hold `$2` ignoring case and
+/// accents, every row when `$2` is empty. `strpos`, not `LIKE`, so `%` and `_` are text.
+const PAGE_MATCH: &str = "FROM collection_cards cc JOIN scryfall_data sd ON sd.id = cc.scryfall_data_id \
+     WHERE cc.user_id = $1 \
+       AND ($2 = '' OR strpos(lower(f_unaccent(sd.name)), lower(f_unaccent($2))) > 0)";
+
+/// The one variant of `all` whose stored spelling (`as_str`) is `text`.
+fn stored<T: Copy>(all: &[T], as_str: fn(T) -> &'static str, text: &str) -> Option<T> {
+    all.iter().copied().find(|value| as_str(*value) == text)
+}
+
+/// A stored row from its columns. The table's checks hold every value to a known one.
+fn stored_row(columns: RowColumns) -> Result<StoredRow, anyhow::Error> {
+    let (scryfall_data_id, finish, condition, language, quantity, tags, added_at) = columns;
+    let finish = stored(&Finish::ALL, Finish::as_str, &finish)
+        .with_context(|| format!("stored finish {finish:?}"))?;
+    let condition = condition
+        .map(|text| {
+            stored(&CardCondition::ALL, CardCondition::as_str, &text)
+                .with_context(|| format!("stored condition {text:?}"))
+        })
+        .transpose()?;
+    let language = language
+        .map(|text| {
+            stored(&CardLanguage::ALL, CardLanguage::as_str, &text)
+                .with_context(|| format!("stored language {text:?}"))
+        })
+        .transpose()?;
+    let quantity = CollectionQuantity::new(quantity).context("stored quantity")?;
+    let tags: Vec<CollectionTag> = tags
+        .iter()
+        .map(|tag| CollectionTag::new(tag).context("stored tag"))
+        .collect::<Result<_, _>>()?;
+    let tags = CollectionTags::try_from(tags).context("stored tags")?;
+    Ok(StoredRow {
+        scryfall_data_id,
+        finish,
+        condition,
+        language,
+        quantity,
+        tags,
+        added_at,
+    })
+}
+
+/// The list's order: by card name, then set, collector number (its number first), finish,
+/// condition and language, then printing.
+const ROW_ORDER: &str = "ORDER BY sd.name, sd.set, \
+     substring(sd.collector_number FROM '^[0-9]+')::numeric NULLS LAST, sd.collector_number, \
+     cc.finish, cc.condition NULLS FIRST, cc.language NULLS FIRST, cc.scryfall_data_id";
+
+/// An export line's columns, in the export query's order: the card's name, set code, set name,
+/// collector number and rarity, then [`ROW_COLUMNS`], then the price in cents and its currency.
+type ExportColumns = (
+    String,
+    String,
+    String,
+    String,
+    Option<String>,
+    Uuid,
+    String,
+    Option<String>,
+    Option<String>,
+    i32,
+    Vec<String>,
+    Option<DateTime<Utc>>,
+    Option<i64>,
+    Option<String>,
+);
+
+/// An export line from its columns.
+fn export_line(columns: ExportColumns) -> Result<ExportLine, anyhow::Error> {
+    let (
+        name,
+        set_code,
+        set_name,
+        collector_number,
+        rarity,
+        id,
+        finish,
+        condition,
+        language,
+        quantity,
+        tags,
+        added_at,
+        cents,
+        currency,
+    ) = columns;
+    let row = stored_row((id, finish, condition, language, quantity, tags, added_at))?;
+    let rarity = rarity
+        .as_deref()
+        .and_then(|code| Rarity::try_from(code).ok())
+        .map_or_else(String::new, |rarity| rarity.to_long_name().to_lowercase());
+    let purchase_price = cents
+        .map(PurchasePrice::from_cents)
+        .transpose()
+        .context("stored purchase price")?;
+    let purchase_currency = currency
+        .map(|code| code.parse::<PurchaseCurrency>())
+        .transpose()
+        .map_err(|_| anyhow::anyhow!("stored purchase currency"))?;
+    Ok(ExportLine {
+        name,
+        set_code,
+        set_name,
+        collector_number,
+        finish: row.finish,
+        rarity,
+        quantity: row.quantity,
+        scryfall_id: row.scryfall_data_id,
+        purchase_price,
+        purchase_currency,
+        condition: row.condition,
+        language: row.language,
+        added_at: row.added_at,
+        tags: row.tags,
+    })
 }
 
 /// A replace's removal: every row of the user's the import doesn't hold.

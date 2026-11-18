@@ -1,18 +1,27 @@
-//! Collection import, and the collection's reads for search.
+//! Collection import, the collection's reads for search, and editing and listing its rows.
+
+use std::collections::HashMap;
 
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
+use serde::Deserialize;
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::collection::ImportCollectionError;
+use zwipe_core::domain::collection::{
+    CardCondition, CardLanguage, CollectionPageSize, CollectionSearch, Finish,
+    ImportCollectionError,
+};
 use zwipe_core::http::contracts::collection::{
-    HttpCollectionImportSummary, HttpCollectionSummary, HttpImportCollection,
+    CollectionCard, HttpCollectionExport, HttpCollectionImportSummary, HttpCollectionPage,
+    HttpCollectionSummary, HttpImportCollection, HttpSetCollectionCard, HttpSetCollectionCardReply,
 };
 
 use crate::domain::card::ports::CardService;
 use crate::domain::card::requests::get_scryfall_data::ScryfallDataIds;
 use crate::domain::collection::models::export;
 use crate::domain::collection::models::import::{ImportCollection, ImportCollectionFailure};
+use crate::domain::collection::models::rows::{ExportFailure, SetRow, SetRowFailure, StoredRow};
 use crate::domain::collection::ports::CollectionService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
@@ -109,4 +118,190 @@ pub async fn owned_printings(
         .map_err(ApiError::from)?;
     mine.sort_by_key(|card| (card.scryfall_data.released_at, card.scryfall_data.id));
     Ok((StatusCode::OK, Json(mine)))
+}
+
+impl From<SetRowFailure> for ApiError {
+    fn from(value: SetRowFailure) -> Self {
+        match value {
+            SetRowFailure::UnknownPrinting => Self::UnprocessableEntity(value.to_string()),
+            SetRowFailure::Database(e) => e.to_500(),
+        }
+    }
+}
+
+/// Each of `rows` with its card, in order, read in one batch. A row whose card the catalog no
+/// longer serves is left out.
+async fn with_cards(
+    state: &AppState,
+    rows: Vec<StoredRow>,
+) -> Result<Vec<CollectionCard>, ApiError> {
+    if rows.is_empty() {
+        return Ok(Vec::new());
+    }
+    let ids: ScryfallDataIds = rows.iter().map(|row| row.scryfall_data_id).collect();
+    let cards: HashMap<Uuid, Card> = state
+        .card_service
+        .fetch_cards(&ids)
+        .await
+        .map_err(ApiError::from)?
+        .into_iter()
+        .map(|card| (card.scryfall_data.id, card))
+        .collect();
+    Ok(rows
+        .into_iter()
+        .filter_map(|row| {
+            let card = cards.get(&row.scryfall_data_id)?.clone();
+            Some(CollectionCard {
+                card,
+                finish: row.finish,
+                condition: row.condition,
+                language: row.language,
+                quantity: row.quantity,
+                tags: row.tags,
+                added_at: row.added_at,
+            })
+        })
+        .collect())
+}
+
+/// The line a set call gets for a value this server reads as unknown.
+fn unknown_value(field: &str) -> ApiError {
+    ApiError::UnprocessableEntity(format!("unknown {field}"))
+}
+
+/// Gives one row of the caller's collection its copies: the row with the call's printing,
+/// finish, condition and language (left out, the manual-add row), 0 to remove it. Answers with
+/// the row as it is now, or none once removed.
+///
+/// # Errors
+///
+/// Returns 422 for a printing the collection doesn't take, a finish, condition or language this
+/// server doesn't know, or copies outside 0 to 9999; 401 without a session; 429 past the rate
+/// limit; and 500 on a database failure.
+pub async fn set_collection_card(
+    user: AuthenticatedUser,
+    State(state): State<AppState>,
+    Json(body): Json<HttpSetCollectionCard>,
+) -> Result<(StatusCode, Json<HttpSetCollectionCardReply>), ApiError> {
+    let HttpSetCollectionCard {
+        scryfall_data_id,
+        finish,
+        condition,
+        language,
+        quantity,
+    } = body;
+    if finish == Finish::Unknown {
+        return Err(unknown_value("finish"));
+    }
+    if condition == Some(CardCondition::Unknown) {
+        return Err(unknown_value("condition"));
+    }
+    if language == Some(CardLanguage::Unknown) {
+        return Err(unknown_value("language"));
+    }
+    let row = SetRow {
+        user_id: user.id,
+        scryfall_data_id,
+        finish,
+        condition,
+        language,
+        quantity,
+    };
+    let stored = state.collection_service.set_row(&row).await?;
+    let card = with_cards(&state, stored.into_iter().collect())
+        .await?
+        .into_iter()
+        .next();
+    Ok((StatusCode::OK, Json(HttpSetCollectionCardReply { card })))
+}
+
+/// A list call's query as the URL gives it, checked by [`collection_page`].
+#[derive(Debug, Deserialize)]
+pub struct PageQuery {
+    name: Option<String>,
+    offset: Option<String>,
+    limit: Option<String>,
+}
+
+/// One page of the caller's collection, sorted by card name, then set, collector number and
+/// finish, searchable by card name ignoring case and accents.
+///
+/// # Errors
+///
+/// Returns 422 for a search past 100 characters, an offset that isn't a whole number, or a page
+/// size outside 1 to 100; 401 without a session; and 500 on a database failure.
+pub async fn collection_page(
+    user: AuthenticatedUser,
+    State(state): State<AppState>,
+    Query(query): Query<PageQuery>,
+) -> Result<(StatusCode, Json<HttpCollectionPage>), ApiError> {
+    let unprocessable = |e: &dyn std::fmt::Display| ApiError::UnprocessableEntity(e.to_string());
+    let name = CollectionSearch::new(query.name.as_deref().unwrap_or_default())
+        .map_err(|e| unprocessable(&e))?;
+    let offset: u32 = match query.offset.as_deref() {
+        None | Some("") => 0,
+        Some(text) => text
+            .parse()
+            .map_err(|_| ApiError::UnprocessableEntity("offset is a whole number".to_owned()))?,
+    };
+    let limit = match query.limit.as_deref() {
+        None | Some("") => CollectionPageSize::default(),
+        Some(text) => {
+            let rows: u32 = text
+                .parse()
+                .map_err(|_| ApiError::UnprocessableEntity("limit is a whole number".to_owned()))?;
+            CollectionPageSize::new(rows).map_err(|e| unprocessable(&e))?
+        }
+    };
+    let page = state
+        .collection_service
+        .fetch_page(user.id, &name, offset, limit)
+        .await
+        .map_err(|e| e.to_500())?;
+    let after = i64::from(offset).saturating_add(i64::from(limit.get()));
+    let next_offset = if after < page.total {
+        u32::try_from(after).ok()
+    } else {
+        None
+    };
+    let cards = with_cards(&state, page.rows).await?;
+    Ok((
+        StatusCode::OK,
+        Json(HttpCollectionPage {
+            cards,
+            total: page.total,
+            next_offset,
+        }),
+    ))
+}
+
+impl From<ExportFailure> for ApiError {
+    fn from(value: ExportFailure) -> Self {
+        match value {
+            ExportFailure::TooManyRows => Self::UnprocessableEntity(value.to_string()),
+            ExportFailure::Database(e) => e.to_500(),
+        }
+    }
+}
+
+/// The caller's collection as a ManaBox export, which a collection import reads back, named for
+/// today's date.
+///
+/// # Errors
+///
+/// Returns 422 for a collection with more rows than an import takes back, 401 without a
+/// session, 429 past the rate limit it shares with the import, and 500 on a database failure.
+pub async fn export_collection(
+    user: AuthenticatedUser,
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<HttpCollectionExport>), ApiError> {
+    let csv = state.collection_service.export(user.id).await?;
+    let file_name = format!(
+        "zwipe-collection-{}.csv",
+        chrono::Utc::now().format("%Y-%m-%d")
+    );
+    Ok((
+        StatusCode::OK,
+        Json(HttpCollectionExport { file_name, csv }),
+    ))
 }

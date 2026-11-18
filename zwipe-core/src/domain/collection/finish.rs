@@ -25,6 +25,9 @@ pub enum Finish {
 }
 
 impl Finish {
+    /// Every finish the server stores: all but [`Finish::Unknown`].
+    pub const ALL: [Self; 3] = [Self::Nonfoil, Self::Foil, Self::Etched];
+
     /// The stored spelling.
     #[must_use]
     pub fn as_str(self) -> &'static str {
@@ -83,8 +86,21 @@ mod tests {
     }
 
     #[test]
+    fn every_finish_but_unknown_is_stored() {
+        for finish in Finish::ALL {
+            match finish {
+                Finish::Nonfoil | Finish::Foil | Finish::Etched => {}
+                Finish::Unknown => panic!("Unknown is never stored"),
+            }
+        }
+        let spellings: std::collections::HashSet<&str> =
+            Finish::ALL.iter().map(|f| f.as_str()).collect();
+        assert_eq!(spellings.len(), Finish::ALL.len(), "one spelling each");
+    }
+
+    #[test]
     fn the_wire_spelling_round_trips() {
-        for finish in [Finish::Nonfoil, Finish::Foil, Finish::Etched] {
+        for finish in Finish::ALL {
             let wire = serde_json::to_string(&finish).unwrap();
             assert_eq!(wire, format!("\"{finish}\""));
             assert_eq!(serde_json::from_str::<Finish>(&wire).unwrap(), finish);

@@ -7,7 +7,7 @@ use axum::Router;
 use axum::body::Body;
 use axum::extract::DefaultBodyLimit;
 use axum::http::{HeaderMap, HeaderValue, Response, StatusCode, header};
-use axum::routing::{delete, get, patch, post};
+use axum::routing::{delete, get, patch, post, put};
 use tower_governor::GovernorLayer;
 use tower_governor::errors::GovernorError;
 use tower_governor::governor::GovernorConfigBuilder;
@@ -617,11 +617,13 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                             ),
                         ),
                 )
-                // The collection's reads ride the private limits; its import, with its own
-                // body cap and limits, is in collection_routes.
+                // The collection's reads and one-row edits ride the private limits; its import,
+                // with its own body cap and limits, is in collection_routes.
                 .nest(
                     "/collection",
                     Router::new()
+                        .route("/", get(collection::collection_page))
+                        .route("/cards", put(collection::set_collection_card))
                         .route("/summary", get(collection::collection_summary))
                         .route("/printings/{oracle_id}", get(collection::owned_printings)),
                 )
@@ -827,6 +829,14 @@ pub fn collection_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                 .route(
                     "/import",
                     post(collection::import_collection).layer(
+                        GovernorLayer::new(Arc::clone(&collection_import_user_config))
+                            .error_handler(unauthorized_on_missing_key),
+                    ),
+                )
+                // The export reads the whole collection, so it shares the import's limits.
+                .route(
+                    "/export",
+                    get(collection::export_collection).layer(
                         GovernorLayer::new(collection_import_user_config)
                             .error_handler(unauthorized_on_missing_key),
                     ),

@@ -3,11 +3,16 @@
 use std::future::Future;
 
 use uuid::Uuid;
+use zwipe_core::domain::collection::{CollectionPageSize, CollectionSearch};
 use zwipe_core::domain::deck::ImportMode;
 use zwipe_core::http::contracts::collection::{HttpCollectionImportSummary, HttpCollectionSummary};
 
+use crate::domain::collection::models::export_file::ExportLine;
 use crate::domain::collection::models::import::{
     Applied, CollectionCard, ImportCollection, ImportCollectionFailure, Lookups, Wanted,
+};
+use crate::domain::collection::models::rows::{
+    ExportFailure, SetRow, SetRowFailure, StoredPage, StoredRow,
 };
 
 /// Database port for collections.
@@ -43,6 +48,31 @@ pub trait CollectionRepository: Clone + Send + Sync + 'static {
         user_id: Uuid,
         oracle_id: Uuid,
     ) -> impl Future<Output = Result<Vec<Uuid>, anyhow::Error>> + Send;
+
+    /// Gives one row its copies, under the same per-user lock an import takes: inserts or
+    /// changes it, or removes it at 0. Returns the row as stored, `None` once removed.
+    fn set_row(
+        &self,
+        row: &SetRow,
+    ) -> impl Future<Output = Result<Option<StoredRow>, SetRowFailure>> + Send;
+
+    /// The page of `user_id`'s rows from `offset`, `limit` long, whose card names hold `name`
+    /// (ignoring case and accents; every row when it is empty), sorted by name, then set,
+    /// collector number, finish, condition and language.
+    fn fetch_page(
+        &self,
+        user_id: Uuid,
+        name: &CollectionSearch,
+        offset: u32,
+        limit: CollectionPageSize,
+    ) -> impl Future<Output = Result<StoredPage, anyhow::Error>> + Send;
+
+    /// Every row of `user_id`'s collection with its card's facts, in the list's order, for an
+    /// export.
+    fn fetch_export_lines(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<Vec<ExportLine>, ExportFailure>> + Send;
 }
 
 /// Service port for collections.
@@ -65,4 +95,22 @@ pub trait CollectionService: Clone + Send + Sync + 'static {
         user_id: Uuid,
         oracle_id: Uuid,
     ) -> impl Future<Output = Result<Vec<Uuid>, anyhow::Error>> + Send;
+
+    /// Gives one row its copies; see [`CollectionRepository::set_row`].
+    fn set_row(
+        &self,
+        row: &SetRow,
+    ) -> impl Future<Output = Result<Option<StoredRow>, SetRowFailure>> + Send;
+
+    /// One page of `user_id`'s rows; see [`CollectionRepository::fetch_page`].
+    fn fetch_page(
+        &self,
+        user_id: Uuid,
+        name: &CollectionSearch,
+        offset: u32,
+        limit: CollectionPageSize,
+    ) -> impl Future<Output = Result<StoredPage, anyhow::Error>> + Send;
+
+    /// `user_id`'s collection as a ManaBox export's text.
+    fn export(&self, user_id: Uuid) -> impl Future<Output = Result<String, ExportFailure>> + Send;
 }
