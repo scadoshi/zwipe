@@ -2937,3 +2937,101 @@ body {
         transition: none;
     }
 }
+
+/* The card screen: the deck page's wide card layout with the card in the
+   middle column, its details docked at the right and its stats widgets at the
+   left. A phone stacks the card, the details and the widgets. */
+.web-card-image {
+    width: 100%;
+    max-width: 26rem;
+}
+
+.web-card-image img {
+    width: 100%;
+    height: auto;
+}
+
+.web-card-stats {
+    width: 100%;
+    max-width: 20rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.web-card-stats-table {
+    row-gap: var(--space-2);
+    padding: var(--space-3);
+}
+
+/* Several cards that share a name, or no card: one centered column. */
+.web-card-list {
+    width: 100%;
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: var(--space-3) var(--space-4);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.web-card-results {
+    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(12.5rem, 15rem));
+    justify-content: center;
+}
+
+.web-card-message {
+    text-align: center;
+    padding: var(--space-5) 0;
+}
+
+@media (min-width: 900px) {
+    .web-card-stats {
+        position: fixed;
+        top: var(--web-dock-panel-top);
+        left: 1rem;
+        z-index: 40;
+        width: var(--web-dock-panel-width);
+        max-width: none;
+    }
+
+    .web-card-list {
+        max-width: 60rem;
+    }
+}
+
+@media (max-width: 899px) {
+    .web-card-page {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-4);
+        padding: var(--space-3) var(--space-4);
+    }
+
+    .web-card-page .web-cards-swipe-main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-3);
+        width: 100%;
+    }
+
+    .web-card-page .web-card-image {
+        max-width: 20rem;
+    }
+
+    .web-card-page .web-swipe-details {
+        display: block;
+        width: 100%;
+        max-width: 20rem;
+    }
+
+    .web-card-page .web-swipe-details > .card-details-panel {
+        margin: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+}

@@ -12,6 +12,7 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_ui::deck::view::DeckView;
+use zwipe_ui::screens::card_lookup::Ask;
 
 use crate::inbound::screens::about::About;
 use crate::inbound::screens::account::Account;
@@ -19,6 +20,7 @@ use crate::inbound::screens::activity::Activity;
 use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
+use crate::inbound::screens::card::{CardNamed, CardPrinting};
 use crate::inbound::screens::commander_maybeboard::CommanderMaybeboard;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::deck::cards::add::AddDeckCard;
@@ -84,6 +86,12 @@ pub enum Route {
         /// A shared deck's decklist, read only, as the owner's Export.
         #[route("/:owner/deck/:slug/:token/export")]
         SharedDeckExport { owner: String, slug: String, token: String },
+        /// A card by its name's slug, `?open=send-to` opening Send to once it shows.
+        #[route("/card/:slug?:open")]
+        CardNamed { slug: String, open: Option<Ask> },
+        /// One printing of a card.
+        #[route("/card/:slug/:id?:open")]
+        CardPrinting { slug: String, id: Uuid, open: Option<Ask> },
         /// The guides, the pages zwipe.net draws.
         #[route("/guides")]
         Guides {},

@@ -498,3 +498,12 @@ fn send_to_and_share_need_a_card_on_screen() {
     assert_eq!(state.update(Action::SendTo { signed_in: false }), vec![]);
     assert_eq!(state.update(Action::Share), vec![]);
 }
+
+#[test]
+fn the_send_to_ask_reads_back_from_its_query_value_and_nothing_else_does() {
+    assert_eq!(Ask::SendTo.to_string().parse(), Ok(Ask::SendTo));
+    assert_eq!(Ask::SendTo.to_string(), "send-to");
+    for other in ["", "send", "Send-To", "share"] {
+        assert!(other.parse::<Ask>().is_err(), "{other:?}");
+    }
+}

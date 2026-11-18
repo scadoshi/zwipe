@@ -18,6 +18,8 @@ const ROUTES = [
   "/about",
   "/account",
   "/activity",
+  "/card/:slug",
+  "/card/:slug/:id",
   "/changelog",
   "/config",
   "/decks",

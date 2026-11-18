@@ -15,8 +15,12 @@
 //! The model holds what loaded and decides what each action does. Drawing the card, the sheets,
 //! the share sheet and the clipboard stay in the client.
 
+pub mod stats;
 #[cfg(test)]
 mod tests;
+
+use std::fmt;
+use std::str::FromStr;
 
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -31,6 +35,55 @@ pub const NOT_FOUND: &str = "No card by that name";
 
 /// The toast once the card's link is copied.
 pub const LINK_COPIED: &str = "Share link copied";
+
+/// What a card route asks the screen to open once the card shows, its `open` query value. A
+/// route with no `open` asks for nothing, so the route holds an `Option<Ask>`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub enum Ask {
+    /// Send to: `?open=send-to`. The only value, so it is also the default the router asks for
+    /// when it parses a query.
+    #[default]
+    SendTo,
+}
+
+impl Ask {
+    /// The query value.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::SendTo => "send-to",
+        }
+    }
+}
+
+impl fmt::Display for Ask {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// An `open` query value that names no [`Ask`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParseAskError(pub String);
+
+impl fmt::Display for ParseAskError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unknown card ask {:?}", self.0)
+    }
+}
+
+impl std::error::Error for ParseAskError {}
+
+impl FromStr for Ask {
+    type Err = ParseAskError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "send-to" => Ok(Self::SendTo),
+            other => Err(ParseAskError(other.to_owned())),
+        }
+    }
+}
 
 /// The heading over the cards that share a name, the first one's.
 #[must_use]

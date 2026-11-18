@@ -35,6 +35,8 @@ pub fn return_route(path: &str) -> Option<Route> {
         | Route::About {}
         | Route::NotFound { .. } => None,
         Route::SharedDeck { .. }
+        | Route::CardNamed { .. }
+        | Route::CardPrinting { .. }
         | Route::SharedDeckExport { .. }
         | Route::Guides {}
         | Route::GuidePage { .. }
