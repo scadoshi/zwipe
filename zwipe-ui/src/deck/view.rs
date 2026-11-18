@@ -125,6 +125,12 @@ impl StatsProfile {
             .saturating_add(self.other_tags.len())
     }
 
+    /// The currency Budget opens in: the deck's own, USD when it has none.
+    #[must_use]
+    pub fn currency(&self) -> PriceCurrency {
+        self.price_target_currency.unwrap_or_default()
+    }
+
     /// The `Total price` row's value: the running total in `currency`, then ` / ` and the price
     /// target in its own stored currency when the deck has one. Nothing priced reads as the
     /// currency's zero, and the target is never converted.
@@ -133,7 +139,7 @@ impl StatsProfile {
         let running = currency.format_amount(total.unwrap_or(0.0));
         match self.price_target {
             Some(target) => {
-                let stored = self.price_target_currency.unwrap_or_default();
+                let stored = self.currency();
                 format!("{running} / {}", stored.format_amount(target))
             }
             None => running,
@@ -301,6 +307,14 @@ mod tests {
             total_price_line(&profile, Some(3.0), PriceCurrency::Usd),
             "$3.00 / 100.00 TIX"
         );
+    }
+
+    #[test]
+    fn budget_opens_in_the_deck_s_own_currency_else_usd() {
+        let mut profile = deck_profile("Budget");
+        assert_eq!(StatsProfile::from(&profile).currency(), PriceCurrency::Usd);
+        profile.price_target_currency = Some(PriceCurrency::Eur);
+        assert_eq!(StatsProfile::from(&profile).currency(), PriceCurrency::Eur);
     }
 
     #[test]

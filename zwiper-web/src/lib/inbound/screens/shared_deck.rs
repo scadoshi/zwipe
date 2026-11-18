@@ -282,7 +282,24 @@ fn SharedDeckView(
     let selected: Signal<Option<Uuid>> = use_signal(|| None);
     let face = use_signal(|| 0usize);
     let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
-    let currency = use_signal(PriceCurrency::default);
+    let mut currency = use_signal(PriceCurrency::default);
+    // Once per deck, Budget opens in the deck's own currency; a pick holds for the visit.
+    let mut seeded_for: Signal<Option<(Option<String>, String)>> = use_signal(|| None);
+    let opening = deck.as_ref().map(|d| {
+        (
+            (d.owner.clone(), d.name.clone()),
+            StatsProfile::from(d).currency(),
+        )
+    });
+    use_effect(use_reactive!(|opening| {
+        let Some((key, open_in)) = opening else {
+            return;
+        };
+        if seeded_for.peek().as_ref() != Some(&key) {
+            seeded_for.set(Some(key));
+            currency.set(open_in);
+        }
+    }));
     // The stacks' reveal and whether the open card's drawer shows.
     let reveal = use_signal(Reveal::default);
     let details_open = use_signal(|| false);

@@ -5,8 +5,7 @@ use std::collections::HashSet;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics::card_price;
-use zwipe_core::domain::deck::{DeckEntry, DeckWarning, WarningAction};
+use zwipe_core::domain::deck::{DeckEntry, DeckWarning, WarningAction, deck_metrics};
 
 /// A warning's fix.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -60,12 +59,6 @@ pub fn labels(fix: Fix) -> Vec<String> {
     }
 }
 
-/// The Unpriced warning's button while its cards are hidden.
-pub const SHOW_UNPRICED: &str = "Show";
-
-/// The Unpriced warning's button while its cards show.
-pub const HIDE_UNPRICED: &str = "Hide";
-
 /// The deck's cards with no price in `currency`, one per printing in deck order: the mainboard's,
 /// then each command-zone card not also on the mainboard. These are the copies the Budget's total
 /// and average leave out, as [`DeckMetrics`](zwipe_core::domain::deck::DeckMetrics) counts them.
@@ -89,7 +82,7 @@ pub fn unpriced(
     main.iter()
         .copied()
         .chain(zone)
-        .filter(|c| card_price(&c.scryfall_data, currency).is_none())
+        .filter(|c| deck_metrics::card_price(&c.scryfall_data, currency).is_none())
         .filter(|c| seen.insert(c.scryfall_data.id))
         .cloned()
         .collect()

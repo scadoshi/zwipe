@@ -245,8 +245,8 @@ pub fn WarningsBody(
     }
 }
 
-/// The Unpriced entry: how many cards have no price, and its Show button, which lays the cards
-/// out as chips under it. It starts with them hidden.
+/// The Unpriced entry: a chip with the panels' caret that says how many cards have no price and
+/// lays them out as chips under it, in its row. It starts with them hidden.
 #[component]
 fn UnpricedRow(entry: UnpricedEntry) -> Element {
     let mut shown = use_signal(|| false);
@@ -257,25 +257,29 @@ fn UnpricedRow(entry: UnpricedEntry) -> Element {
     } = entry;
     let line = warning::unpriced_line(cards.len(), currency);
     rsx! {
+        // One row: the chips wrap onto their own line under the count, inside it.
         div { class: "settings-row deck-warning-row",
-            span { class: "text-muted", "{line}" }
-            Button {
-                variant: ButtonVariant::Small,
-                class: "deck-unpriced-toggle".to_owned(),
-                style: WARNING_BUTTON_STYLE,
-                onclick: move |_| shown.toggle(),
-                if shown() { {warning::HIDE_UNPRICED} } else { {warning::SHOW_UNPRICED} }
+            Chip { selected: false, onclick: move |_| shown.toggle(),
+                span {
+                    class: "card-row-arrow",
+                    style: if shown() { "transform:rotate(90deg);" } else { "transform:rotate(0deg);" },
+                    "\u{25b8}"
+                }
+                "{line}"
             }
-        }
-        if shown() {
-            div { class: "settings-row deck-warning-row",
-                div { class: "chip-row deck-unpriced-chips",
-                    for card in cards {
-                        Chip {
-                            key: "{card.scryfall_data.id}",
-                            selected: false,
-                            onclick: move |_| open.call(card.scryfall_data.id),
-                            "{card.scryfall_data.name}"
+            // The panels' fold, so the cards ease open and shut; shut, they take no focus.
+            div {
+                class: if shown() { "collapsible open deck-unpriced-fold" } else { "collapsible deck-unpriced-fold" },
+                inert: (!shown()).then_some("true"),
+                div { class: "collapsible-inner",
+                    div { class: "chip-row deck-unpriced-chips",
+                        for card in cards {
+                            Chip {
+                                key: "{card.scryfall_data.id}",
+                                selected: false,
+                                onclick: move |_| open.call(card.scryfall_data.id),
+                                "{card.scryfall_data.name}"
+                            }
                         }
                     }
                 }
