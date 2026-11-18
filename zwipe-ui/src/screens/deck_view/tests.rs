@@ -710,13 +710,14 @@ fn a_clone_toasts_the_typed_name_and_opens_the_copy() {
     let effects = state.update(Action::Clone {
         name: "  Elves 2 ".to_owned(),
     });
-    let ticket = ticket_of(&effects);
+    let (ticket, id) = clone_id(&effects);
     assert_eq!(
         effects,
         [Effect::CloneDeck {
             ticket,
             deck_id: profile.id,
-            name: "Elves 2".to_owned()
+            name: "Elves 2".to_owned(),
+            id,
         }]
     );
     let copy = Uuid::new_v4();
@@ -1183,5 +1184,42 @@ fn before_the_deck_lands_the_count_includes_the_command_zone_as_the_metrics_will
         state.card_count(),
         64,
         "the mainboard's 62, the commander and the partner"
+    );
+}
+
+/// The ticket and copy id of `effects`' one clone.
+fn clone_id(effects: &[Effect]) -> (Ticket, Uuid) {
+    let [Effect::CloneDeck { ticket, id, .. }] = effects else {
+        panic!("{effects:?}");
+    };
+    (*ticket, *id)
+}
+
+#[test]
+fn a_clone_saved_again_after_a_failure_keeps_its_id_until_the_name_changes() {
+    let (profile, built) = two_cards("Elves");
+    let mut state = loaded(&profile, built);
+    let clone = |name: &str| Action::Clone {
+        name: name.to_owned(),
+    };
+    let (ticket, first) = clone_id(&state.update(clone("Elves 2")));
+    let _ = state.update(Action::Failed { ticket });
+
+    // The first may have landed: the same name goes again under the same id, and the server
+    // answers the copy it made.
+    let (ticket, again) = clone_id(&state.update(clone(" Elves 2 ")));
+    assert_eq!(again, first, "the same name, the same id");
+    let _ = state.update(Action::Failed { ticket });
+
+    let (ticket, renamed) = clone_id(&state.update(clone("Elves 3")));
+    assert_ne!(renamed, first, "a new name is a new copy");
+    let _ = state.update(Action::Cloned {
+        ticket,
+        deck_id: renamed,
+    });
+    let (_, next) = clone_id(&state.update(clone("Elves 3")));
+    assert_ne!(
+        next, renamed,
+        "a copy that went through lets the next be a new one"
     );
 }
