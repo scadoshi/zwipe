@@ -13,7 +13,7 @@ use zwipe_ui::shortcuts::{self, GlobalKey, RowPart, SheetGroup};
 use crate::hint::KeyGlyph;
 use crate::keys::guard;
 use crate::media::use_pointer;
-use crate::{DialogAction, HintKey, data_action};
+use crate::{DialogAction, HintKey};
 
 /// The hint's keyboard button's icon: a keyboard, its keys and space bar.
 const KEYBOARD: &str = "M3 7h18v10H3zM7 10.5h.01M10.5 10.5h.01M14 10.5h.01M17.5 10.5h.01M8 14h8";
@@ -123,8 +123,8 @@ pub fn use_offer_shortcuts(screen: ShortcutsList) {
 
 /// Answers `?` with `on_hint`, the page's own hint as its `?` button opens it, Shift+H with the
 /// shortcuts sheet while a screen that offers it is mounted ([`use_offer_shortcuts`]), and `t`
-/// with the theme sheet, pressing the button marked [`data_action::THEMES`], while this
-/// registration is the newest and the key reaches the screen. A page without a hint passes
+/// with the theme sheet opened on its search field, pressing the button marked
+/// [`crate::data_action::THEMES`], while this registration is the newest and the key reaches the screen. A page without a hint passes
 /// `None`, and `?` does nothing there.
 pub fn use_global_keys(on_hint: Option<Callback<()>>) {
     let open = try_use_context::<ShortcutsOpen>().map(|ShortcutsOpen(open)| open);
@@ -179,7 +179,7 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
                         }
                     }
                     Some(GlobalKey::Themes) => {
-                        document::eval(&guard::press_first_js("body", &[data_action::THEMES]));
+                        document::eval(&themes_key_js());
                     }
                     None => {}
                 }
@@ -192,6 +192,11 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
         }
         document::eval(&GLOBAL_KEYS_DROP_JS.replace("__ID__", &id.to_string()));
     });
+}
+
+/// What `t` runs: opens the theme sheet on its search field.
+fn themes_key_js() -> String {
+    orangui::open_themes_js()
 }
 
 /// The shortcuts sheet: every key of the newest screen that offers it with what it does, in its
@@ -299,6 +304,16 @@ window.__zwipeGlobalKeys = (window.__zwipeGlobalKeys || []).filter((id) => id !=
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn t_opens_the_theme_sheet_on_its_search_field() {
+        let js = themes_key_js();
+        assert!(js.contains(r#"[data-action="themes"]"#), "{js}");
+        assert!(
+            js.contains(".theme-search"),
+            "focuses the search field: {js}"
+        );
+    }
 
     /// The action for `offered` and `keyboard`, built inside a runtime as a callback needs.
     fn action(offered: bool, keyboard: bool) -> Option<DialogAction> {
