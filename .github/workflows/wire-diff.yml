@@ -59,7 +59,6 @@ jobs:
     env:
       # The service database's own throwaway credentials; the seed guard accepts only this machine.
       VERIFY_TEMPLATE_URL: postgres://postgres:postgres@localhost:5432/zwipe_wire_template
-      WIRE_DIR: ${{ github.workspace }}/../wire-diff
       SQLX_OFFLINE: "true"
 
     steps:
@@ -67,6 +66,10 @@ jobs:
         with:
           # run.sh exports main and the candidate with git archive, so it needs origin/main.
           fetch-depth: 0
+      # The runner's temp dir, outside the checkout: the artifact upload takes no path with `..`,
+      # and job-level env can't read the runner context.
+      - name: Set the work dir
+        run: echo "WIRE_DIR=$RUNNER_TEMP/wire-diff" >>"$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           toolchain: stable
