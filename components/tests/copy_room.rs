@@ -74,3 +74,16 @@ fn plus_is_disabled_once_the_deck_is_at_its_limit() {
     let (_, plus) = steppers(&render(room));
     assert!(!plus.contains("disabled"), "{plus}");
 }
+
+#[test]
+fn a_disabled_plus_looks_off_as_a_stepper_at_its_bound_does() {
+    let css = components::MAGIC_CSS;
+    assert!(
+        css.contains(".stepper-btn:disabled,\n.card-action-btn:disabled {\n    opacity: 0.5;\n    cursor: default;\n}"),
+        "faded on a dark theme"
+    );
+    assert!(
+        css.contains("[class*=\"theme-\"][class*=\"-light\"] .stepper-btn:disabled,\n[class*=\"theme-\"][class*=\"-light\"] .card-action-btn:disabled {\n    opacity: 1;\n    color: var(--text-muted);\n}"),
+        "its text muted on a light one"
+    );
+}

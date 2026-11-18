@@ -3231,14 +3231,16 @@ footer.site-footer .site-footer-note {
     text-decoration: none;
 }
 
-/* A stepper's button at its bound is off: faded on a dark theme, its text
-   muted on a light one, as the kit's buttons are. */
-.stepper-btn:disabled {
+/* A stepper's button at its bound is off, a card's + included: faded on a
+   dark theme, its text muted on a light one, as the kit's buttons are. */
+.stepper-btn:disabled,
+.card-action-btn:disabled {
     opacity: 0.5;
     cursor: default;
 }
 
-[class*="theme-"][class*="-light"] .stepper-btn:disabled {
+[class*="theme-"][class*="-light"] .stepper-btn:disabled,
+[class*="theme-"][class*="-light"] .card-action-btn:disabled {
     opacity: 1;
     color: var(--text-muted);
 }
