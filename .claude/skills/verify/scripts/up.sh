@@ -10,6 +10,8 @@ step() { echo "[$((SECONDS - started))s] $*"; }
 
 TEMPLATE="$(with_user "$(template_url)")"
 require_local "$TEMPLATE"
+# down.sh tears this run down from the same server.
+echo "$TEMPLATE" >"$RUN_DIR/template.url"
 TEMPLATE_DB="$(db_name "$TEMPLATE")"
 ADMIN="$(with_db "$TEMPLATE" postgres)"
 VERIFY_URL="$(with_db "$TEMPLATE" "$VERIFY_DB")"

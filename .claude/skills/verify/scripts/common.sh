@@ -1,9 +1,12 @@
 # Shared by up.sh and down.sh: where a run keeps its state, and the local-only guard.
 
-RUN_DIR="${VERIFY_DIR:-/tmp/zwipe-verify}"
+# A run is keyed by its zerver port, which no two runs on one machine can share: its work dir
+# and its database carry the port, so one run's down.sh never stops another's zerver or drops
+# its database.
 ZERVER_PORT="${ZERVER_PORT:-3100}"
 WEB_PORT="${WEB_PORT:-8100}"
-VERIFY_DB="zwipe_verify"
+RUN_DIR="${VERIFY_DIR:-/tmp/zwipe-verify-$ZERVER_PORT}"
+VERIFY_DB="${VERIFY_DB:-zwipe_verify_$ZERVER_PORT}"
 
 # The database the verify copy is made from: VERIFY_TEMPLATE_URL, else zerver/.env's
 # DATABASE_URL, else the dev setup's default.
@@ -15,6 +18,29 @@ template_url() {
   else
     echo "postgres:///zerver?user=$(whoami)"
   fi
+}
+
+# The template this run was copied from, for down.sh: VERIFY_TEMPLATE_URL, else the one up.sh
+# saved in the run's dir, else template_url's default. A run on a non-default Postgres is then
+# torn down from the same server it was made on.
+saved_template_url() {
+  if [ -n "${VERIFY_TEMPLATE_URL:-}" ]; then
+    echo "$VERIFY_TEMPLATE_URL"
+  elif [ -s "$RUN_DIR/template.url" ]; then
+    cat "$RUN_DIR/template.url"
+  else
+    template_url
+  fi
+}
+
+# Whether $1 is a running zerver's pid. down.sh checks before it stops one, since a pid file can
+# outlive its process and the pid can come back as anything.
+is_zerver_pid() {
+  [ -n "$1" ] || return 1
+  case "$(ps -o command= -p "$1" 2>/dev/null)" in
+    */zerver | */zerver\ * | zerver | zerver\ *) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 # Refuses any database URL that isn't this machine, through the seed scripts' shared guard
