@@ -1099,3 +1099,35 @@ fn a_refused_star_leaves_the_undone_move_standing_unstarred() {
     );
     assert_eq!(state.entries()[0].deck_card.mvp_at, None);
 }
+
+#[test]
+fn a_filter_that_matches_nothing_says_so_in_place_of_the_card() {
+    let mut state = loaded(deck_of(&["Shock", "Opt"]));
+    assert_eq!(state.empty_note(), None, "cards show");
+    let mut nothing = CardQueryBuilder::default();
+    nothing.set_name_contains("zzqx");
+    let _ = state.update(Action::Filter(nothing));
+    assert_eq!(state.status(), Status::Empty);
+    assert_eq!(state.empty_note(), Some(NO_MATCHES));
+    let _ = state.update(Action::Filter(CardQueryBuilder::default()));
+    assert_eq!(
+        state.empty_note(),
+        None,
+        "the filter cleared, the cards show"
+    );
+}
+
+#[test]
+fn a_board_emptied_by_swipes_has_no_filter_note() {
+    let mut state = loaded(deck_of(&["Opt"]));
+    let mut opt = CardQueryBuilder::default();
+    opt.set_name_contains("Opt");
+    let _ = state.update(Action::Filter(opt));
+    let _ = swipe_and_land(&mut state, Action::Remove);
+    assert_eq!(state.status(), Status::Empty);
+    assert_eq!(
+        state.empty_note(),
+        None,
+        "the board is empty, not the filter's pick"
+    );
+}

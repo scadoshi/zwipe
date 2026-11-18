@@ -638,6 +638,11 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
         (s.window().to_vec(), s.entering())
     };
     let view = board_filter();
+    let empty_note = remove_cards::filtered_empty_note(
+        loaded() && stack.read().is_empty(),
+        &filter.read(),
+        entries.read().iter().any(|e| view.holds(e.deck_card.board)),
+    );
     let dot = filter::shows_dot(&filter.read());
     let sources = Sources::deck(
         &entries
@@ -676,7 +681,8 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                                 ghost: true,
                             }
                         } else {
-                            CardGhost {}
+                            // Why there is no card, inside the card's own box, as Add says it.
+                            CardGhost { note: empty_note.map(str::to_owned) }
                         }
                     }
                 }

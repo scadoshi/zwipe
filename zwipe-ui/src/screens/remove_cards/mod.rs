@@ -1130,6 +1130,19 @@ impl State {
         }
     }
 
+    /// The line the empty card shows in place of a card: [`NO_MATCHES`] when the filter hides
+    /// every card the picked board holds. `None` while cards show, and when the board itself is
+    /// empty.
+    #[must_use]
+    pub fn empty_note(&self) -> Option<&'static str> {
+        let board = self.board;
+        filtered_empty_note(
+            self.status() == Status::Empty,
+            &self.filter,
+            self.entries.iter().any(|e| board.holds(e.deck_card.board)),
+        )
+    }
+
     /// The deck being trimmed, once [`Action::Load`] has named it.
     #[must_use]
     pub fn deck_id(&self) -> Option<Uuid> {
@@ -1189,6 +1202,18 @@ impl State {
     pub fn index(&self) -> usize {
         self.stack.index()
     }
+}
+
+/// The line an empty pile shows in place of a card: [`NO_MATCHES`] when the pile is empty,
+/// `filter` narrows it, and the picked board still holds cards, so the filter hides every one.
+/// A board emptied by its own swipes, or with nothing on it, gets `None`.
+#[must_use]
+pub fn filtered_empty_note(
+    pile_empty: bool,
+    filter: &CardQueryBuilder,
+    board_has_cards: bool,
+) -> Option<&'static str> {
+    (pile_empty && !filter.is_empty() && board_has_cards).then_some(NO_MATCHES)
 }
 
 /// The toast for an undo the deck cards view's Undo already did.

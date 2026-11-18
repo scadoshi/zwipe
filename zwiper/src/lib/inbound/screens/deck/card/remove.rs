@@ -595,6 +595,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let state = driver.model.read();
     let stack_empty = state.is_empty();
     let can_undo = state.can_undo();
+    let empty_note = state.empty_note();
     let window = state.window().to_vec();
     let current = state.current().cloned();
     let board_filter = state.board();
@@ -645,10 +646,11 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 usage_buffer().record_swipe(Direction::Down);
                                 driver.dispatch(Action::Undo);
                             },
-                            CardSkeleton {}
+                            CardSkeleton { note: empty_note.map(str::to_owned) }
                         }
                     } else {
-                        CardSkeleton {}
+                        // Why there is no card, inside the card's own box, as deck Add says it.
+                        CardSkeleton { note: empty_note.map(str::to_owned) }
                     }
 
                 }

@@ -72,6 +72,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "At phone width, the open menu's bottom row no longer sits on its edge",
         "On the web, Esc goes back when nothing is open",
         "On the web, Esc in a field only leaves the field",
+        "Remove shows No cards match your filters when a filter matches nothing",
     ],
 }];
 
