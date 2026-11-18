@@ -252,6 +252,24 @@ impl FromRequestParts<AppState> for AuthenticatedUser {
     }
 }
 
+/// For a route open to signed-out callers: no `Authorization` header is `None`. A header that is
+/// there is checked as on a signed-in route, so a bad or expired token answers 401 and the client
+/// refreshes, rather than being served as signed out.
+impl axum::extract::OptionalFromRequestParts<AppState> for AuthenticatedUser {
+    type Rejection = StatusCode;
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Option<Self>, Self::Rejection> {
+        if !parts.headers.contains_key(AUTHORIZATION) {
+            return Ok(None);
+        }
+        <Self as FromRequestParts<AppState>>::from_request_parts(parts, state)
+            .await
+            .map(Some)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};

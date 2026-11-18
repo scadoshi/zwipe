@@ -25,6 +25,10 @@ use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtr
 /// truncated panic text, and the route takes it unauthenticated.
 const CRASH_REPORT_BODY_LIMIT: usize = 4096;
 
+/// Largest card lookup body accepted, in bytes. The largest valid lookup, a 100-character name
+/// and fifteen short chip words, is about 1 KB, and the route takes it signed out.
+const CARD_LOOKUP_BODY_LIMIT: usize = 4096;
+
 /// Largest decklist import body accepted, in bytes. A 500-card list pasted
 /// from any deck site is about 15 KB.
 const IMPORT_BODY_LIMIT: usize = 64 * 1024;
@@ -232,6 +236,17 @@ pub fn public_routes() -> Router<AppState> {
             .expect("rate limit config: burst_size and period must be non-zero"),
         LIMITER_PURGE_EVERY,
     );
+    // Per IP, 20 at once, then one more each second: the card lookup is a real search open to
+    // signed-out callers. A search box debounced at 250ms sends up to 4 a second, 3 more than the
+    // refill, so the burst carries about 6 seconds of steady typing before a 429.
+    let public_lookup_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(1))
+            .burst_size(20)
+            .key_extractor(CfConnectingIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
     // 30 req / 2s per IP: public marketing aggregates. CF cache absorbs most
     // traffic; this guards origin if someone bypasses CF or warms many POPs.
     let public_marketing_config = purging(
@@ -428,6 +443,7 @@ pub fn public_routes() -> Router<AppState> {
                     "/card",
                     Router::new()
                         .route("/{scryfall_data_id}", get(card::get_card))
+                        .route("/named/{name_slug}", get(card::get_named_cards))
                         .route("/featured-flavor", get(card::get_featured_flavor))
                         .route("/{oracle_id}/printings", get(card::get_printings))
                         .route("/artists", get(card::get_artists))
@@ -454,6 +470,18 @@ pub fn public_routes() -> Router<AppState> {
                                 .error_handler(stable_rate_limit),
                         )
                         .layer(hourly_cache_layer()),
+                )
+                .merge(
+                    Router::new()
+                        .route("/card/lookup", post(card::lookup_cards))
+                        .layer(
+                            GovernorLayer::new(public_lookup_config)
+                                .error_handler(stable_rate_limit),
+                        )
+                        .layer(DefaultBodyLimit::max(CARD_LOOKUP_BODY_LIMIT))
+                        // A signed-in answer follows the user's Universes Beyond setting, so no
+                        // answer, a refusal included, is kept by a cache.
+                        .layer(private_no_store_layer()),
                 )
                 .nest(
                     "/marketing",

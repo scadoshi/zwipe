@@ -7,6 +7,7 @@ pub mod logo;
 pub mod moderation;
 pub mod share_link;
 pub mod site;
+pub(crate) mod slug;
 pub mod user;
 
 pub use user::models::{Email, InvalidEmail};

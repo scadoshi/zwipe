@@ -56,6 +56,10 @@ pub trait Endpoint {
     const METHOD: Method;
     /// Whether the call carries a bearer token.
     const AUTH: bool = true;
+    /// Whether a call that doesn't need a token sends one when the caller holds a session, for a
+    /// route open to signed-out callers that answers a signed-in one with their settings. Only
+    /// read when [`AUTH`](Self::AUTH) is off.
+    const AUTH_OPTIONAL: bool = false;
     /// Whether a browser sends and stores cookies on the call. Only the web
     /// session endpoints set it; every other call stays cookie-free.
     const CREDENTIALS: bool = false;
