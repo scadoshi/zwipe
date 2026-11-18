@@ -3,8 +3,12 @@
 //! the right, as on Add and Remove; Send to and Share are the floating action dock at every
 //! width. A phone shows the details under the card. `look` is ignored.
 
+use std::collections::HashSet;
+
 use components::icons::{DockIcon, SEND, ShareIcon};
-use components::{CardDetailsPanel, CardRow, FlippableCardImage, LoadFailed, PickerSearch};
+use components::{
+    CardDetailsPanel, CardStack, DeckFold, FlippableCardImage, LoadFailed, PickerSearch, StackCard,
+};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
@@ -17,6 +21,12 @@ use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 
+/// The card page's stats fold's title.
+const METRICS_TITLE: &str = "Card stats";
+
+/// The stats the card page leaves slots for, in the order they show.
+const METRICS: [&str; 4] = ["Skip rate", "Add rate", "Remove rate", "In decks"];
+
 /// The spike's only rules: the card's size in the middle column, the details under the card on a
 /// phone (the deck page hides them behind the eye there), and the list's width.
 const SPIKE_CSS: &str = r"
@@ -24,7 +34,12 @@ const SPIKE_CSS: &str = r"
 .cs-image { width: 100%; max-width: 26rem; }
 .cs-image img { width: 100%; height: auto; }
 .cs-list { max-width: 40rem; margin: 0 auto; padding: var(--space-3) var(--space-4); box-sizing: border-box; width: 100%; display: flex; flex-direction: column; gap: var(--space-2); }
-.cs-list .card-row-qty { display: none; }
+.cs-results { width: 100%; grid-template-columns: repeat(auto-fit, minmax(12.5rem, 15rem)); justify-content: center; }
+.cs-metrics { width: 100%; max-width: 20rem; }
+@media (min-width: 900px) {
+  .cs-metrics { position: fixed; top: var(--web-dock-panel-top); left: 1rem; z-index: 40; width: var(--web-dock-panel-width); max-width: none; }
+  .cs-list { max-width: 60rem; }
+}
 .cs-message { text-align: center; padding: var(--space-5) 0; }
 @media (max-width: 899px) {
   .cs-card { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-3) var(--space-4); }
@@ -55,7 +70,8 @@ fn SpikeScreen(open: Open, look: String) -> Element {
     let toast = components::use_toast();
     let mut model = use_signal(State::new);
     let mut printings_open = use_signal(|| false);
-    let expanded = use_signal(|| None::<Uuid>);
+    // The card page's folds shut by the user; the stats fold starts open.
+    let metrics_folded = use_signal(HashSet::<String>::new);
     let signed_in = move || session.read().as_ref().is_some_and(|s| !s.is_expired());
 
     let route_of = {
@@ -181,6 +197,20 @@ fn SpikeScreen(open: Open, look: String) -> Element {
                             on_printings: move |()| printings_open.set(true),
                         }
                     }
+                    // Slots for the card's own numbers, which thinker is working out: Playstyle's
+                    // Summary fold, docked opposite the details on a wide window.
+                    div { class: "cs-metrics",
+                        DeckFold { fold_key: METRICS_TITLE, title: METRICS_TITLE, folded: metrics_folded,
+                            div { class: "flex-col web-playstyle-fold-body",
+                                for label in METRICS {
+                                    div { key: "{label}", class: "settings-row",
+                                        span { class: "settings-row-label", "{label}" }
+                                        span { class: "info-row-value", "Soon" }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 div { class: "action-dock action-dock-right",
                     button {
@@ -203,14 +233,16 @@ fn SpikeScreen(open: Open, look: String) -> Element {
             div { class: "screen-content content-enter cs-list",
                 {search}
                 h2 { class: "panel-title", {title.unwrap_or_default()} }
-                for listed in cards {
-                    div {
-                        key: "{listed.scryfall_data.id}",
-                        onclick: {
-                            let id = listed.scryfall_data.id;
-                            move |_| dispatch.call(Action::Pick(id))
-                        },
-                        CardRow { card: listed.clone(), qty: 1, expanded_card: expanded }
+                // Each result is a one-card stack in the deck page's Stacks grid: the whole card
+                // shows, its name on its own frame, and a tap opens it.
+                div { class: "deck-stacks cs-results",
+                    for listed in cards {
+                        div { key: "{listed.scryfall_data.id}", class: "cs-result",
+                            CardStack {
+                                cards: vec![StackCard { card: listed, qty: 1, face: 0, board: None, starred: false }],
+                                on_select: move |id: Uuid| dispatch.call(Action::Pick(id)),
+                            }
+                        }
                     }
                 }
             }
