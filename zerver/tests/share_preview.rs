@@ -107,6 +107,7 @@ fn entry(card: Card, qty: i32) -> DeckEntry {
             quantity: Quantity::new(qty).unwrap(),
             board: Board::Deck,
             mvp_at: None,
+            flagged: false,
         },
         card,
     }

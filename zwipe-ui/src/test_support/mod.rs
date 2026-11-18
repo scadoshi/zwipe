@@ -63,6 +63,7 @@ pub(crate) fn deck(deck_profile: DeckProfile, cards: Vec<Card>) -> Deck {
                 quantity: Quantity::new(1).unwrap(),
                 board: Board::default(),
                 mvp_at: None,
+                flagged: false,
             },
             card,
         })

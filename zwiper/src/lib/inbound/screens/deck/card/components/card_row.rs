@@ -31,6 +31,11 @@ pub(crate) struct ShowRowArt(pub(crate) Signal<bool>);
 #[derive(Clone, Copy)]
 pub(crate) struct DeckFaces(pub(crate) Signal<HashMap<Uuid, usize>>);
 
+/// Flags or unflags a deck card, given whether it is flagged now. The owner's deck page
+/// provides it, so its rows offer the Flag toggle.
+#[derive(Clone, Copy)]
+pub(crate) struct DeckFlagToggle(pub(crate) Callback<(Uuid, bool)>);
+
 /// Thin wrapper over the shared [`SharedCardRow`]: wires the app's fullscreen
 /// [`ImagePreview`] signals into the shared row's `on_image` action so call
 /// sites keep passing `preview_card`/`preview_dismissing` unchanged.
@@ -82,6 +87,15 @@ pub(crate) fn CardRow(
     // deck-cards screen render art-free); `Some(visible)` keeps the thumb
     // mounted so the toggle eases it in and out.
     let show_art = try_use_context::<ShowRowArt>().map(|s| (s.0)());
+    // A deck card's row (one that moves between boards) offers Flag where the page toggles it.
+    let card_id = card.scryfall_data.id;
+    let flag_toggle = try_use_context::<DeckFlagToggle>()
+        .filter(|_| on_move_to.is_some())
+        .map(|DeckFlagToggle(toggle)| toggle);
+    let flagged = flag_toggle.map(|_| components::is_flagged(card_id));
+    let on_toggle_flag = flag_toggle
+        .zip(flagged)
+        .map(|(toggle, on)| EventHandler::new(move |()| toggle.call((card_id, on))));
     // The sheet the row opens starts on the face the row shows.
     let printings_face = try_use_context::<PrintingsFace>();
     let on_printing = on_printing.map(|open| {
@@ -125,6 +139,8 @@ pub(crate) fn CardRow(
             on_examples,
             // The deck page's rows, the one place that keeps the shared faces, carry Send to.
             send_to: deck_faces.is_some(),
+            flagged,
+            on_toggle_flag,
         }
     }
 }

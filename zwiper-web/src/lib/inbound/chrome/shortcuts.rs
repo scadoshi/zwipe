@@ -364,6 +364,7 @@ mod tests {
                 let key = match *label {
                     "Shift+H" => "H",
                     "Shift+S" => "S",
+                    "Shift+F" => "F",
                     "↑" => "ArrowUp",
                     "↓" => "ArrowDown",
                     "←" => "ArrowLeft",

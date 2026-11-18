@@ -584,6 +584,7 @@ fn serving_deck_card(card: &Card) -> DeckCard {
         quantity: Quantity::one(),
         board: Board::Deck,
         mvp_at: None,
+        flagged: false,
     }
 }
 

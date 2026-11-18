@@ -50,6 +50,12 @@ pub(crate) enum UndoAction {
         card_name: String,
         before: Option<DateTime<Utc>>,
     },
+    /// A card was flagged or unflagged; undo puts its flag back as `before` had it.
+    FlagToggled {
+        card_id: Uuid,
+        card_name: String,
+        before: bool,
+    },
     /// A regular deck card changed printing; undo restores the old printing.
     PrintingChanged { old_card: Card, new_id: Uuid },
     /// A command-zone card changed printing: a deck-profile slot update,
@@ -97,6 +103,15 @@ impl From<UndoAction> for zwipe_ui::stores::undo::UndoAction {
                 card_name,
                 before,
             } => Self::MvpToggled {
+                card_id,
+                card_name,
+                before,
+            },
+            UndoAction::FlagToggled {
+                card_id,
+                card_name,
+                before,
+            } => Self::FlagToggled {
                 card_id,
                 card_name,
                 before,
@@ -154,6 +169,15 @@ impl From<zwipe_ui::stores::undo::UndoAction> for UndoAction {
                 card_name,
                 before,
             } => Self::MvpToggled {
+                card_id,
+                card_name,
+                before,
+            },
+            Shared::FlagToggled {
+                card_id,
+                card_name,
+                before,
+            } => Self::FlagToggled {
                 card_id,
                 card_name,
                 before,

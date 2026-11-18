@@ -984,6 +984,7 @@ impl State {
                     quantity: Quantity::one(),
                     board: Board::Maybeboard,
                     mvp_at: None,
+                    flagged: false,
                 },
             });
         }

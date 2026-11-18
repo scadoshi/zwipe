@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at FROM deck_cards WHERE deck_id = $1",
+  "query": "SELECT deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at, flagged FROM deck_cards WHERE deck_id = $1",
   "describe": {
     "columns": [
       {
@@ -68,6 +68,17 @@
             "name": "mvp_at"
           }
         }
+      },
+      {
+        "ordinal": 6,
+        "name": "flagged",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "deck_cards",
+            "name": "flagged"
+          }
+        }
       }
     ],
     "parameters": {
@@ -81,8 +92,9 @@
       false,
       false,
       false,
-      true
+      true,
+      false
     ]
   },
-  "hash": "46b4a1d4f76e5b755daf3cf8acdabd45ecf991c8d293360a56229a8e22396577"
+  "hash": "67589380b05a60325d76ea6eb24be46790615a3edffc68da65ec771bca183915"
 }

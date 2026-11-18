@@ -271,6 +271,41 @@
     font-weight: 400;
 }
 
+/* A flagged row's flag before its name, in the text's color, at the
+   text's size as every in-text icon is. */
+.card-row-flag {
+    display: inline-flex;
+    margin-right: var(--space-1);
+    vertical-align: -0.125em;
+}
+
+.card-row-flag > .action-dock-icon {
+    width: 1em;
+    height: 1em;
+}
+
+/* A flagged stack card's flag on its top corner, on the panel's ground so
+   it reads over the card's art. Its corner follows the card's: the card's
+   4.75% radius (about 8px on a stack card) less the badge's inset. */
+.card-stack-flag {
+    position: absolute;
+    top: var(--space-1);
+    right: var(--space-1);
+    z-index: 1;
+    display: inline-flex;
+    padding: var(--space-1);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--space-1);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    pointer-events: none;
+}
+
+.card-stack-flag > .action-dock-icon {
+    width: 1rem;
+    height: 1rem;
+}
+
 .card-row-mvp {
     display: inline-block;
     color: var(--ink-color-star, var(--color-star));
@@ -931,6 +966,11 @@ i.ms.ms-cost.ms-gp {
 }
 
 .card-action-icon[data-action="star"][aria-pressed="true"] > .action-dock-icon {
+    fill: currentColor;
+}
+
+/* A flagged card's Flag button fills its flag, in the text's color. */
+.card-action-icon[data-action="flag"][aria-pressed="true"] > .action-dock-icon {
     fill: currentColor;
 }
 

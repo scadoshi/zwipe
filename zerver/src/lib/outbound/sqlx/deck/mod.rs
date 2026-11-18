@@ -239,7 +239,7 @@ impl DeckRepository for Postgres {
         };
         let database_deck_card = query_as!(
             DatabaseDeckCard,
-            "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at",
+            "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at, flagged",
             request.deck_id,
             request.scryfall_data_id,
             request.oracle_id,
@@ -402,7 +402,7 @@ impl DeckRepository for Postgres {
         }
         let database_deck_cards = query_as!(
             DatabaseDeckCard,
-            "SELECT deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at FROM deck_cards WHERE deck_id = $1",
+            "SELECT deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at, flagged FROM deck_cards WHERE deck_id = $1",
             request.deck_id
         )
         .fetch_all(&self.pool)
@@ -655,13 +655,16 @@ impl DeckRepository for Postgres {
             // MVPs are mainboard-only: leaving the mainboard drops the star.
             sep.push("mvp_at = NULL");
         }
+        if let Some(flagged) = request.flagged {
+            sep.push("flagged = ").push_bind_unseparated(flagged);
+        }
         let now = chrono::Utc::now();
         sep.push("updated_at = ").push_bind_unseparated(now);
         qb.push(" WHERE deck_id = ")
             .push_bind(request.deck_id)
             .push(" AND scryfall_data_id = ")
             .push_bind(request.scryfall_data_id)
-            .push(" RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at");
+            .push(" RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at, flagged");
         let database_deck_card: DatabaseDeckCard = qb.build_query_as().fetch_one(&mut *tx).await?;
         let deck_card: DeckCard = database_deck_card.try_into()?;
         touch_deck(&mut tx, request.deck_id).await?;
@@ -1418,7 +1421,7 @@ impl DeckRepository for Postgres {
         );
         qb.push_bind(named_printings);
         qb.push(
-            ") THEN EXCLUDED.scryfall_data_id ELSE deck_cards.scryfall_data_id END RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at",
+            ") THEN EXCLUDED.scryfall_data_id ELSE deck_cards.scryfall_data_id END RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at, flagged",
         );
         let rows: Vec<DatabaseDeckCard> =
             qb.build_query_as().fetch_all(&mut *tx).await.map_err(db)?;

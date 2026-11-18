@@ -717,6 +717,7 @@ mod tests {
                 quantity: Quantity::new(qty).unwrap(),
                 board: Board::Deck,
                 mvp_at: None,
+                flagged: false,
             };
             DeckEntry { card, deck_card }
         }

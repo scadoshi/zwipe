@@ -65,6 +65,15 @@ pub enum UndoAction {
         /// Its star time before the toggle; `None` when it was not starred.
         before: Option<DateTime<Utc>>,
     },
+    /// A card was flagged or unflagged; undo puts its flag back as `before` had it.
+    FlagToggled {
+        /// The card's printing ID.
+        card_id: Uuid,
+        /// Its name, for the undo toast.
+        card_name: String,
+        /// Whether it was flagged before the toggle.
+        before: bool,
+    },
     /// A deck card changed printing; undo restores `old_card`.
     PrintingChanged {
         /// The printing before the change.
@@ -206,6 +215,7 @@ mod tests {
             | UndoAction::QuantityChanged { .. }
             | UndoAction::MovedBoard { .. }
             | UndoAction::MvpToggled { .. }
+            | UndoAction::FlagToggled { .. }
             | UndoAction::PrintingChanged { .. }
             | UndoAction::CommandZonePrintingChanged { .. }) => panic!("only adds here: {other:?}"),
         }

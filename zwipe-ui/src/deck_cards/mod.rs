@@ -480,6 +480,12 @@ pub fn is_stale(action: &UndoAction, entries: &[DeckEntry], zone: &Zone) -> bool
             .iter()
             .find(|e| e.deck_card.scryfall_data_id == *card_id)
             .is_none_or(|e| e.deck_card.mvp_at.is_some() == before.is_some()),
+        UndoAction::FlagToggled {
+            card_id, before, ..
+        } => entries
+            .iter()
+            .find(|e| e.deck_card.scryfall_data_id == *card_id)
+            .is_none_or(|e| e.deck_card.flagged == *before),
         UndoAction::PrintingChanged { new_id, .. } => !present(*new_id),
         UndoAction::CommandZonePrintingChanged { slot, new_id, .. } => {
             zone.slot(*slot).map(|c| c.scryfall_data.id) != Some(*new_id)
@@ -511,11 +517,58 @@ pub fn undo_message(action: &UndoAction) -> String {
             before: Some(_),
             ..
         } => format!("Starred {card_name}"),
+        UndoAction::FlagToggled {
+            card_name,
+            before: false,
+            ..
+        } => format!("Unflagged {card_name}"),
+        UndoAction::FlagToggled {
+            card_name,
+            before: true,
+            ..
+        } => format!("Flagged {card_name}"),
         UndoAction::PrintingChanged { old_card, .. }
         | UndoAction::CommandZonePrintingChanged { old_card, .. } => {
             format!("{} printing restored", old_card.scryfall_data.name)
         }
     }
+}
+
+/// The Flagged chip's words: how many of the deck's cards are flagged.
+#[must_use]
+pub fn flagged_label(count: usize) -> String {
+    format!("Flagged {count}")
+}
+
+/// The printing ids of the flagged cards in `entries`.
+#[must_use]
+pub fn flagged_ids(entries: &[DeckEntry]) -> std::collections::HashSet<Uuid> {
+    entries
+        .iter()
+        .filter(|e| e.deck_card.flagged)
+        .map(|e| e.deck_card.scryfall_data_id)
+        .collect()
+}
+
+/// `cards` with the ones `entries` flags first, each half in the order it came: what Remove deals,
+/// so the shortlist is waiting.
+#[must_use]
+pub fn flagged_first(cards: Vec<Card>, entries: &[DeckEntry]) -> Vec<Card> {
+    let flagged = flagged_ids(entries);
+    let (first, rest): (Vec<Card>, Vec<Card>) = cards
+        .into_iter()
+        .partition(|c| flagged.contains(&c.scryfall_data.id));
+    first.into_iter().chain(rest).collect()
+}
+
+/// `entries` narrowed to the flagged cards when `flagged_only`, else all of them.
+#[must_use]
+pub fn shown_flagged(entries: &[DeckEntry], flagged_only: bool) -> Vec<DeckEntry> {
+    entries
+        .iter()
+        .filter(|e| !flagged_only || e.deck_card.flagged)
+        .cloned()
+        .collect()
 }
 
 #[cfg(test)]
@@ -553,6 +606,47 @@ mod tests {
             .iter()
             .map(|c| c.scryfall_data.name.as_str())
             .collect()
+    }
+
+    #[test]
+    fn remove_deals_the_flagged_cards_first_each_half_in_its_order() {
+        let mut list = entries();
+        list[2].deck_card.flagged = true;
+        list[4].deck_card.flagged = true;
+        let cards: Vec<Card> = list.iter().map(|e| e.card.clone()).collect();
+        assert_eq!(
+            names(&flagged_first(cards, &list)),
+            ["Ant", "Side", "Zebra", "Forest", "Maybe"]
+        );
+    }
+
+    #[test]
+    fn the_flagged_chip_counts_and_narrows_to_the_flagged_cards() {
+        let mut list = entries();
+        list[0].deck_card.flagged = true;
+        assert_eq!(flagged_label(flagged_ids(&list).len()), "Flagged 1");
+        let narrowed = shown_flagged(&list, true);
+        assert_eq!(narrowed.len(), 1);
+        assert_eq!(narrowed[0].card.scryfall_data.name, "Zebra");
+        assert_eq!(shown_flagged(&list, false).len(), list.len());
+    }
+
+    #[test]
+    fn a_flag_undo_reads_back_and_goes_stale_once_the_flag_changed_back() {
+        let mut list = entries();
+        let id = list[0].deck_card.scryfall_data_id;
+        let flagged = UndoAction::FlagToggled {
+            card_id: id,
+            card_name: "Zebra".to_owned(),
+            before: false,
+        };
+        assert_eq!(undo_message(&flagged), "Unflagged Zebra");
+        assert!(
+            is_stale(&flagged, &list, &Zone::default()),
+            "already unflagged"
+        );
+        list[0].deck_card.flagged = true;
+        assert!(!is_stale(&flagged, &list, &Zone::default()));
     }
 
     #[test]

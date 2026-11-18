@@ -29,4 +29,8 @@ pub struct DeckCard {
     /// `#[serde(default)]` so new clients parse old servers and vice versa.
     #[serde(default)]
     pub mvp_at: Option<DateTime<Utc>>,
+    /// Whether the owner has flagged this card. Private to the owner: a shared deck reads it as
+    /// off. `#[serde(default)]` so new clients parse old servers and vice versa.
+    #[serde(default)]
+    pub flagged: bool,
 }

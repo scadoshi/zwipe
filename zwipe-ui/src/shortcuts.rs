@@ -273,10 +273,11 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
         (&["Home", "End"], "First or last card"),
     ];
     let open: SheetRow = (&["Enter"], "Open the card");
-    let edits: [SheetRow; 6] = [
+    let edits: [SheetRow; 7] = [
         (&["m"], "Maybeboard"),
         (&["s"], "Sideboard"),
         (&["Shift+S"], STAR_ROW),
+        (&["Shift+F"], FLAG_ROW),
         (&["-"], "One fewer"),
         (&["+"], "One more"),
         (&["u", UNDO_COMBO], "Undo"),
@@ -353,7 +354,7 @@ pub fn deck_cards_groups(editable: Editable) -> Vec<SheetGroup> {
             .chain([FEATURED_ROW])
             .collect(),
         open: find("Enter"),
-        card: pick(&["p", "i", "v", "d", "m", "s", "Shift+S", "-", "+"]),
+        card: pick(&["p", "i", "v", "d", "m", "s", "Shift+S", "Shift+F", "-", "+"]),
         page: pick(&["u", "f", FILTER_NAME_KEY, QUICK_ADD_KEY, "a", "r", "e"]),
         ..ScreenKeys::default()
     })
@@ -430,6 +431,9 @@ pub const FLIP_ROW: &str = "[[flip]] Flip or [[meld]] meld";
 
 /// What the Shift+S row does: the Star toggle's icon with its name.
 const STAR_ROW: &str = "[[star]] Star";
+
+/// What the Shift+F row does: the Flag toggle's icon with its name.
+const FLAG_ROW: &str = "[[flag]] Flag";
 
 /// One run of a sheet row's text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -547,7 +551,7 @@ mod tests {
                 ),
                 (
                     "Card",
-                    vec!["p", "i", "v", "d", "m", "s", "Shift+S", "-", "+"]
+                    vec!["p", "i", "v", "d", "m", "s", "Shift+S", "Shift+F", "-", "+"]
                 ),
                 (
                     "Page",

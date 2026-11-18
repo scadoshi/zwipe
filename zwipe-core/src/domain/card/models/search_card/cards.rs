@@ -999,6 +999,7 @@ mod tests {
                 quantity: Quantity::one(),
                 board: Board::Deck,
                 mvp_at: None,
+                flagged: false,
             },
             card: make_card(name),
         };

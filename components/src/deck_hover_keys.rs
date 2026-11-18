@@ -70,6 +70,14 @@ fn editable(actions: Option<&DeckEditActions>) -> Editable {
     }
 }
 
+/// Flags or unflags `card_id` through `actions`, by whether `flagged` holds it now.
+fn toggle_flag(actions: Option<DeckEditActions>, flagged: Option<crate::Flagged>, card_id: Uuid) {
+    if let (Some(actions), Some(crate::Flagged(cards))) = (actions, flagged) {
+        let on = cards.peek().contains(&card_id);
+        actions.toggle_flag.call((card_id, on));
+    }
+}
+
 /// Answers the deck page's hover keys as [`DeckHoverKeys`] describes. A meld half's `v` toggles
 /// its Meld through the [`MeldSource`] in context.
 pub fn use_deck_hover_keys(keys: DeckHoverKeys) {
@@ -84,6 +92,8 @@ pub fn use_deck_hover_keys(keys: DeckHoverKeys) {
     } = keys;
     let editable = editable(actions.as_ref());
     let meld_source = try_use_context::<MeldSource>();
+    // The owner's flags, which Shift+F reads to toggle a card's.
+    let flagged = try_use_context::<crate::Flagged>();
     deck_cursor::use_deck_cursor(details, Walk::Columns);
     use_page_keys_through(
         STACK_DETAILS_CLASS,
@@ -129,6 +139,7 @@ pub fn use_deck_hover_keys(keys: DeckHoverKeys) {
                             actions.toggle_mvp.call((card_id, starred));
                         }
                     }
+                    Some(HoverAction::Flag(card_id)) => toggle_flag(actions, flagged, card_id),
                     Some(HoverAction::Quantity(card_id, step)) => {
                         if let Some(actions) = actions {
                             actions

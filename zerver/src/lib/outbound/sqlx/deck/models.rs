@@ -132,6 +132,7 @@ pub struct DatabaseDeckCard {
     pub quantity: i32,
     pub board: String,
     pub mvp_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub flagged: bool,
 }
 
 /// converts database deck card to validated domain deck card
@@ -152,6 +153,7 @@ impl TryFrom<DatabaseDeckCard> for DeckCard {
             quantity,
             board,
             mvp_at: value.mvp_at,
+            flagged: value.flagged,
         })
     }
 }

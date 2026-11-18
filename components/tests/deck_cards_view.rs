@@ -44,6 +44,7 @@ fn actions() -> DeckEditActions {
         change_quantity: Callback::new(|_| {}),
         move_to_board: Callback::new(|_| {}),
         toggle_mvp: Callback::new(|_| {}),
+        toggle_flag: Callback::new(|_| {}),
     }
 }
 

@@ -61,8 +61,11 @@ enum ScreenKey {
 
 /// The screen action `key` stands for: `q` Quick add, `f` the filter and `/` the filter at its name
 /// field ([`shortcuts::card_key`]).
-/// Flipping a card is `v`, a hover key.
+/// Flipping a card is `v` and flagging it Shift+F, both hover keys, so `F` isn't the filter here.
 fn screen_key(key: &str) -> Option<ScreenKey> {
+    if key == "F" {
+        return None;
+    }
     match shortcuts::card_key(key) {
         Some(CardKey::Filter) => Some(ScreenKey::Filter),
         Some(CardKey::FilterByName) => Some(ScreenKey::FilterByName),
@@ -91,6 +94,10 @@ pub(crate) struct Editor {
     pub boards: Signal<Boards>,
     pub show_tokens: Signal<bool>,
     pub show_zone: Signal<bool>,
+    /// Whether the list is narrowed to the flagged cards.
+    pub flagged_only: Signal<bool>,
+    /// The flagged cards' printing ids.
+    pub flagged: Memo<HashSet<Uuid>>,
     pub show_art: Signal<bool>,
     pub collapsed: Signal<HashSet<String>>,
     pub selected: Signal<Option<Uuid>>,
@@ -107,6 +114,7 @@ pub(crate) struct Editor {
     pub change_quantity: Callback<(Uuid, i32, bool)>,
     pub move_to_board: Callback<(Uuid, Board, bool)>,
     pub toggle_mvp: Callback<(Uuid, bool)>,
+    pub toggle_flag: Callback<(Uuid, bool)>,
     pub save_printing: Callback<Card>,
     pub apply_undo: Callback<()>,
     pub reset_filter: Callback<()>,
@@ -133,6 +141,16 @@ type MoveCard = (
     Option<DateTime<Utc>>,
     Option<(String, UndoAction)>,
 );
+
+/// Who sets a flag: a toggle, which records undo, or an undo, which toasts its message once the
+/// server takes it and goes back on the log if the write fails.
+#[derive(Debug, Clone, PartialEq)]
+enum FlagBy {
+    /// The Flag button or Shift+F.
+    Toggle,
+    /// Undo, with its toast and its entry.
+    Undo(String, Box<UndoAction>),
+}
 
 /// Who sets a star: a toggle, which records undo, or an undo, which toasts `message` once the
 /// server takes it.
@@ -182,6 +200,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     let boards = use_signal(Boards::default);
     let show_tokens = use_signal(|| false);
     let show_zone = use_signal(|| true);
+    let flagged_only = use_signal(|| false);
     let show_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_art));
     let collapsed: Signal<HashSet<String>> = use_signal(HashSet::new);
@@ -267,9 +286,19 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         }
     });
 
+    // Narrowed to the flagged cards, the list holds only those, with no command zone.
     let display = use_memo(move || {
-        deck_cards::pass(&entries.read(), &zone.read(), &filter.read(), group_by())
+        let only = flagged_only();
+        let shown = deck_cards::shown_flagged(&entries.read(), only);
+        let zone = if only {
+            Zone::default()
+        } else {
+            zone.read().clone()
+        };
+        deck_cards::pass(&shown, &zone, &filter.read(), group_by())
     });
+    let flagged = use_memo(move || deck_cards::flagged_ids(&entries.read()));
+    use_context_provider(|| components::Flagged(flagged.into()));
     let meta = use_memo(move || deck_cards::listing::meta_of(&entries.read()));
 
     // Raises the land and budget toasts for a change from `before`.
@@ -614,6 +643,71 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         move_card.call((card_id, target, record, None, None));
     });
 
+    // Sets a row's flag at once and patches it to match. A toggle records undo once the server
+    // takes it; an undo raises its toast then, and goes back on the log if the write fails.
+    let set_flag = use_callback(move |(card_id, on, by): (Uuid, bool, FlagBy)| {
+        let Some(entry) = entries
+            .peek()
+            .iter()
+            .find(|e| e.deck_card.scryfall_data_id == card_id)
+            .cloned()
+        else {
+            return;
+        };
+        let old = entry.deck_card.flagged;
+        let card_name = entry.card.scryfall_data.name;
+        let mut set = move |on: bool| {
+            if let Some(e) = entries
+                .write()
+                .iter_mut()
+                .find(|e| e.deck_card.scryfall_data_id == card_id)
+            {
+                e.deck_card.flagged = on;
+            }
+        };
+        set(on);
+        spawn_write(async move {
+            let request = HttpPatchDeckCard::with_flagged(on);
+            let name = match by {
+                FlagBy::Toggle => "toggle_flag",
+                FlagBy::Undo(..) => "undo",
+            };
+            let reply = authed
+                .try_run(name, |c, s| async move {
+                    c.update_deck_card(deck_id, card_id, &request, &s).await
+                })
+                .await;
+            if let Ok(saved) = reply {
+                if mounted.get() {
+                    set(saved.flagged);
+                }
+                match by {
+                    FlagBy::Toggle => undo.write().push(
+                        deck_id,
+                        UndoAction::FlagToggled {
+                            card_id,
+                            card_name,
+                            before: old,
+                        },
+                    ),
+                    FlagBy::Undo(message, _) => {
+                        toast.info(message, ToastOptions::default().duration(TOAST_QUICK));
+                    }
+                }
+            } else {
+                if mounted.get() {
+                    set(old);
+                }
+                if let FlagBy::Undo(_, entry) = by {
+                    undo.write().push(deck_id, *entry);
+                }
+            }
+        });
+    });
+    let toggle_flag = use_callback(move |(card_id, flagged): (Uuid, bool)| {
+        set_flag.call((card_id, !flagged, FlagBy::Toggle));
+    });
+
     let toggle_mvp = use_callback(move |(card_id, starred): (Uuid, bool)| {
         // A star adds or takes a featured card, which moves the cards under the strip.
         components::settle::watch();
@@ -824,6 +918,11 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             } => {
                 set_star.call((card_id, before, StarBy::Undo(message, Box::new(retry))));
             }
+            UndoAction::FlagToggled {
+                card_id, before, ..
+            } => {
+                set_flag.call((card_id, before, FlagBy::Undo(message, Box::new(retry))));
+            }
             UndoAction::PrintingChanged { old_card, new_id } => {
                 let old_card = *old_card;
                 let old_id = old_card.scryfall_data.id;
@@ -907,7 +1006,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     // == the rows as they list, top to bottom ==
     let listing = use_memo(move || {
         let applied = filter.read().clone();
-        let token_cards = if show_tokens() {
+        let token_cards = if show_tokens() && !flagged_only() {
             tokens().unwrap_or_default()
         } else {
             Vec::new()
@@ -949,6 +1048,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             change_quantity,
             move_to_board,
             toggle_mvp,
+            toggle_flag,
         }),
         on_printing: Callback::new(move |picked: (Card, Option<Slot>)| {
             printing.set(Some(picked));
@@ -998,6 +1098,8 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         boards,
         show_tokens,
         show_zone,
+        flagged_only,
+        flagged,
         show_art,
         collapsed,
         selected,
@@ -1012,6 +1114,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         change_quantity,
         move_to_board,
         toggle_mvp,
+        toggle_flag,
         save_printing,
         apply_undo,
         reset_filter,
@@ -1027,6 +1130,7 @@ impl Editor {
             change_quantity: self.change_quantity,
             move_to_board: self.move_to_board,
             toggle_mvp: self.toggle_mvp,
+            toggle_flag: self.toggle_flag,
         }
     }
 }
@@ -1072,11 +1176,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn q_focuses_quick_add_and_f_and_slash_open_the_filter_as_everywhere() {
+    fn q_focuses_quick_add_and_f_and_slash_open_the_filter_while_shift_f_is_left_to_flag() {
         assert_eq!(screen_key("q"), Some(ScreenKey::QuickAdd));
         assert_eq!(screen_key("/"), Some(ScreenKey::FilterByName));
+        assert_eq!(screen_key("f"), Some(ScreenKey::Filter));
+        assert_eq!(
+            screen_key("F"),
+            None,
+            "Shift+F flags the card on the owner's page"
+        );
         for byte in b' '..=b'~' {
             let key = char::from(byte).to_string();
+            if key == "F" {
+                continue;
+            }
             assert_eq!(
                 screen_key(&key) == Some(ScreenKey::Filter),
                 shortcuts::card_key(&key) == Some(CardKey::Filter),

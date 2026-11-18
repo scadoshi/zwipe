@@ -48,6 +48,7 @@ fn the_hover_keys_mount_on_an_editable_deck() {
             change_quantity: Callback::new(|_| {}),
             move_to_board: Callback::new(|_: (_, Board, bool)| {}),
             toggle_mvp: Callback::new(|_| {}),
+            toggle_flag: Callback::new(|_| {}),
         })));
         rsx! {}
     });

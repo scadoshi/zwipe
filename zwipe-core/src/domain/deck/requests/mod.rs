@@ -29,5 +29,5 @@ pub use import_deck_cards::{
     ImportDeckCards, ImportDeckCardsResult, ImportLine, ImportedCard, NamedPrinting, UnresolvedCard,
 };
 pub use skip_deck_card::{InvalidSkipDeckCard, SkipDeckCard};
-pub use update_deck_card::{InvalidUpdateDeckCard, UpdateDeckCard};
+pub use update_deck_card::{Changes, InvalidUpdateDeckCard, UpdateDeckCard};
 pub use update_deck_profile::{InvalidUpdateDeckProfile, UpdateDeckProfile};

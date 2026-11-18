@@ -35,6 +35,7 @@ pub fn make_entry(name: &str, qty: i32) -> DeckEntry {
             quantity: Quantity::new(qty).unwrap(),
             board: Board::default(),
             mvp_at: None,
+            flagged: false,
         },
     }
 }

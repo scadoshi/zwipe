@@ -19,6 +19,9 @@ pub const MELD: &str = "meld";
 /// A deck card's Star toggle.
 pub const STAR: &str = "star";
 
+/// A deck card's Flag toggle.
+pub const FLAG: &str = "flag";
+
 /// The menu's palette button, which opens the theme sheet: orangui's mark, which its page keys'
 /// `t` presses too.
 pub const THEMES: &str = orangui::THEMES_ACTION;

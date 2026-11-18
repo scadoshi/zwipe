@@ -117,6 +117,8 @@ pub enum KeyIcon {
     Meld,
     /// The Star toggle's star: an outline, filled while the card is starred.
     Star,
+    /// The Flag toggle's flag: an outline, filled while the card is flagged.
+    Flag,
     /// The Account button's person.
     Person,
     /// The Settings button's cog.
@@ -135,7 +137,7 @@ pub enum KeyIcon {
 
 impl KeyIcon {
     /// Every icon, in [`KeyIcon::name`] order.
-    pub const ALL: [Self; 25] = [
+    pub const ALL: [Self; 26] = [
         Self::Plus,
         Self::Minus,
         Self::Funnel,
@@ -154,6 +156,7 @@ impl KeyIcon {
         Self::Flip,
         Self::Meld,
         Self::Star,
+        Self::Flag,
         Self::Person,
         Self::Cog,
         Self::Info,
@@ -193,6 +196,7 @@ impl KeyIcon {
             Self::Flip => "flip",
             Self::Meld => "meld",
             Self::Star => "star",
+            Self::Flag => "flag",
             Self::Person => "person",
             Self::Cog => "cog",
             Self::Info => "info",

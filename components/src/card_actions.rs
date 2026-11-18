@@ -8,10 +8,11 @@
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::Board;
 
-use crate::StarButton;
+use crate::{FlagButton, StarButton};
 
 /// The quantity stepper (`-`, the count, `+`) when `on_qty_change` is
-/// given, then the [`StarButton`] when `mvp` and `on_toggle_mvp` are. Each is a
+/// given, then the [`StarButton`] when `mvp` and `on_toggle_mvp` are, then the
+/// [`FlagButton`] when `flagged` and `on_toggle_flag` are. Each is a
 /// `card-action-btn` that stops its click there, so a row under it stays
 /// as it is.
 #[component]
@@ -20,6 +21,8 @@ pub fn CardEditButtons(
     #[props(default)] on_qty_change: Option<EventHandler<i32>>,
     #[props(default)] mvp: Option<bool>,
     #[props(default)] on_toggle_mvp: Option<EventHandler<()>>,
+    #[props(default)] flagged: Option<bool>,
+    #[props(default)] on_toggle_flag: Option<EventHandler<()>>,
 ) -> Element {
     rsx! {
         if let Some(handler) = on_qty_change {
@@ -43,6 +46,9 @@ pub fn CardEditButtons(
         }
         if let (Some(is_mvp), Some(handler)) = (mvp, on_toggle_mvp) {
             StarButton { starred: is_mvp, on_toggle: handler }
+        }
+        if let (Some(is_flagged), Some(handler)) = (flagged, on_toggle_flag) {
+            FlagButton { flagged: is_flagged, on_toggle: handler }
         }
     }
 }

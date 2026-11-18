@@ -60,6 +60,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Themes has a search by name or color, and on the web t opens it ready to type",
         "Activity's heatmap opens with no month name cut at its left edge",
         "On the web, Shift+H on the Commander maybeboard lists its filter and Quick add keys",
+        "Flag a card in your deck from its details or its open row, or with Shift+F on the web, to see it marked, narrow to it with Flagged and have Remove deal it first",
     ],
 }];
 

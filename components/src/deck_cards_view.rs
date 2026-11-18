@@ -45,6 +45,8 @@ pub struct DeckEditActions {
     pub move_to_board: Callback<(Uuid, Board, bool)>,
     /// Stars the card, or unstars it when the `bool` says it is starred.
     pub toggle_mvp: Callback<(Uuid, bool)>,
+    /// Flags the card, or unflags it when the `bool` says it is flagged.
+    pub toggle_flag: Callback<(Uuid, bool)>,
 }
 
 /// Opens a card's printings: the card, and the command zone slot it sits in, if any.
@@ -549,10 +551,13 @@ struct RowActions {
     board: Option<Board>,
     mvp: Option<bool>,
     on_star: Option<EventHandler<()>>,
+    flagged: Option<bool>,
+    on_flag: Option<EventHandler<()>>,
 }
 
 /// The edits a row of `kind` on `board` offers with `actions`: a main or other board row's
-/// quantity and move, and a main row's star; nothing for a zone or token row, or without actions.
+/// quantity, move and flag, and a main row's star; nothing for a zone or token row, or without
+/// actions.
 fn row_actions(
     actions: Option<DeckEditActions>,
     card_id: Uuid,
@@ -563,10 +568,15 @@ fn row_actions(
         change_quantity,
         move_to_board,
         toggle_mvp,
+        toggle_flag,
     }) = actions
     else {
         return RowActions::default();
     };
+    let flagged = crate::is_flagged(card_id);
+    let on_flag = Some(EventHandler::new(move |()| {
+        toggle_flag.call((card_id, flagged));
+    }));
     let on_qty = Some(EventHandler::new(move |d| {
         change_quantity.call((card_id, d, /* record */ true));
     }));
@@ -580,11 +590,15 @@ fn row_actions(
             board: Some(board),
             mvp: Some(mvp),
             on_star: Some(EventHandler::new(move |()| toggle_mvp.call((card_id, mvp)))),
+            flagged: Some(flagged),
+            on_flag,
         },
         RowKind::Board(b) => RowActions {
             on_qty,
             on_move,
             board: Some(b),
+            flagged: Some(flagged),
+            on_flag,
             ..RowActions::default()
         },
         RowKind::Zone(_) | RowKind::Token => RowActions::default(),
@@ -630,6 +644,8 @@ pub fn DeckRow(
         board,
         mvp,
         on_star,
+        flagged,
+        on_flag,
     } = row_actions(actions, card_id, kind, board);
     let slot = match kind {
         RowKind::Zone(slot) => Some(slot),
@@ -666,6 +682,8 @@ pub fn DeckRow(
                     on_printing: on_print,
                     mvp,
                     on_toggle_mvp: on_star,
+                    flagged,
+                    on_toggle_flag: on_flag,
                     price_currency: currency,
                     show_classification: true,
                     describe_tag,
@@ -966,13 +984,22 @@ pub fn DeckStackDrawer(
         board,
         mvp,
         on_star,
+        flagged,
+        on_flag,
     } = row_actions(actions, card_id, kind, board);
     let footer = on_move.map(|on_move_to| {
         rsx! {
             // Plain action rows, as the panel's own foot lays out Printings, so
             // every row starts at the same left edge.
             div { class: "card-action-row",
-                CardEditButtons { qty, on_qty_change: on_qty, mvp, on_toggle_mvp: on_star }
+                CardEditButtons {
+                    qty,
+                    on_qty_change: on_qty,
+                    mvp,
+                    on_toggle_mvp: on_star,
+                    flagged,
+                    on_toggle_flag: on_flag,
+                }
             }
             CardBoardMoves { current_board: board, on_move_to }
         }

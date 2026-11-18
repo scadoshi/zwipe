@@ -74,6 +74,7 @@ mod details_eye;
 mod drawer_sheet;
 mod drawer_swap;
 pub mod featured_strip;
+mod flagged;
 mod flippable_card_image;
 mod fold;
 mod ghost_card;
@@ -126,7 +127,8 @@ pub use card_details_sheet::CardDetailsSheet;
 pub use card_filter::{CardFilterPanel, DictionarySlot, OPEN_SECTION_SCROLL_JS, open_at_name};
 pub use card_group::{CardGroup, TailPlace, group_tail};
 pub use card_icon_button::{
-    CardIconButton, IMAGE_ICON, IMAGE_LABEL, ImageButton, MELD, STAR, StarButton,
+    CardIconButton, FLAG, FLAG_LABEL, FlagButton, FlagMark, IMAGE_ICON, IMAGE_LABEL, ImageButton,
+    MELD, STAR, StarButton,
 };
 pub use card_list_fold::CardListFold;
 pub use card_proxy::{CardProxy, FIT_JS as CARD_PROXY_FIT_JS, ProxyFace, use_card_proxy_fit};
@@ -165,6 +167,7 @@ pub use details_eye::{
     eye_lit, starts_hidden, use_details_eye,
 };
 pub use drawer_sheet::{DrawerEdge, DrawerSheet};
+pub use flagged::{Flagged, is_flagged};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use ghost_card::{CardGhost, GhostCard};

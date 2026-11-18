@@ -73,6 +73,9 @@ pub struct HttpPatchDeckCard {
     /// Star (true) or unstar (false) this card as a deck MVP. Absent = untouched.
     #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
     pub mvp: Patch<bool>,
+    /// Flag (true) or unflag (false) this card. Absent = untouched.
+    #[serde(default, skip_serializing_if = "Patch::is_unchanged")]
+    pub flagged: Patch<bool>,
 }
 
 /// Absent-or-set: the constructor inputs can't express null by design.
@@ -89,6 +92,7 @@ impl HttpPatchDeckCard {
             board: set_or_absent(board),
             scryfall_data_id: Patch::Unchanged,
             mvp: Patch::Unchanged,
+            flagged: Patch::Unchanged,
         }
     }
 
@@ -100,6 +104,7 @@ impl HttpPatchDeckCard {
             board: Patch::Unchanged,
             scryfall_data_id: Patch::Set(Some(scryfall_data_id.to_string())),
             mvp: Patch::Unchanged,
+            flagged: Patch::Unchanged,
         }
     }
 
@@ -112,6 +117,19 @@ impl HttpPatchDeckCard {
             board: Patch::Unchanged,
             scryfall_data_id: Patch::Unchanged,
             mvp: Patch::Set(Some(mvp)),
+            flagged: Patch::Unchanged,
+        }
+    }
+
+    /// Creates a patch request that flags (true) or unflags (false) the card.
+    #[must_use]
+    pub fn with_flagged(flagged: bool) -> Self {
+        Self {
+            quantity: Patch::Unchanged,
+            board: Patch::Unchanged,
+            scryfall_data_id: Patch::Unchanged,
+            mvp: Patch::Unchanged,
+            flagged: Patch::Set(Some(flagged)),
         }
     }
 }
@@ -170,6 +188,35 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_flag_patch_sends_only_the_flag_and_other_patches_never_send_it() {
+        let flag = serde_json::to_value(HttpPatchDeckCard::with_flagged(true)).unwrap();
+        assert_eq!(flag, serde_json::json!({ "flagged": true }));
+        let unflag = serde_json::to_value(HttpPatchDeckCard::with_flagged(false)).unwrap();
+        assert_eq!(unflag, serde_json::json!({ "flagged": false }));
+        for other in [
+            HttpPatchDeckCard::new(Some(2), None),
+            HttpPatchDeckCard::with_mvp(true),
+            HttpPatchDeckCard::with_printing("p"),
+        ] {
+            let body = serde_json::to_value(other).unwrap();
+            assert!(body.get("flagged").is_none(), "{body}");
+        }
+    }
+
+    #[test]
+    fn a_deck_card_from_a_server_without_flags_reads_unflagged() {
+        let old = serde_json::json!({
+            "deck_id": "00000000-0000-0000-0000-000000000001",
+            "scryfall_data_id": "00000000-0000-0000-0000-000000000002",
+            "oracle_id": "00000000-0000-0000-0000-000000000003",
+            "quantity": 1,
+            "board": "deck",
+        });
+        let card: crate::domain::deck::DeckCard = serde_json::from_value(old).unwrap();
+        assert!(!card.flagged);
+    }
 
     #[test]
     fn the_undo_flag_reads_true_false_or_absent() {

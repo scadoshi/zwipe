@@ -252,9 +252,11 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
         {
             shown = shown.matching(&criteria);
         }
+        // The flagged cards deal first, so the shortlist is waiting.
+        let sorted: Vec<Card> = shown.sorted(applied.sort(), applied.direction()).into();
         stack
             .write()
-            .replace(shown.sorted(applied.sort(), applied.direction()).into());
+            .replace(zwipe_ui::deck_cards::flagged_first(sorted, &entries.peek()));
     });
 
     // The land signal on a downward crossing and the budget signal, from the

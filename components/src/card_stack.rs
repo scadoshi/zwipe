@@ -142,6 +142,9 @@ pub fn CardStack(
                                     }
                                     on_select.call(id);
                                 },
+                                if crate::is_flagged(id) {
+                                    crate::FlagMark { class: "card-stack-flag" }
+                                }
                                 // An image that is missing or failed leaves the
                                 // card's text in the card's box.
                                 if let Some(src) = image.filter(|_| !failed.read().contains(&id)) {

@@ -271,6 +271,8 @@ pub enum Op {
     MoveBoard,
     /// A star or unstar.
     ToggleMvp,
+    /// A flag or unflag.
+    ToggleFlag,
     /// A printing picked from the printing sheet.
     ChangePrinting,
     /// The reversing call of an Undo.
@@ -287,6 +289,7 @@ impl Op {
             Self::ChangeQuantity => "change_quantity",
             Self::MoveBoard => "move_board",
             Self::ToggleMvp => "toggle_mvp",
+            Self::ToggleFlag => "toggle_flag",
             Self::ChangePrinting => "change_printing",
             Self::Undo => "undo",
             Self::QuickAddCard => "quick_add_card",
@@ -371,6 +374,8 @@ pub enum Action {
     ToggleTokens,
     /// Turns the command zone's pinned groups on or off.
     ToggleCommandZone,
+    /// Narrows the list to the flagged cards, or widens it back.
+    ToggleFlaggedOnly,
     /// Opens or collapses the section with this key.
     ToggleSection(String),
     /// The fold-all button: collapses every section under `keys`, or opens every one when `collapsed` is false.
@@ -449,6 +454,11 @@ pub enum Action {
         card_id: Uuid,
         /// The time now.
         now: DateTime<Utc>,
+    },
+    /// Flags or unflags a row.
+    ToggleFlag {
+        /// The card's printing id.
+        card_id: Uuid,
     },
     /// A row's printings button: the printing sheet opens on `card`, in the command zone `slot` or, with `None`, as a deck card.
     OpenPrintings {
@@ -672,6 +682,13 @@ enum Pending {
         /// Undo's toast, raised once the server takes the patch.
         toast: Option<String>,
     },
+    Flag {
+        card_id: Uuid,
+        before: bool,
+        record: bool,
+        /// Undo's toast, raised once the server takes the patch.
+        toast: Option<String>,
+    },
     Printing {
         old: Box<Card>,
         new: Box<Card>,
@@ -737,6 +754,42 @@ struct AfterMove {
     capped: bool,
 }
 
+/// The Show chips' toggles: the tokens section, the command zone's pinned groups, and the list
+/// narrowed to the flagged cards.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Shown {
+    tokens: bool,
+    command_zone: bool,
+    flagged_only: bool,
+}
+
+impl Default for Shown {
+    fn default() -> Self {
+        Self {
+            tokens: false,
+            command_zone: true,
+            flagged_only: false,
+        }
+    }
+}
+
+impl Shown {
+    fn toggle_tokens(&mut self) -> Vec<Effect> {
+        self.tokens = !self.tokens;
+        Vec::new()
+    }
+
+    fn toggle_command_zone(&mut self) -> Vec<Effect> {
+        self.command_zone = !self.command_zone;
+        Vec::new()
+    }
+
+    fn toggle_flagged_only(&mut self) -> Vec<Effect> {
+        self.flagged_only = !self.flagged_only;
+        vec![Effect::Collapse, Effect::Refilter]
+    }
+}
+
 /// The deck cards view for one visit. Starts loading with no deck; send [`Action::Load`] to start the fetches.
 ///
 /// Every request and debounce takes a fresh [`Ticket`] from one [`Generation`] and waits in a list keyed by it, so each reply finds its own request, and a reply after a newer [`Action::Load`] changes nothing. The deck's entries are the source of truth for every list; edits change them at once and roll back when the server refuses. The main board's groups follow the filter last handed in with [`Action::Filter`]; the maybeboard, sideboard and tokens take the client's filter as it stands, as the sections did when they read it while drawing.
@@ -754,8 +807,7 @@ pub struct State {
     filter: CardQueryBuilder,
     group_by: GroupByOption,
     boards: Boards,
-    show_tokens: bool,
-    show_command_zone: bool,
+    shown: Shown,
     collapsed: HashSet<String>,
     quick: QuickAdd,
     bursts: Vec<Burst>,
@@ -829,8 +881,7 @@ impl Default for State {
             filter: CardQueryBuilder::default(),
             group_by: GroupByOption::CardType,
             boards: Boards::default(),
-            show_tokens: false,
-            show_command_zone: true,
+            shown: Shown::default(),
             collapsed: HashSet::new(),
             quick: QuickAdd::default(),
             bursts: Vec::new(),
@@ -900,14 +951,9 @@ impl State {
                 self.boards.toggle(board);
                 vec![Effect::Collapse, Effect::Refilter]
             }
-            Action::ToggleTokens => {
-                self.show_tokens = !self.show_tokens;
-                Vec::new()
-            }
-            Action::ToggleCommandZone => {
-                self.show_command_zone = !self.show_command_zone;
-                Vec::new()
-            }
+            Action::ToggleTokens => self.shown.toggle_tokens(),
+            Action::ToggleCommandZone => self.shown.toggle_command_zone(),
+            Action::ToggleFlaggedOnly => self.shown.toggle_flagged_only(),
             Action::ToggleSection(key) => {
                 if !self.collapsed.remove(&key) {
                     self.collapsed.insert(key);
@@ -946,6 +992,7 @@ impl State {
                 self.move_to(card_id, board, true, AfterMove::default())
             }
             Action::ToggleMvp { card_id, now } => self.toggle_mvp(card_id, now),
+            Action::ToggleFlag { card_id } => self.toggle_flag(card_id),
             Action::OpenPrintings { card, slot } => {
                 self.printing = Some((*card, slot));
                 vec![Effect::OpenPrintings]
@@ -1125,6 +1172,14 @@ impl State {
             } => {
                 if let Some(entry) = self.entry_mut(card_id) {
                     entry.deck_card.mvp_at = before;
+                }
+                vec![Effect::Refilter]
+            }
+            Pending::Flag {
+                card_id, before, ..
+            } => {
+                if let Some(entry) = self.entry_mut(card_id) {
+                    entry.deck_card.flagged = before;
                 }
                 vec![Effect::Refilter]
             }
@@ -1317,6 +1372,12 @@ impl State {
                 let toast = toast.map(|text| Effect::Toast(Toast::quick(ToastKind::Info, text)));
                 undo.into_iter().chain(toast).collect()
             }
+            Some(Pending::Flag {
+                card_id,
+                before,
+                record,
+                toast,
+            }) => self.flag_landed(card_id, deck_card.flagged, (before, record), toast),
             // The move's reply carries the star as the server left it; an undo's move back then raises its toast and puts the star back.
             Some(Pending::Move { card_id, then, .. }) => {
                 if let Some(entry) = self.entry_mut(card_id) {
@@ -1658,6 +1719,75 @@ impl State {
         ]
     }
 
+    /// Takes the server's flag for `card_id`, records undo when `(before, record)` asks, and raises
+    /// undo's `toast` when it is one.
+    fn flag_landed(
+        &mut self,
+        card_id: Uuid,
+        flagged: bool,
+        (before, record): (bool, bool),
+        toast: Option<String>,
+    ) -> Vec<Effect> {
+        let Some(entry) = self.entry_mut(card_id) else {
+            return Vec::new();
+        };
+        entry.deck_card.flagged = flagged;
+        let card_name = entry.card.scryfall_data.name.clone();
+        let undo = record.then(|| {
+            Effect::RecordUndo(Box::new(UndoAction::FlagToggled {
+                card_id,
+                card_name,
+                before,
+            }))
+        });
+        let toast = toast.map(|text| Effect::Toast(Toast::quick(ToastKind::Info, text)));
+        undo.into_iter()
+            .chain(toast)
+            .chain([Effect::Refilter])
+            .collect()
+    }
+
+    fn toggle_flag(&mut self, card_id: Uuid) -> Vec<Effect> {
+        let flag = self.entry(card_id).is_some_and(|e| !e.deck_card.flagged);
+        self.set_flag(card_id, flag, Op::ToggleFlag, None)
+    }
+
+    /// Sets the row's flag to `flagged` at once and patches it to match. A toggle (`op`
+    /// [`Op::ToggleFlag`]) records undo when the server takes it; undo's own patch does not, and
+    /// raises `toast` then instead.
+    fn set_flag(
+        &mut self,
+        card_id: Uuid,
+        flagged: bool,
+        op: Op,
+        toast: Option<String>,
+    ) -> Vec<Effect> {
+        let Some(deck_id) = self.deck_id else {
+            return Vec::new();
+        };
+        let Some(entry) = self.entry_mut(card_id) else {
+            return Vec::new();
+        };
+        let before = entry.deck_card.flagged;
+        entry.deck_card.flagged = flagged;
+        let ticket = self.request(Pending::Flag {
+            card_id,
+            before,
+            record: op == Op::ToggleFlag,
+            toast,
+        });
+        vec![
+            Effect::Refilter,
+            Effect::PatchCard {
+                ticket,
+                deck_id,
+                card_id,
+                request: Box::new(HttpPatchDeckCard::with_flagged(flagged)),
+                op,
+            },
+        ]
+    }
+
     fn pick_printing(&mut self, new: Card) -> Vec<Effect> {
         let (Some(deck_id), Some((old, slot))) = (self.deck_id, self.printing.clone()) else {
             return Vec::new();
@@ -1714,7 +1844,9 @@ impl State {
         // A move and a star raise their toast as their own writes land.
         let toast = (!matches!(
             action,
-            UndoAction::MovedBoard { .. } | UndoAction::MvpToggled { .. }
+            UndoAction::MovedBoard { .. }
+                | UndoAction::MvpToggled { .. }
+                | UndoAction::FlagToggled { .. }
         ))
         .then(|| deck_cards::undo_message(&action));
         let effects = self.undo_writes(action.clone());
@@ -1786,6 +1918,9 @@ impl State {
             UndoAction::MvpToggled {
                 card_id, before, ..
             } => self.set_mvp(card_id, before, Op::Undo, Some(message)),
+            UndoAction::FlagToggled {
+                card_id, before, ..
+            } => self.set_flag(card_id, before, Op::Undo, Some(message)),
             UndoAction::PrintingChanged { old_card, new_id } => {
                 let old_id = old_card.scryfall_data.id;
                 if let Some(entry) = self.entry_mut(new_id) {
@@ -1964,16 +2099,28 @@ impl State {
             || self.entries.iter().any(|e| e.deck_card.board == board)
     }
 
-    /// Whether the tokens section shows.
+    /// Whether the tokens section shows: on, and the list not narrowed to the flagged cards.
     #[must_use]
     pub fn show_tokens(&self) -> bool {
-        self.show_tokens
+        self.shown.tokens && !self.shown.flagged_only
+    }
+
+    /// Whether the list is narrowed to the flagged cards.
+    #[must_use]
+    pub fn flagged_only(&self) -> bool {
+        self.shown.flagged_only
+    }
+
+    /// The flagged cards' printing ids.
+    #[must_use]
+    pub fn flagged_ids(&self) -> HashSet<Uuid> {
+        deck_cards::flagged_ids(&self.entries)
     }
 
     /// Whether the command zone's pinned groups show.
     #[must_use]
     pub fn show_command_zone(&self) -> bool {
-        self.show_command_zone
+        self.shown.command_zone
     }
 
     /// Whether the Show row offers the Command zone chip: the deck's format has a command zone, or
@@ -2004,7 +2151,7 @@ impl State {
     pub fn stack_groups(&self, display: &Display, live: &CardQueryBuilder) -> Vec<StackGroup> {
         let mut out: Vec<StackGroup> = self.token_stack(live).into_iter().collect();
         out.extend(self.board_stacks(display));
-        if self.show_command_zone {
+        if self.shown.command_zone {
             out.extend(self.zone_stacks(display));
         }
         if self.board_on(Board::Deck) {
@@ -2017,7 +2164,7 @@ impl State {
     fn token_stack(&self, live: &CardQueryBuilder) -> Option<StackGroup> {
         let tokens = self
             .tokens(live)
-            .filter(|t| self.show_tokens && !t.is_empty())?;
+            .filter(|t| self.shown.tokens && !self.shown.flagged_only && !t.is_empty())?;
         Some(StackGroup {
             key: TOKENS_KEY.to_owned(),
             title: tokens_title(tokens.len()),
@@ -2131,12 +2278,18 @@ impl State {
         !keys.is_empty() && keys.iter().all(|k| self.collapsed.contains(k))
     }
 
-    /// The lists after the filter and group pass. The main board's groups and lands and the command zone follow the applied filter; the maybeboard and sideboard follow `live`, the client's filter as it stands.
+    /// The lists after the filter and group pass. The main board's groups and lands and the command zone follow the applied filter; the maybeboard and sideboard follow `live`, the client's filter as it stands. Narrowed to the flagged cards, the lists hold only those and the command zone is empty.
     #[must_use]
     pub fn display(&self, live: &CardQueryBuilder) -> Display {
-        let mut display = deck_cards::pass(&self.entries, &self.zone, &self.filter, self.group_by);
+        let entries = deck_cards::shown_flagged(&self.entries, self.shown.flagged_only);
+        let zone = if self.shown.flagged_only {
+            Zone::default()
+        } else {
+            self.zone.clone()
+        };
+        let mut display = deck_cards::pass(&entries, &zone, &self.filter, self.group_by);
         if *live != self.filter {
-            let boards = deck_cards::pass(&self.entries, &Zone::default(), live, self.group_by);
+            let boards = deck_cards::pass(&entries, &Zone::default(), live, self.group_by);
             display.maybe = boards.maybe;
             display.side = boards.side;
         }

@@ -20,6 +20,13 @@ pub const MELD: &str = "M8 6l4-4 4 4M12 2v10.3a4 4 0 0 1-1.17 2.83L4 22M20 22l-5
 pub const STAR: &str =
     "M12 2.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z";
 
+/// The flag icon: a pennant on a pole, Lucide's `flag` drawn as one path (ISC,
+/// `components/LICENSE-LUCIDE`), filled by [`FlagButton`] while the card is flagged.
+pub const FLAG: &str = "M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7";
+
+/// What the Flag button is called for a screen reader and in its tooltip, flagged or not.
+pub const FLAG_LABEL: &str = "Flag";
+
 /// What the Image button is called for a screen reader and in its tooltip.
 pub const IMAGE_LABEL: &str = "Image";
 
@@ -78,5 +85,28 @@ pub fn StarButton(starred: bool, on_toggle: EventHandler<()>) -> Element {
             pressed: Some(starred),
             on_click: on_toggle,
         }
+    }
+}
+
+/// A deck card's Flag toggle: the flag, an outline while the card isn't `flagged` and filled
+/// while it is, named [`FLAG_LABEL`] either way, pressed while flagged.
+#[component]
+pub fn FlagButton(flagged: bool, on_toggle: EventHandler<()>) -> Element {
+    rsx! {
+        CardIconButton {
+            label: FLAG_LABEL,
+            path: FLAG,
+            action: data_action::FLAG,
+            pressed: Some(flagged),
+            on_click: on_toggle,
+        }
+    }
+}
+
+/// The flag a flagged card's tile shows, in the text's color.
+#[component]
+pub fn FlagMark(class: &'static str) -> Element {
+    rsx! {
+        span { class, "aria-label": "Flagged", role: "img", DockIcon { path: FLAG } }
     }
 }

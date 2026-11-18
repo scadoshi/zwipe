@@ -11,7 +11,9 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use zwipe_core::domain::deck::DeckCard;
-use zwipe_core::domain::deck::requests::update_deck_card::{InvalidUpdateDeckCard, UpdateDeckCard};
+use zwipe_core::domain::deck::requests::update_deck_card::{
+    Changes, InvalidUpdateDeckCard, UpdateDeckCard,
+};
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_core::http::helpers::Patch;
 
@@ -87,7 +89,7 @@ pub fn reject_null<T>(field: Patch<T>, name: &str) -> Result<Option<T>, ApiError
     }
 }
 
-/// Sets a card's quantity (absolute), board, printing, and/or MVP star.
+/// Sets a card's quantity (absolute), board, printing, MVP star and/or flag.
 ///
 /// # Errors
 ///
@@ -104,16 +106,20 @@ pub async fn patch_deck_card(
     let board = reject_null(body.board, "board")?;
     let printing = reject_null(body.scryfall_data_id, "scryfall_data_id")?;
     let mvp = reject_null(body.mvp, "mvp")?;
+    let flagged = reject_null(body.flagged, "flagged")?;
 
     let board = parse_board(board.as_deref())?;
     let request = UpdateDeckCard::patch(
         user.id,
         &deck_id,
         &scryfall_data_id,
-        quantity,
-        board,
-        printing.as_deref(),
-        mvp,
+        Changes {
+            quantity,
+            board,
+            printing: printing.as_deref(),
+            mvp,
+            flagged,
+        },
     )?;
 
     let deck_card = state

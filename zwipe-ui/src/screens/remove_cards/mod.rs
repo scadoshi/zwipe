@@ -620,7 +620,7 @@ impl State {
         }
     }
 
-    /// Builds the stack from the picked board, then the filter and its sort, from the first card. The swipes stay for undo. Waits for the deck.
+    /// Builds the stack from the picked board, then the filter and its sort, the flagged cards dealt first, from the first card. The swipes stay for undo. Waits for the deck.
     fn rerun(&mut self) {
         if self.fetch != Fetch::Loaded {
             return;
@@ -643,7 +643,8 @@ impl State {
         let sorted: Vec<Card> = Cards::from(matching)
             .sorted(self.filter.sort(), self.filter.direction())
             .into();
-        self.stack.replace(sorted);
+        self.stack
+            .replace(crate::deck_cards::flagged_first(sorted, &self.entries));
     }
 
     /// Keeps the top card and cycles past it.

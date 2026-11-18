@@ -76,6 +76,13 @@ pub fn CardRow(
     /// `card-action-btn` buttons that stop propagation themselves.
     #[props(default)]
     extra_actions: Option<Element>,
+    /// Flag state for the Flag toggle in the opened row's bar: `Some` with `on_toggle_flag`
+    /// draws it. The flag on the row itself follows [`crate::Flagged`].
+    #[props(default)]
+    flagged: Option<bool>,
+    /// Toggles the row's Flag.
+    #[props(default)]
+    on_toggle_flag: Option<EventHandler<()>>,
     /// A Send to row under the opened row's moves, where the client provides
     /// [`crate::SendTo`]: the deck page's rows have one.
     #[props(default)]
@@ -239,11 +246,13 @@ pub fn CardRow(
     // The `actions` slot the shared detail hangs its bar on: qty stepper,
     // printing, star, move-to. Image is a `CardDetails` default, not part of it.
     let send_to = send_to && try_use_context::<crate::SendTo>().is_some();
+    let flag_shown = crate::is_flagged(card.scryfall_data.id);
     let has_slot_actions = on_qty_change.is_some()
         || on_printing.is_some()
         || (mvp.is_some() && on_toggle_mvp.is_some())
         || on_move_to.is_some()
         || extra_actions.is_some()
+        || (flagged.is_some() && on_toggle_flag.is_some())
         || send_to;
     // Always mounted; the `.open` class drives the grid-rows + opacity collapse
     // so the detail eases open and closed instead of popping.
@@ -322,6 +331,9 @@ pub fn CardRow(
                             if mvp == Some(true) {
                                 span { class: "card-row-mvp", "★" }
                             }
+                            if flag_shown {
+                                crate::FlagMark { class: "card-row-flag" }
+                            }
                             "{name}"
                         }
                     }
@@ -377,7 +389,7 @@ pub fn CardRow(
                                     }
                                 }
                             }
-                            CardEditButtons { qty, on_qty_change, mvp, on_toggle_mvp }
+                            CardEditButtons { qty, on_qty_change, mvp, on_toggle_mvp, flagged, on_toggle_flag }
                             {extra_actions}
                     },
                     action_rows: rsx! {

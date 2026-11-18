@@ -34,7 +34,9 @@ use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_cards::{self, Action, Destination, Effect, Op, StackGroup, State};
 use zwipe_ui::stores::undo::UndoAction as SharedUndo;
 
-use super::components::card_row::{CardRow, DeckFaces, OtagDescribe, OtagExamplesOpen, ShowRowArt};
+use super::components::card_row::{
+    CardRow, DeckFaces, DeckFlagToggle, OtagDescribe, OtagExamplesOpen, ShowRowArt,
+};
 use super::components::filter_store::{FilterScope, FilterStore};
 use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
@@ -99,6 +101,15 @@ fn to_app_undo(action: SharedUndo) -> UndoAction {
             card_name,
             before,
         },
+        SharedUndo::FlagToggled {
+            card_id,
+            card_name,
+            before,
+        } => UndoAction::FlagToggled {
+            card_id,
+            card_name,
+            before,
+        },
         SharedUndo::PrintingChanged { old_card, new_id } => UndoAction::PrintingChanged {
             old_card: *old_card,
             new_id,
@@ -150,6 +161,15 @@ fn to_shared_undo(action: UndoAction) -> SharedUndo {
             card_name,
             before,
         } => SharedUndo::MvpToggled {
+            card_id,
+            card_name,
+            before,
+        },
+        UndoAction::FlagToggled {
+            card_id,
+            card_name,
+            before,
+        } => SharedUndo::FlagToggled {
             card_id,
             card_name,
             before,
@@ -811,6 +831,14 @@ pub fn View(deck_id: Uuid) -> Element {
     // featured card, so a flip on any of them turns them all.
     let stack_faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
     use_context_provider(|| DeckFaces(stack_faces));
+    // The owner's flags, which the rows, stacks and drawer mark and toggle.
+    let flagged_ids = use_memo(move || driver.model.read().flagged_ids());
+    use_context_provider(|| components::Flagged(flagged_ids.into()));
+    use_context_provider(|| {
+        DeckFlagToggle(Callback::new(move |(card_id, _flagged): (Uuid, bool)| {
+            driver.dispatch(Action::ToggleFlag { card_id });
+        }))
+    });
     let mut folds: Signal<HashSet<String>> = use_signal(HashSet::new);
     use_effect(move || {
         let model = driver.model.read();
@@ -893,6 +921,8 @@ pub fn View(deck_id: Uuid) -> Element {
     let maybe_enabled = model.board_enabled(Board::Maybeboard);
     let side_enabled = model.board_enabled(Board::Sideboard);
     let show_tokens = model.show_tokens();
+    let flagged_only = model.flagged_only();
+    let flagged_count = flagged_ids.read().len();
     let show_command_zone = model.show_command_zone();
     let offers_command_zone = model.offers_command_zone();
     let tokens = model.tokens(&filter);
@@ -1031,6 +1061,9 @@ pub fn View(deck_id: Uuid) -> Element {
                 card_id,
                 now: chrono::Utc::now(),
             });
+        }),
+        toggle_flag: Callback::new(move |(card_id, _flagged): (Uuid, bool)| {
+            driver.dispatch(Action::ToggleFlag { card_id });
         }),
     };
     let stack_host = DeckRowHost {
@@ -1201,6 +1234,12 @@ pub fn View(deck_id: Uuid) -> Element {
                                 disabled: stacks_on,
                                 onclick: move |_| show_row_art.set(!show_row_art()),
                                 "{deck_cards::ART}"
+                            }
+                            Chip {
+                                selected: flagged_only,
+                                disabled: flagged_count == 0 && !flagged_only,
+                                onclick: move |_| driver.dispatch(Action::ToggleFlaggedOnly),
+                                "{zwipe_ui::deck_cards::flagged_label(flagged_count)}"
                             }
                             Button {
                                 variant: ButtonVariant::Action,

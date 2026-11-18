@@ -2246,3 +2246,141 @@ fn a_quantity_undo_that_nets_to_no_write_still_says_so() {
         [(ToastKind::Info, "Sol Ring back to \u{00d7}3".to_owned())]
     );
 }
+
+/// Flags `card_id` (or unflags it) and lands the server's reply, answering what the reply raised.
+fn flag_and_land(state: &mut State, card_id: Uuid) -> Vec<Effect> {
+    let effects = state.update(Action::ToggleFlag { card_id });
+    let Some(Effect::PatchCard {
+        ticket, request, ..
+    }) = effects.last()
+    else {
+        panic!("a flag patches: {effects:?}");
+    };
+    assert!(
+        matches!(request.flagged, Patch::Set(Some(_))),
+        "{request:?}"
+    );
+    let ticket = *ticket;
+    let deck_card = state
+        .entries
+        .iter()
+        .find(|e| e.card.scryfall_data.id == card_id)
+        .unwrap()
+        .deck_card
+        .clone();
+    state.update(Action::Patched {
+        ticket,
+        deck_card: Box::new(deck_card),
+    })
+}
+
+#[test]
+fn a_flag_shows_at_once_patches_and_rolls_back_on_failure() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let effects = state.update(Action::ToggleFlag { card_id: ring });
+    let [
+        Effect::Refilter,
+        Effect::PatchCard {
+            ticket, request, ..
+        },
+    ] = effects.as_slice()
+    else {
+        panic!("a flag patches: {effects:?}");
+    };
+    assert!(matches!(request.flagged, Patch::Set(Some(true))));
+    assert!(matches!(request.mvp, Patch::Unchanged));
+    assert!(
+        state.entries[0].deck_card.flagged,
+        "the flag shows before the server answers"
+    );
+    let _ = state.update(Action::Failed { ticket: *ticket });
+    assert!(
+        !state.entries[0].deck_card.flagged,
+        "a refused flag comes back off"
+    );
+}
+
+#[test]
+fn a_flag_and_an_unflag_record_undo_once_the_server_takes_them() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    assert_eq!(
+        undo_records(&flag_and_land(&mut state, ring)),
+        [UndoAction::FlagToggled {
+            card_id: ring,
+            card_name: "Sol Ring".to_owned(),
+            before: false,
+        }]
+    );
+    assert_eq!(
+        undo_records(&flag_and_land(&mut state, ring)),
+        [UndoAction::FlagToggled {
+            card_id: ring,
+            card_name: "Sol Ring".to_owned(),
+            before: true,
+        }]
+    );
+    let effects = state.update(Action::ToggleFlag { card_id: ring });
+    let Some(Effect::PatchCard { ticket, .. }) = effects.last() else {
+        panic!("a flag patches");
+    };
+    let failed = state.update(Action::Failed { ticket: *ticket });
+    assert!(
+        undo_records(&effects).is_empty() && undo_records(&failed).is_empty(),
+        "a refused flag records nothing"
+    );
+}
+
+#[test]
+fn undo_unflags_a_flag_and_its_toast_waits_for_the_server() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    state.entries[0].deck_card.flagged = true;
+    let effects = state.update(Action::Undo(Box::new(UndoAction::FlagToggled {
+        card_id: ring,
+        card_name: "Sol Ring".to_owned(),
+        before: false,
+    })));
+    assert!(!state.entries[0].deck_card.flagged);
+    assert!(
+        toasts(&effects).is_empty(),
+        "the toast waits for the server"
+    );
+    let Some(Effect::PatchCard {
+        ticket, request, ..
+    }) = effects.last()
+    else {
+        panic!("undo patches: {effects:?}");
+    };
+    assert!(matches!(request.flagged, Patch::Set(Some(false))));
+    let landed = state.update(Action::Patched {
+        ticket: *ticket,
+        deck_card: Box::new(state.entries[0].deck_card.clone()),
+    });
+    assert_eq!(
+        toasts(&landed),
+        [(ToastKind::Info, "Unflagged Sol Ring".to_owned())]
+    );
+    assert!(
+        undo_records(&landed).is_empty(),
+        "undo's own write records nothing"
+    );
+}
+
+#[test]
+fn an_undo_of_a_flag_that_already_changed_back_is_spent() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let effects = state.update(Action::Undo(Box::new(UndoAction::FlagToggled {
+        card_id: ring,
+        card_name: "Sol Ring".to_owned(),
+        before: false,
+    })));
+    assert!(
+        !effects
+            .iter()
+            .any(|e| matches!(e, Effect::PatchCard { .. })),
+        "nothing to undo: the card is already unflagged: {effects:?}"
+    );
+}

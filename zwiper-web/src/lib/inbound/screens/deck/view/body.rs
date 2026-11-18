@@ -87,6 +87,8 @@ pub(crate) fn DeckPageBody(
     show_tokens: Option<Signal<bool>>,
     show_zone: Option<Signal<bool>>,
     show_art: Signal<bool>,
+    // Show's Flagged chip and how many cards are flagged, on the owner's page only.
+    #[props(default)] show_flagged: Option<(Signal<bool>, usize)>,
     // The Boards chips, and whether the maybeboard and sideboard have cards.
     mut boards: Signal<Boards>,
     has_maybe: bool,
@@ -346,6 +348,7 @@ pub(crate) fn DeckPageBody(
                 group_by,
                 show_tokens,
                 show_zone,
+                show_flagged,
                 show_art,
                 art_disabled: view() == CardsView::Stacks,
                 all_folded,

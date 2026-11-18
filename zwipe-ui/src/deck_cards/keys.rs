@@ -1,6 +1,6 @@
 //! The deck cards page's keys for one card: `p` opens its Printings, `i` its image, `v` flips it, `d` opens or closes its
 //! details, `m` and `s` move it to the maybeboard and the sideboard, Shift+S stars or unstars it,
-//! and `-` and `+` (or `=`) step its quantity. Each does exactly what that card's own button
+//! Shift+F flags or unflags it, and `-` and `+` (or `=`) step its quantity. Each does exactly what that card's own button
 //! does, and nothing where it has no such button. The card is the one under the cursor, else the
 //! one whose details are open. A read-only deck page ([`Editable::No`]) answers only `p`, `i`,
 //! `v` and `d`.
@@ -44,8 +44,8 @@ pub struct RowInfo {
 
 /// Every key [`hover_key`] answers on an editable page, as `KeyboardEvent.key`: the keys that
 /// still reach the page while the Stacks view's card details drawer is open.
-pub const HOVER_KEYS: [&str; 15] = [
-    "p", "P", "i", "I", "v", "V", "d", "D", "m", "M", "s", "S", "-", "+", "=",
+pub const HOVER_KEYS: [&str; 16] = [
+    "p", "P", "i", "I", "v", "V", "d", "D", "m", "M", "s", "S", "F", "-", "+", "=",
 ];
 
 /// The keys [`hover_key`] answers on a read-only page: the ones that read.
@@ -77,6 +77,8 @@ pub enum HoverKey {
     ToSideboard,
     /// Shift+S: star or unstar.
     Star,
+    /// Shift+F: flag or unflag.
+    Flag,
     /// `-`: one copy fewer.
     Fewer,
     /// `+`, or `=` without Shift: one copy more.
@@ -84,7 +86,8 @@ pub enum HoverKey {
 }
 
 /// The hover key `key` (a `KeyboardEvent.key`) stands for under `editable`. `s` and `S` differ:
-/// Shift+S stars. A read-only page answers only the keys that read.
+/// Shift+S stars; Shift+F flags, where `f` is the page's filter. A read-only page answers only
+/// the keys that read.
 #[must_use]
 pub fn hover_key(key: &str, editable: Editable) -> Option<HoverKey> {
     let found = any_hover_key(key)?;
@@ -111,6 +114,7 @@ fn any_hover_key(key: &str) -> Option<HoverKey> {
         "m" | "M" => Some(HoverKey::ToMaybeboard),
         "s" => Some(HoverKey::ToSideboard),
         "S" => Some(HoverKey::Star),
+        "F" => Some(HoverKey::Flag),
         "-" => Some(HoverKey::Fewer),
         "+" | "=" => Some(HoverKey::More),
         _ => None,
@@ -126,6 +130,8 @@ pub enum HoverAction {
     Move(Uuid, Board),
     /// Toggle the star of the card, `starred` saying whether it is starred now.
     Star(Uuid, bool),
+    /// Toggle the card's flag.
+    Flag(Uuid),
     /// Change the card's quantity by the step, as the stepper's `-` or `+` does.
     Quantity(Uuid, i32),
     /// Show the card on this face, everywhere it shows: its row or stack image and its details.
@@ -172,6 +178,7 @@ pub fn hover_action(
             RowKind::Main { mvp } => Some(HoverAction::Star(card_id, mvp)),
             RowKind::Board(_) | RowKind::Zone(_) | RowKind::Token => None,
         },
+        HoverKey::Flag => movable.then_some(HoverAction::Flag(card_id)),
         HoverKey::Image => Some(HoverAction::Image(card_id)),
         HoverKey::Flip => {
             // The faces Flip turns through, as the details count them.
