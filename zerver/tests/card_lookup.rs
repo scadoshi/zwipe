@@ -239,6 +239,13 @@ async fn the_route_is_limited_per_address(pool: sqlx::PgPool) {
         .await;
     assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
     assert!(headers.contains_key(header::RETRY_AFTER), "{headers:?}");
+    assert_eq!(
+        headers
+            .get(header::CACHE_CONTROL)
+            .and_then(|v| v.to_str().ok()),
+        Some("private, no-store"),
+        "a refusal isn't cached either"
+    );
 }
 
 #[sqlx::test]
@@ -308,4 +315,30 @@ async fn a_browser_can_read_a_429_s_retry_after(pool: sqlx::PgPool) {
         exposed.split(',').any(|name| name.trim() == "retry-after"),
         "exposed: {exposed:?}"
     );
+}
+
+#[sqlx::test]
+async fn no_answer_is_cached_since_a_signed_in_one_follows_the_user_s_setting(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    seed_cards(&pool, &[card("Lightning Bolt").mono("R")]).await;
+    for (body, want) in [
+        (json!({ "name": "bolt" }), StatusCode::OK),
+        (json!({ "name": "%%%" }), StatusCode::UNPROCESSABLE_ENTITY),
+        (
+            json!({ "name": "bolt", "pad": "x".repeat(5000) }),
+            StatusCode::PAYLOAD_TOO_LARGE,
+        ),
+    ] {
+        let (status, headers, _) = app
+            .send_raw(Method::POST, CARD_LOOKUP_ROUTE, Some(body), None, &[])
+            .await;
+        assert_eq!(status, want);
+        assert_eq!(
+            headers
+                .get(header::CACHE_CONTROL)
+                .and_then(|v| v.to_str().ok()),
+            Some("private, no-store"),
+            "{status}"
+        );
+    }
 }
