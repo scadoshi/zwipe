@@ -60,6 +60,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Toasts rise from the bottom edge and drop back down",
         "Toasts sit as far from the side as from the bottom",
         "Stacked toasts line up behind the newest",
+        "Exceptions no longer shows a line under it while Universes Beyond shows",
         "On Android, the app no longer signs you out now and then after a restart",
         "On the web, / and ' never open the browser's find bar outside a text field",
         "On the web at phone width, Themes from the menu opens fully on screen",
