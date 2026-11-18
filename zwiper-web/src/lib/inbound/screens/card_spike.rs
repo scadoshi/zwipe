@@ -21,7 +21,8 @@ use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 
-/// One of the card page's counters: its number, its label and, for a rate, the swipes behind it.
+/// One of the card page's counters: its number, its label and, for a rate, how many swipes it
+/// counts.
 struct Counter {
     num: &'static str,
     label: &'static str,
@@ -44,22 +45,22 @@ const COUNTERS: [Counter; 7] = [
     Counter {
         num: "72%",
         label: "Add rate",
-        sub: Some("added · 1,240 swipes"),
+        sub: Some("1,240 added"),
     },
     Counter {
         num: "18%",
         label: "Skip rate",
-        sub: Some("skipped · 310 swipes"),
+        sub: Some("310 skipped"),
     },
     Counter {
         num: "4%",
         label: "Remove rate",
-        sub: Some("removed · 69 swipes"),
+        sub: Some("69 removed"),
     },
     Counter {
         num: "6%",
         label: "Maybe rate",
-        sub: Some("maybeboarded · 103 swipes"),
+        sub: Some("103 maybeboarded"),
     },
     Counter {
         num: "1,722",
@@ -78,7 +79,7 @@ const COMMANDER_COUNTERS: [Counter; 2] = [
     Counter {
         num: "9%",
         label: "Pick rate",
-        sub: Some("picked · 860 swipes"),
+        sub: Some("860 picked"),
     },
 ];
 
