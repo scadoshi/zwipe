@@ -329,12 +329,8 @@ fn stored<T: Copy>(all: &[T], as_str: fn(T) -> &'static str, text: &str) -> Opti
 /// A stored row from its columns. The table's checks hold every value to a known one.
 fn stored_row(columns: RowColumns) -> Result<StoredRow, anyhow::Error> {
     let (scryfall_data_id, finish, condition, language, quantity, tags, added_at) = columns;
-    let finish = stored(
-        &[Finish::Nonfoil, Finish::Foil, Finish::Etched],
-        Finish::as_str,
-        &finish,
-    )
-    .with_context(|| format!("stored finish {finish:?}"))?;
+    let finish = stored(&Finish::ALL, Finish::as_str, &finish)
+        .with_context(|| format!("stored finish {finish:?}"))?;
     let condition = condition
         .map(|text| {
             stored(&CardCondition::ALL, CardCondition::as_str, &text)
