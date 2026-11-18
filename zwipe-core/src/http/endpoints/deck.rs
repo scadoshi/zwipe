@@ -45,6 +45,10 @@ impl Endpoint for CreateDeck {
     fn path(&self) -> Cow<'static, str> {
         Cow::Borrowed(CREATE_DECK_ROUTE)
     }
+    /// A repeat answers the deck the first send made only when the body names its id.
+    fn idempotent(&self) -> bool {
+        self.0.id.is_some()
+    }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.0)
     }
@@ -79,6 +83,7 @@ impl Endpoint for GetDeckProfile {
 pub struct UpdateDeckProfile(pub Uuid, pub HttpUpdateDeckProfile);
 impl Endpoint for UpdateDeckProfile {
     const METHOD: Method = Method::Patch;
+    const IDEMPOTENT: bool = true;
     type Request = HttpUpdateDeckProfile;
     type Response = DeckProfile;
     fn path(&self) -> Cow<'static, str> {
@@ -110,6 +115,10 @@ impl Endpoint for CloneDeck {
     type Response = HttpClonedDeck;
     fn path(&self) -> Cow<'static, str> {
         Cow::Owned(paths::clone_deck_route(self.0))
+    }
+    /// A repeat answers the deck the first send made only when the body names its id.
+    fn idempotent(&self) -> bool {
+        self.1.id.is_some()
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.1)
@@ -185,6 +194,7 @@ impl Endpoint for UnshareDeck {
 pub struct SkipDeckCard(pub Uuid, pub HttpSkipDeckCard);
 impl Endpoint for SkipDeckCard {
     const METHOD: Method = Method::Post;
+    const IDEMPOTENT: bool = true;
     type Request = HttpSkipDeckCard;
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
@@ -239,6 +249,7 @@ impl Endpoint for CreateDeckCard {
 pub struct UpdateDeckCard(pub Uuid, pub Uuid, pub HttpPatchDeckCard);
 impl Endpoint for UpdateDeckCard {
     const METHOD: Method = Method::Patch;
+    const IDEMPOTENT: bool = true;
     type Request = HttpPatchDeckCard;
     type Response = DeckCard;
     fn path(&self) -> Cow<'static, str> {
@@ -283,6 +294,7 @@ impl Endpoint for DeleteDeckCard {
 pub struct ImportDeckCards(pub Uuid, pub HttpImportDeckCards);
 impl Endpoint for ImportDeckCards {
     const METHOD: Method = Method::Post;
+    const IDEMPOTENT: bool = true;
     type Request = HttpImportDeckCards;
     type Response = ImportDeckCardsResult;
     fn path(&self) -> Cow<'static, str> {
@@ -298,6 +310,7 @@ impl Endpoint for ImportDeckCards {
 pub struct ImportArchidektDeck(pub Uuid, pub HttpImportArchidektDeck);
 impl Endpoint for ImportArchidektDeck {
     const METHOD: Method = Method::Post;
+    const IDEMPOTENT: bool = true;
     type Request = HttpImportArchidektDeck;
     type Response = ImportDeckCardsResult;
     fn path(&self) -> Cow<'static, str> {

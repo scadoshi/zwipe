@@ -96,6 +96,7 @@ impl Endpoint for DeleteUser {
 pub struct MarkHintShown(pub HttpMarkHintShown);
 impl Endpoint for MarkHintShown {
     const METHOD: Method = Method::Patch;
+    const IDEMPOTENT: bool = true;
     type Request = HttpMarkHintShown;
     type Response = User;
     fn path(&self) -> Cow<'static, str> {
@@ -123,6 +124,7 @@ impl Endpoint for GetSettings {
 pub struct UpdateSettings(pub HttpUpdateSettings);
 impl Endpoint for UpdateSettings {
     const METHOD: Method = Method::Patch;
+    const IDEMPOTENT: bool = true;
     type Request = HttpUpdateSettings;
     type Response = UserSettings;
     fn path(&self) -> Cow<'static, str> {
@@ -150,6 +152,7 @@ impl Endpoint for GetCommanderMaybeboard {
 pub struct AddCommanderMaybeboardCard(pub Uuid);
 impl Endpoint for AddCommanderMaybeboardCard {
     const METHOD: Method = Method::Post;
+    const IDEMPOTENT: bool = true;
     type Request = ();
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
