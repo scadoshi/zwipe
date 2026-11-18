@@ -12,8 +12,8 @@
 use components::hint::{ContentHintDialog, HintBody, guide_for_screen};
 use components::{
     AlertDialog, Button, ButtonVariant, Chip, DialogAction, HintDialog, PICKER_DRAWER_PX,
-    PickerSearch, PickerSheet, TOAST_NORMAL, TOAST_QUICK, use_min_width, use_overlay_back_action,
-    use_picker_search,
+    PickerChoice, PickerSearch, PickerSheet, TOAST_NORMAL, TOAST_QUICK, enter_target,
+    use_min_width, use_overlay_back_action, use_picker_search,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -205,6 +205,17 @@ pub fn FormatPicker(form: DeckForm) -> Element {
         .copied()
         .filter(|f| typed.is_empty() || f.display_name().to_lowercase().contains(&typed))
         .collect();
+    let target = enter_target(&typed, &results).copied();
+    // Enter picks the top match and saves, as a format is a single choice.
+    let pick_target = move |()| {
+        if let Some(format) = target {
+            focused.set(Some(format));
+            if *form.format.peek() != Some(format) {
+                form.select_format(format);
+            }
+            open.set(false);
+        }
+    };
     rsx! {
         PickerSheet {
             open,
@@ -216,7 +227,12 @@ pub fn FormatPicker(form: DeckForm) -> Element {
             on_back: move |()| back.call(()),
             on_save: move |()| open.set(false),
             div { class: "tag-controls",
-                PickerSearch { id: "format-search", placeholder: "Search formats", query }
+                PickerSearch {
+                    id: "format-search",
+                    placeholder: "Search formats",
+                    query,
+                    on_enter: pick_target,
+                }
                 div { class: "tag-def-bar format-def-bar",
                     div { class: "format-def-scroll",
                         if let Some(format) = focused() {
@@ -238,18 +254,19 @@ pub fn FormatPicker(form: DeckForm) -> Element {
                     div { class: "chip-unselected", "No results" }
                 } else {
                     for format in results {
-                        Chip {
-                            key: "{format.display_name()}",
-                            selected: (form.format)() == Some(format),
-                            onclick: move |_| {
-                                focused.set(Some(format));
-                                if *form.format.peek() == Some(format) {
-                                    form.clear_format();
-                                } else {
-                                    form.select_format(format);
-                                }
-                            },
-                            "{format.display_name()}"
+                        PickerChoice { key: "{format.display_name()}", target: target == Some(format),
+                            Chip {
+                                selected: (form.format)() == Some(format),
+                                onclick: move |_| {
+                                    focused.set(Some(format));
+                                    if *form.format.peek() == Some(format) {
+                                        form.clear_format();
+                                    } else {
+                                        form.select_format(format);
+                                    }
+                                },
+                                "{format.display_name()}"
+                            }
                         }
                     }
                 }
@@ -261,6 +278,29 @@ pub fn FormatPicker(form: DeckForm) -> Element {
             actions: guide_for_screen(HintTopic::Format),
         }
         DiscardDialog { open: discard_open, picker: Picker::Format, on_discard: revert }
+    }
+}
+
+/// What Enter in a tag picker's search did with its top match.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OnEnter {
+    /// The tag went in.
+    Added,
+    /// The tag was already picked; Enter never takes one off.
+    Already,
+    /// The picker holds `cap` tags, so the tag stayed out.
+    Full,
+}
+
+/// Adds `slug` to `picked` unless it is there or `picked` holds `cap` tags.
+fn add_on_enter(picked: &mut Vec<String>, slug: &str, cap: usize) -> OnEnter {
+    if picked.iter().any(|s| s == slug) {
+        OnEnter::Already
+    } else if picked.len() >= cap {
+        OnEnter::Full
+    } else {
+        picked.push(slug.to_owned());
+        OnEnter::Added
     }
 }
 
@@ -333,6 +373,23 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
         .into_iter()
         .filter(|t| typed.is_empty() || t.display_name.to_lowercase().contains(&typed))
         .collect();
+    let target = enter_target(&typed, &results).cloned();
+    let target_slug = target.as_ref().map(|t| t.slug.clone());
+    // Enter adds the top match and keeps the picker open for the next.
+    let add_target = move |()| {
+        let Some(tag) = target.clone() else {
+            return;
+        };
+        if add_on_enter(&mut tags.write(), &tag.slug, MAX_DECK_TAGS) == OnEnter::Full {
+            toast.warning(
+                format!("Up to {MAX_DECK_TAGS} deck tags"),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
+        }
+        focused.set(Some(tag));
+        let mut query = query;
+        query.set(String::new());
+    };
     let count = tags.read().len();
     rsx! {
         PickerSheet {
@@ -361,7 +418,12 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
                         }
                     }
                 }
-                PickerSearch { id: "tag-search", placeholder: "Search tags", query }
+                PickerSearch {
+                    id: "tag-search",
+                    placeholder: "Search tags",
+                    query,
+                    on_enter: add_target,
+                }
                 div { class: "tag-def-bar",
                     if let Some(tag) = focused() {
                         div { class: "tag-def-name", "{tag.display_name}" }
@@ -377,7 +439,11 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
                     div { class: "chip-unselected", "No results" }
                 } else {
                     for tag in results {
-                        DeckTagChip { key: "{tag.slug}", tag, tags, focused, query }
+                        PickerChoice {
+                            key: "{tag.slug}",
+                            target: target_slug.as_deref() == Some(tag.slug.as_str()),
+                            DeckTagChip { tag, tags, focused, query }
+                        }
                     }
                 }
             }
@@ -507,6 +573,23 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
         ranked
     };
     drop(catalog);
+    let target = enter_target(&typed, &results).cloned();
+    let target_slug = target.as_ref().map(|t| t.slug.clone());
+    // Enter adds the top match and keeps the picker open for the next.
+    let add_target = move |()| {
+        let Some(tag) = target.clone() else {
+            return;
+        };
+        if add_on_enter(&mut selected.write(), &tag.slug, MAX_DECK_ORACLE_TAGS) == OnEnter::Full {
+            toast.warning(
+                format!("Up to {MAX_DECK_ORACLE_TAGS} Oracle tags"),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
+        }
+        focused.set(Some(tag));
+        let mut query = query;
+        query.set(String::new());
+    };
     let content = Picker::OracleTags.hint();
     rsx! {
         PickerSheet {
@@ -538,7 +621,12 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
                         }
                     }
                 }
-                PickerSearch { id: "oracle-tag-search", placeholder: "Search all oracle tags", query }
+                PickerSearch {
+                    id: "oracle-tag-search",
+                    placeholder: "Search all oracle tags",
+                    query,
+                    on_enter: add_target,
+                }
                 div { class: "tag-def-bar",
                     if let Some(tag) = focused() {
                         div { class: "tag-def-name", "{tag.slug}" }
@@ -560,7 +648,11 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
                     div { class: "chip-unselected", "No results" }
                 } else {
                     for tag in results {
-                        OracleTagChip { key: "{tag.slug}", tag, selected, focused, query }
+                        PickerChoice {
+                            key: "{tag.slug}",
+                            target: target_slug.as_deref() == Some(tag.slug.as_str()),
+                            OracleTagChip { tag, selected, focused, query }
+                        }
                     }
                 }
             }
@@ -692,6 +784,21 @@ mod tests {
                 div { class: "picker-probe" }
             }
         }
+    }
+
+    #[test]
+    fn enter_adds_the_top_tag_once_and_never_past_the_cap() {
+        let mut picked = vec!["aggro".to_owned()];
+        assert_eq!(add_on_enter(&mut picked, "burn", 3), OnEnter::Added);
+        assert_eq!(
+            add_on_enter(&mut picked, "burn", 3),
+            OnEnter::Already,
+            "Enter never takes a tag off"
+        );
+        assert_eq!(picked, ["aggro", "burn"]);
+        assert_eq!(add_on_enter(&mut picked, "ramp", 3), OnEnter::Added);
+        assert_eq!(add_on_enter(&mut picked, "tokens", 3), OnEnter::Full);
+        assert_eq!(picked, ["aggro", "burn", "ramp"]);
     }
 
     #[test]

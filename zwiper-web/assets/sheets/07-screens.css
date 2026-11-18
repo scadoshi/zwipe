@@ -2638,6 +2638,17 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
     padding: 0;
 }
 
+/* A choice in a picker's grid; its chip lays out as if unwrapped. */
+.picker-choice {
+    display: contents;
+}
+
+/* The choice Enter in the search acts on, while the search has focus: a chip's hover. */
+.picker-body:has(.chip-row > .input:focus, .chip-row .input-clear-wrap > .input:focus) .enter-target > .chip {
+    color: var(--ink-accent-primary, var(--accent-primary));
+    border-color: var(--accent-primary);
+}
+
 .picker-body {
     display: flex;
     flex-direction: column;

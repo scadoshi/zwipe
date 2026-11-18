@@ -110,12 +110,13 @@ fn PickerBody(search_id: &'static str, search_key: bool, children: Element) -> E
 
 /// The search every picker leads with: its `Search` label chip on the left and the filter's
 /// compact field on the same line, as Quick add's row, the field's `×` easing in as text is
-/// typed.
+/// typed. Enter in the field calls `on_enter`, which acts on the [`enter_target`].
 #[component]
 pub fn PickerSearch(
     id: &'static str,
     placeholder: &'static str,
     mut query: Signal<String>,
+    #[props(default)] on_enter: Option<EventHandler<()>>,
 ) -> Element {
     rsx! {
         div { class: "chip-row",
@@ -133,8 +134,36 @@ pub fn PickerSearch(
                     autocorrect: "off",
                     spellcheck: "false",
                     oninput: move |event| query.set(event.value()),
+                    onkeydown: move |event| {
+                        if event.key() == Key::Enter && !event.is_composing()
+                            && let Some(on_enter) = on_enter
+                        {
+                            event.prevent_default();
+                            on_enter.call(());
+                        }
+                    },
                 }
             }
         }
+    }
+}
+
+/// The choice Enter in a picker's search acts on: the first of `shown` while `query` has text,
+/// else none, so an empty search leaves every choice plain and Enter does nothing.
+#[must_use]
+pub fn enter_target<'a, T>(query: &str, shown: &'a [T]) -> Option<&'a T> {
+    if query.trim().is_empty() {
+        None
+    } else {
+        shown.first()
+    }
+}
+
+/// One choice in a picker's grid, marked as the [`enter_target`] while `target`, which the
+/// stylesheet shows while the search has focus. The wrapper takes no box of its own.
+#[component]
+pub fn PickerChoice(target: bool, children: Element) -> Element {
+    rsx! {
+        span { class: if target { "picker-choice enter-target" } else { "picker-choice" }, {children} }
     }
 }
