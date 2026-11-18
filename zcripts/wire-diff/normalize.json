@@ -1,0 +1,18 @@
+{
+  "mask": [
+    "/access_token",
+    "/refresh_token",
+    "/user/session_version",
+    "/timestamp"
+  ],
+  "sort": [
+    {
+      "path": "",
+      "by": "/scryfall_data/id"
+    },
+    {
+      "path": "/cards",
+      "by": "/scryfall_data/id"
+    }
+  ]
+}

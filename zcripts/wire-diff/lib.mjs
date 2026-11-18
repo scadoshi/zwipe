@@ -18,14 +18,22 @@ export const matches = (pattern, path) => {
   return want.length === got.length && want.every((w, i) => w === "*" || w === got[i]);
 };
 
+/**
+ * The value at `by` in `item`: a JSON pointer ("/scryfall_data/id"), or a plain key for a field
+ * of the item itself.
+ */
+export const valueAt = (item, by) =>
+  by.startsWith("/") ? segments(by).reduce((v, k) => (v == null ? undefined : v[k]), item) : item?.[by];
+
 const kindOf = (v) => (v === null ? "null" : Array.isArray(v) ? "array" : typeof v);
 
 /** What a masked value reads as: its kind kept, so a type change still shows. */
 const masked = (v) => `<masked:${kindOf(v)}>`;
 
 /**
- * `body` with every value at a `rules.mask` path replaced by a marker that keeps its kind, and every array at a
- * `rules.sort` path sorted by its items' `by` field, so two runs of one request compare equal.
+ * `body` with every value at a `rules.mask` path replaced by a marker that keeps its kind, and
+ * every array at a `rules.sort` path sorted by its items' `by` field (a key or a JSON pointer),
+ * so two runs of one request compare equal.
  */
 export const normalize = (body, rules = {}) => {
   const mask = rules.mask ?? [];
@@ -36,7 +44,7 @@ export const normalize = (body, rules = {}) => {
       const items = value.map((item, i) => walk(item, `${path}/${i}`));
       const order = sort.find((s) => matches(s.path, path));
       if (!order) return items;
-      const key = (item) => JSON.stringify(item?.[order.by] ?? null);
+      const key = (item) => JSON.stringify(valueAt(item, order.by) ?? null);
       return [...items].sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));
     }
     if (value !== null && typeof value === "object") {

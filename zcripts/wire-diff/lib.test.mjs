@@ -114,3 +114,9 @@ test("an approval for one field doesn't pass another on the same route", () => {
   ]);
   assert.deepEqual(verdict.unapproved.map((d) => d.path), ["/email"]);
 });
+
+test("an unordered array can sort by a nested field", () => {
+  const rules = { sort: [{ path: "", by: "/scryfall_data/id" }] };
+  const body = [{ scryfall_data: { id: "b" } }, { scryfall_data: { id: "a" } }];
+  assert.deepEqual(normalize(body, rules), [{ scryfall_data: { id: "a" } }, { scryfall_data: { id: "b" } }]);
+});
