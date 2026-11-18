@@ -9,9 +9,13 @@ use zwipe_core::domain::card::slug::CardSlug;
 use crate::domain::card::ports::CardService;
 use crate::inbound::http::{ApiError, AppState};
 
+/// The longest slug looked up, in characters: above the longest card name's slug, so a longer one
+/// answers an empty list without a query.
+const NAMED_SLUG_MAX: usize = 200;
+
 /// Returns every card whose name, or front face's name, folds to the path's slug, one printing
 /// each: a full-name match first, playable cards before tokens and art cards. A slug no card
-/// has, or text that is not a slug, answers an empty list.
+/// has, text that is not a slug, or a slug longer than any card's answers an empty list.
 ///
 /// # Errors
 ///
@@ -20,6 +24,9 @@ pub async fn get_named_cards(
     State(state): State<AppState>,
     Path(name_slug): Path<String>,
 ) -> Result<(StatusCode, Json<Vec<Card>>), ApiError> {
+    if name_slug.len() > NAMED_SLUG_MAX {
+        return Ok((StatusCode::OK, Json(vec![])));
+    }
     let Ok(slug) = name_slug.parse::<CardSlug>() else {
         return Ok((StatusCode::OK, Json(vec![])));
     };

@@ -231,3 +231,16 @@ async fn reads_go_on_while_the_slug_indexes_build(pool: sqlx::PgPool) {
     building.commit().await.unwrap();
     assert_eq!(read.unwrap(), 1, "a search reads while the indexes build");
 }
+
+#[sqlx::test]
+async fn a_slug_longer_than_any_card_s_is_not_looked_up(pool: sqlx::PgPool) {
+    let long = "Long ".repeat(41);
+    let longest_real = "Our Market Research Shows That Players Like Really Long Card Names So We Made this Card to Have the Absolute Longest Card Name Ever Elemental";
+    seed_cards(&pool, &[card(long.trim()), card(longest_real)]).await;
+    let app = common::TestApp::new(pool);
+    let slug = zwipe_core::domain::card::slug::card_slug(long.trim()).unwrap();
+    assert!(slug.as_str().len() > 200, "{}", slug.as_str().len());
+    assert_eq!(named(&app, slug.as_str()).await.0, Vec::<String>::new());
+    let real = zwipe_core::domain::card::slug::card_slug(longest_real).unwrap();
+    assert_eq!(named(&app, real.as_str()).await.0, [longest_real]);
+}
