@@ -102,6 +102,7 @@ fn build_client() -> Client {
 mod tests {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::TcpListener;
+    use tokio::sync::oneshot;
 
     use super::deck::search_deck_cards::SEARCH_TIMEOUT;
     use super::*;
@@ -136,7 +137,7 @@ mod tests {
         assert!(accept.contains("br"), "request {request:?}");
     }
 
-    #[tokio::test]
+    #[tokio::test(start_paused = true)]
     async fn a_call_within_a_timeout_gives_up_on_a_server_that_never_answers() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
@@ -149,12 +150,13 @@ mod tests {
         });
         let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
 
-        let started = std::time::Instant::now();
+        let within = Duration::from_millis(300);
+        let started = tokio::time::Instant::now();
         let result = client
             .call_within(
                 zwipe_core::http::endpoints::card::GetPrintings(uuid::Uuid::nil()),
                 None,
-                Duration::from_millis(300),
+                within,
             )
             .await;
 
@@ -163,8 +165,8 @@ mod tests {
             "a timed-out call is a network error: {result:?}"
         );
         assert!(
-            started.elapsed() < Duration::from_secs(5),
-            "gave up after {:?}",
+            started.elapsed() <= within.saturating_add(Duration::from_secs(1)),
+            "gave up after {:?}, past its {within:?} and toward the client's {REQUEST_TIMEOUT:?}",
             started.elapsed()
         );
     }
@@ -191,12 +193,14 @@ mod tests {
 
     /// A server whose first connection answers one request, then takes the next and drops the
     /// socket without answering, as a link that went stale while the pool held it; every later
-    /// connection answers. Answers with how many connections it took.
+    /// connection answers. It stops once `done` fires, when the client's calls have returned, and
+    /// answers with how many connections it took. A later connection is always taken before
+    /// then, since the call on it waits for its answer.
     #[expect(
         clippy::unwrap_used,
         reason = "a test helper: a socket error fails the test"
     )]
-    async fn stale_after_one(listener: TcpListener) -> usize {
+    async fn stale_after_one(listener: TcpListener, mut done: oneshot::Receiver<()>) -> usize {
         const OK: &[u8] =
             b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 2\r\n\r\n[]";
         let mut buf = vec![0_u8; 8192];
@@ -206,28 +210,33 @@ mod tests {
         let _ = first.read(&mut buf).await;
         drop(first);
         let mut taken: usize = 1;
-        while let Ok(Ok((mut next, _))) =
-            tokio::time::timeout(Duration::from_millis(500), listener.accept()).await
-        {
+        loop {
+            // A waiting connection is taken before the stop.
+            let mut next = tokio::select! {
+                biased;
+                accepted = listener.accept() => accepted.unwrap().0,
+                _ = &mut done => return taken,
+            };
             taken = taken.saturating_add(1);
             if next.read(&mut buf).await.unwrap_or(0) > 0 {
                 next.write_all(OK).await.unwrap();
             }
         }
-        taken
     }
 
     #[tokio::test]
     async fn a_get_on_a_stale_pooled_connection_goes_again_on_a_fresh_one() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
-        let server = tokio::spawn(stale_after_one(listener));
+        let (stop, done) = oneshot::channel();
+        let server = tokio::spawn(stale_after_one(listener, done));
         let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
         let printings = || zwipe_core::http::endpoints::card::GetPrintings(uuid::Uuid::nil());
 
         client.call(printings(), None).await.unwrap();
         let again = client.call(printings(), None).await;
 
+        stop.send(()).unwrap();
         assert!(again.is_ok(), "the GET goes again: {again:?}");
         assert_eq!(server.await.unwrap(), 2, "on one fresh connection");
     }
@@ -236,7 +245,8 @@ mod tests {
     async fn a_write_on_a_stale_pooled_connection_is_not_sent_twice() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
-        let server = tokio::spawn(stale_after_one(listener));
+        let (stop, done) = oneshot::channel();
+        let server = tokio::spawn(stale_after_one(listener, done));
         let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
 
         client
@@ -257,6 +267,7 @@ mod tests {
             matches!(share, Err(ClientError::Network(_))),
             "a write fails rather than risk landing twice: {share:?}"
         );
+        stop.send(()).unwrap();
         assert_eq!(server.await.unwrap(), 1, "and opens no second connection");
     }
 

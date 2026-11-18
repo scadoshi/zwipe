@@ -132,7 +132,7 @@ mod tests {
         );
     }
 
-    #[tokio::test]
+    #[tokio::test(start_paused = true)]
     async fn a_server_that_never_answers_still_clears_the_session_after_the_timeout() {
         let timeout = Duration::from_millis(50);
         let cleared_at = Rc::new(RefCell::new(None));

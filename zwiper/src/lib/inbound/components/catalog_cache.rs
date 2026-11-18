@@ -405,7 +405,7 @@ mod tests {
         assert!(!cell.is_stale());
     }
 
-    #[tokio::test]
+    #[tokio::test(start_paused = true)]
     async fn leaving_the_screen_mid_fetch_does_not_wedge_the_slot() {
         let mut dom = VirtualDom::new(Root);
         dom.rebuild_in_place();

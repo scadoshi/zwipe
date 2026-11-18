@@ -66,8 +66,11 @@ fn Root(seen: Seen) -> Element {
 
 /// Runs the screen, leaves it, and waits long enough for every task to finish.
 fn run(seen: &Seen) -> std::io::Result<()> {
+    // On a paused clock, which moves only when every task waits, so the screen always leaves
+    // before its tasks' wait is up.
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_time()
+        .start_paused(true)
         .build()?;
     runtime.block_on(async {
         let mut dom = VirtualDom::new_with_props(Root, RootProps { seen: seen.clone() });

@@ -56,6 +56,8 @@ dotenvy = { workspace = true }
 [dev-dependencies]
 # Renders a component to HTML in its test.
 dioxus-ssr = "0.7"
+# The paused clock the timed tests run on.
+tokio = { workspace = true, features = ["test-util"] }
 
 [features]
 default = ["mobile"]

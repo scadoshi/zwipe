@@ -155,6 +155,7 @@ mod tests {
         }
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_time()
+            .start_paused(true)
             .build()
             .unwrap();
         let _guard = rt.enter();
@@ -200,6 +201,7 @@ mod tests {
         let card = Uuid::from_u128(7);
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_time()
+            .start_paused(true)
             .build()
             .unwrap();
         let _guard = rt.enter();
