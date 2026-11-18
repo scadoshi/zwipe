@@ -11,7 +11,8 @@
 -- or on the server:
 --   sudo -u postgres psql zwipe -f zcripts/metrics/totals_check.sql
 --
--- Read-only: one READ ONLY transaction with a statement timeout, SELECTs only.
+-- Read-only: one READ ONLY transaction with a statement timeout, SELECTs only. Accounts show as
+-- the first 8 characters of their id, never a username, so the output can be shared.
 
 \set ON_ERROR_STOP on
 \pset border 2
@@ -88,7 +89,7 @@ ORDER BY relname;
 
 \echo
 \echo ── 6. Top 20 accounts by decks_created ──
-SELECT u.username, c.decks_created, c.decks_completed,
+SELECT left(u.id::text, 8) AS user_id_prefix, c.decks_created, c.decks_completed,
        (SELECT count(*) FROM decks d WHERE d.user_id = u.id) AS decks_now,
        c.swipes_right + c.swipes_left + c.swipes_up + c.swipes_down AS swipes,
        u.created_at, c.updated_at AS counters_updated_at
@@ -99,7 +100,7 @@ LIMIT 20;
 
 \echo
 \echo ── 7. Top 20 accounts by swipes ──
-SELECT u.username,
+SELECT left(u.id::text, 8) AS user_id_prefix,
        c.swipes_right + c.swipes_left + c.swipes_up + c.swipes_down AS swipes,
        (SELECT COALESCE(SUM(a.swipes_right + a.swipes_left + a.swipes_up + a.swipes_down), 0)
           FROM user_daily_activity a WHERE a.user_id = u.id) AS daily_swipes,
@@ -116,6 +117,9 @@ LIMIT 20;
 -- lowered: decks_created under its deck_created events; swipes or searches under the sum of its
 -- daily activity. Rows updated in the last 48 hours first. decks_now is for reference only:
 -- decks made before the counters began, or by a script, can leave it above decks_created.
+-- A decks_created hit can be noise: the counter and the deck_created event are written by two
+-- separate best-effort calls, so a failed increment (zerver logs "increment decks_created
+-- failed") still records the event. Check a hit against those logs before calling it lowered.
 WITH floors AS (
     SELECT c.user_id,
            c.decks_created,
@@ -134,7 +138,7 @@ WITH floors AS (
         FROM user_daily_activity WHERE user_id = c.user_id
     ) a ON TRUE
 )
-SELECT u.username,
+SELECT left(u.id::text, 8) AS user_id_prefix,
        f.updated_at >= now() - interval '48 hours' AS updated_last_48h,
        f.updated_at AS counters_updated_at,
        f.decks_created, f.decks_now, f.deck_events,
