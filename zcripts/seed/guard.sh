@@ -3,9 +3,9 @@
 # show in zwipe.net's public counters and in real users' feeds.
 #
 # It accepts only a postgres:// or postgresql:// URL whose host, every host=
-# parameter and libpq's PGHOST all name this machine. hostaddr=, service= and
-# PGHOSTADDR or PGSERVICE are refused outright, since each can send libpq
-# somewhere the URL doesn't name.
+# parameter and libpq's PGHOST all name this machine. hostaddr=, service=, a
+# percent-encoded keyword, and PGHOSTADDR or PGSERVICE are refused outright,
+# since each can send libpq somewhere the URL doesn't name.
 
 seed_guard_refuse() { echo "refusing: $1; the seed only runs against a database on this machine" >&2; exit 1; }
 
@@ -46,11 +46,15 @@ seed_guard() {
     seed_guard_local_host "${PGHOST:-}" || seed_guard_refuse "PGHOST=${PGHOST} is not this machine"
   fi
 
-  local param key value
-  local IFS='&'
-  for param in $query; do
+  local param key value params
+  # read splits on & without glob expansion, so a * or ? stays as written.
+  IFS='&' read -ra params <<< "$query"
+  for param in "${params[@]}"; do
     key="${param%%=*}"
     value="${param#*=}"
+    # libpq percent-decodes keywords too, so an encoded key could be host or
+    # hostaddr in disguise.
+    case "$key" in *%*) seed_guard_refuse "the query has a percent-encoded keyword" ;; esac
     case "$key" in
       host)
         case "$value" in *,*|*%2[cC]*) seed_guard_refuse "host= lists several hosts" ;; esac

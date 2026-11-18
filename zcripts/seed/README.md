@@ -1,6 +1,6 @@
 # Seed
 
-Fills a local database with accounts, decks and cards, so a branch can be tested on a dev machine before it merges. Every script here refuses a database that isn't on this machine (`guard.sh`, checked by `guard_test.sh`): the URL, every `host=` and `PGHOST` must be a local socket or localhost, and `hostaddr=`, `service=`, `PGHOSTADDR` and `PGSERVICE` are refused outright.
+Fills a local database with accounts, decks and cards, so a branch can be tested on a dev machine before it merges. Every script here refuses a database that isn't on this machine (`guard.sh`, checked by `guard_test.sh`): the URL, every `host=` and `PGHOST` must be a local socket or localhost, and `hostaddr=`, `service=`, a percent-encoded keyword, `PGHOSTADDR` and `PGSERVICE` are refused outright.
 
 ## Before you seed
 
