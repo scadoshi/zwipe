@@ -57,9 +57,6 @@ pub const UPCOMING: &[Release] = &[Release {
         "Theme search highlights the theme Enter would pick as you type",
         "Enter or Go in the Format, Deck tags, Oracle tags and Send to searches picks the top match, highlighted as you type",
         "A card keeps the same art from one refresh to the next",
-        "On the web, Clone and Share stay off until the deck loads",
-        "On the web, Share stays open after Create link until the link is ready",
-        "On the web on Android, Esc during Create link no longer shows an error over a link that was made",
     ],
 }];
 

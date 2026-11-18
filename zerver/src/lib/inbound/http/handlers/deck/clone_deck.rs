@@ -15,7 +15,6 @@ use crate::domain::deck::ports::DeckService;
 use crate::domain::metrics::models::kinds::EventKind;
 use crate::domain::metrics::ports::MetricsService;
 use crate::domain::user::ports::UserService;
-use crate::inbound::http::handlers::deck::create_deck_profile::DECK_ID_TAKEN;
 use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
@@ -26,7 +25,6 @@ impl From<CloneDeckError> for ApiError {
             CloneDeckError::SourceNotFound => Self::NotFound("source deck not found".to_string()),
             CloneDeckError::Forbidden => Self::NotFound("deck not found".to_string()),
             CloneDeckError::Duplicate => Self::Conflict(messages::CLONE_NAME_TAKEN.to_string()),
-            CloneDeckError::IdTaken => Self::Conflict(DECK_ID_TAKEN.to_string()),
             CloneDeckError::LimitReached => {
                 Self::UnprocessableEntity("deck limit reached".to_string())
             }
@@ -66,13 +64,11 @@ impl From<InvalidCloneDeck> for ApiError {
 /// The source deck id is taken from the URL path; the new deck name comes
 /// from the JSON body. The response contains only the new deck's id;
 /// the client navigates to the deck view which loads the full aggregate.
-/// A body with the id of a deck the caller already owns is a repeat of the
-/// request that made it, and answers that id as created.
 ///
 /// # Errors
 ///
 /// Returns 422 for an invalid name or the deck limit, 404 when the source isn't
-/// the caller's, 409 when the name or the id is taken, and 500 on a database failure.
+/// the caller's, 409 when the name is taken, and 500 on a database failure.
 pub async fn clone_deck(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -86,8 +82,7 @@ pub async fn clone_deck(
         .await?;
     let email_verified = db_user.email_verified_at.is_some();
 
-    let request =
-        CloneDeck::new(source_deck_id, body.new_name, user.id, email_verified)?.with_id(body.id);
+    let request = CloneDeck::new(source_deck_id, body.new_name, user.id, email_verified)?;
 
     let new_deck_id = state
         .deck_service

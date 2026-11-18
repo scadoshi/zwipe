@@ -21,9 +21,6 @@ pub struct CloneDeck {
     pub user_id: Uuid,
     /// Whether the caller's email is verified (affects deck count limit).
     pub email_verified: bool,
-    /// The id the client picked for the copy. A repeat sends the same one and answers the copy
-    /// the first request made. `None` = the server picks one.
-    pub id: Option<Uuid>,
 }
 
 impl CloneDeck {
@@ -44,15 +41,7 @@ impl CloneDeck {
             new_name: DeckName::new(new_name)?,
             user_id,
             email_verified,
-            id: None,
         })
-    }
-
-    /// Gives the copy the id the client picked.
-    #[must_use]
-    pub fn with_id(mut self, id: Option<Uuid>) -> Self {
-        self.id = id;
-        self
     }
 }
 

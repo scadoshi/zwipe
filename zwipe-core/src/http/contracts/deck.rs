@@ -72,10 +72,6 @@ pub struct HttpCreateDeckProfile {
     /// Currency for the price target. Absent = USD.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub price_target_currency: Option<PriceCurrency>,
-    /// The new deck's id, picked by the client and sent again on a repeat, so a repeat answers
-    /// the deck the first request made. Absent = the server picks one.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub id: Option<Uuid>,
 }
 
 impl HttpCreateDeckProfile {
@@ -96,7 +92,6 @@ impl HttpCreateDeckProfile {
             land_target: None,
             price_target: None,
             price_target_currency: None,
-            id: None,
         }
     }
 }
@@ -117,17 +112,9 @@ pub struct HttpCreateDeckProfileBuilder {
     land_target: Option<i32>,
     price_target: Option<f64>,
     price_target_currency: Option<PriceCurrency>,
-    id: Option<Uuid>,
 }
 
 impl HttpCreateDeckProfileBuilder {
-    /// Sets the id the new deck takes, which a repeat of the request sends again.
-    #[must_use]
-    pub fn id(mut self, id: Option<Uuid>) -> Self {
-        self.id = id;
-        self
-    }
-
     /// Sets the commander card ID.
     #[must_use]
     pub fn commander_id(mut self, id: Option<Uuid>) -> Self {
@@ -229,7 +216,6 @@ impl HttpCreateDeckProfileBuilder {
             land_target: self.land_target,
             price_target: self.price_target,
             price_target_currency: self.price_target_currency,
-            id: self.id,
         }
     }
 }
@@ -454,10 +440,6 @@ impl HttpUpdateDeckProfileBuilder {
 pub struct HttpCloneDeck {
     /// Name for the new deck.
     pub new_name: String,
-    /// The copy's id, picked by the client and sent again on a repeat, so a repeat answers the
-    /// copy the first request made. Absent = the server picks one.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub id: Option<Uuid>,
 }
 
 /// Deck clone response body.
@@ -811,31 +793,6 @@ mod tests {
         );
         let back: HttpSharedDeck = serde_json::from_str(&json).unwrap();
         assert_eq!(back, deck);
-    }
-
-    #[test]
-    fn create_and_clone_bodies_without_an_id_read_and_write_as_shipped() {
-        // A shipped client sends no id; a client that picks none writes the body it always did.
-        let create: HttpCreateDeckProfile = serde_json::from_str(r#"{"name":"My Deck"}"#).unwrap();
-        assert_eq!(create.id, None);
-        let json =
-            serde_json::to_string(&HttpCreateDeckProfile::builder("My Deck").build()).unwrap();
-        assert!(!json.contains("\"id\""), "{json}");
-        let clone: HttpCloneDeck = serde_json::from_str(r#"{"new_name":"Copy"}"#).unwrap();
-        assert_eq!(clone.id, None);
-        let json = serde_json::to_string(&HttpCloneDeck {
-            new_name: "Copy".to_owned(),
-            id: None,
-        })
-        .unwrap();
-        assert_eq!(json, r#"{"new_name":"Copy"}"#);
-        let id = Uuid::from_u128(609);
-        let sent = HttpCreateDeckProfile::builder("My Deck")
-            .id(Some(id))
-            .build();
-        let back: HttpCreateDeckProfile =
-            serde_json::from_str(&serde_json::to_string(&sent).unwrap()).unwrap();
-        assert_eq!(back.id, Some(id));
     }
 
     #[test]

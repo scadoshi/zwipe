@@ -44,9 +44,6 @@ pub trait IsConstraintViolation {
     ///
     /// Useful for detecting business rule violations enforced at the database level.
     fn is_check_constraint_violation(&self) -> bool;
-
-    /// Returns `true` if this error is a violation of the constraint named `constraint`.
-    fn violates(&self, constraint: &str) -> bool;
 }
 
 impl IsConstraintViolation for sqlx::Error {
@@ -67,9 +64,6 @@ impl IsConstraintViolation for sqlx::Error {
             return true;
         }
         false
-    }
-    fn violates(&self, constraint: &str) -> bool {
-        matches!(self, sqlx::Error::Database(e) if e.constraint() == Some(constraint))
     }
 }
 

@@ -10,9 +10,6 @@ pub enum CreateDeckProfileError {
     /// User already has a deck with this name.
     #[error("deck with name and user id combination already exists")]
     Duplicate,
-    /// The client-picked id belongs to another user's deck.
-    #[error("deck id belongs to another user's deck")]
-    IdTaken,
     /// User has reached the maximum number of decks (verified user, true cap).
     #[error("deck limit reached")]
     LimitReached,

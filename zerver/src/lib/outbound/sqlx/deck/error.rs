@@ -15,10 +15,6 @@ use crate::domain::deck::models::deck_card::get_deck_card::GetDeckCardError;
 use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
 use crate::outbound::sqlx::postgres::IsConstraintViolation;
 
-/// The decks table's primary key: a client-picked id that collides with another user's deck,
-/// inserted in the instant between the check and the insert.
-pub(crate) const DECKS_PKEY: &str = "decks_pkey";
-
 /// Errors from converting a database deck profile row into domain types.
 #[derive(Debug, Error)]
 #[expect(missing_docs, reason = "each variant's message names the failure")]
@@ -48,7 +44,6 @@ impl From<IntoDeckProfileError> for GetDeckProfileError {
 impl From<sqlx::Error> for CreateDeckProfileError {
     fn from(value: sqlx::Error) -> Self {
         let matched = match value {
-            e if e.violates(DECKS_PKEY) => Self::IdTaken,
             e if e.is_unique_constraint_violation() => Self::Duplicate,
             e => Self::Database(e.into()),
         };
