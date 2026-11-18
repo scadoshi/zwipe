@@ -462,7 +462,10 @@ pub fn public_routes() -> Router<AppState> {
                             GovernorLayer::new(public_lookup_config)
                                 .error_handler(stable_rate_limit),
                         )
-                        .layer(DefaultBodyLimit::max(CARD_LOOKUP_BODY_LIMIT)),
+                        .layer(DefaultBodyLimit::max(CARD_LOOKUP_BODY_LIMIT))
+                        // A signed-in answer follows the user's Universes Beyond setting, so no
+                        // answer, a refusal included, is kept by a cache.
+                        .layer(private_no_store_layer()),
                 )
                 .nest(
                     "/marketing",
