@@ -239,6 +239,7 @@ fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool
             async move {
                 let body = HttpCloneDeck {
                     new_name: new_name.clone(),
+                    id: None,
                 };
                 let Some(cloned) = authed
                     .run("clone_deck", |c, s| async move {
