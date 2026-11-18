@@ -74,3 +74,18 @@ fn each_change_pops_and_a_quick_run_of_taps_starts_each_pop_over() {
         assert!(js.contains(target), "{target} pops: {js}");
     }
 }
+
+#[test]
+fn star_and_flag_pop_as_whole_buttons_when_turned_on() {
+    let js = components::BADGE_EASE_JS;
+    assert!(
+        js.contains("const PRESSES = '[data-action=\"star\"], [data-action=\"flag\"]';"),
+        "Star pops as Flag does: {js}"
+    );
+    assert!(
+        js.contains(
+            "if (at.matches(PRESSES) && at.getAttribute('aria-pressed') === 'true') popped.add(at);"
+        ),
+        "the button pops, outline and icon together, as it turns on: {js}"
+    );
+}

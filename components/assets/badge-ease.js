@@ -1,6 +1,7 @@
 // A card's badges ease. In the stacks a badge that comes scales and fades in with a pop, one that
 // goes scales and fades out where it was, the badges beside it slide over, and a count that
-// changes pops. The details drawer's count pops as it changes and its Flag's icon as it turns on.
+// changes pops. The details drawer's count pops as it changes, and its Star and Flag buttons pop
+// whole, outline and icon together, as they turn on.
 // Only a badge or its holder coming or going on its own moves, never one inside a whole card the
 // page just added, so a deck loading or a regroup stays still. Transform and opacity only.
 (() => {
@@ -9,7 +10,7 @@
     const HOLDER = '.card-stack-badges';
     const BADGE = '.card-stack-star, .card-stack-flag, .card-stack-qty';
     const COUNTS = '.card-stack-qty, .card-action-count';
-    const FLAG = '[data-action="flag"]';
+    const PRESSES = '[data-action="star"], [data-action="flag"]';
     const POP_MS = 200;
     const MOVE_MS = 250;
     const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -80,10 +81,7 @@
             const at = record.target.nodeType === 1 ? record.target : record.target.parentElement;
             if (!at) continue;
             if (record.type === 'attributes') {
-                if (at.matches(FLAG) && at.getAttribute('aria-pressed') === 'true') {
-                    const icon = at.querySelector('.action-dock-icon');
-                    if (icon) popped.add(icon);
-                }
+                if (at.matches(PRESSES) && at.getAttribute('aria-pressed') === 'true') popped.add(at);
                 continue;
             }
             const count = at.closest(COUNTS);
