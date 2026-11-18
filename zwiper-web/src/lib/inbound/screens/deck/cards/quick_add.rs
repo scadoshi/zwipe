@@ -125,9 +125,11 @@ pub(crate) fn QuickAdd(
             let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
             let sent = request.clone();
             let reply = authed
-                .run_write(
+                .run_add(
                     "quick_add_card",
                     WriteKey::add(deck_id, id),
+                    deck_id,
+                    &sent,
                     |c, s| async move { c.create_deck_card(deck_id, &request, &s).await },
                 )
                 .await;

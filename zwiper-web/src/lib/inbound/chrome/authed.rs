@@ -12,12 +12,15 @@ use chrono::Utc;
 use components::TOAST_NORMAL;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
+use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::DeckCard;
+use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 use zwipe_ui::telemetry::SharedUsageBuffer;
 use zwipe_ui::telemetry::vocabulary::component;
 use zwipe_ui::toast::RepeatGate;
-use zwipe_ui::write_repeat::{Answer, Unconfirmed, Verdict, WriteKey, Written};
+use zwipe_ui::write_repeat::{self, Answer, Unconfirmed, Verdict, WriteKey, Written};
 
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::telemetry;
@@ -175,6 +178,47 @@ impl Authed {
             (Verdict::LandedEarlier, _) => Written::LandedEarlier,
             (Verdict::Done | Verdict::Failed, Ok(value)) => Written::Done(value),
             (Verdict::Done | Verdict::Failed, Err(e)) => {
+                self.toast_error(&e);
+                Written::Failed
+            }
+        }
+    }
+
+    /// [`run_write`](Self::run_write) for an add of `sent` to `deck_id`, which also rechecks a
+    /// first try whose answer was lost: it reads the deck back, and the sent printing on the sent
+    /// board there is the add landing, answered as [`Written::Done`] with the server's row and no
+    /// error toast. Not there, or the read failing, keeps the network error, and the add stays
+    /// remembered as lost, so a repeat's 409 still reads as landed.
+    pub async fn run_add<Fut>(
+        &self,
+        op: &'static str,
+        key: WriteKey,
+        deck_id: Uuid,
+        sent: &HttpCreateDeckCard,
+        f: impl FnOnce(ZwipeClient, Session) -> Fut,
+    ) -> Written<DeckCard>
+    where
+        Fut: Future<Output = Result<DeckCard, ClientError>>,
+    {
+        let result = self.execute(op, Report::Quiet, f).await;
+        match (self.settle(key, &result), result) {
+            (Verdict::LandedEarlier, _) => Written::LandedEarlier,
+            (Verdict::Done | Verdict::Failed, Ok(row)) => Written::Done(row),
+            (Verdict::Done | Verdict::Failed, Err(e)) => {
+                if matches!(e, ClientError::Network(_)) {
+                    let read = self
+                        .execute("recheck_add", Report::Quiet, |c, s| async move {
+                            c.fetch_deck(deck_id, &s).await
+                        })
+                        .await;
+                    if let Some(row) = read
+                        .ok()
+                        .and_then(|deck| write_repeat::landed_in(&deck, sent))
+                    {
+                        let _ = self.settle(key, &Ok::<(), ClientError>(()));
+                        return Written::Done(row);
+                    }
+                }
                 self.toast_error(&e);
                 Written::Failed
             }

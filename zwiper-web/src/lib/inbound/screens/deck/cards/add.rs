@@ -510,9 +510,13 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         let sent = request.clone();
         spawn_forever(async move {
             let reply = authed
-                .run_write(op, WriteKey::add(deck_id, card_id), |c, s| async move {
-                    c.create_deck_card(deck_id, &request, &s).await
-                })
+                .run_add(
+                    op,
+                    WriteKey::add(deck_id, card_id),
+                    deck_id,
+                    &sent,
+                    |c, s| async move { c.create_deck_card(deck_id, &request, &s).await },
+                )
                 .await;
             let outcome = in_flight.write().finish(card_id);
             let deck_card = match reply {
