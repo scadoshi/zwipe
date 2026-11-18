@@ -6,7 +6,14 @@
 use std::fmt;
 use std::str::FromStr;
 
+use uuid::Uuid;
+
+use crate::domain::site::APP_BASE;
 use crate::domain::slug;
+
+/// The path segment a printing link carries for a card whose name folds to nothing. The segment
+/// is cosmetic there: the link loads by the printing's id.
+pub const PRINTING_SLUG_FALLBACK: &str = "card";
 
 /// What sits between the faces in a multi-faced card's name, as Scryfall writes it.
 const FACE_SEPARATOR: &str = " // ";
@@ -92,6 +99,35 @@ pub fn front_slug(name: &str) -> Option<CardSlug> {
     card_slug(front)
 }
 
+/// The web app's path to the card `slug` names: `/card/<slug>`.
+#[must_use]
+pub fn card_path(slug: &CardSlug) -> String {
+    format!("/card/{slug}")
+}
+
+/// The web app's path to one printing, `id`, of the card named `name`: `/card/<slug>/<id>`, with
+/// [`PRINTING_SLUG_FALLBACK`] as the slug when the name folds to nothing.
+#[must_use]
+pub fn printing_path(name: &str, id: Uuid) -> String {
+    let slug = card_slug(name);
+    let segment = slug
+        .as_ref()
+        .map_or(PRINTING_SLUG_FALLBACK, CardSlug::as_str);
+    format!("/card/{segment}/{id}")
+}
+
+/// The full link to [`card_path`]: [`APP_BASE`], the web app, then the path.
+#[must_use]
+pub fn card_url(slug: &CardSlug) -> String {
+    format!("{APP_BASE}{}", card_path(slug))
+}
+
+/// The full link to [`printing_path`]: [`APP_BASE`], the web app, then the path.
+#[must_use]
+pub fn printing_url(name: &str, id: Uuid) -> String {
+    format!("{APP_BASE}{}", printing_path(name, id))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -143,6 +179,22 @@ mod tests {
         );
         assert_eq!(front_slug("Bind"), None);
         assert_eq!(front_slug("_____ // Thing"), None);
+    }
+
+    #[test]
+    fn card_links_have_the_card_and_printing_shapes() {
+        let fire: CardSlug = "fire-ice".parse().unwrap();
+        assert_eq!(card_path(&fire), "/card/fire-ice");
+        assert_eq!(
+            printing_path("Fire // Ice", Uuid::nil()),
+            "/card/fire-ice/00000000-0000-0000-0000-000000000000"
+        );
+        assert_eq!(
+            printing_path("_____", Uuid::nil()),
+            "/card/card/00000000-0000-0000-0000-000000000000"
+        );
+        assert_eq!(card_url(&fire), format!("{APP_BASE}/card/fire-ice"));
+        assert!(printing_url("Fire // Ice", Uuid::nil()).starts_with(APP_BASE));
     }
 
     #[test]
