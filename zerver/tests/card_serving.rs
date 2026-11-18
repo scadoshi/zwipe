@@ -19,6 +19,7 @@ mod common;
 use axum::http::StatusCode;
 use common::{TestApp, card, seed_cards};
 use serde_json::json;
+use sqlx::AssertSqlSafe;
 use uuid::Uuid;
 
 /// Reads the `name` off every card in a search result (a `Vec<Card>`).
@@ -1123,4 +1124,109 @@ async fn a_promo_search_shows_the_lowest_collector_number_among_tied_promos(pool
         .collect();
     let want = low.id().to_string();
     assert_eq!(served, vec![want.as_str()], "the tie goes to 99: {body}");
+}
+
+#[sqlx::test]
+async fn a_deck_on_a_pick_the_tiebreak_changes_keeps_its_printing(pool: sqlx::PgPool) {
+    let oracle = Uuid::from_u128(0x578_6000);
+    // The old view's pick: tied with the other on every key but the collector number, which
+    // the tiebreak gives to the other.
+    let old_pick = card("Ashling the Pilgrim")
+        .with_ids(Uuid::from_u128(0x578_6002), Some(oracle))
+        .collector_number("100");
+    let new_pick = card("Ashling the Pilgrim")
+        .with_ids(Uuid::from_u128(0x578_6001), Some(oracle))
+        .collector_number("99");
+    let ring = card("Sol Ring").with_ids(
+        Uuid::from_u128(0x578_6101),
+        Some(Uuid::from_u128(0x578_6100)),
+    );
+    seed_cards(&pool, &[old_pick.clone(), new_pick.clone(), ring.clone()]).await;
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("keeper").await;
+    app.verify_email(&uid).await;
+    let (status, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({ "name": "Ashling", "format": "commander" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    let did: Uuid = deck["id"].as_str().unwrap().parse().unwrap();
+    for printing in [&old_pick, &ring] {
+        sqlx::query(
+            "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) \
+             VALUES ($1, $2, $3, 1, 'deck')",
+        )
+        .bind(did)
+        .bind(printing.id())
+        .bind(printing.oracle_id())
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    sqlx::query("UPDATE decks SET commander_id = $2 WHERE id = $1")
+        .bind(did)
+        .bind(old_pick.id())
+        .execute(&pool)
+        .await
+        .unwrap();
+    // The view as it stood before the tiebreak, holding the old pick.
+    sqlx::raw_sql(AssertSqlSafe(format!(
+        "DROP MATERIALIZED VIEW latest_cards; \
+         CREATE MATERIALIZED VIEW latest_cards AS SELECT * FROM scryfall_data \
+         WHERE id IN ('{}', '{}')",
+        old_pick.id(),
+        ring.id()
+    )))
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::raw_sql(include_str!(
+        "../migrations/20261118180000_latest_cards_printing_tiebreak.sql"
+    ))
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let picked: Uuid = sqlx::query_scalar("SELECT id FROM latest_cards WHERE oracle_id = $1")
+        .bind(oracle)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(picked, new_pick.id(), "the tiebreak changed the pick");
+    let row: Uuid = sqlx::query_scalar(
+        "SELECT scryfall_data_id FROM deck_cards WHERE deck_id = $1 AND oracle_id = $2",
+    )
+    .bind(did)
+    .bind(oracle)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(row, old_pick.id(), "the deck row keeps its printing");
+    let commander: Option<Uuid> =
+        sqlx::query_scalar("SELECT commander_id FROM decks WHERE id = $1")
+            .bind(did)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        commander,
+        Some(old_pick.id()),
+        "the commander keeps its printing"
+    );
+
+    let (status, page) = app.get(&deck_route(did), Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "the deck page answers: {page}");
+    let shown = page.to_string();
+    assert!(
+        shown.contains(&old_pick.id().to_string()),
+        "the deck page shows the row's own printing: {page}"
+    );
+    assert!(
+        !shown.contains(&new_pick.id().to_string()),
+        "and not the new pick: {page}"
+    );
 }

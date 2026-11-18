@@ -12,9 +12,12 @@
 --
 -- The view is built under a temporary name with every index while searches
 -- keep reading the old one, then swapped in one short transaction that takes
--- over the old view's owner and grants and moves deck references off a pick
--- that changed, so no search ever finds the view missing. Running it again
--- after a failure starts from a clean temporary view.
+-- over the old view's owner and grants, so no search ever finds the view
+-- missing. Running it again after a failure starts from a clean temporary view.
+--
+-- Deck rows and command cards keep the printing they hold: every deck read
+-- looks its printing up by id in scryfall_data, so a row on a pick that changed
+-- reads as before.
 
 DROP MATERIALIZED VIEW IF EXISTS latest_cards_next;
 
@@ -68,11 +71,6 @@ ANALYZE latest_cards_next;
 
 BEGIN;
 
--- The outgoing picks, so deck references can follow a pick that changed.
-CREATE TEMP TABLE old_picks ON COMMIT DROP AS
-SELECT COALESCE(oracle_id, id) AS okey, id
-FROM latest_cards;
-
 -- The new view takes over the old one's owner (zervice on the server, which
 -- the nightly refresh needs) and every grant it had.
 DO $$
@@ -117,20 +115,5 @@ ALTER INDEX idx_latest_cards_next_set_name RENAME TO idx_latest_cards_set_name;
 ALTER INDEX idx_latest_cards_next_lang RENAME TO idx_latest_cards_lang;
 ALTER INDEX idx_latest_cards_next_edhrec_rank RENAME TO idx_latest_cards_edhrec_rank;
 ALTER INDEX idx_latest_cards_next_printing_set_names RENAME TO idx_latest_cards_printing_set_names;
-
--- Move deck references off a pick that changed. A row on any other printing
--- was chosen deliberately (printing sheet) and stays put. commander_maybeboard
--- keys by oracle_id, so it needs no remap.
-CREATE TEMP TABLE remap ON COMMIT DROP AS
-SELECT op.id AS old_id, lc.id AS new_id
-FROM old_picks op
-JOIN latest_cards lc ON COALESCE(lc.oracle_id, lc.id) = op.okey
-WHERE op.id <> lc.id;
-
-UPDATE deck_cards dc SET scryfall_data_id = r.new_id FROM remap r WHERE dc.scryfall_data_id = r.old_id;
-UPDATE decks d SET commander_id = r.new_id FROM remap r WHERE d.commander_id = r.old_id;
-UPDATE decks d SET partner_commander_id = r.new_id FROM remap r WHERE d.partner_commander_id = r.old_id;
-UPDATE decks d SET background_id = r.new_id FROM remap r WHERE d.background_id = r.old_id;
-UPDATE decks d SET signature_spell_id = r.new_id FROM remap r WHERE d.signature_spell_id = r.old_id;
 
 COMMIT;
