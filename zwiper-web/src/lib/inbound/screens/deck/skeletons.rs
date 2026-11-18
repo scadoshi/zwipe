@@ -20,24 +20,18 @@ pub fn ChipRowSkeleton(label: &'static str, chips: Vec<&'static str>) -> Element
 }
 
 /// The Decks list ghost's tiles, each its chips' widths, varied so the ghost reads like mixed
-/// decks. Enough to fill a wide list: web.css shows three on a phone, five in one wide column
-/// and all ten in two columns from 1400px.
-const DECK_LIST_GHOST_TILES: [&[&str]; 10] = [
+/// decks. Every width shows all five, and the page grows to hold them above the footer.
+const DECK_LIST_GHOST_TILES: [&[&str]; 5] = [
     &["md", "lg", "xl", "sm", "md", "sm"],
     &["md", "xl", "sm"],
     &["lg", "md", "sm", "md"],
     &["xl", "sm", "md"],
     &["md", "md", "lg", "sm", "sm"],
-    &["lg", "xl", "sm"],
-    &["sm", "md", "xl", "md"],
-    &["md", "lg", "sm"],
-    &["xl", "md", "sm", "lg", "sm"],
-    &["lg", "sm", "md"],
 ];
 
 /// The deck list while it loads: the `All` group's header as an empty chip
-/// at the loaded one's size, then ten ghost rows of mixed widths, in the live
-/// list's own classes; web.css shows as many as the list's width fills.
+/// at the loaded one's size, then five ghost rows of mixed widths, in the live
+/// list's own classes.
 #[component]
 pub fn DeckListSkeleton() -> Element {
     rsx! {
@@ -220,6 +214,12 @@ mod tests {
 
     const WEB_CSS: &str = include_str!("../../../../../assets/web.css");
 
+    fn render(app: fn() -> Element) -> String {
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dioxus_ssr::render(&dom)
+    }
+
     /// The `@media` query that wraps the first rule for `selector` in web.css.
     fn query_for(selector: &str) -> &'static str {
         let at = WEB_CSS
@@ -232,27 +232,17 @@ mod tests {
     }
 
     #[test]
-    fn the_decks_ghost_fills_a_wide_list_and_keeps_the_phone_s_three() {
-        assert_eq!(
-            DECK_LIST_GHOST_TILES.len(),
-            10,
-            "five rows of two from 1400px"
-        );
-        assert_eq!(
-            query_for(".skeleton-deck-tile:nth-child(n + 4)"),
-            "@media (max-width: 899px)",
-            "a phone shows three"
+    fn the_decks_ghost_shows_five_decks_and_the_footer_sits_below_them() {
+        assert_eq!(DECK_LIST_GHOST_TILES.len(), 5, "five ghost decks");
+        let html = render(DeckListSkeleton);
+        assert_eq!(html.matches("skeleton-deck-tile").count(), 5, "{html}");
+        assert!(
+            !WEB_CSS.contains(".skeleton-deck-tile:nth-child"),
+            "every width shows all five"
         );
         assert!(
-            WEB_CSS.contains(
-                ".web-scroll-screen:has(.skeleton-deck-tile) > .screen-content {\n    flex: 1 1 0;\n    min-height: 0;\n    overflow: hidden;\n}"
-            ),
-            "the ghost takes the room above the footer and no more, so the page doesn't scroll while it loads"
-        );
-        assert_eq!(
-            query_for(".skeleton-deck-tile:nth-child(n + 6)"),
-            "@media (min-width: 900px) and (max-width: 1399px)",
-            "one wide column shows five"
+            !WEB_CSS.contains(".web-scroll-screen:has(.skeleton-deck-tile)"),
+            "the ghost keeps its height, so the page grows and the footer sits under it"
         );
     }
 

@@ -330,15 +330,18 @@ pub(crate) fn DeckProfileSkeleton() -> Element {
     }
 }
 
+/// The deck list ghost's tiles, each its chips' widths: different tag counts and widths so the
+/// list reads like real mixed decks (the xl chip stands in for a commander name).
+const DECK_LIST_GHOST_TILES: [&[&str]; 5] = [
+    &["md", "lg", "xl", "sm", "md", "sm"],
+    &["md", "xl", "sm"],
+    &["lg", "md", "sm", "md"],
+    &["xl", "sm", "md"],
+    &["md", "md", "lg", "sm", "sm"],
+];
+
 #[component]
 pub(crate) fn DeckListSkeleton() -> Element {
-    // Three varied ghost tiles: different tag counts and widths so the list
-    // reads like real mixed decks (the xl chip stands in for a commander name).
-    const TILES: &[&[&str]] = &[
-        &["md", "lg", "xl", "sm", "md", "sm"],
-        &["md", "xl", "sm"],
-        &["lg", "md", "sm", "md"],
-    ];
     rsx! {
         // The same DOM the loaded list renders: the "All" group container, its
         // collapsible header, and deck rows inside, built from the live
@@ -354,7 +357,7 @@ pub(crate) fn DeckListSkeleton() -> Element {
             }
             div { class: "collapsible open",
                 div { class: "collapsible-inner",
-                    for (i , chips) in TILES.iter().enumerate() {
+                    for (i , chips) in DECK_LIST_GHOST_TILES.iter().enumerate() {
                         div { key: "{i}", class: "card-row deck-row",
                             // One tile, like the live one: art, then the name
                             // with the chips flowing after it beside the art.
@@ -382,6 +385,13 @@ mod tests {
     use dioxus::dioxus_core::NoOpMutations;
 
     use super::*;
+
+    #[test]
+    fn the_decks_ghost_shows_five_decks() {
+        assert_eq!(DECK_LIST_GHOST_TILES.len(), 5, "five ghost decks");
+        let html = render(DeckListSkeleton);
+        assert_eq!(html.matches("skeleton-deck-list-art").count(), 5, "{html}");
+    }
 
     fn render(app: fn() -> Element) -> String {
         let mut dom = VirtualDom::new(app);
