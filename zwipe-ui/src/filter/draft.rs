@@ -155,11 +155,28 @@ impl FilterDraft {
             ApplyAction::RefuseEmpty => {
                 ApplyOutcome::Refused(Toast::quick(ToastKind::Warning, "Filter is already empty"))
             }
-            ApplyAction::NoChange | ApplyAction::Commit { cleared: false } => {
-                self.applied("Filter applied")
-            }
             ApplyAction::Commit { cleared: true } => self.applied("Filter cleared"),
+            ApplyAction::NoChange | ApplyAction::Commit { cleared: false } => {
+                if self.at_default() {
+                    self.applied("Filter cleared")
+                } else {
+                    self.applied("Filter applied")
+                }
+            }
         }
+    }
+
+    /// Whether the draft is what Reset gives on this host: blank, or Add's deck default.
+    fn at_default(&self) -> bool {
+        let mut draft = self.draft.clone();
+        let reset = match &self.config.reset {
+            ResetRule::Plain => {
+                return self.draft.is_empty() && self.draft.sort().is_none();
+            }
+            ResetRule::AddSearch(context) => context.reset_search(&mut draft),
+            ResetRule::AddMaybeboard => super::reset_maybeboard(&mut draft),
+        };
+        reset.is_err()
     }
 
     /// The draft committed with a success toast.
@@ -293,6 +310,51 @@ mod tests {
             panic!("applies");
         };
         assert_eq!(toast.text, "Filter cleared");
+    }
+
+    /// Add's Reset goes back to the deck's default, which still narrows the search, and Apply
+    /// names that a clear as every other host does.
+    #[test]
+    fn apply_after_reset_on_add_says_cleared() {
+        use zwipe_core::domain::card::scryfall_data::colors::{Color, Colors};
+
+        let context = AddContext {
+            format: Some(Format::Commander),
+            colors: Some(Colors::from(vec![Color::Red])),
+            has_commander: true,
+            lands_at_target: false,
+        };
+        let mut narrowed = context.fresh_search();
+        narrowed.set_name_contains("goblin".to_owned());
+        let add = SheetConfig {
+            validate: true,
+            reset: ResetRule::AddSearch(context.clone()),
+            deck_format: Some(Format::Commander),
+            ..SheetConfig::default()
+        };
+        let maybeboard = SheetConfig {
+            reset: ResetRule::AddMaybeboard,
+            ..SheetConfig::default()
+        };
+        for config in [add, maybeboard] {
+            let mut draft = FilterDraft::new(&narrowed, config.clone());
+            assert_eq!(draft.reset().text, "Filter reset");
+            let ApplyOutcome::Applied { toast, .. } = draft.apply() else {
+                panic!("applies on {:?}", config.reset);
+            };
+            assert_eq!(toast.text, "Filter cleared", "{:?}", config.reset);
+        }
+
+        let config = SheetConfig {
+            reset: ResetRule::AddSearch(context.clone()),
+            ..SheetConfig::default()
+        };
+        let mut draft = FilterDraft::new(&context.fresh_search(), config);
+        draft.draft.set_name_contains("goblin".to_owned());
+        let ApplyOutcome::Applied { toast, .. } = draft.apply() else {
+            panic!("applies");
+        };
+        assert_eq!(toast.text, "Filter applied", "a narrowing isn't a clear");
     }
 
     #[test]
