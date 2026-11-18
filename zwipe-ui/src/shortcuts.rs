@@ -151,6 +151,9 @@ pub struct ScreenKeys {
     pub page: Vec<SheetRow>,
     /// Whether `j` and `k` scroll the page here (the screen's own keys don't take them).
     pub steps: bool,
+    /// Whether Esc goes back here once nothing is open (a deck's Add, Remove and Edit), which
+    /// its row then says.
+    pub goes_back: bool,
 }
 
 /// The sheet's groups for a screen's `keys`, with the keys every page has: Swipe (a swipe screen's
@@ -175,7 +178,11 @@ pub fn sheet_groups(keys: ScreenKeys) -> Vec<SheetGroup> {
         page_keys::THEMES_ROW,
         HINT_ROW,
         page_keys::SHORTCUTS_ROW,
-        ESC_ROW,
+        if keys.goes_back {
+            ESC_BACK_ROW
+        } else {
+            page_keys::CLOSE_ROW
+        },
     ]);
     [
         SheetGroup::new(page_keys::SWIPE, keys.swipe),
@@ -190,9 +197,20 @@ pub fn sheet_groups(keys: ScreenKeys) -> Vec<SheetGroup> {
     .collect()
 }
 
-/// Esc's row: it closes the open sheet, and with nothing open it does what the screen's Back
-/// button does.
-pub const ESC_ROW: SheetRow = (&["Esc"], "Close the open sheet, or go back");
+/// Esc's row on a screen where it goes back: it closes the open sheet, and with nothing open it
+/// does what the screen's Back button does.
+pub const ESC_BACK_ROW: SheetRow = (&["Esc"], "Close the open sheet, or go back");
+
+/// The groups of a screen with no keys of its own where Esc goes back once nothing is open (Edit
+/// deck): [`everywhere_groups`] with [`ESC_BACK_ROW`].
+#[must_use]
+pub fn going_back_groups() -> Vec<SheetGroup> {
+    sheet_groups(ScreenKeys {
+        steps: true,
+        goes_back: true,
+        ..ScreenKeys::default()
+    })
+}
 
 /// The groups of a screen with no keys of its own: the keys every page has, the steps on.
 #[must_use]
@@ -817,18 +835,22 @@ mod tests {
     }
 
     #[test]
-    fn esc_closes_the_open_sheet_or_goes_back() {
+    fn esc_goes_back_only_where_the_screen_says_so() {
+        let back = rows_of(&going_back_groups());
+        assert!(back.contains(&ESC_BACK_ROW), "{back:?}");
+        assert!(
+            !back.contains(&page_keys::CLOSE_ROW),
+            "one Esc row: {back:?}"
+        );
         for groups in [everywhere_groups(), deck_cards_groups(Editable::Yes)] {
             let rows = rows_of(&groups);
-            assert!(
-                rows.contains(&(&["Esc"][..], "Close the open sheet, or go back")),
-                "{rows:?}"
-            );
-            assert!(
-                !rows.contains(&page_keys::CLOSE_ROW),
-                "one Esc row: {rows:?}"
-            );
+            assert!(rows.contains(&page_keys::CLOSE_ROW), "{rows:?}");
+            assert!(!rows.contains(&ESC_BACK_ROW), "{rows:?}");
         }
+        assert_eq!(
+            ESC_BACK_ROW,
+            (&["Esc"][..], "Close the open sheet, or go back")
+        );
     }
 
     #[test]

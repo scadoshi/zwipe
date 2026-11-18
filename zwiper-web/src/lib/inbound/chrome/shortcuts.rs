@@ -78,6 +78,8 @@ pub struct SwipeLabels {
     pub down: &'static str,
     /// Whether the screen has Synergy, which `s` turns on or off.
     pub synergy: bool,
+    /// Whether Esc goes back from the screen once nothing is open: a deck's Add and Remove.
+    pub goes_back: bool,
 }
 
 impl SwipeLabels {
@@ -109,6 +111,7 @@ pub const ADD_LABELS: SwipeLabels = SwipeLabels {
     up: Some("Maybeboard"),
     down: "Undo",
     synergy: true,
+    goes_back: true,
 };
 
 /// Remove's swipes.
@@ -118,6 +121,7 @@ pub const REMOVE_LABELS: SwipeLabels = SwipeLabels {
     up: Some("Move"),
     down: "Undo",
     synergy: false,
+    goes_back: true,
 };
 
 /// Commander swipe's swipes; a mode that saves nothing for later has no up swipe.
@@ -127,6 +131,7 @@ pub const SELECT_LABELS: SwipeLabels = SwipeLabels {
     up: Some("Save"),
     down: "Undo",
     synergy: false,
+    goes_back: false,
 };
 
 /// A screen that offers the shortcuts sheet, which decides the keys the sheet lists.
@@ -143,6 +148,8 @@ pub enum ShortcutsScreen {
     CardRows(ListLayout),
     /// The Commander maybeboard: a screen of card rows in one list, with its filter and Quick add.
     CommanderMaybeboard,
+    /// A deck's Edit: the keys every page has, and Esc going back to the deck once nothing is open.
+    EditDeck,
 }
 
 /// The groups the shortcuts sheet lists on `screen` ([`shortcuts::sheet_groups`]): each key, with
@@ -169,11 +176,13 @@ pub fn sheet_groups(screen: &ShortcutsScreen) -> Vec<SheetGroup> {
                 swipe: swipe.into_iter().flatten().collect(),
                 card: card.to_vec(),
                 page: tools.into_iter().chain(synergy).collect(),
+                goes_back: labels.goes_back,
                 ..ScreenKeys::default()
             })
         }
         ShortcutsScreen::DeckCards => deck_cards_groups(Editable::Yes),
         ShortcutsScreen::Examples => examples_groups(),
+        ShortcutsScreen::EditDeck => shortcuts::going_back_groups(),
         ShortcutsScreen::CardRows(layout) => card_rows_groups(*layout),
         ShortcutsScreen::CommanderMaybeboard => commander_maybeboard_groups(),
     }
@@ -195,6 +204,7 @@ pub fn claims_steps(screen: &ShortcutsScreen) -> bool {
         | ShortcutsScreen::Examples
         | ShortcutsScreen::CardRows(_)
         | ShortcutsScreen::CommanderMaybeboard => true,
+        ShortcutsScreen::EditDeck => false,
     }
 }
 
@@ -221,6 +231,16 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn add_and_remove_say_esc_goes_back_and_commander_swipe_does_not() {
+        for labels in [ADD_LABELS, REMOVE_LABELS] {
+            let rows = sheet_rows(&ShortcutsScreen::Swipe(labels));
+            assert!(rows.contains(&shortcuts::ESC_BACK_ROW), "{rows:?}");
+        }
+        let select = sheet_rows(&ShortcutsScreen::Swipe(SELECT_LABELS));
+        assert!(!select.contains(&shortcuts::ESC_BACK_ROW), "{select:?}");
     }
 
     #[test]
