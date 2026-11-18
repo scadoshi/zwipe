@@ -308,9 +308,10 @@ impl Endpoint for ImportDeckCards {
 /// Import a public Archidekt deck by URL.
 #[derive(Debug)]
 pub struct ImportArchidektDeck(pub Uuid, pub HttpImportArchidektDeck);
+// Not IDEMPOTENT though its upsert sets quantities: a second send fetches the deck from
+// Archidekt again and spends another of the import limiter's tries.
 impl Endpoint for ImportArchidektDeck {
     const METHOD: Method = Method::Post;
-    const IDEMPOTENT: bool = true;
     type Request = HttpImportArchidektDeck;
     type Response = ImportDeckCardsResult;
     fn path(&self) -> Cow<'static, str> {
