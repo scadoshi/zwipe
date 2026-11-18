@@ -970,6 +970,15 @@ a.nav-dropdown-item.active:visited {
     margin-top: 0;
 }
 
+/* On a phone the theme sheet holds its full height while its search has
+   focus or text, so a short list of matches keeps the field and the first
+   results at the top, above the keyboard. */
+@media (max-width: 59.99rem) {
+    .bottom-sheet:has(.theme-search:focus, .input-clear-wrap.has-text > .theme-search) {
+        height: 85vh;
+    }
+}
+
 .theme-search-empty {
     margin: var(--space-2) 0;
     text-align: center;
@@ -3313,6 +3322,9 @@ html[data-wipe="left"]::view-transition-new(root) {
     /* explicit full-width column: the implicit auto column would be
        content-sized and pinned right by the desktop justify-content */
     grid-template-columns: minmax(0, 1fr);
+    /* The rule under the header row as it opens, and the one under the
+       menu, both edge to edge. */
+    border-top: 1px solid transparent;
     border-bottom: 1px solid transparent;
     /* Closed it is laid out but hidden a touch above its place, so it can
        slide and fade in without anything around it reflowing: in quickly
@@ -3323,6 +3335,7 @@ html[data-wipe="left"]::view-transition-new(root) {
     transition:
         opacity 120ms ease-in,
         transform 120ms ease-in,
+        border-top-color 120ms ease-in,
         border-bottom-color 120ms ease-in,
         visibility 0s linear 120ms;
 }
@@ -3330,11 +3343,13 @@ html[data-wipe="left"]::view-transition-new(root) {
     opacity: 1;
     visibility: visible;
     transform: none;
+    border-top-color: var(--border-primary);
     border-bottom-color: var(--border-primary);
     box-shadow: var(--shadow-lg);
     transition:
         opacity 180ms cubic-bezier(0.23, 1, 0.32, 1),
         transform 180ms cubic-bezier(0.23, 1, 0.32, 1),
+        border-top-color 180ms ease-out,
         border-bottom-color 180ms ease-out,
         visibility 0s;
 }
@@ -3423,13 +3438,20 @@ html[data-wipe="left"]::view-transition-new(root) {
 }
 /* The trailing slot is the folded menu's footer band: a solid fill over
    the grid, under a rule, bleeding to the panel edges (inside the inner's
-   padding box, so overflow won't clip it; matches the inner's padding). */
+   padding box, so overflow won't clip it; matches the inner's padding),
+   with the same room below its buttons as above them. */
 .nav-panel .nav-trailing {
     margin-left: calc(-1 * var(--nav-pad));
     margin-right: calc(-1 * var(--nav-pad));
-    padding: var(--space-3) var(--nav-pad) 0;
+    padding: var(--space-3) var(--nav-pad);
     border-top: 1px solid var(--border-primary);
     background-color: var(--bg-primary);
+}
+
+/* The band's padding is the footer's room above and below, so a row in it
+   adds none of its own. */
+.nav-panel .nav-trailing-row {
+    padding-bottom: 0;
 }
 /* ThemePicker as the panel's trailing item. */
 .nav-panel .theme-picker {

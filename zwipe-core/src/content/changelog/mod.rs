@@ -68,6 +68,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, Shift+H on the Commander maybeboard lists its filter and Quick add keys",
         "On the web, the Decks loading ghost no longer runs under the footer",
         "A shared deck prices its header and link preview in the deck's own currency",
+        "At phone width, the open menu has a rule under its header",
+        "At phone width, the open menu's bottom row no longer sits on its edge",
     ],
 }];
 
