@@ -467,7 +467,7 @@ impl Driver {
                         let printing = sent.scryfall_data_id.parse().unwrap_or_default();
                         let key = WriteKey::add(deck_id, printing);
                         match authed
-                            .run_write_at(component::QUICK_ADD, op.name(), key, call)
+                            .run_add_at(component::QUICK_ADD, op.name(), key, deck_id, &sent, call)
                             .await
                         {
                             Written::Done(deck_card) => Some(deck_card),

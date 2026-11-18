@@ -348,7 +348,7 @@ impl Driver {
         let sent = request.clone();
         spawn(async move {
             let added = authed
-                .run_write(operation, key, |c, s| async move {
+                .run_add(operation, key, deck_id, &sent, |c, s| async move {
                     c.create_deck_card(deck_id, &request, &s).await
                 })
                 .await;

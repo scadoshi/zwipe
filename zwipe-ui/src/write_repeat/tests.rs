@@ -223,3 +223,49 @@ fn a_success_or_another_error_after_a_lost_try() {
         "a success clears it"
     );
 }
+
+/// An add whose answer was lost reads back from the deck: the sent printing on the sent board
+/// is the add landing, with the server's own row.
+#[test]
+fn a_lost_add_reads_back_from_the_deck_as_the_sent_printing_on_the_sent_board() {
+    use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+
+    use crate::test_support::{card, deck, deck_profile};
+
+    let bolt = card("Lightning Bolt");
+    let mut found = deck(deck_profile("Burn"), vec![bolt.clone()]);
+    let sent = HttpCreateDeckCard {
+        scryfall_data_id: bolt.scryfall_data.id.to_string(),
+        oracle_id: bolt.scryfall_data.oracle_id.unwrap().to_string(),
+        quantity: 1,
+        board: None,
+        mvp_at: None,
+    };
+    let row = landed_in(&found, &sent).expect("the printing is on the main deck");
+    assert_eq!(row.scryfall_data_id, bolt.scryfall_data.id);
+    assert_eq!(row.board, Board::Deck);
+
+    let to_maybe = HttpCreateDeckCard {
+        board: Some(Board::Maybeboard.display_name().to_owned()),
+        ..sent.clone()
+    };
+    assert_eq!(
+        landed_in(&found, &to_maybe),
+        None,
+        "on another board it isn't this add"
+    );
+
+    let other = card("Shock");
+    let not_sent = HttpCreateDeckCard {
+        scryfall_data_id: other.scryfall_data.id.to_string(),
+        ..sent.clone()
+    };
+    assert_eq!(
+        landed_in(&found, &not_sent),
+        None,
+        "a printing the deck doesn't hold"
+    );
+
+    found.entries.clear();
+    assert_eq!(landed_in(&found, &sent), None, "the add never landed");
+}
