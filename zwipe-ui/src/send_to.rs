@@ -99,6 +99,18 @@ pub fn undo_entry(
     })
 }
 
+/// The toast when undoing a send finds the card moved boards or gone from `deck`, the deck it
+/// went to, and leaves it.
+#[must_use]
+pub fn left_alone(deck: &str) -> String {
+    let deck = deck.trim();
+    if deck.is_empty() {
+        "Already changed in that deck, left as is".to_owned()
+    } else {
+        format!("Already changed in {deck}, left as is")
+    }
+}
+
 /// What undoing a send does to the card's row in the deck it went to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SendUndo {
@@ -180,6 +192,15 @@ mod tests {
             Some(SendUndo::Remove),
             "the copy it sent is all there is, so the row goes"
         );
+    }
+
+    #[test]
+    fn a_card_left_alone_says_which_deck_it_changed_in() {
+        assert_eq!(
+            left_alone("Krenko"),
+            "Already changed in Krenko, left as is"
+        );
+        assert_eq!(left_alone("  "), "Already changed in that deck, left as is");
     }
 
     #[test]

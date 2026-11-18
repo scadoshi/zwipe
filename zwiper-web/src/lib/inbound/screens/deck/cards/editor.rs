@@ -874,6 +874,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             UndoAction::SentTo {
                 card_id,
                 deck_id: target,
+                deck_name,
                 board,
                 copies,
                 ..
@@ -889,7 +890,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                     match took_back {
                         Some(true) => toast.info(message, quick),
                         Some(false) => {
-                            toast.info(screens::deck_cards::ALREADY_CHANGED.to_string(), quick);
+                            toast.info(zwipe_ui::send_to::left_alone(&deck_name), quick);
                         }
                         None => put_back(),
                     }
