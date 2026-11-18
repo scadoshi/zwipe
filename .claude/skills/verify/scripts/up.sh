@@ -52,10 +52,10 @@ step "migrations"
 # A dev database that ran another branch's migrations carries tables this branch has never seen,
 # so a check could pass against a schema the branch won't ship with: refuse it, naming them.
 extra="$(psql "$VERIFY_URL" -Atqc "select version from _sqlx_migrations order by version" |
-  grep -vxF -f <(ls "$ROOT/zerver/migrations" | cut -d_ -f1) || true)"
+  extra_migrations "$ROOT/zerver/migrations")"
 if [ -n "$extra" ]; then
   PGOPTIONS="-c client_min_messages=warning" psql "$ADMIN" -qc "drop database if exists $VERIFY_DB"
-  echo "$TEMPLATE_DB ran migrations this branch doesn't have: $(echo $extra | tr ' ' ',')." >&2
+  echo "$TEMPLATE_DB ran migrations this branch doesn't have: $extra." >&2
   echo "They come from another branch; rebuild the dev database from this one (or point VERIFY_TEMPLATE_URL at one that matches) and rerun." >&2
   exit 1
 fi
@@ -113,5 +113,5 @@ api     http://127.0.0.1:$ZERVER_PORT
 db      $VERIFY_URL
 login   localcheck / Verify-local-pass-1!
 logs    $RUN_DIR (zerver.out, dx.out)
-stop    $(dirname "${BASH_SOURCE[0]}")/down.sh
+stop    ZERVER_PORT=$ZERVER_PORT WEB_PORT=$WEB_PORT $(dirname "${BASH_SOURCE[0]}")/down.sh
 SUMMARY

@@ -33,6 +33,15 @@ saved_template_url() {
   fi
 }
 
+# The migration versions read on stdin (a database's applied ones, one per line) that the
+# migrations folder $1 doesn't hold, joined by commas: what another branch's migrations left in a
+# database. Prints nothing when every one is in the folder.
+extra_migrations() {
+  local known
+  known="$(ls "$1" | cut -d_ -f1)"
+  grep -vxF -e "" -f <(echo "$known") | paste -sd, - || true
+}
+
 # Whether $1 is a running zerver's pid. down.sh checks before it stops one, since a pid file can
 # outlive its process and the pid can come back as anything.
 is_zerver_pid() {

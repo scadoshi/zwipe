@@ -83,6 +83,17 @@ is_zerver_pid "" && fail "an empty pid reads as a zerver"
 kill "$zerver_pid" "$other_pid" 2>/dev/null
 rm -rf "$scratch"
 
+# A database's applied migrations that a migrations folder doesn't hold: another branch's.
+migrations="$(mktemp -d)"
+touch "$migrations/20260101000000_one.sql" "$migrations/20260102000000_two.sql"
+got="$(printf '20260101000000\n20260102000000\n' | extra_migrations "$migrations")"
+[ -z "$got" ] || fail "a database matching the folder -> $got, want nothing"
+got="$(printf '20260101000000\n20261119120000\n20261119130000\n' | extra_migrations "$migrations")"
+[ "$got" = "20261119120000,20261119130000" ] || fail "another branch's migrations -> $got"
+got="$(printf '' | extra_migrations "$migrations")"
+[ -z "$got" ] || fail "a database with none applied -> $got"
+rm -rf "$migrations"
+
 if [ "$failures" -ne 0 ]; then
   echo "$failures common check(s) failed" >&2
   exit 1
