@@ -103,7 +103,9 @@ impl<S: Clone> Layer<S> for FamilyLimitLayer {
 }
 
 /// The service [`FamilyLimitLayer`] builds: the inner service behind both limits, each request
-/// counted against its client's family.
+/// counted against its client's family. It is ready once both limits' inner services are, then
+/// calls one; that holds no slot while the inner service is an always-ready route, but an inner
+/// service with real backpressure would keep the unused side's slot.
 #[derive(Clone)]
 pub struct FamilyLimit<S> {
     ipv4: Governor<CfConnectingIpKeyExtractor, NoOpMiddleware, S, Body>,
