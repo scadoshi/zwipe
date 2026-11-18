@@ -595,13 +595,20 @@ impl HttpSharedDeck {
         i64::try_from(slots).map_or(main, |slots| main.saturating_add(slots))
     }
 
-    /// The deck's price in US dollars, as the share page totals it: the main
-    /// board plus the command zone at each card's chosen printing. A card
-    /// with no USD price adds nothing.
+    /// The currency the deck is priced in: its price target's, US dollars
+    /// when it has none.
     #[must_use]
-    pub fn price_usd(&self) -> f64 {
+    pub fn currency(&self) -> PriceCurrency {
+        self.price_target_currency.unwrap_or_default()
+    }
+
+    /// The deck's price in [`Self::currency`], as the share page totals it:
+    /// the main board plus the command zone at each card's chosen printing.
+    /// A card with no price in that currency adds nothing.
+    #[must_use]
+    pub fn price(&self) -> f64 {
         let zone: Vec<Card> = self.zone_cards().into_iter().cloned().collect();
-        deck_price(&self.entries, &zone, PriceCurrency::Usd)
+        deck_price(&self.entries, &zone, self.currency())
     }
 
     /// The deck's metrics as the share page computes them, the command zone
@@ -685,6 +692,19 @@ mod tests {
     }
 
     #[test]
+    fn the_price_is_in_the_deck_s_currency() {
+        let mut card = priced("Goblin", Some("0.25"), vec![Color::Red]);
+        card.scryfall_data.prices.eur = Some("0.40".to_owned());
+        let mut deck = shared(Some(Format::Modern));
+        deck.entries = vec![entry(card, 4, Board::Deck)];
+        assert_eq!(deck.currency(), PriceCurrency::Usd, "no currency set");
+        assert!((deck.price() - 1.0).abs() < 1e-9, "{}", deck.price());
+        deck.price_target_currency = Some(PriceCurrency::Eur);
+        assert_eq!(deck.currency(), PriceCurrency::Eur);
+        assert!((deck.price() - 1.6).abs() < 1e-9, "{}", deck.price());
+    }
+
+    #[test]
     fn the_count_and_price_match_the_share_page() {
         let mut deck = shared(Some(Format::Commander));
         let commander = priced("Krenko", Some("2.50"), vec![Color::Red]);
@@ -713,11 +733,7 @@ mod tests {
             7,
             "six main cards plus the commander's slot"
         );
-        assert!(
-            (deck.price_usd() - 3.5).abs() < 1e-9,
-            "{}",
-            deck.price_usd()
-        );
+        assert!((deck.price() - 3.5).abs() < 1e-9, "{}", deck.price());
         assert_eq!(
             deck.colors(),
             vec![Color::Red],

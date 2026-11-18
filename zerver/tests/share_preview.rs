@@ -39,6 +39,7 @@ use zwipe::inbound::http::share_preview::SharePreview;
 use zwipe::inbound::http::share_preview::layout::{Preview, Tone};
 use zwipe::outbound::scryfall_art::ArtSource;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 use zwipe_core::domain::deck::{Board, DeckCard, DeckEntry, Format, PowerLevel, Quantity};
 use zwipe_core::domain::user::theme::ThemeConfig;
@@ -324,7 +325,7 @@ async fn assert_golden(name: &str, deck: &HttpSharedDeck) {
 /// must move with it: bump `SHARE_PREVIEW_LAYOUT` in zwipe-core and
 /// `PREVIEW_LAYOUT` in the Pages Function, then record both here.
 const GOLDEN_LAYOUT: (u32, &str) = (
-    4,
+    5,
     "91018885f5c8442906c8e5e650d87ef695557cc7c98162a8b400e63b7d3ef456",
 );
 
@@ -393,7 +394,7 @@ fn the_tags_follow_the_deck_list() {
         (format!("{} cards", d.card_count()), Tone::Accent),
         ("Commander".to_owned(), Tone::Palette3),
         ("Optimized (4)".to_owned(), Tone::Palette5),
-        (format!("${:.2}", d.price_usd()), Tone::Money),
+        (format!("${:.2}", d.price()), Tone::Money),
         ("Tymna the Weaver".to_owned(), Tone::Palette3),
         ("Kraum, Ludevic's Opus".to_owned(), Tone::Palette3),
     ];
@@ -404,7 +405,7 @@ fn the_tags_follow_the_deck_list() {
     let mut want = vec![
         (format!("{} cards", d.card_count()), Tone::Accent),
         ("Oathbreaker".to_owned(), Tone::Palette3),
-        (format!("${:.2}", d.price_usd()), Tone::Money),
+        (format!("${:.2}", d.price()), Tone::Money),
         ("Chandra, Torch of Defiance".to_owned(), Tone::Palette3),
         ("Lightning Bolt".to_owned(), Tone::Palette3),
     ];
@@ -415,10 +416,25 @@ fn the_tags_follow_the_deck_list() {
     let mut want = vec![
         (format!("{} cards", d.card_count()), Tone::Accent),
         ("Modern".to_owned(), Tone::Palette3),
-        (format!("${:.2}", d.price_usd()), Tone::Money),
+        (format!("${:.2}", d.price()), Tone::Money),
     ];
     want.extend(deck_tags(&d));
     assert_eq!(tags(&d), want, "no command zone");
+}
+
+#[test]
+fn a_euro_deck_s_price_tag_is_in_euros() {
+    let mut d = modern(gruvbox());
+    for e in &mut d.entries {
+        e.card.scryfall_data.prices.eur = Some("1.50".to_owned());
+    }
+    d.price_target_currency = Some(PriceCurrency::Eur);
+    let price = tags(&d)
+        .into_iter()
+        .find(|(_, tone)| *tone == Tone::Money)
+        .map(|(label, _)| label);
+    assert_eq!(price, Some(format!("€{:.2}", d.price())));
+    assert!(price.is_some_and(|p| !p.contains('$')));
 }
 
 #[test]

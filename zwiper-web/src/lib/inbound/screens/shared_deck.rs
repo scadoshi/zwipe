@@ -448,10 +448,8 @@ fn SharedDeckView(
     let featured = deck_cards::featured(&zone, &mainboard, is_oathbreaker);
     let sources = Sources::deck(&mainboard.iter().map(|e| e.card.clone()).collect::<Vec<_>>());
 
-    // The head's facts: the main board plus each present command zone slot, priced at each
-    // card's chosen printing.
+    // The head's facts: the main board plus each present command zone slot.
     let zone_cards: Vec<Card> = zone.cards().into_iter().map(|(_, c)| c.clone()).collect();
-    let price = deck_metrics::deck_price(&deck.entries, &zone_cards, PriceCurrency::Usd);
     let card_count: i64 = mainboard
         .iter()
         .map(|e| i64::from(*e.deck_card.quantity))
@@ -482,7 +480,7 @@ fn SharedDeckView(
             .iter()
             .map(|t| t.display_name().to_owned())
             .collect(),
-        price: (price > 0.0).then(|| format!("${price:.2}")),
+        price: head_price(&deck.entries, &zone_cards, currency()),
     };
     let metrics = has_cards(&deck)
         .then(|| DeckMetrics::from_entries_and_command_zone(&deck.entries, &zone_cards));
@@ -578,8 +576,21 @@ fn SharedDeckView(
     }
 }
 
+/// The head's price chip: the main board plus the command zone at each card's chosen printing,
+/// in `currency`, the one Budget shows. `None` when nothing is priced in it.
+fn head_price(
+    entries: &[DeckEntry],
+    zone_cards: &[Card],
+    currency: PriceCurrency,
+) -> Option<String> {
+    let price = deck_metrics::deck_price(entries, zone_cards, currency);
+    (price > 0.0).then(|| currency.format_amount(price))
+}
+
 #[cfg(test)]
 mod tests {
+    use zwipe_core::domain::deck::{DeckCard, Quantity};
+
     use super::*;
 
     #[test]
@@ -597,5 +608,38 @@ mod tests {
             "a network failure keeps Retry"
         );
         assert!(token_id(&Uuid::nil().to_string()).is_ok());
+    }
+
+    #[test]
+    fn the_head_price_reads_in_the_currency_budget_shows() {
+        let mut card: Card = serde_json::from_str(include_str!(
+            "../../../../../zwipe-ui/src/test_support/card.json"
+        ))
+        .expect("the fixture card parses");
+        card.scryfall_data.prices.usd = Some("0.25".to_owned());
+        card.scryfall_data.prices.eur = Some("0.40".to_owned());
+        let deck_card = DeckCard {
+            deck_id: Uuid::nil(),
+            scryfall_data_id: card.scryfall_data.id,
+            oracle_id: card.scryfall_data.oracle_id.unwrap_or_default(),
+            quantity: Quantity::new(4).expect("a valid quantity"),
+            board: Board::Deck,
+            mvp_at: None,
+            flagged: false,
+        };
+        let entries = vec![DeckEntry { card, deck_card }];
+        assert_eq!(
+            head_price(&entries, &[], PriceCurrency::Eur).as_deref(),
+            Some("€1.60")
+        );
+        assert_eq!(
+            head_price(&entries, &[], PriceCurrency::Usd).as_deref(),
+            Some("$1.00")
+        );
+        assert_eq!(
+            head_price(&[], &[], PriceCurrency::Eur),
+            None,
+            "nothing priced"
+        );
     }
 }
