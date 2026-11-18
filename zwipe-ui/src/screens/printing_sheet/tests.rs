@@ -524,6 +524,66 @@ fn the_pure_listing_narrows_only_with_owned_ids() {
     let mine = listed(&all, keep, Some(&owned));
     assert_eq!(mine.len(), 1);
     assert_eq!(mine[0].scryfall_data.id, all[2].scryfall_data.id);
-    assert!(offers_only_mine(&all, keep, Some(&owned)));
-    assert!(!offers_only_mine::<RandomState>(&all, keep, None));
+    assert!(offers_only_mine(&all, Some(&owned)));
+    assert!(!offers_only_mine::<RandomState>(&all, None));
+}
+
+#[test]
+fn only_mine_shows_an_owned_printing_the_full_list_leaves_out() {
+    let mut all = printings();
+    all[1] = imageless(all[1].clone());
+    let oracle_id = all[0].scryfall_data.oracle_id.unwrap();
+    let mut state = loaded_on(Mode::Pick, &all, 0);
+    assert_eq!(
+        state.printings().len(),
+        2,
+        "the full list drops the imageless one"
+    );
+    let owned = owned_of(&all, &[1]);
+    let _ = state.update(Action::OwnedLoaded {
+        oracle_id,
+        owned: owned.clone(),
+    });
+    assert!(
+        state.offers_only_mine(),
+        "owning only the dropped printing still offers it"
+    );
+    let _ = state.update(Action::OnlyMine { on: true, at: 0 });
+    assert_eq!(listed_ids(&state), owned, "it shows, as its stock card");
+}
+
+#[test]
+fn back_under_only_mine_toasts_only_after_the_user_moves() {
+    let all = printings();
+    let oracle_id = all[0].scryfall_data.oracle_id.unwrap();
+    let mut state = loaded_on(Mode::Pick, &all, 0);
+    let _ = state.update(Action::OwnedLoaded {
+        oracle_id,
+        owned: owned_of(&all, &[1, 2]),
+    });
+    let placed = state.update(Action::OnlyMine { on: true, at: 0 });
+    assert_eq!(placed, [Effect::Show(0)]);
+    assert!(
+        state.can_save(0),
+        "an owned printing other than the deck's saves"
+    );
+    assert_eq!(
+        state.update(Action::Back { at: 0 }),
+        [Effect::Close],
+        "nothing picked: the hidden opening printing alone never says unchanged"
+    );
+    let mut state = loaded_on(Mode::Pick, &all, 0);
+    let _ = state.update(Action::OwnedLoaded {
+        oracle_id,
+        owned: owned_of(&all, &[1, 2]),
+    });
+    let _ = state.update(Action::OnlyMine { on: true, at: 0 });
+    assert_eq!(
+        state.update(Action::Back { at: 1 }),
+        [
+            Effect::Toast(Toast::quick(ToastKind::Info, UNCHANGED)),
+            Effect::Close
+        ],
+        "moved to another printing and left without saving"
+    );
 }

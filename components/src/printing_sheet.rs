@@ -147,6 +147,8 @@ pub fn PrintingSheet(
     let source = try_use_context::<PrintingsSource>();
     let owned_source = try_use_context::<OwnedPrintingsSource>();
     let mut only_mine = use_signal(|| false);
+    // Where turning Only mine on placed the sheet when it hides the opening printing.
+    let mut placed: Signal<Option<usize>> = use_signal(|| None);
     // From the kit's modal width on, the picker is the cover flow.
     let flow = use_min_width(KIT_MODAL_PX);
     // Retry bumps `attempt`, which asks again.
@@ -167,6 +169,7 @@ pub fn PrintingSheet(
         };
         seeded.set(false);
         only_mine.set(false);
+        placed.set(None);
         source.request.call(oracle_id);
         if let Some(owned_source) = owned_source {
             owned_source.request.call(oracle_id);
@@ -208,7 +211,7 @@ pub fn PrintingSheet(
         Some(PrintingsFetch::Ready(fetched)) => fetched,
         _ => Vec::new(),
     };
-    let offers_mine = model::offers_only_mine(&fetched, shown_id, owned.as_ref());
+    let offers_mine = model::offers_only_mine(&fetched, owned.as_ref());
     // Only mine narrows the list only while it is offered, so a hidden toggle never filters.
     let narrowed = owned.as_ref().filter(|_| only_mine() && offers_mine);
     let all = model::listed(&fetched, shown_id, narrowed);
@@ -228,12 +231,12 @@ pub fn PrintingSheet(
             only_mine.set(on);
             let next = model::listed(&fetched, shown_id, owned.as_ref().filter(|_| on));
             let place = |id: Uuid| next.iter().position(|card| card.scryfall_data.id == id);
-            index.set(
-                showing
-                    .and_then(place)
-                    .or_else(|| place(shown_id))
-                    .unwrap_or(0),
-            );
+            let at = showing
+                .and_then(place)
+                .or_else(|| place(shown_id))
+                .unwrap_or(0);
+            index.set(at);
+            placed.set(place(shown_id).is_none().then_some(at));
         }
     };
     let mine_chip = (offers_mine && !loading).then(|| {
@@ -248,9 +251,17 @@ pub fn PrintingSheet(
     let shown = printing_face.shown(&all);
     let shown_face = (printing_face.face)();
 
+    // Leaving says Printing unchanged only when the user moved: off the opening printing, or,
+    // when Only mine hides it, off where turning it on placed them.
+    let opening_listed = all.iter().any(|card| card.scryfall_data.id == shown_id);
+    let moved = if opening_listed {
+        changed
+    } else {
+        count > 0 && Some(at) != placed()
+    };
     let leave = use_callback(move |(): ()| {
         if !read_only
-            && changed
+            && moved
             && let Some(on_unchanged) = on_unchanged
         {
             on_unchanged.call(());
