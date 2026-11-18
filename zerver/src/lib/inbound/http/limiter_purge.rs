@@ -102,6 +102,21 @@ mod tests {
         );
     }
 
+    #[test]
+    fn every_limiter_the_routes_build_purges() {
+        let routes = include_str!("routes.rs");
+        let compact: String = routes.split_whitespace().collect();
+        let built = compact.matches("GovernorConfigBuilder::default()").count();
+        let purged = compact
+            .matches("purging(GovernorConfigBuilder::default()")
+            .count();
+        assert!(built > 0, "the routes build their limiters here");
+        assert_eq!(
+            purged, built,
+            "a limiter config not built through purging keeps every client forever"
+        );
+    }
+
     /// The process's resident memory in KiB, from `ps`.
     fn rss_kib() -> u64 {
         let out = std::process::Command::new("ps")
