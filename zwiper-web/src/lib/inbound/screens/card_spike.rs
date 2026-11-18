@@ -1,6 +1,9 @@
-//! SPIKE, never merged: the card screen drawn two ways from existing components, for Scotty to
-//! pick a look. `?look=a` is two panes on a wide window, `?look=b` one column everywhere.
+//! SPIKE, never merged: the card screen from the deck page's own grammar, for Scotty to judge
+//! the look. On a wide window the card sits in the page's middle column and its details dock at
+//! the right, as on Add and Remove; Send to and Share are the floating action dock at every
+//! width. A phone shows the details under the card. `look` is ignored.
 
+use components::icons::{DockIcon, SEND, ShareIcon};
 use components::{CardDetailsPanel, CardRow, FlippableCardImage, LoadFailed, PickerSearch};
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -14,22 +17,21 @@ use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 
+/// The spike's only rules: the card's size in the middle column, the details under the card on a
+/// phone (the deck page hides them behind the eye there), and the list's width.
 const SPIKE_CSS: &str = r"
-.cs-search { max-width: 560px; margin: 0 auto var(--space-4); }
-.cs-a { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 560px); gap: var(--space-5); justify-content: center; align-items: start; }
-.cs-a .cs-image { width: 100%; }
-.cs-b { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-4); }
-.cs-b .cs-image { width: min(100%, 300px); margin: 0 auto; }
-.cs-image img { width: 100%; height: auto; border-radius: var(--radius-card, 4.75% / 3.5%); }
-.cs-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
-.cs-bar { position: sticky; bottom: 0; display: flex; gap: var(--space-2); justify-content: center; padding: var(--space-3) 0; background: var(--bg-primary); border-top: 1px solid var(--border-secondary); z-index: 1; }
-.cs-list { max-width: 720px; margin: 0 auto; padding: 0 var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+.cs-search { width: 100%; max-width: 30rem; }
+.cs-image { width: 100%; max-width: 26rem; }
+.cs-image img { width: 100%; height: auto; }
+.cs-list { max-width: 40rem; margin: 0 auto; padding: var(--space-3) var(--space-4); box-sizing: border-box; width: 100%; display: flex; flex-direction: column; gap: var(--space-2); }
 .cs-list .card-row-qty { display: none; }
-.cs-list h2 { margin: 0 0 var(--space-2); }
 .cs-message { text-align: center; padding: var(--space-5) 0; }
 @media (max-width: 899px) {
-  .cs-a { grid-template-columns: minmax(0, 1fr); }
-  .cs-a .cs-image { width: min(100%, 340px); margin: 0 auto; }
+  .cs-card { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-3) var(--space-4); }
+  .cs-card .web-cards-swipe-main { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
+  .cs-card .cs-image { max-width: 20rem; }
+  .cs-card .web-swipe-details { display: block; width: 100%; max-width: 20rem; }
+  .cs-card .web-swipe-details > .card-details-panel { margin: 0; width: 100%; box-sizing: border-box; }
 }
 ";
 
@@ -55,10 +57,9 @@ fn SpikeScreen(open: Open, look: String) -> Element {
     let mut printings_open = use_signal(|| false);
     let expanded = use_signal(|| None::<Uuid>);
     let signed_in = move || session.read().as_ref().is_some_and(|s| !s.is_expired());
-    let look_b = look == "b";
 
     let route_of = {
-        let look = look.clone();
+        let look = look;
         move |to: Destination| match to {
             Destination::Named { slug, .. } => Route::CardSpike {
                 slug: slug.to_string(),
@@ -124,16 +125,14 @@ fn SpikeScreen(open: Open, look: String) -> Element {
         }
     });
 
-    use_hook({
-        let open = open.clone();
-        move || {
-            dispatch.call(Action::Load {
-                open,
-                send: false,
-                signed_in: signed_in(),
-            });
-        }
-    });
+    // Loads on mount and again whenever the route opens another card in place.
+    use_effect(use_reactive!(|(open,)| {
+        dispatch.call(Action::Load {
+            open,
+            send: false,
+            signed_in: signed_in(),
+        });
+    }));
 
     let query = use_signal(String::new);
     let search = rsx! {
@@ -145,7 +144,7 @@ fn SpikeScreen(open: Open, look: String) -> Element {
                 {
                     navigator.push(Route::CardSpike {
                         slug: slug.to_string(),
-                        look: if look_b { "b".to_owned() } else { "a".to_owned() },
+                        look: String::new(),
                     });
                 }
             },
@@ -164,52 +163,45 @@ fn SpikeScreen(open: Open, look: String) -> Element {
         .as_ref()
         .map_or_else(|| "Card".to_owned(), |c| c.scryfall_data.name.clone());
 
-    let actions = move || {
-        rsx! {
-            button {
-                class: "card-action-btn",
-                onclick: move |_| dispatch.call(Action::SendTo { signed_in: signed_in() }),
-                "Send to"
-            }
-            button { class: "card-action-btn", onclick: move |_| dispatch.call(Action::Share), "Share" }
-        }
-    };
-
     let body = match (status, card) {
         (Status::One, Some(card)) => {
             let sd = card.scryfall_data.clone();
-            let image = rsx! {
-                div { class: "cs-image",
-                    FlippableCardImage { sd, size: ImageSize::Large }
-                }
-            };
-            let panel_footer = (!look_b).then(|| rsx! { div { class: "cs-actions", {actions()} } });
-            let panel = rsx! {
-                CardDetailsPanel {
-                    card: card.clone(),
-                    send_to: false,
-                    on_printings: move |()| printings_open.set(true),
-                    footer: panel_footer,
-                }
-            };
             rsx! {
-                if look_b {
-                    div { class: "cs-b",
-                        {image}
-                        {panel}
-                        div { class: "cs-bar", {actions()} }
+                div { class: "screen-content content-enter web-cards-swipe cs-card",
+                    div { class: "web-cards-swipe-main",
+                        {search}
+                        div { class: "cs-image",
+                            FlippableCardImage { sd, size: ImageSize::Large }
+                        }
                     }
-                } else {
-                    div { class: "cs-a",
-                        {image}
-                        {panel}
+                    div { class: "web-swipe-details",
+                        CardDetailsPanel {
+                            card: card.clone(),
+                            send_to: false,
+                            on_printings: move |()| printings_open.set(true),
+                        }
+                    }
+                }
+                div { class: "action-dock action-dock-right",
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Send to",
+                        onclick: move |_| dispatch.call(Action::SendTo { signed_in: signed_in() }),
+                        DockIcon { path: SEND }
+                    }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Share",
+                        onclick: move |_| dispatch.call(Action::Share),
+                        ShareIcon {}
                     }
                 }
                 PrintingSheet { card, open: printings_open }
             }
         }
         (Status::Several, _) => rsx! {
-            div { class: "cs-list",
+            div { class: "screen-content content-enter cs-list",
+                {search}
                 h2 { class: "panel-title", {title.unwrap_or_default()} }
                 for listed in cards {
                     div {
@@ -224,20 +216,27 @@ fn SpikeScreen(open: Open, look: String) -> Element {
             }
         },
         (Status::NotFound, _) => rsx! {
-            p { class: "cs-message", {message.unwrap_or(card_lookup::NOT_FOUND)} }
+            div { class: "screen-content cs-list",
+                {search}
+                p { class: "cs-message", {message.unwrap_or(card_lookup::NOT_FOUND)} }
+            }
         },
         (Status::Failed, _) => rsx! {
-            LoadFailed { message: "Couldn't load this card", on_retry: move |()| dispatch.call(Action::Retry) }
+            div { class: "screen-content",
+                LoadFailed { message: "Couldn't load this card", on_retry: move |()| dispatch.call(Action::Retry) }
+            }
         },
         _ => rsx! {
-            components::CardDetailsPanelSkeleton {}
+            div { class: "screen-content web-cards-swipe cs-card",
+                div { class: "web-cards-swipe-main", {search} }
+                div { class: "web-swipe-details", components::CardDetailsPanelSkeleton {} }
+            }
         },
     };
 
     rsx! {
         ScreenFrame { title: frame_title,
             style { {SPIKE_CSS} }
-            {search}
             {body}
         }
     }
