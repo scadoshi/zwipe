@@ -77,6 +77,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
 use crate::inbound::chrome::shortcuts::{self, SELECT_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::{use_global_keys, use_offer_shortcuts};
+use crate::inbound::collection::use_offers_owned;
 use crate::inbound::screens::deck::cards::SwipeDetailsPanel;
 use crate::inbound::screens::playstyle::SuggestionReasons;
 use crate::inbound::shell::{WebFooter, use_overlay_nav};
@@ -534,6 +535,7 @@ fn SwipeSelectBody(
     user_filter: Signal<CardQueryBuilder>,
 ) -> Element {
     let toast = use_toast();
+    let offers_owned = use_offers_owned();
     let confirm = use_swipe_confirm();
     // A write lands even after the screen goes; its confirmation waits on this.
     let mounted = use_mounted();
@@ -929,7 +931,11 @@ fn SwipeSelectBody(
             CardFilterPanel {
                 open: filter_open,
                 filter: user_filter,
-                config: SheetConfig::default(),
+                // The pile is the server's commander search, which reads the collection.
+                config: SheetConfig {
+                    show_owned: offers_owned(),
+                    ..SheetConfig::default()
+                },
                 quiet_reset: true,
                 on_apply: move |applied: CardQueryBuilder| {
                     let mut user_filter = user_filter;

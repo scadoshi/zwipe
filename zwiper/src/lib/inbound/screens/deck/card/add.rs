@@ -34,6 +34,7 @@ use super::components::card_info::{CardDetailsSheet, CardSkeleton};
 use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::collection::use_offers_owned;
 use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
@@ -590,6 +591,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut end_swipe_start: Signal<Option<(f64, f64)>> = use_signal(|| None);
 
     let usage_buffer: Signal<UsageBuffer> = use_context();
+    let offers_owned = use_offers_owned();
     let driver = Driver {
         mounted: use_mounted(),
         model: use_signal(State::new),
@@ -918,6 +920,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // Apply there (e.g. right after Reset) must commit, not warn.
                 validate_before_apply: validates_apply,
                 deck_format: sheet_deck_format,
+                // Maybeboard filters the deck's own cards in memory; only Search reads the
+                // collection on the server.
+                show_owned: source == Source::Search && offers_owned(),
                 on_clear: move |()| {
                     let draft = filter_builder.peek().clone();
                     driver.dispatch(Action::ResetFilter(draft));

@@ -131,6 +131,8 @@ pub struct CachedDecks {
 /// - `Signal<Option<CachedMyCounts>>`, `Signal<Option<CachedPlayStyle>>`,
 ///   `Signal<Option<CachedDecks>>` and `Signal<Option<FlavorCard>>` (the
 ///   featured flavor card, held until the top of the next hour), empty.
+/// - [`CollectionCache`](crate::inbound::collection::CollectionCache), empty until a
+///   server-searched screen asks whether to offer "In my collection".
 pub fn use_root_caches() {
     let counts: Signal<Option<CachedCounts>> =
         use_signal(|| CountsStore::browser().load().map(CachedCounts::restored));
@@ -166,6 +168,8 @@ pub fn use_root_caches() {
     use_context_provider(|| decks);
     let flavor: Signal<Option<FlavorCard>> = use_signal(|| None);
     use_context_provider(|| flavor);
+    let collection = crate::inbound::collection::CollectionCache(use_signal(|| None));
+    use_context_provider(|| collection);
 
     let franchises = UbFranchises(use_root_signal(|| Load::Loading));
     use_context_provider(|| franchises);

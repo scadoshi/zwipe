@@ -65,6 +65,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::shortcuts::{self, ADD_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
+use crate::inbound::collection::use_offers_owned;
 use crate::inbound::root_signal::use_signal_for_root_tasks;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
@@ -118,6 +119,7 @@ const ALL_SWIPES: [Swipe; 4] = [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Dow
 pub fn AddDeckCard(deck_id: Uuid) -> Element {
     telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::CardAdd));
     let toast = use_toast();
+    let offers_owned = use_offers_owned();
     let confirm = use_swipe_confirm();
     // An undo's write runs in the root and lands even after the screen goes;
     // what it then shows on the screen waits on this.
@@ -1109,6 +1111,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             AddSource::Search => ctx.format,
             AddSource::Maybeboard => None,
         },
+        // The maybeboard source filters in memory, so only the search source offers it.
+        show_owned: at == AddSource::Search && offers_owned(),
         ..SheetConfig::default()
     };
     let panel_key = format!("{at:?}-{}-{}", deck.read().is_some(), ctx.lands_at_target);

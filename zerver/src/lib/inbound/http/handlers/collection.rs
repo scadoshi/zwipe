@@ -10,6 +10,7 @@ use zwipe_core::http::contracts::collection::{
 };
 
 use crate::domain::card::ports::CardService;
+use crate::domain::card::requests::get_scryfall_data::ScryfallDataIds;
 use crate::domain::collection::models::export;
 use crate::domain::collection::models::import::{ImportCollection, ImportCollectionFailure};
 use crate::domain::collection::ports::CollectionService;
@@ -77,8 +78,10 @@ pub async fn collection_summary(
     Ok((StatusCode::OK, Json(summary)))
 }
 
-/// The printings of a card, by oracle id, that the caller's collection holds, each once and in
-/// the order the public printings route gives them. A card the caller doesn't own has none.
+/// The printings of a card, by oracle id, that the caller's collection holds, each once, oldest
+/// release first. They are read by id, so the list holds every owned printing the card catalog
+/// can serve (every synced printing, English or not) whatever the public printings route
+/// shows. A card the caller doesn't own has none.
 ///
 /// # Errors
 ///
@@ -98,14 +101,12 @@ pub async fn owned_printings(
     if owned.is_empty() {
         return Ok((StatusCode::OK, Json(Vec::new())));
     }
-    let printings = state
+    let ids: ScryfallDataIds = owned.into_iter().collect();
+    let mut mine = state
         .card_service
-        .fetch_printings(oracle_id)
+        .fetch_cards(&ids)
         .await
         .map_err(ApiError::from)?;
-    let mine = printings
-        .into_iter()
-        .filter(|card| owned.contains(&card.scryfall_data.id))
-        .collect();
+    mine.sort_by_key(|card| (card.scryfall_data.released_at, card.scryfall_data.id));
     Ok((StatusCode::OK, Json(mine)))
 }

@@ -16,6 +16,7 @@ fn config(show_format: bool, validate: bool, reset: ResetRule) -> SheetConfig {
         reset,
         sources: Sources::default(),
         deck_format: None,
+        show_owned: false,
     }
 }
 
@@ -520,4 +521,24 @@ fn the_copy_matches_the_app() {
     assert_eq!(APPLY, "Apply");
     assert_eq!(RESET, "Reset");
     assert_eq!(LISTS_FAILED, "Filter lists didn't load, trying again");
+}
+
+#[test]
+fn in_my_collection_is_offered_only_after_a_summary_with_something_in_it() {
+    use zwipe_core::http::contracts::collection::HttpCollectionSummary;
+    assert!(
+        !offers_owned(None),
+        "no reply yet, a failure, or an older server with no summary route"
+    );
+    let empty = HttpCollectionSummary {
+        cards: 0,
+        printings: 0,
+    };
+    assert!(!offers_owned(Some(&empty)), "an empty collection");
+    let some = HttpCollectionSummary {
+        cards: 1,
+        printings: 1,
+    };
+    assert!(offers_owned(Some(&some)));
+    assert_eq!(IN_MY_COLLECTION, "In my collection");
 }

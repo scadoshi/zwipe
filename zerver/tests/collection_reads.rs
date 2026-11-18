@@ -144,6 +144,24 @@ async fn owned_printings_are_only_the_callers_printings_of_that_card(pool: sqlx:
 }
 
 #[sqlx::test]
+async fn an_owned_non_english_printing_is_listed_as_search_counts_it(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let w = world(&pool).await;
+    let sol_ja = card("Sol Ring")
+        .with_ids(Uuid::from_u128(0x5014), w.sol_a.oracle_id())
+        .set("c21", "Commander 2021")
+        .lang("ja");
+    seed_cards(&pool, std::slice::from_ref(&sol_ja)).await;
+    let (token, uid) = app.register("owner").await;
+    own(&pool, &uid, &sol_ja, "nonfoil", 1).await;
+
+    let route = collection_printings_route(w.sol_a.oracle_id().unwrap());
+    let (status, body) = app.get(&route, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(ids(&body), [sol_ja.id().to_string()]);
+}
+
+#[sqlx::test]
 async fn the_reads_need_a_session_and_a_real_oracle_id(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let w = world(&pool).await;
