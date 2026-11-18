@@ -4,13 +4,25 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-/// Whether `c` is invisible in text yet changes how it reads: a control character, or a bidi or
-/// zero-width mark (U+200E, U+200F, U+202A to U+202E, U+2066 to U+2069) that can reorder or hide
-/// what's around it.
+/// Whether `c` is invisible in text yet changes how it reads or matches: a control character,
+/// a bidi mark (U+061C, U+200E, U+200F, U+202A to U+202E, U+2066 to U+2069) that can reorder
+/// what's around it, or a zero-width space, word joiner or mid-text byte order mark (U+200B,
+/// U+2060, U+FEFF) that splits a word without showing. The zero-width joiners U+200C and U+200D
+/// stay: some scripts and emoji need them.
 #[must_use]
 pub fn is_unseen(c: char) -> bool {
     c.is_control()
-        || matches!(c, '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
+        || matches!(
+            c,
+            '\u{61c}'
+                | '\u{200b}'
+                | '\u{200e}'
+                | '\u{200f}'
+                | '\u{202a}'..='\u{202e}'
+                | '\u{2060}'
+                | '\u{2066}'..='\u{2069}'
+                | '\u{feff}'
+        )
 }
 
 /// `text` without its [unseen](is_unseen) characters.
@@ -33,8 +45,8 @@ pub enum InvalidCollectionTags {
     Empty,
 }
 
-/// One tag: trimmed, [unseen](is_unseen) characters removed, 1 to [`CollectionTag::MAX_CHARS`] characters.
-/// Clients show it as text.
+/// One tag: trimmed, [unseen](is_unseen) characters removed, 1 to
+/// [`CollectionTag::MAX_CHARS`] characters. Clients show it as text.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct CollectionTag(String);
@@ -212,6 +224,20 @@ mod tests {
                 .unwrap();
         assert_eq!(strings(&tags), ["gnirt", "binderx"]);
         assert_eq!(strip_unseen("a\u{200f}b\u{202a}c\u{2067}d\u{0}e"), "abcde");
+        for mark in ['\u{200b}', '\u{2060}', '\u{feff}', '\u{61c}'] {
+            assert_eq!(
+                strip_unseen(&format!("Sol{mark}Ring")),
+                "SolRing",
+                "{:04X}",
+                u32::from(mark)
+            );
+        }
+        for joiner in ['\u{200c}', '\u{200d}'] {
+            assert!(
+                strip_unseen(&format!("a{joiner}b")).contains(joiner),
+                "joiners carry meaning and stay"
+            );
+        }
     }
 
     #[test]
