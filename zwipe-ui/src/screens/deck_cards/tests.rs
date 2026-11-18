@@ -1080,6 +1080,39 @@ fn a_zone_printing_reprices_the_deck_the_deck_view_is_handed() {
 }
 
 #[test]
+fn undo_takes_a_sent_card_back_out_of_the_deck_it_went_to_leaving_this_one() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let target = Uuid::from_u128(77);
+    let effects = state.update(Action::Undo(Box::new(UndoAction::SentTo {
+        card_id: ring,
+        card_name: "Sol Ring".to_owned(),
+        deck_id: target,
+        deck_name: "Krenko".to_owned(),
+    })));
+    let [
+        Effect::DeleteCard {
+            ticket,
+            deck_id,
+            card_id,
+            op: Op::Undo,
+        },
+    ] = effects.as_slice()
+    else {
+        panic!("one delete on the deck it went to: {effects:?}");
+    };
+    assert_eq!((*deck_id, *card_id), (target, ring));
+    assert!(state.row(ring).is_some(), "this deck's own copy stays");
+    let landed = state.update(Action::Deleted { ticket: *ticket });
+    assert!(
+        landed
+            .iter()
+            .any(|e| matches!(e, Effect::Toast(t) if t.text == "Removed Sol Ring from Krenko")),
+        "its toast as the write lands: {landed:?}"
+    );
+}
+
+#[test]
 fn undo_reverses_an_add() {
     let (mut state, cards) = loaded();
     let ring = id(&cards[0]);

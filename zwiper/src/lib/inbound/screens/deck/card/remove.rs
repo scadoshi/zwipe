@@ -448,6 +448,17 @@ fn into_shared(action: UndoAction) -> shared_undo::UndoAction {
             old_card: Box::new(old_card),
             new_id,
         },
+        UndoAction::SentTo {
+            card_id,
+            card_name,
+            deck_id,
+            deck_name,
+        } => shared_undo::UndoAction::SentTo {
+            card_id,
+            card_name,
+            deck_id,
+            deck_name,
+        },
     }
 }
 
@@ -515,6 +526,17 @@ fn from_shared(action: shared_undo::UndoAction) -> UndoAction {
             slot,
             old_card: *old_card,
             new_id,
+        },
+        shared_undo::UndoAction::SentTo {
+            card_id,
+            card_name,
+            deck_id,
+            deck_name,
+        } => UndoAction::SentTo {
+            card_id,
+            card_name,
+            deck_id,
+            deck_name,
         },
     }
 }

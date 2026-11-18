@@ -1980,6 +1980,19 @@ impl State {
                     },
                 ]
             }
+            UndoAction::SentTo {
+                card_id,
+                deck_id: target,
+                ..
+            } => {
+                let ticket = self.request(Pending::Quiet);
+                vec![Effect::DeleteCard {
+                    ticket,
+                    deck_id: target,
+                    card_id,
+                    op: Op::Undo,
+                }]
+            }
             UndoAction::CommandZonePrintingChanged { slot, old_card, .. } => {
                 let request = slot.update_request(Some(old_card.scryfall_data.id));
                 *self.zone.slot_mut(slot) = Some(*old_card);
