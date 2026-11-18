@@ -641,6 +641,7 @@ pub fn CommanderMaybeboard() -> Element {
                         DangerZoneAction {
                             label: "Clear maybeboard",
                             button: "Clear",
+                            disabled: !has_entries,
                             onclick: move |()| show_clear_dialog.set(true),
                         }
                     }
