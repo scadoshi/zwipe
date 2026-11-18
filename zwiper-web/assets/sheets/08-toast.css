@@ -104,6 +104,12 @@
     display: contents;
 }
 
+/* The wrapper around a toast's × that keeps its click from the tap. Like the
+   tap, it generates no box. */
+.toast-close {
+    display: contents;
+}
+
 /* A lone toast has no stack to expand, so it lets a tap through to whatever
    sits under it, such as a dock's buttons, and takes only the taps on its own
    buttons. A stack of two or more takes a tap anywhere on it. A leaving
