@@ -13,7 +13,7 @@
 //! fetched, by the card's Oracle id, and a callback that fetches them. Without a source the sheet
 //! shows nothing.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -29,7 +29,8 @@ use crate::printing_face::{
     FaceTurn, PrintingFace, PrintingFaceButton, use_opening_face, use_printing_face,
 };
 use crate::{
-    BottomSheet, CoverFlow, IMAGE_ICON, LoadFailed, SheetFrame, SheetWide, use_overlay_back_action,
+    BottomSheet, Chip, CoverFlow, IMAGE_ICON, LoadFailed, SheetFrame, SheetWide,
+    use_overlay_back_action,
 };
 
 /// How far a card's printings have come.
@@ -51,6 +52,17 @@ pub struct PrintingsSource {
     /// Each card's printings asked for, by the card's Oracle id.
     pub results: Signal<HashMap<Uuid, PrintingsFetch>>,
     /// Fetches the printings of the card with this Oracle id.
+    pub request: Callback<Uuid>,
+}
+
+/// The user's owned printings, by each card's Oracle id, and the callback that fetches them. The
+/// sheet offers [`model::ONLY_MINE`] only once the results hold an owned printing of the card it
+/// lists, so a host without it, or whose user has no collection and never fetches, shows none.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct OwnedPrintingsSource {
+    /// Each card's owned printing ids, once fetched, by the card's Oracle id.
+    pub results: Signal<HashMap<Uuid, HashSet<Uuid>>>,
+    /// Fetches the owned printings of the card with this Oracle id.
     pub request: Callback<Uuid>,
 }
 
@@ -133,13 +145,14 @@ pub fn PrintingSheet(
     let face = use_opening_face(face, open);
     let read_only = on_save.is_none();
     let source = try_use_context::<PrintingsSource>();
+    let owned_source = try_use_context::<OwnedPrintingsSource>();
+    let mut only_mine = use_signal(|| false);
     // From the kit's modal width on, the picker is the cover flow.
     let flow = use_min_width(KIT_MODAL_PX);
     // Retry bumps `attempt`, which asks again.
     let mut attempt = use_signal(|| 0u32);
     let mut index = use_signal(|| 0usize);
-    let mut initial = use_signal(|| 0usize);
-    // Whether `index` and `initial` sit on the shown printing of the latest fetch.
+    // Whether `index` sits on the shown printing of the latest fetch.
     let mut seeded = use_signal(|| false);
     let shown_id = card.scryfall_data.id;
     let oracle_id = card.scryfall_data.oracle_id;
@@ -153,7 +166,11 @@ pub fn PrintingSheet(
             return;
         };
         seeded.set(false);
+        only_mine.set(false);
         source.request.call(oracle_id);
+        if let Some(owned_source) = owned_source {
+            owned_source.request.call(oracle_id);
+        }
     });
 
     // The fetched printings open on the one shown.
@@ -173,7 +190,6 @@ pub fn PrintingSheet(
             .position(|p| p.scryfall_data.id == shown_id)
             .unwrap_or(0);
         index.set(at);
-        initial.set(at);
         seeded.set(true);
     });
 
@@ -185,14 +201,48 @@ pub fn PrintingSheet(
         && oracle_id.is_some()
         && matches!(fetch, None | Some(PrintingsFetch::Loading));
     let failed = matches!(fetch, Some(PrintingsFetch::Failed));
-    let all = match fetch {
-        Some(PrintingsFetch::Ready(fetched)) => model::shown_printings(&fetched, shown_id),
+    let owned: Option<HashSet<Uuid>> = owned_source
+        .zip(oracle_id)
+        .and_then(|(owned_source, oracle_id)| owned_source.results.read().get(&oracle_id).cloned());
+    let fetched = match fetch {
+        Some(PrintingsFetch::Ready(fetched)) => fetched,
         _ => Vec::new(),
     };
+    let offers_mine = model::offers_only_mine(&fetched, shown_id, owned.as_ref());
+    // Only mine narrows the list only while it is offered, so a hidden toggle never filters.
+    let narrowed = owned.as_ref().filter(|_| only_mine() && offers_mine);
+    let all = model::listed(&fetched, shown_id, narrowed);
     let count = all.len();
     let at = index();
-    let changed = count > 0 && at != initial();
     let visible = all.get(at).cloned();
+    // A different printing from the one the sheet opened on, by id, so a narrowed list that
+    // hides the opening printing still lets an owned one be picked.
+    let changed = visible
+        .as_ref()
+        .is_some_and(|card| card.scryfall_data.id != shown_id);
+    let toggle_mine = {
+        let owned = owned.clone();
+        let showing = visible.as_ref().map(|card| card.scryfall_data.id);
+        move |_| {
+            let on = !*only_mine.peek();
+            only_mine.set(on);
+            let next = model::listed(&fetched, shown_id, owned.as_ref().filter(|_| on));
+            let place = |id: Uuid| next.iter().position(|card| card.scryfall_data.id == id);
+            index.set(
+                showing
+                    .and_then(place)
+                    .or_else(|| place(shown_id))
+                    .unwrap_or(0),
+            );
+        }
+    };
+    let mine_chip = (offers_mine && !loading).then(|| {
+        rsx! {
+            div { class: "keyword-chips printing-only-mine",
+                Chip { selected: only_mine(), onclick: toggle_mine, "{model::ONLY_MINE}" }
+            }
+        }
+    });
     let printing_face = use_printing_face(&card, face, open, &all);
     let turns = printing_face.turn != FaceTurn::None;
     let shown = printing_face.shown(&all);
@@ -272,6 +322,7 @@ pub fn PrintingSheet(
                 open,
                 printings: all,
                 shown,
+                mine_chip,
                 printing_face,
                 index,
                 loading,
@@ -321,6 +372,7 @@ pub fn PrintingSheet(
                     if failed {
                         LoadFailed { message: model::LOAD_FAILED, on_retry: retry }
                     } else if loading || visible.is_some() {
+                        {mine_chip}
                         CoverFlow { printings: shown, index, loading, face: shown_face }
                         // The printing's chips, then Save at the right, at
                         // the sheet's bottom. Save is grayed until a
@@ -381,6 +433,8 @@ fn CoverFlowSheet(
     open: Signal<bool>,
     printings: Vec<Card>,
     shown: Vec<Card>,
+    // "Only mine", when the sheet offers it.
+    mine_chip: Option<Element>,
     printing_face: PrintingFace,
     mut index: Signal<usize>,
     loading: bool,
@@ -456,6 +510,7 @@ fn CoverFlowSheet(
                         if failed {
                             LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| on_retry.call(()) }
                         } else {
+                            {mine_chip}
                             CoverFlow {
                                 printings: shown,
                                 index,

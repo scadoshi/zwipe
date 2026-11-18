@@ -223,7 +223,8 @@ pub use printing_face::{
     use_opening_face, use_printing_face, use_printings_face_root,
 };
 pub use printing_sheet::{
-    ArtistChip, PrintingChips, PrintingChipsGhost, PrintingSheet, PrintingsFetch, PrintingsSource,
+    ArtistChip, OwnedPrintingsSource, PrintingChips, PrintingChipsGhost, PrintingSheet,
+    PrintingsFetch, PrintingsSource,
 };
 pub use role_tags::{OtagDef, RoleTags};
 pub use screen_task::{Mounted, spawn_in_order, spawn_write, spawn_write_in_order, use_mounted};
