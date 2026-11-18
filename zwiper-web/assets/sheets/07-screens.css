@@ -2646,10 +2646,6 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
     min-height: 0;
 }
 
-.picker-body .tag-search-label {
-    color: var(--ink-accent-primary, var(--accent-primary));
-}
-
 /* The controls and the chips fill the sheet's width, the grid's
    scrollbar along its right edge. */
 .picker-body > .tag-controls,
@@ -2677,13 +2673,12 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
 
 /* The search box sits as close above the definition bar as the bar sits
    above the chips, the × wrap around it included. */
-.tag-controls > .input,
-.tag-controls > .input-clear-wrap,
-.tag-controls > .input-clear-wrap > .input {
+.tag-controls > .chip-row,
+.tag-controls > .chip-row > .input {
     margin-bottom: 0;
 }
 
-/* Search as a label chip, the count as a chip at the row's end. */
+/* The count as a chip at the row's end. */
 .tag-controls-head {
     display: flex;
     align-items: center;
@@ -2792,8 +2787,14 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
     gap: var(--space-2);
 }
 
-.dict-controls > .tag-controls-head {
-    margin-bottom: calc(var(--space-1) - var(--space-2));
+.dict-controls > .chip-row,
+.dict-controls > .chip-row > .input {
+    margin-bottom: 0;
+}
+
+.chip-row > .dict-skeleton-search {
+    flex: 1 1 0%;
+    min-width: 0;
 }
 
 /* The letter rail is the horizontal scroll container itself: the ancestor

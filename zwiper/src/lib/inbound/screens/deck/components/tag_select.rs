@@ -76,7 +76,6 @@ pub(crate) fn TagSelect(
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
                         div { class: "tag-controls-head",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
                             span { class: "stat-chip stat-chip-p5 tag-count", "{selected.len()}/{MAX_DECK_TAGS}" }
                             if !selected.is_empty() {
                                 button {
@@ -90,15 +89,18 @@ pub(crate) fn TagSelect(
                             }
                         }
 
-                        input { class: "input input-compact",
-                            id: "tag-search",
-                            r#type: "text",
-                            placeholder: "Search tags",
-                            value: "{query()}",
-                            autocapitalize: "none",
-                            autocorrect: "off",
-                            spellcheck: "false",
-                            oninput: move |event| query.set(event.value()),
+                        div { class: "chip-row",
+                            label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: "tag-search", "Search" }
+                            input { class: "input input-compact",
+                                id: "tag-search",
+                                r#type: "text",
+                                placeholder: "Search tags",
+                                value: "{query()}",
+                                autocapitalize: "none",
+                                autocorrect: "off",
+                                spellcheck: "false",
+                                oninput: move |event| query.set(event.value()),
+                            }
                         }
 
                         div { class: "tag-def-bar",
