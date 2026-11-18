@@ -216,9 +216,6 @@ pub fn FormatPicker(form: DeckForm) -> Element {
             on_back: move |()| back.call(()),
             on_save: move |()| open.set(false),
             div { class: "tag-controls",
-                div { class: "tag-controls-head",
-                    label { class: "tag-search-label", r#for: "format-search", "Search" }
-                }
                 PickerSearch { id: "format-search", placeholder: "Search formats", query }
                 div { class: "tag-def-bar format-def-bar",
                     div { class: "format-def-scroll",
@@ -352,7 +349,6 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
             },
             div { class: "tag-controls",
                 div { class: "tag-controls-head",
-                    label { class: "tag-search-label", r#for: "tag-search", "Search" }
                     span { class: "tag-count", "{count}/{MAX_DECK_TAGS}" }
                     if count > 0 {
                         button {
@@ -524,7 +520,6 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
             on_save: move |()| open.set(false),
             div { class: "tag-controls",
                 div { class: "tag-controls-head",
-                    label { class: "tag-search-label", r#for: "oracle-tag-search", "Search" }
                     Button {
                         variant: ButtonVariant::Small,
                         class: "dict-btn-fill",

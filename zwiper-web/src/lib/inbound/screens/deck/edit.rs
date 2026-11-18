@@ -23,6 +23,8 @@ use crate::domain::deck::{FormStart, FormValues};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::leave_guard::use_leave_guard;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
+use crate::inbound::chrome::shortcuts::ShortcutsScreen;
+use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::router::Route;
 use crate::inbound::shell::{ScreenFrame, nav};
 use crate::inbound::telemetry;
@@ -36,6 +38,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let authed = use_authed();
     let toast = use_toast();
     let hint_open = use_one_time_hint(OneTimeHint::EditDeck);
+    use_offer_shortcuts(ShortcutsScreen::EditDeck);
     let form = use_deck_form();
     let mut original: Signal<FormValues> = use_signal(FormValues::default);
     let mut saving = use_signal(|| false);

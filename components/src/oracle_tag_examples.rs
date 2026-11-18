@@ -156,15 +156,22 @@ pub fn OracleTagExamples(
         claims_steps: true,
         note: None,
     });
-    // `v` flips the top card or shows its meld and `d` opens or closes its details, as on every
-    // swipe screen.
-    use_page_keys(Callback::new(
-        move |key: String| match shortcuts::card_key(&key) {
+    // `v` flips the top card or shows its meld, `d` opens or closes its details and Shift+P sends
+    // it, as on every swipe screen.
+    let send_to = try_use_context::<crate::SendTo>();
+    use_page_keys(Callback::new(move |key: String| {
+        if key == shortcuts::SEND_TO_KEY {
+            if let (Some(send_to), Some(card)) = (send_to, stack.peek().current().cloned()) {
+                send_to.open_for(card);
+            }
+            return;
+        }
+        match shortcuts::card_key(&key) {
             Some(CardKey::Flip) => swipe_stack::flip_top_card(),
             Some(CardKey::Details) if stack.peek().current().is_some() => eye.press(),
             _ => {}
-        },
-    ));
+        }
+    }));
     use_swipe_keys_or_undo(
         control,
         vec![Swipe::Left, Swipe::Down],

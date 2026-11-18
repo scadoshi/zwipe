@@ -1048,6 +1048,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             ToastOptions::default().duration(TOAST_QUICK),
         );
     });
+    let send_to = try_use_context::<components::SendTo>();
     // The swipe screen's letter keys, each the same action as its dock
     // button; the swipes come through the swipe keys above. `v` also turns
     // the card from its open details drawer.
@@ -1062,6 +1063,15 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         && let Some(card) = stack.peek().current()
                     {
                         open_on_shown_face(handed, faces, card.scryfall_data.id, printing_open);
+                    }
+                }
+                Some(Shortcut::SendTo) => {
+                    if *source.peek() == AddSource::Search
+                        && revealing.peek().is_none()
+                        && let (Some(send_to), Some(card)) =
+                            (send_to, stack.peek().current().cloned())
+                    {
+                        send_to.open_for(card);
                     }
                 }
                 Some(Shortcut::Details) => {

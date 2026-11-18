@@ -289,11 +289,21 @@ fn NavLogo() -> Element {
     }
 }
 
+/// Whether Esc with nothing open goes back on `route`: on the screens a deck's
+/// `a`, `r` and `e` open (Add, Remove and Edit), back to the deck, and nowhere
+/// else.
+fn esc_goes_back(route: &Route) -> bool {
+    matches!(
+        route,
+        Route::AddDeckCard { .. } | Route::RemoveDeckCard { .. } | Route::EditDeck { .. }
+    )
+}
+
 /// The back arrow in the left corner below the breakpoint, boxed like the
 /// hamburger, on every screen but Home and the auth screens, which hold its
 /// slot empty. It goes to the screen's fixed parent, or the screen before
-/// this one, or Home when the tab has no history. Esc with nothing open does
-/// the same ([`EscBack`]).
+/// this one, or Home when the tab has no history. On a deck's Add, Remove and
+/// Edit, Esc with nothing open does the same ([`EscBack`], [`esc_goes_back`]).
 ///
 /// While an overlay screen sits under the nav (see [`use_overlay_nav`]),
 /// the arrow closes it instead.
@@ -307,6 +317,8 @@ fn BackButton(
     let opener: DeckOpener = use_context();
     let on_back = page.read().as_ref().and_then(|p| p.on_back);
     let has_back = on_back.is_some() || back.is_some();
+    let route: Route = use_route();
+    let esc = has_back && esc_goes_back(&route);
     let go_back = use_callback(move |()| {
         open.set(false);
         if let Some(close) = on_back {
@@ -324,9 +336,9 @@ fn BackButton(
         nav::back_or(navigator, parent);
     });
     let esc_back = try_use_context::<EscBack>();
-    use_effect(use_reactive!(|has_back| {
+    use_effect(use_reactive!(|esc| {
         if let Some(EscBack(mut slot)) = esc_back {
-            slot.set(has_back.then_some(go_back));
+            slot.set(esc.then_some(go_back));
         }
     }));
     use_drop(move || {
@@ -392,5 +404,29 @@ mod tests {
         );
         assert_eq!(shown_title::<&str>(&[], Some(&page)), Some(&"Goblin Horde"));
         assert_eq!(shown_title::<&str>(&[], None), None);
+    }
+
+    #[test]
+    fn esc_goes_back_from_a_deck_s_add_remove_and_edit_alone() {
+        let d = uuid::Uuid::from_u128(1);
+        for route in [
+            Route::AddDeckCard { deck_id: d },
+            Route::RemoveDeckCard { deck_id: d },
+            Route::EditDeck { deck_id: d },
+        ] {
+            assert!(esc_goes_back(&route), "{route:?}");
+        }
+        for route in [
+            Route::ViewDeck {
+                deck_id: d,
+                view: None,
+            },
+            Route::DeckList {},
+            Route::Config {},
+            Route::CommanderMaybeboard {},
+            Route::Home {},
+        ] {
+            assert!(!esc_goes_back(&route), "{route:?}");
+        }
     }
 }

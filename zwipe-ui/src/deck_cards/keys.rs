@@ -49,7 +49,7 @@ pub const HOVER_KEYS: [&str; 16] = [
 ];
 
 /// The keys [`hover_key`] answers on a read-only page: the ones that read.
-pub const READ_ONLY_HOVER_KEYS: [&str; 8] = ["p", "P", "i", "I", "v", "V", "d", "D"];
+pub const READ_ONLY_HOVER_KEYS: [&str; 7] = ["p", "i", "I", "v", "V", "d", "D"];
 
 /// The keys [`hover_key`] answers under `editable`.
 #[must_use]
@@ -65,6 +65,8 @@ pub fn hover_keys(editable: Editable) -> &'static [&'static str] {
 pub enum HoverKey {
     /// `p`: the card's Printings.
     Printings,
+    /// Shift+P: Send to, for the card.
+    SendTo,
     /// `i`: the card's image, as its Image button opens it.
     Image,
     /// `v`: the card's other face, as its Flip button turns it.
@@ -109,7 +111,8 @@ fn any_hover_key(key: &str) -> Option<HoverKey> {
         Some(CardKey::Filter | CardKey::FilterByName) | None => {}
     }
     match key {
-        "p" | "P" => Some(HoverKey::Printings),
+        "p" => Some(HoverKey::Printings),
+        shortcuts::SEND_TO_KEY => Some(HoverKey::SendTo),
         "i" | "I" => Some(HoverKey::Image),
         "m" | "M" => Some(HoverKey::ToMaybeboard),
         "s" => Some(HoverKey::ToSideboard),
@@ -126,6 +129,8 @@ fn any_hover_key(key: &str) -> Option<HoverKey> {
 pub enum HoverAction {
     /// Open Printings for the card, in the command zone `slot` when it has one.
     Printings(Box<Card>, Option<Slot>),
+    /// Open Send to for the card.
+    SendTo(Box<Card>),
     /// Move the card to the board.
     Move(Uuid, Board),
     /// Toggle the star of the card, `starred` saying whether it is starred now.
@@ -170,6 +175,12 @@ pub fn hover_action(
                 Box::new(row.card.clone()),
                 Some(slot),
             )),
+            RowKind::Token => None,
+        },
+        HoverKey::SendTo => match row.kind {
+            RowKind::Main { .. } | RowKind::Board(_) | RowKind::Zone(_) => {
+                Some(HoverAction::SendTo(Box::new(row.card.clone())))
+            }
             RowKind::Token => None,
         },
         HoverKey::ToMaybeboard => move_to(Board::Maybeboard),
@@ -249,7 +260,7 @@ mod tests {
     #[test]
     fn the_keys_are_p_m_s_and_shift_s() {
         assert_eq!(hover_key("p", Editable::Yes), Some(HoverKey::Printings));
-        assert_eq!(hover_key("P", Editable::Yes), Some(HoverKey::Printings));
+        assert_eq!(hover_key("P", Editable::Yes), Some(HoverKey::SendTo));
         assert_eq!(hover_key("m", Editable::Yes), Some(HoverKey::ToMaybeboard));
         assert_eq!(hover_key("s", Editable::Yes), Some(HoverKey::ToSideboard));
         assert_eq!(hover_key("S", Editable::Yes), Some(HoverKey::Star));
@@ -510,6 +521,38 @@ pub fn card_label(name: &str, qty: i32, board: Option<Board>) -> String {
         Some(Board::Deck) | None => {}
     }
     label
+}
+
+#[cfg(test)]
+mod send_to_tests {
+    use super::*;
+
+    fn row(kind: RowKind) -> RowInfo {
+        let card: Card = serde_json::from_str(include_str!("../test_support/card.json")).unwrap();
+        RowInfo { card, qty: 1, kind }
+    }
+
+    #[test]
+    fn shift_p_sends_the_card_and_p_opens_its_printings() {
+        assert_eq!(hover_key("p", Editable::Yes), Some(HoverKey::Printings));
+        assert_eq!(hover_key("P", Editable::Yes), Some(HoverKey::SendTo));
+        assert_eq!(hover_key("p", Editable::No), Some(HoverKey::Printings));
+        assert_eq!(
+            hover_key("P", Editable::No),
+            None,
+            "a read-only deck has no Send to"
+        );
+        assert!(!READ_ONLY_HOVER_KEYS.contains(&"P"));
+        let main = row(RowKind::Main { mvp: false });
+        assert_eq!(
+            hover_action(HoverKey::SendTo, &main, Board::Deck, 0),
+            Some(HoverAction::SendTo(Box::new(main.card.clone())))
+        );
+        assert_eq!(
+            hover_action(HoverKey::SendTo, &row(RowKind::Token), Board::Deck, 0),
+            None
+        );
+    }
 }
 
 #[cfg(test)]

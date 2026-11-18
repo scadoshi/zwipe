@@ -152,19 +152,19 @@ pub fn OracleTagDictionary(open: Signal<bool>, on_use: EventHandler<String>) -> 
                     // (mirrors the changelog filter pattern, per-row not per-list).
                     Body::Browse { rail, list } => rsx! {
                         div { class: "dict-controls",
-                            div { class: "tag-controls-head",
-                                span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
-                            }
-                            input {
-                                class: "input input-compact",
-                                id: "oracle-tag-dictionary-search",
-                                r#type: "text",
-                                placeholder: model::SEARCH_PLACEHOLDER,
-                                value: "{query}",
-                                autocapitalize: "none",
-                                autocorrect: "off",
-                                spellcheck: "false",
-                                oninput: move |event| driver.dispatch(Action::Search(event.value())),
+                            div { class: "chip-row",
+                                label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: "oracle-tag-dictionary-search", "Search" }
+                                input {
+                                    class: "input input-compact",
+                                    id: "oracle-tag-dictionary-search",
+                                    r#type: "text",
+                                    placeholder: model::SEARCH_PLACEHOLDER,
+                                    value: "{query}",
+                                    autocapitalize: "none",
+                                    autocorrect: "off",
+                                    spellcheck: "false",
+                                    oninput: move |event| driver.dispatch(Action::Search(event.value())),
+                                }
                             }
 
                             div { class: "dict-letter-rail scroll-fade-x",

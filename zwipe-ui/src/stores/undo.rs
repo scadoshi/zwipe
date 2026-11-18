@@ -90,6 +90,22 @@ pub enum UndoAction {
         /// The new printing's ID.
         new_id: Uuid,
     },
+    /// A card went to another deck through Send to, recorded on the deck it was sent from;
+    /// undo takes it back out of `deck_id`, leaving this deck as it is.
+    SentTo {
+        /// The card's printing ID.
+        card_id: Uuid,
+        /// Its name, for the undo toast.
+        card_name: String,
+        /// The deck it went to.
+        deck_id: Uuid,
+        /// That deck's name, for the undo toast.
+        deck_name: String,
+        /// The board it went to.
+        board: Board,
+        /// The copies it sent, the most undo takes back.
+        copies: i32,
+    },
 }
 
 impl UndoAction {
@@ -217,7 +233,8 @@ mod tests {
             | UndoAction::MvpToggled { .. }
             | UndoAction::FlagToggled { .. }
             | UndoAction::PrintingChanged { .. }
-            | UndoAction::CommandZonePrintingChanged { .. }) => panic!("only adds here: {other:?}"),
+            | UndoAction::CommandZonePrintingChanged { .. }
+            | UndoAction::SentTo { .. }) => panic!("only adds here: {other:?}"),
         }
     }
 

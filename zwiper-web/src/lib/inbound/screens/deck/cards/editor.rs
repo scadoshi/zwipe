@@ -40,6 +40,7 @@ use super::signal_toast;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlays, ShowRowArt};
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
+use crate::inbound::cards::send_to;
 use crate::inbound::cards::stack_view::StackDetails;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
@@ -867,6 +868,31 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                             entries.write().push(row);
                         }
                         put_back();
+                    }
+                });
+            }
+            UndoAction::SentTo {
+                card_id,
+                deck_id: target,
+                deck_name,
+                board,
+                copies,
+                ..
+            } => {
+                // Takes back only what the send added, from the board it went to; a card that
+                // moved boards or left the deck it went to is left alone.
+                spawn_write(async move {
+                    let took_back = authed
+                        .run("undo", |c, s| async move {
+                            send_to::take_back(&c, &s, target, card_id, board, copies).await
+                        })
+                        .await;
+                    match took_back {
+                        Some(true) => toast.info(message, quick),
+                        Some(false) => {
+                            toast.info(zwipe_ui::send_to::left_alone(&deck_name), quick);
+                        }
+                        None => put_back(),
                     }
                 });
             }

@@ -1,7 +1,7 @@
 //! Send to in the app: the sheet above the signed-in screens. It loads the user's decks as it
 //! opens, leaves out the deck the screen under it is on, and adds the card to the deck tapped,
 //! on the board picked, as a task of the sheet's host, so the write runs to its end even if the
-//! screen goes first.
+//! screen goes first. A send from a deck's screen goes on that deck's undo.
 
 use components::{SendTo, SendToSheet, TOAST_NORMAL, TOAST_QUICK, ToastOptions, use_toast};
 use dioxus::prelude::*;
@@ -17,6 +17,7 @@ use crate::inbound::components::telemetry::vocabulary::{
     AuthScreen, DeckScreen, ProfileScreen, Screen, component,
 };
 use crate::inbound::router::Router;
+use crate::inbound::screens::deck::card::components::undo_log::UndoStore;
 
 /// Provides [`SendTo`] to the screens under it, and returns it for [`SendToHost`].
 pub(crate) fn use_send_to() -> SendTo {
@@ -36,6 +37,7 @@ pub(crate) fn SendToHost(send_to: SendTo) -> Element {
     let screen = host_screen(&route);
     let authed = use_authed(screen);
     let toast = use_toast();
+    let undo_store: UndoStore = use_context();
     let mut decks = use_signal(|| None::<Vec<Target>>);
     use_effect(move || {
         if !open() {
@@ -81,10 +83,22 @@ pub(crate) fn SendToHost(send_to: SendTo) -> Element {
                         })
                         .await;
                     match added {
-                        Ok(_) => toast.info(
-                            send_to::sent(&target.name, board),
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        ),
+                        Ok(_) => {
+                            if let Some((from, entry)) = send_to::undo_entry(
+                                current,
+                                &target,
+                                board,
+                                sent.scryfall_data.id,
+                                &sent.scryfall_data.name,
+                            ) {
+                                let mut undo_store = undo_store;
+                                undo_store.record(from, entry.into());
+                            }
+                            toast.info(
+                                send_to::sent(&target.name, board),
+                                ToastOptions::default().duration(TOAST_QUICK),
+                            );
+                        }
                         Err(e) => {
                             // A duplicate names the board that holds the card, read from the deck.
                             let holding = match (&e, oracle_id) {

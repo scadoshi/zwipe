@@ -15,8 +15,8 @@ use zwipe_ui::shortcuts::{
     card_rows_groups, commander_maybeboard_groups, deck_cards_groups, examples_groups, rows_of,
 };
 pub use zwipe_ui::shortcuts::{
-    CardKey, DeckAction, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, QUICK_ADD_KEY, UNDO_COMBO,
-    card_key, deck_action_key, flow_key, global_key, undo_letter,
+    CardKey, DeckAction, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, QUICK_ADD_KEY, SEND_TO_KEY,
+    UNDO_COMBO, card_key, deck_action_key, flow_key, global_key, undo_letter,
 };
 
 /// What a key does on a swipe screen (Add, Remove, Commander swipe): the same action as its
@@ -27,6 +27,8 @@ pub enum Shortcut {
     Swipe(Swipe),
     /// Opens Printings for the card on top.
     Printings,
+    /// Opens Send to for the card on top.
+    SendTo,
     /// Shows or hides the card details.
     Details,
     /// Flips the card on top to its other face, for a card with two.
@@ -56,7 +58,8 @@ pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
         return Some(Shortcut::Swipe(swipe));
     }
     let shortcut = match key {
-        "p" | "P" => Shortcut::Printings,
+        "p" => Shortcut::Printings,
+        shortcuts::SEND_TO_KEY => Shortcut::SendTo,
         "r" | "R" => Shortcut::Refresh,
         "s" | "S" => Shortcut::Synergy,
         _ => return None,
@@ -78,6 +81,8 @@ pub struct SwipeLabels {
     pub down: &'static str,
     /// Whether the screen has Synergy, which `s` turns on or off.
     pub synergy: bool,
+    /// Whether Esc goes back from the screen once nothing is open: a deck's Add and Remove.
+    pub goes_back: bool,
 }
 
 impl SwipeLabels {
@@ -109,6 +114,7 @@ pub const ADD_LABELS: SwipeLabels = SwipeLabels {
     up: Some("Maybeboard"),
     down: "Undo",
     synergy: true,
+    goes_back: true,
 };
 
 /// Remove's swipes.
@@ -118,6 +124,7 @@ pub const REMOVE_LABELS: SwipeLabels = SwipeLabels {
     up: Some("Move"),
     down: "Undo",
     synergy: false,
+    goes_back: true,
 };
 
 /// Commander swipe's swipes; a mode that saves nothing for later has no up swipe.
@@ -127,6 +134,7 @@ pub const SELECT_LABELS: SwipeLabels = SwipeLabels {
     up: Some("Save"),
     down: "Undo",
     synergy: false,
+    goes_back: false,
 };
 
 /// A screen that offers the shortcuts sheet, which decides the keys the sheet lists.
@@ -143,6 +151,8 @@ pub enum ShortcutsScreen {
     CardRows(ListLayout),
     /// The Commander maybeboard: a screen of card rows in one list, with its filter and Quick add.
     CommanderMaybeboard,
+    /// A deck's Edit: the keys every page has, and Esc going back to the deck once nothing is open.
+    EditDeck,
 }
 
 /// The groups the shortcuts sheet lists on `screen` ([`shortcuts::sheet_groups`]): each key, with
@@ -158,8 +168,9 @@ pub fn sheet_groups(screen: &ShortcutsScreen) -> Vec<SheetGroup> {
                 labels.up.map(|up| (&["↑", "k"][..], up)),
                 Some((&["↓", "j", "u", UNDO_COMBO][..], labels.down)),
             ];
-            let card: [SheetRow; 3] = [
+            let card: [SheetRow; 4] = [
                 (&["p"], "Printings"),
+                shortcuts::SEND_TO_ROW,
                 (&["d"], "Card details"),
                 (&["v"], FLIP_ROW),
             ];
@@ -169,11 +180,13 @@ pub fn sheet_groups(screen: &ShortcutsScreen) -> Vec<SheetGroup> {
                 swipe: swipe.into_iter().flatten().collect(),
                 card: card.to_vec(),
                 page: tools.into_iter().chain(synergy).collect(),
+                goes_back: labels.goes_back,
                 ..ScreenKeys::default()
             })
         }
         ShortcutsScreen::DeckCards => deck_cards_groups(Editable::Yes),
         ShortcutsScreen::Examples => examples_groups(),
+        ShortcutsScreen::EditDeck => shortcuts::going_back_groups(),
         ShortcutsScreen::CardRows(layout) => card_rows_groups(*layout),
         ShortcutsScreen::CommanderMaybeboard => commander_maybeboard_groups(),
     }
@@ -195,6 +208,7 @@ pub fn claims_steps(screen: &ShortcutsScreen) -> bool {
         | ShortcutsScreen::Examples
         | ShortcutsScreen::CardRows(_)
         | ShortcutsScreen::CommanderMaybeboard => true,
+        ShortcutsScreen::EditDeck => false,
     }
 }
 
@@ -224,6 +238,16 @@ mod tests {
     }
 
     #[test]
+    fn add_and_remove_say_esc_goes_back_and_commander_swipe_does_not() {
+        for labels in [ADD_LABELS, REMOVE_LABELS] {
+            let rows = sheet_rows(&ShortcutsScreen::Swipe(labels));
+            assert!(rows.contains(&shortcuts::ESC_BACK_ROW), "{rows:?}");
+        }
+        let select = sheet_rows(&ShortcutsScreen::Swipe(SELECT_LABELS));
+        assert!(!select.contains(&shortcuts::ESC_BACK_ROW), "{select:?}");
+    }
+
+    #[test]
     fn letters_open_the_dock_actions() {
         for (key, shortcut) in [
             ("p", Shortcut::Printings),
@@ -234,7 +258,7 @@ mod tests {
             ("/", Shortcut::FilterByName),
             ("r", Shortcut::Refresh),
             ("s", Shortcut::Synergy),
-            ("P", Shortcut::Printings),
+            ("P", Shortcut::SendTo),
             ("S", Shortcut::Synergy),
         ] {
             assert_eq!(swipe_screen_shortcut(key), Some(shortcut), "{key}");
@@ -365,6 +389,7 @@ mod tests {
                     "Shift+H" => "H",
                     "Shift+S" => "S",
                     "Shift+F" => "F",
+                    "Shift+P" => "P",
                     "↑" => "ArrowUp",
                     "↓" => "ArrowDown",
                     "←" => "ArrowLeft",
@@ -401,6 +426,7 @@ mod tests {
                 "To the top",
                 "To the bottom",
                 "Printings",
+                "Send to",
                 "Card details",
                 FLIP_ROW,
                 "Filter",
@@ -437,6 +463,7 @@ mod tests {
             "↑" => "ArrowUp".to_owned(),
             "↓" => "ArrowDown".to_owned(),
             "Shift+H" => "H".to_owned(),
+            "Shift+P" => "P".to_owned(),
             other => other.to_owned(),
         };
         for (keys, does) in rows
@@ -502,7 +529,7 @@ mod tests {
     #[test]
     fn the_card_row_screens_list_their_cursor_keys_then_the_card_keys() {
         let rows = sheet_rows(&ShortcutsScreen::CardRows(ListLayout::One));
-        let actions: Vec<&str> = rows.iter().take(9).map(|(_, does)| *does).collect();
+        let actions: Vec<&str> = rows.iter().take(10).map(|(_, does)| *does).collect();
         assert_eq!(
             actions,
             [
@@ -513,6 +540,7 @@ mod tests {
                 "To the bottom",
                 "Open the card",
                 "Printings",
+                "Send to",
                 zwipe_ui::shortcuts::card_read_rows()[1].1,
                 FLIP_ROW,
             ]
@@ -610,6 +638,7 @@ mod tests {
                     "←" => "ArrowLeft",
                     "↓" => "ArrowDown",
                     "Shift+H" => "H",
+                    "Shift+P" => "P",
                     other => other,
                 };
                 let works = match swipe_screen_shortcut(key) {
@@ -617,6 +646,7 @@ mod tests {
                     _ => card_key(key).is_some_and(|k| k != CardKey::Filter),
                 } || global_key(key).is_some()
                     || page_key_label(label)
+                    || key == SEND_TO_KEY
                     || key == "Esc";
                 assert!(works, "{label} for {does}");
             }

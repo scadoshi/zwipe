@@ -512,6 +512,8 @@ pub fn is_stale(action: &UndoAction, entries: &[DeckEntry], zone: &Zone) -> bool
         UndoAction::CommandZonePrintingChanged { slot, new_id, .. } => {
             zone.slot(*slot).map(|c| c.scryfall_data.id) != Some(*new_id)
         }
+        // It changed another deck, which this one can't see; that deck's reply says if it moved on.
+        UndoAction::SentTo { .. } => false,
     }
 }
 
@@ -553,6 +555,11 @@ pub fn undo_message(action: &UndoAction) -> String {
         | UndoAction::CommandZonePrintingChanged { old_card, .. } => {
             format!("{} printing restored", old_card.scryfall_data.name)
         }
+        UndoAction::SentTo {
+            card_name,
+            deck_name,
+            ..
+        } => format!("Removed {card_name} from {deck_name}"),
     }
 }
 
@@ -604,6 +611,24 @@ mod tests {
 
     use super::*;
     use crate::test_support::{card, deck, deck_profile};
+
+    #[test]
+    fn a_sent_card_s_undo_names_the_deck_it_leaves_and_is_never_stale_here() {
+        let sent = UndoAction::SentTo {
+            card_id: Uuid::from_u128(9),
+            card_name: "Sol Ring".to_owned(),
+            deck_id: Uuid::from_u128(2),
+            deck_name: "Krenko".to_owned(),
+            board: Board::Maybeboard,
+            copies: 1,
+        };
+        assert_eq!(undo_message(&sent), "Removed Sol Ring from Krenko");
+        assert!(
+            !is_stale(&sent, &[], &Zone::default()),
+            "the deck it went to isn't this one"
+        );
+        assert!(!is_stale(&sent, &entries(), &Zone::default()));
+    }
 
     #[test]
     fn each_filled_command_zone_slot_counts() {

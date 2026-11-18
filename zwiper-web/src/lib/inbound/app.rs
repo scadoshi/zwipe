@@ -93,10 +93,12 @@ pub fn App() -> Element {
         });
     });
     let esc_back = use_context_provider(|| EscBack(Signal::new(None)));
+    let esc_keeps = use_context_provider(|| EscKeeps(Signal::new(None)));
     use_future(move || async move {
         let mut escapes = document::eval(KEYS_JS);
         while escapes.recv::<bool>().await.is_ok() {
-            let closed = overlay_back_stack.close_top();
+            let closed = closes_on_escape(*esc_keeps.0.peek(), overlay_back_stack.depth())
+                && overlay_back_stack.close_top();
             if let Some(back) = back_after_escape(closed, *esc_back.0.peek()) {
                 back.call(());
             }
@@ -300,9 +302,25 @@ if (!window.__zwipeDialogFocus) {
 "#;
 
 /// What the screen's Back button does, which Esc does with nothing open: the
-/// nav's back arrow sets it while the screen has one.
+/// nav's back arrow sets it on a deck's Add, Remove and Edit, and leaves it
+/// empty everywhere else.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct EscBack(pub Signal<Option<Callback<()>>>);
+
+/// The back-stack layer Esc leaves open, by its z-index while it is open: the
+/// deck's Cards on a phone, a screen of its own rather than a sheet over one.
+/// The Cards layer sets it.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct EscKeeps(pub Signal<Option<u32>>);
+
+/// Whether Esc closes the top of a back stack `depth` layers deep: always,
+/// unless that top is the layer [`EscKeeps`] holds at z-index `kept`.
+fn closes_on_escape(kept: Option<u32>, depth: usize) -> bool {
+    let Some(top) = depth.checked_sub(1) else {
+        return false;
+    };
+    kept != Some(components::overlay_z(top))
+}
 
 /// The Back Esc runs after closing what it could: `back` when `closed` is
 /// false, so Esc closes one layer at a time and goes back only from a bare
@@ -315,8 +333,9 @@ fn back_after_escape<T>(closed: bool, back: Option<T>) -> Option<T> {
 /// Escape and Enter, and the kit's theme sheet handles its arrows and
 /// Enter, so this one steps aside. Otherwise Escape in a text field only
 /// leaves the field; anywhere else it sends `true` to the root, which closes
-/// the top overlay or, with none open, goes back as the screen's Back button
-/// does. Enter with nothing focused submits the page's form panel when it has
+/// the top overlay unless it is the deck's Cards layer ([`EscKeeps`]), or,
+/// with nothing to close on a deck's Add, Remove or Edit, goes back as the
+/// screen's Back button does. Enter with nothing focused submits the page's form panel when it has
 /// exactly one, as Enter in one of its fields does.
 ///
 /// Escape is marked taken, so no later listener closes the same overlay
@@ -478,6 +497,28 @@ mod tests {
             KEYS_JS.contains("const inField = focus && focus.closest('input, textarea, select, [contenteditable=\"true\"]');"),
             "Quick add is an input: {KEYS_JS}"
         );
+    }
+
+    #[test]
+    fn esc_closes_the_menu_and_the_image_preview_but_leaves_the_cards_layer() {
+        let cards = Some(components::overlay_z(0));
+        assert!(
+            !closes_on_escape(cards, 1),
+            "the Cards layer alone on the stack stays"
+        );
+        assert!(
+            closes_on_escape(cards, 2),
+            "the phone menu or a card's image preview over the Cards layer closes"
+        );
+        assert!(
+            closes_on_escape(None, 1),
+            "the phone menu or the image preview with no Cards layer closes"
+        );
+        assert!(
+            closes_on_escape(Some(components::overlay_z(1)), 3),
+            "a layer over the Cards layer, which sits second, closes"
+        );
+        assert!(!closes_on_escape(None, 0), "nothing to close");
     }
 
     #[test]

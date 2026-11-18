@@ -959,7 +959,21 @@ a.nav-dropdown-item.active:visited {
    in place of the browser's; a hover lifts the edge where the device
    hovers. */
 .theme-search-bar .input-clear-wrap {
+    flex: 1 1 0%;
+    min-width: 0;
     margin-bottom: 0;
+}
+
+/* The field's Search label chip sits on its left, on its center line. */
+.theme-search-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.theme-search-label {
+    font-weight: 700;
+    white-space: nowrap;
 }
 
 .theme-search:focus {
@@ -3261,7 +3275,8 @@ html[data-wipe="left"]::view-transition-new(root) {
 
 .pref-row:not(:disabled):focus-visible,
 .collapse-caret:focus-visible,
-.theme-picker-sheet .nav-dropdown-item:focus-visible {
+.theme-picker-sheet .nav-dropdown-item:focus-visible,
+.bottom-sheet:has(.theme-search:focus) :is(.pref-row, .nav-dropdown-item).enter-target {
     background-color: var(--border-primary);
     color: var(--text-primary);
 }

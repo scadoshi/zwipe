@@ -70,19 +70,18 @@ pub(crate) fn FormatSelect(
 
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
-                        div { class: "tag-controls-head",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
-                        }
-
-                        input { class: "input input-compact",
-                            id: "format-search",
-                            r#type: "text",
-                            placeholder: "Search formats",
-                            value: "{query()}",
-                            autocapitalize: "none",
-                            autocorrect: "off",
-                            spellcheck: "false",
-                            oninput: move |event| query.set(event.value()),
+                        div { class: "chip-row",
+                            label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: "format-search", "Search" }
+                            input { class: "input input-compact",
+                                id: "format-search",
+                                r#type: "text",
+                                placeholder: "Search formats",
+                                value: "{query()}",
+                                autocapitalize: "none",
+                                autocorrect: "off",
+                                spellcheck: "false",
+                                oninput: move |event| query.set(event.value()),
+                            }
                         }
 
                         div { class: "tag-def-bar format-def-bar",

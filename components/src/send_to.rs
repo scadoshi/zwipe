@@ -24,6 +24,18 @@ pub struct SendTo {
     pub card: Signal<Option<Card>>,
 }
 
+impl SendTo {
+    /// Opens the sheet to send `card`, as its Send to button does.
+    pub fn open_for(self, card: Card) {
+        let Self {
+            mut open,
+            card: mut sending,
+        } = self;
+        sending.set(Some(card));
+        open.set(true);
+    }
+}
+
 /// The board the next send goes to: the one last picked, kept for the session.
 static BOARD: GlobalSignal<Board> = Signal::global(|| Board::Deck);
 
@@ -37,11 +49,7 @@ pub const SEND_TO_ACTION: &str = "send-to";
 /// client has not provided [`SendTo`].
 #[component]
 pub fn SendToButton(card: Card) -> Element {
-    let Some(SendTo {
-        mut open,
-        card: mut sending,
-    }) = try_use_context::<SendTo>()
-    else {
+    let Some(send_to) = try_use_context::<SendTo>() else {
         return rsx! {};
     };
     rsx! {
@@ -50,8 +58,7 @@ pub fn SendToButton(card: Card) -> Element {
             "data-action": SEND_TO_ACTION,
             onclick: move |evt| {
                 evt.stop_propagation();
-                sending.set(Some(card.clone()));
-                open.set(true);
+                send_to.open_for(card.clone());
             },
             {TITLE}
         }
@@ -98,6 +105,7 @@ pub fn SendToSheet(
             },
             div { class: "tag-controls",
                 div { class: "chip-row send-to-boards",
+                    span { class: "stat-chip stat-chip-p1 chip-row-label", {TITLE} }
                     for choice in BOARDS {
                         Chip {
                             key: "{send_to::chip_label(choice)}",
@@ -106,9 +114,6 @@ pub fn SendToSheet(
                             {send_to::chip_label(choice)}
                         }
                     }
-                }
-                div { class: "tag-controls-head",
-                    label { class: "tag-search-label", r#for: SEARCH_ID, "Search" }
                 }
                 PickerSearch { id: SEARCH_ID, placeholder: SEARCH_PLACEHOLDER, query }
             }

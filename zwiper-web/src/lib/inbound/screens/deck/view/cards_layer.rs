@@ -4,8 +4,9 @@
 //! a touch screen and under hover with a mouse. The owner's deck and a shared deck draw the same
 //! layer; only the owner's passes edit actions and the edit buttons in the dock.
 //!
-//! The layer sits on the overlay stack, so Esc and the OS back close it as they close a sheet,
-//! and a sheet it opens (the filter, a card's drawer) sits over it. The route holds it open
+//! The layer sits on the overlay stack, so the OS back closes it as it closes a sheet, and a
+//! sheet it opens (the filter, a card's drawer) sits over it. Esc closes those sheets and
+//! leaves the layer open. The route holds it open
 //! (`?view=cards`, [`use_cards_route`]).
 
 use std::collections::{HashMap, HashSet};
@@ -25,6 +26,7 @@ use zwipe_ui::deck_cards::stacks::CardsView;
 use zwipe_ui::screens::deck_cards::TITLE;
 
 use super::ghost::DeckBandsGhost;
+use crate::inbound::app::EscKeeps;
 use crate::inbound::chrome::leave_guard::use_route_overlay;
 use crate::inbound::router::Route;
 use crate::inbound::shell::use_overlay_nav;
@@ -64,7 +66,7 @@ pub(crate) fn use_cards_route(
 }
 
 /// The Cards layer; see the module's doc. `controls` are the page's own, `dock` the floating
-/// icon bar's buttons, and `on_close` closes the layer from its back button, Esc or the OS back.
+/// icon bar's buttons, and `on_close` closes the layer from its back button or the OS back.
 #[component]
 pub(crate) fn DeckCardsLayer(
     // The deck's sections, each with its rows, in the page's order.
@@ -110,6 +112,18 @@ pub(crate) fn DeckCardsLayer(
 ) -> Element {
     let open = use_signal(|| true);
     let layer = use_overlay_back_action(open.into(), on_close);
+    // Esc closes the sheets over the layer, never the layer itself.
+    let esc_keeps = try_use_context::<EscKeeps>();
+    use_effect(move || {
+        if let Some(EscKeeps(mut kept)) = esc_keeps {
+            kept.set(layer());
+        }
+    });
+    use_drop(move || {
+        if let Some(EscKeeps(mut kept)) = esc_keeps {
+            kept.set(None);
+        }
+    });
     // Its route's `?view=cards` entry is its history entry, so the overlay stack adds none.
     use_route_overlay();
     // The nav over the layer names the Cards, opens their hint and its back arrow closes them.

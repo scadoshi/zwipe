@@ -66,6 +66,16 @@ pub(crate) enum UndoAction {
         old_card: Card,
         new_id: Uuid,
     },
+    /// A card went to another deck through Send to, recorded on the deck it was sent from;
+    /// undo takes the `copies` it sent back off `board` in `deck_id`.
+    SentTo {
+        card_id: Uuid,
+        card_name: String,
+        deck_id: Uuid,
+        deck_name: String,
+        board: Board,
+        copies: i32,
+    },
 }
 
 impl From<UndoAction> for zwipe_ui::stores::undo::UndoAction {
@@ -128,6 +138,21 @@ impl From<UndoAction> for zwipe_ui::stores::undo::UndoAction {
                 slot,
                 old_card: Box::new(old_card),
                 new_id,
+            },
+            UndoAction::SentTo {
+                card_id,
+                card_name,
+                deck_id,
+                deck_name,
+                board,
+                copies,
+            } => Self::SentTo {
+                card_id,
+                card_name,
+                deck_id,
+                deck_name,
+                board,
+                copies,
             },
         }
     }
@@ -195,6 +220,21 @@ impl From<zwipe_ui::stores::undo::UndoAction> for UndoAction {
                 old_card: *old_card,
                 new_id,
             },
+            Shared::SentTo {
+                card_id,
+                card_name,
+                deck_id,
+                deck_name,
+                board,
+                copies,
+            } => Self::SentTo {
+                card_id,
+                card_name,
+                deck_id,
+                deck_name,
+                board,
+                copies,
+            },
         }
     }
 }
@@ -232,6 +272,8 @@ impl UndoLog {
 #[derive(Clone, Copy)]
 pub(crate) struct UndoStore {
     entries: Signal<HashMap<Uuid, Vec<UndoAction>>>,
+    /// The deck whose cards screen is open, and its live log.
+    live: Signal<Option<(Uuid, UndoLog)>>,
 }
 
 /// Creates the store (provided as context in `spawn_upkeeper`, beside the
@@ -239,6 +281,7 @@ pub(crate) struct UndoStore {
 pub(crate) fn use_undo_store() -> UndoStore {
     UndoStore {
         entries: use_signal(HashMap::new),
+        live: use_signal(|| None),
     }
 }
 
@@ -255,9 +298,28 @@ impl UndoStore {
             .unwrap_or_default()
     }
 
-    /// Remembers this deck's stack, replacing any prior one.
+    /// Remembers this deck's stack, replacing any prior one, and lets go of its live log.
     pub(crate) fn park(&mut self, deck_id: Uuid, log: Vec<UndoAction>) {
+        if self.live.peek().is_some_and(|(open, _)| open == deck_id) {
+            self.live.set(None);
+        }
         self.entries.write().insert(deck_id, log);
+    }
+
+    /// Takes `log` as the open cards screen's live log for `deck_id`, so a change recorded
+    /// from outside that screen (Send to) lands on it rather than under its parked copy.
+    pub(crate) fn attach(&mut self, deck_id: Uuid, log: UndoLog) {
+        self.live.set(Some((deck_id, log)));
+    }
+
+    /// Records `action` on `deck_id`'s history from outside its cards screen: on the live log
+    /// while that screen is open, else on the parked stack.
+    pub(crate) fn record(&mut self, deck_id: Uuid, action: UndoAction) {
+        let live = *self.live.peek();
+        match live {
+            Some((open, log)) if open == deck_id => log.push(action),
+            Some(_) | None => self.push(deck_id, action),
+        }
     }
 
     /// Records a mutation made while the deck cards screen (and its live
@@ -308,6 +370,47 @@ mod tests {
         } else {
             panic!("test log only holds Added")
         }
+    }
+
+    #[test]
+    fn a_record_lands_on_the_open_screen_s_live_log_and_otherwise_parks() {
+        thread_local! {
+            /// What the store held at each step: the live log's length, then the parked
+            /// stacks' lengths for the open deck and the other one.
+            static SEEN: std::cell::RefCell<Vec<(usize, usize, usize)>> =
+                const { std::cell::RefCell::new(Vec::new()) };
+        }
+        fn app() -> Element {
+            let mut store = use_undo_store();
+            let log = UndoLog(use_signal(Vec::new));
+            use_hook(move || {
+                let (open, other) = (Uuid::from_u128(1), Uuid::from_u128(2));
+                let seen = move || {
+                    let step = (
+                        log.0.peek().len(),
+                        store.restore(open).len(),
+                        store.restore(other).len(),
+                    );
+                    SEEN.with_borrow_mut(|s| s.push(step));
+                };
+                store.attach(open, log);
+                store.record(open, added(Uuid::new_v4(), "sent from the open deck"));
+                store.record(other, added(Uuid::new_v4(), "sent from another"));
+                seen();
+                store.park(open, log.0.peek().clone());
+                store.record(open, added(Uuid::new_v4(), "after it closed"));
+                seen();
+            });
+            rsx! {}
+        }
+        VirtualDom::new(app).rebuild_in_place();
+        let seen = SEEN.with_borrow(Clone::clone);
+        assert_eq!(
+            seen,
+            [(1, 0, 1), (1, 2, 1)],
+            "the open screen's log takes its deck's send and nothing parks under it; once it \
+             closes, a send parks"
+        );
     }
 
     #[test]
