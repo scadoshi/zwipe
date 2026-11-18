@@ -911,13 +911,24 @@ a.nav-dropdown-item.active:visited {
     margin-top: 0;
 }
 
-/* The theme sheets' search field, over the themes; the first group's chip
+/* The theme sheets' search field, over the themes in a bar that stays at
+   the top of the sheet's scroll. The bar spans the sheet body's padding in
+   the body's own fill, so the themes pass under it; the first group's chip
    sits under it as it would under the title bar. */
+.theme-search-bar {
+    position: sticky;
+    top: calc(-1 * var(--space-4));
+    z-index: 1;
+    background-color: var(--bg-sink);
+    margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-5)) 0;
+    padding: var(--space-4) var(--space-5) var(--space-3);
+}
+
 .theme-search {
     display: block;
     width: 100%;
     box-sizing: border-box;
-    margin: 0 0 var(--space-3);
+    margin: 0;
     padding: var(--space-3) var(--space-4);
     background-color: var(--bg-primary);
     border: 1px solid var(--ink-text-muted, var(--text-muted));
@@ -949,8 +960,9 @@ a.nav-dropdown-item.active:visited {
     color: var(--ink-text-muted, var(--text-muted));
 }
 
-.theme-search + .theme-group-label,
-.theme-picker-sheet .theme-search + .nav-dropdown-label {
+.theme-search-bar + .theme-group-label,
+.theme-picker-sheet .theme-search-bar + .nav-dropdown-label,
+.theme-search-bar + .theme-search-empty + .theme-group-label {
     margin-top: 0;
 }
 
