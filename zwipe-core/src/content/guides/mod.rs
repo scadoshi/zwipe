@@ -633,11 +633,11 @@ pub static GUIDES: &[Guide] = &[
                 &[
                     Block::H2("The Commanders screen"),
                     Block::P(
-                        "Tap Commanders in the nav. It holds two lists side by side, stacked on a phone: Maybeboard, the commanders you save, and Suggested, the ones that fit your decks. Each list has its own Show row, Sort and Swipe. The [[funnel]] at the bottom right narrows both lists at once.",
+                        "Tap Commanders in the nav. It holds two lists side by side, stacked on a phone: Maybeboard, the commanders you save, and Suggested, the ones that fit your decks. Each list has its own Show row and Swipe. The [[funnel]] at the bottom right narrows both lists at once.",
                     ),
                     Block::H2("Maybeboard"),
                     Block::P(
-                        "Saves show as card rows with art; Art in the Show row hides it. Quick add saves a commander by name. Expand a row for details and four actions:",
+                        "Saves show as card rows with art; Art in the Show row hides it. Quick add saves a commander by name, and Sort changes the order. Expand a row for details and four actions:",
                     ),
                     Block::Bullets(&[
                         "[[image]] shows the card full size.",
