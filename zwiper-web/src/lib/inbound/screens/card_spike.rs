@@ -3,33 +3,84 @@
 //! the right, as on Add and Remove; Send to and Share are the floating action dock at every
 //! width. A phone shows the details under the card. `look` is ignored.
 
-use std::collections::HashSet;
-
 use components::icons::{DockIcon, SEND, ShareIcon};
 use components::{
-    CardDetailsPanel, CardStack, DeckFold, FlippableCardImage, LoadFailed, Panel, PickerSearch,
-    StackCard,
+    CardDetailsPanel, CardStack, FlippableCardImage, LoadFailed, Panel, PickerSearch, StackCard,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::models::search_card::commander_eligibility;
 use zwipe_core::domain::card::scryfall_data::image_uris::ImageSize;
 use zwipe_core::domain::card::slug::card_slug;
+use zwipe_core::domain::deck::models::format::Format;
 use zwipe_ui::screens::card_lookup::{self, Action, Destination, Effect, Open, State, Status};
 
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 
-/// The card page's stats fold's title.
-const METRICS_TITLE: &str = "Card stats";
+/// One of the card page's counters: its number, its label and, for a rate, the swipes behind it.
+struct Counter {
+    num: &'static str,
+    label: &'static str,
+    sub: Option<&'static str>,
+}
 
-/// The swipes the card page leaves rate slots for, in the order they show.
-const RATES: [&str; 4] = ["Skip", "Add", "Maybeboard", "Remove"];
+/// Every card's counters, in the order they show, with sample numbers: the real ones are still
+/// being worked out.
+const COUNTERS: [Counter; 7] = [
+    Counter {
+        num: "312",
+        label: "In decks",
+        sub: None,
+    },
+    Counter {
+        num: "41",
+        label: "MVP in decks",
+        sub: None,
+    },
+    Counter {
+        num: "72%",
+        label: "Add rate",
+        sub: Some("added · 1,240 swipes"),
+    },
+    Counter {
+        num: "18%",
+        label: "Skip rate",
+        sub: Some("skipped · 310 swipes"),
+    },
+    Counter {
+        num: "4%",
+        label: "Remove rate",
+        sub: Some("removed · 69 swipes"),
+    },
+    Counter {
+        num: "6%",
+        label: "Maybe rate",
+        sub: Some("maybeboarded · 103 swipes"),
+    },
+    Counter {
+        num: "1,722",
+        label: "Swipes",
+        sub: None,
+    },
+];
 
-/// The card page's deck counter's label.
-const IN_DECKS: &str = "In decks";
+/// The counters a card that can lead a Commander deck adds after the others, with sample numbers.
+const COMMANDER_COUNTERS: [Counter; 2] = [
+    Counter {
+        num: "87",
+        label: "Decks led",
+        sub: None,
+    },
+    Counter {
+        num: "9%",
+        label: "Pick rate",
+        sub: Some("picked · 860 swipes"),
+    },
+];
 
 /// The spike's only rules: the card's size in the middle column, the details under the card on a
 /// phone (the deck page hides them behind the eye there), and the list's width.
@@ -39,8 +90,9 @@ const SPIKE_CSS: &str = r"
 .cs-image img { width: 100%; height: auto; }
 .cs-list { max-width: 40rem; margin: 0 auto; padding: var(--space-3) var(--space-4); box-sizing: border-box; width: 100%; display: flex; flex-direction: column; gap: var(--space-2); }
 .cs-results { width: 100%; grid-template-columns: repeat(auto-fit, minmax(12.5rem, 15rem)); justify-content: center; }
-.cs-metrics { width: 100%; max-width: 20rem; display: flex; flex-direction: column; gap: var(--space-3); }
-.cs-rates { grid-template-columns: minmax(0, 1fr) auto auto; row-gap: var(--space-2); padding: var(--space-3); }
+.cs-metrics { width: 100%; max-width: 20rem; display: flex; flex-direction: column; gap: var(--space-2); }
+.cs-metrics .stats-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cs-metrics .stat-sub { font-size: 0.65rem; opacity: 0.55; text-align: center; }
 @media (min-width: 900px) {
   .cs-metrics { position: fixed; top: var(--web-dock-panel-top); left: 1rem; z-index: 40; width: var(--web-dock-panel-width); max-width: none; }
   .cs-list { max-width: 60rem; }
@@ -76,7 +128,6 @@ fn SpikeScreen(open: Open, look: String) -> Element {
     let mut model = use_signal(State::new);
     let mut printings_open = use_signal(|| false);
     // The card page's folds shut by the user; the stats fold starts open.
-    let metrics_folded = use_signal(HashSet::<String>::new);
     let signed_in = move || session.read().as_ref().is_some_and(|s| !s.is_expired());
 
     let route_of = {
@@ -186,6 +237,10 @@ fn SpikeScreen(open: Open, look: String) -> Element {
     let body = match (status, card) {
         (Status::One, Some(card)) => {
             let sd = card.scryfall_data.clone();
+            let leads = commander_eligibility::is_valid_commander(&card, &Format::Commander);
+            let counters = COUNTERS
+                .iter()
+                .chain(COMMANDER_COUNTERS.iter().filter(|_| leads));
             rsx! {
                 div { class: "screen-content content-enter web-cards-swipe cs-card",
                     div { class: "web-cards-swipe-main",
@@ -201,44 +256,26 @@ fn SpikeScreen(open: Open, look: String) -> Element {
                             on_printings: move |()| printings_open.set(true),
                         }
                     }
-                    // Slots for the card's own numbers, which thinker is working out: the deck count
-                    // as Activity's counter, then each swipe's count and rate in Playstyle's compact
-                    // table, docked opposite the details on a wide window.
+                    // The card's numbers as Activity's counters, two to a row: the left column on a
+                    // wide window, under the details on a phone. Static markup, since the kit's
+                    // counter rolls digits while a value loads.
                     div { class: "cs-metrics",
                         div { class: "home-hero activity-counts",
-                            // The kit's counter markup with "Soon" for its number: its own
-                            // counter rolls digits while a value loads, which would read as data.
                             Panel {
                                 div { class: "stats-figures",
                                     section { class: "stats-strip",
-                                        div { class: "stat",
-                                            span { class: "stat-num", "Soon" }
-                                            span { class: "stat-label", "{IN_DECKS}" }
+                                        for counter in counters {
+                                            div { key: "{counter.label}", class: "stat",
+                                                span { class: "stat-num", "{counter.num}" }
+                                                span { class: "stat-label", "{counter.label}" }
+                                                if let Some(sub) = counter.sub {
+                                                    span { class: "stat-sub", "{sub}" }
+                                                }
+                                            }
                                         }
                                     }
-                                }
-                            }
-                        }
-                        DeckFold { fold_key: METRICS_TITLE, title: METRICS_TITLE, folded: metrics_folded,
-                            div { class: "tag-table cs-rates",
-                                div { class: "tag-table-head",
-                                    span { class: "settings-row-label", "Swipe" }
-                                }
-                                div { class: "tag-table-head tag-table-head-p3",
-                                    span { class: "settings-row-label", "Swipes" }
-                                }
-                                div { class: "tag-table-head tag-table-head-p2",
-                                    span { class: "settings-row-label", "Rate" }
-                                }
-                                for label in RATES {
-                                    div { key: "{label}", class: "tag-table-tag",
-                                        span { class: "settings-row-label", "{label}" }
-                                    }
-                                    span { class: "tag-table-num",
-                                        span { class: "stat-chip stat-chip-p3", "Soon" }
-                                    }
-                                    span { class: "tag-table-num",
-                                        span { class: "stat-chip stat-chip-p2", "Soon" }
+                                    div { class: "stats-source",
+                                        span { class: "stat-chip", "Sample numbers" }
                                     }
                                 }
                             }
