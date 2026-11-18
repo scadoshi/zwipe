@@ -505,6 +505,14 @@ pub fn public_routes() -> Router<AppState> {
         )
 }
 
+/// The general per-account limit every private route sits behind, one request back every
+/// [`PRIVATE_PERIOD`] up to [`PRIVATE_BURST`]: 500 per 5 minutes (about 1.67 a second),
+/// generous for swiping, keyed by user id.
+const PRIVATE_PERIOD: Duration = Duration::from_millis(600);
+
+/// See [`PRIVATE_PERIOD`].
+const PRIVATE_BURST: u32 = 500;
+
 /// Routes that require `AuthenticatedUser` (JWT Bearer token).
 ///
 /// # Panics
@@ -520,11 +528,10 @@ pub fn public_routes() -> Router<AppState> {
     reason = "one router tree: each per-user limiter, then the routes it guards"
 )]
 pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
-    // 500 req / 5min (~1.67/s avg): generous for swiping, keyed by user ID
     let private_config = Arc::new(
         GovernorConfigBuilder::default()
-            .period(Duration::from_millis(600))
-            .burst_size(500)
+            .period(PRIVATE_PERIOD)
+            .burst_size(PRIVATE_BURST)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
@@ -776,10 +783,12 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
     reason = "every governor config has a non-zero period and burst, so finish never returns None"
 )]
 pub fn collection_routes(jwt_secret: JwtSecret) -> Router<AppState> {
+    // Its own bucket on purpose: an import's calls never spend the account's budget for the
+    // rest of the app, and the import's own limits below are far tighter.
     let private_config = Arc::new(
         GovernorConfigBuilder::default()
-            .period(Duration::from_millis(600))
-            .burst_size(500)
+            .period(PRIVATE_PERIOD)
+            .burst_size(PRIVATE_BURST)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
