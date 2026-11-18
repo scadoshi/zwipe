@@ -610,6 +610,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
         undo_last,
     );
     use_undo_key(Callback::new(move |()| undo_last.call(())));
+    let send_to = try_use_context::<components::SendTo>();
     // The swipe screen's letter keys, each the same action as its dock
     // button; Remove has no Synergy, so `s` does nothing here.
     use_page_keys(Callback::new(
@@ -617,6 +618,12 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
             Some(Shortcut::Printings) => {
                 if stack.peek().current_wrapping().is_some() {
                     printing_open.set(true);
+                }
+            }
+            Some(Shortcut::SendTo) => {
+                let top = stack.peek().current_wrapping().cloned();
+                if let (Some(send_to), Some(card)) = (send_to, top) {
+                    send_to.open_for(card);
                 }
             }
             Some(Shortcut::Details) => {
