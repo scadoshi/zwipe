@@ -10,7 +10,8 @@ use crate::domain::card::models::scryfall_data::colors::Color;
 
 /// The body of `POST /api/card/lookup`, a card search open to signed-out callers.
 ///
-/// It names only what to match: a name and the filter's type, color and role chips. Limits,
+/// It names only what to match: a name and the filter's type, color and role chips, each one
+/// optional, the name included (left out, it's the empty name). Limits,
 /// offsets, sorts and every other search field are refused as unknown, and the server builds the
 /// query itself. Each list holds at most [`MAX_LOOKUP_CHIPS`] values, and a lookup names at least
 /// one thing to match. Colors are kept once each, in WUBRG order.
@@ -30,6 +31,7 @@ pub struct HttpCardLookup {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RawCardLookup {
+    #[serde(default)]
     name: LookupName,
     #[serde(default)]
     types: Vec<CardTypeWord>,
@@ -187,6 +189,20 @@ mod tests {
             assert!(read(body).is_err(), "{field}");
         }
         assert!(read(json!({ "name": "x", "types": vec!["Goblin"; MAX_LOOKUP_CHIPS] })).is_ok());
+    }
+
+    #[test]
+    fn the_name_is_optional_and_a_lookup_still_needs_one_criterion() {
+        let types_only = read(json!({ "types": ["Goblin"] })).unwrap();
+        assert!(types_only.name().is_empty(), "no name is the empty name");
+        assert_eq!(types_only.types().len(), 1);
+        assert!(read(json!({ "colors": ["R"] })).is_ok());
+        assert!(read(json!({ "card_roles": ["ramp"] })).is_ok());
+        let nothing = read(json!({})).unwrap_err();
+        assert!(
+            nothing.contains("a lookup needs a name, a type, a color or a role"),
+            "{nothing}"
+        );
     }
 
     #[test]
