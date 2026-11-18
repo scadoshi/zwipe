@@ -1,5 +1,6 @@
 //! One command-zone field: its label row with `Filter`, `×` and `Swipe`, the
-//! floating results, and the input with its own `×`.
+//! floating results (below the input on a wide window, over the label row on
+//! a phone), and the input with its own `×`.
 //!
 //! Typing searches after zwipe-ui's debounce once the slot's minimum is
 //! typed; ↑ and ↓ move through the results and Enter picks the highlighted
@@ -19,6 +20,7 @@ use zwipe_ui::timing::COMMAND_ZONE_SEARCH_DEBOUNCE;
 use super::DeckForm;
 use crate::inbound::chrome::authed::{Authed, use_authed};
 use crate::inbound::chrome::hint_topic::InfoButton;
+use crate::inbound::chrome::media::use_wide;
 use crate::inbound::telemetry;
 use crate::outbound::timer;
 
@@ -91,6 +93,9 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
     let mut results: Signal<Vec<Card>> = use_signal(Vec::new);
     let mut searching = use_signal(|| false);
     let mut dropdown = use_signal(|| false);
+    // On a wide window the results hang below the field, leaving its label row in view; a phone
+    // floats them up over the label, clear of the keyboard.
+    let wide = use_wide()();
     let mut highlight: Signal<Option<usize>> = use_signal(|| None);
     let mut searches = use_signal(Generation::default);
     let mut filter_on = state.filter_on;
@@ -165,6 +170,32 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
 
     let found = results();
     let lit = highlight();
+    let results_class = if wide {
+        "search-float-results search-float-below"
+    } else {
+        "search-float-results"
+    };
+    let floats = rsx! {
+        div { class: "search-float-anchor",
+            div { class: results_class,
+                if searching() {
+                    div { class: "chip-unselected search-float-chip", "Searching…" }
+                } else if found.is_empty() {
+                    div { class: "chip-unselected search-float-chip", "No results" }
+                } else {
+                    for (i, hit) in found.into_iter().enumerate() {
+                        div {
+                            key: "{hit.scryfall_data.id}",
+                            class: if lit == Some(i) { "chip-unselected search-float-chip web-float-highlight" } else { "chip-unselected search-float-chip" },
+                            style: "animation-delay: {i.saturating_mul(40)}ms, {i.saturating_mul(40).saturating_add(250)}ms;",
+                            onclick: move |_| pick(hit.clone()),
+                            "{hit.scryfall_data.name}"
+                        }
+                    }
+                }
+            }
+        }
+    };
     rsx! {
         div {
             div { class: "label-row",
@@ -183,26 +214,8 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
                     "Swipe"
                 }
             }
-            if dropdown() {
-                div { class: "search-float-anchor",
-                    div { class: "search-float-results",
-                        if searching() {
-                            div { class: "chip-unselected search-float-chip", "Searching…" }
-                        } else if found.is_empty() {
-                            div { class: "chip-unselected search-float-chip", "No results" }
-                        } else {
-                            for (i, hit) in found.into_iter().enumerate() {
-                                div {
-                                    key: "{hit.scryfall_data.id}",
-                                    class: if lit == Some(i) { "chip-unselected search-float-chip web-float-highlight" } else { "chip-unselected search-float-chip" },
-                                    style: "animation-delay: {i.saturating_mul(40)}ms, {i.saturating_mul(40).saturating_add(250)}ms;",
-                                    onclick: move |_| pick(hit.clone()),
-                                    "{hit.scryfall_data.name}"
-                                }
-                            }
-                        }
-                    }
-                }
+            if dropdown() && !wide {
+                {floats.clone()}
             }
             // The × in the box clears what it shows: the search typed into
             // it, or the card picked.
@@ -260,6 +273,9 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
                         }
                     },
                 }
+            }
+            if dropdown() && wide {
+                {floats}
             }
         }
     }
