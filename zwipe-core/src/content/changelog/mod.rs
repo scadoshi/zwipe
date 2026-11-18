@@ -85,6 +85,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "The filter's toasts say cleared, applied or already at default to match what changed",
         "On the web, Esc on a hint over a sheet closes only the hint",
         "Enter or Go in the Format, Deck tags, Oracle tags and Send to searches picks the top match, highlighted as you type",
+        "A lone toast no longer blocks the buttons under it",
+        "Closing a toast leaves the others where they were",
     ],
 }];
 
