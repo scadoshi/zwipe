@@ -292,8 +292,8 @@ async fn apply_batch(
 /// replacement. Rows that meet on the same printing, finish, condition and language merge: copies
 /// add up to the most a row holds, tags join without regard to case (the first spelling and order
 /// kept, the row already there first) up to the most a row carries, and the earliest date
-/// added stays, with the purchase price of the earliest row that has one. Returns how many rows
-/// moved.
+/// added stays, with the purchase price of the earliest row that has one. A moved row takes the
+/// replacement's oracle id. Returns how many rows moved.
 async fn remap_collection(
     tx: &mut Transaction<'_, Postgres>,
     live: &str,
@@ -308,15 +308,16 @@ async fn remap_collection(
              RETURNING cc.*, rp.replacement_id \
          ), \
          grouped AS ( \
-             SELECT user_id, replacement_id, finish, condition, language, \
-                    min(oracle_id::text)::uuid AS oracle_id, \
-                    LEAST(sum(quantity), 9999)::int AS quantity, \
-                    (array_agg(purchase_price ORDER BY added_at NULLS LAST) \
-                        FILTER (WHERE purchase_price IS NOT NULL))[1] AS purchase_price, \
-                    (array_agg(purchase_currency ORDER BY added_at NULLS LAST) \
-                        FILTER (WHERE purchase_price IS NOT NULL))[1] AS purchase_currency, \
-                    min(added_at) AS added_at \
-             FROM moved GROUP BY user_id, replacement_id, finish, condition, language \
+             SELECT m.user_id, m.replacement_id, m.finish, m.condition, m.language, \
+                    COALESCE(rep.oracle_id, min(m.oracle_id::text)::uuid) AS oracle_id, \
+                    LEAST(sum(m.quantity), 9999)::int AS quantity, \
+                    (array_agg(m.purchase_price ORDER BY m.added_at NULLS LAST) \
+                        FILTER (WHERE m.purchase_price IS NOT NULL))[1] AS purchase_price, \
+                    (array_agg(m.purchase_currency ORDER BY m.added_at NULLS LAST) \
+                        FILTER (WHERE m.purchase_price IS NOT NULL))[1] AS purchase_currency, \
+                    min(m.added_at) AS added_at \
+             FROM moved m JOIN scryfall_data rep ON rep.id = m.replacement_id \
+             GROUP BY m.user_id, m.replacement_id, m.finish, m.condition, m.language, rep.oracle_id \
          ), \
          written AS ( \
          INSERT INTO collection_cards AS cc \
