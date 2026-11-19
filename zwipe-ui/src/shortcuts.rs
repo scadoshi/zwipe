@@ -212,10 +212,12 @@ pub fn going_back_groups() -> Vec<SheetGroup> {
     })
 }
 
-/// The groups of a screen with no keys of its own: the keys every page has, the steps on.
+/// The groups of a screen with no keys of its own: the keys every page has, the steps on, and
+/// `/` for the card search.
 #[must_use]
 pub fn everywhere_groups() -> Vec<SheetGroup> {
     sheet_groups(ScreenKeys {
+        page: vec![CARD_SEARCH_ROW],
         steps: true,
         ..ScreenKeys::default()
     })
@@ -254,6 +256,9 @@ pub const FILTER_NAME_KEY: &str = "/";
 /// The key that puts the cursor in the wide nav's card search, on a screen that answers no
 /// keys of its own.
 pub const CARD_SEARCH_KEY: &str = "/";
+
+/// The sheet's row for [`CARD_SEARCH_KEY`], on every page with no keys of its own.
+pub const CARD_SEARCH_ROW: SheetRow = (&[CARD_SEARCH_KEY], "Search cards");
 
 /// The sheet's row for [`FILTER_NAME_KEY`], on every screen with a filter.
 pub const FILTER_NAME_ROW: SheetRow = (&[FILTER_NAME_KEY], "Filter by name");
@@ -662,9 +667,13 @@ mod tests {
             outline(&everywhere_groups()),
             vec![
                 ("Navigation", vec!["gg", "Shift+G", "j", "k"]),
-                ("Page", vec!["t", "?", "Shift+H", "Esc"]),
+                ("Page", vec!["/", "t", "?", "Shift+H", "Esc"]),
                 ("In themes", vec!["↑", "h", "gg", "Enter"]),
             ]
+        );
+        assert!(
+            rows_of(&everywhere_groups()).contains(&CARD_SEARCH_ROW),
+            "/ says it searches cards"
         );
     }
 
@@ -674,7 +683,7 @@ mod tests {
             outline(&without_hint(everywhere_groups())),
             vec![
                 ("Navigation", vec!["gg", "Shift+G", "j", "k"]),
-                ("Page", vec!["t", "Shift+H", "Esc"]),
+                ("Page", vec!["/", "t", "Shift+H", "Esc"]),
                 ("In themes", vec!["↑", "h", "gg", "Enter"]),
             ]
         );
