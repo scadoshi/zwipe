@@ -4,6 +4,7 @@ use uuid::Uuid;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
 
+use crate::domain::metrics::models::card_stats::CardStats;
 use crate::domain::metrics::models::errors::MetricsError;
 use crate::domain::metrics::models::kinds::{AdminAction, AuditAction, EventKind};
 use crate::domain::metrics::models::lifetime_counters::LifetimeCounters;
@@ -94,6 +95,10 @@ impl<R: MetricsRepository> MetricsService for Service<R> {
 
     async fn public_metrics(&self) -> Result<PublicMetrics, MetricsError> {
         self.repo.public_metrics().await
+    }
+
+    async fn card_stats(&self, oracle_id: Uuid) -> Result<CardStats, MetricsError> {
+        self.repo.card_stats(oracle_id).await
     }
 
     async fn touch_last_active(&self, user_id: Uuid) -> Result<(), MetricsError> {

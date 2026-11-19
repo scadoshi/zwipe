@@ -147,11 +147,15 @@ const completeData = (entry) =>
   ["reason", "approved_by"].every((k) => typeof entry[k] === "string" && entry[k].trim() !== "") &&
   (entry.route === undefined || typeof entry.route === "string");
 
-/** Whether `entry` is a usable approval: every field of a path entry or a data change filled in. */
+/**
+ * Whether `entry` is a usable approval: every field of a path entry or a data change filled in. A
+ * path entry's `path` may be "", the reply's root, which a new route's status and body differ at.
+ */
 const complete = (entry) =>
   entry.data !== undefined
     ? completeData(entry)
-    : ["route", "path", "kind", "reason", "approved_by"].every((k) => typeof entry[k] === "string" && entry[k].trim() !== "");
+    : typeof entry.path === "string" &&
+      ["route", "kind", "reason", "approved_by"].every((k) => typeof entry[k] === "string" && entry[k].trim() !== "");
 
 /** The oracle id of a card object: its own, its `scryfall_data`'s, or its `card`'s. */
 const oracleOf = (value, depth = 0) => {

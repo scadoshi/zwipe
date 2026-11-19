@@ -269,6 +269,18 @@
    "as": "tester"
   },
   {
+   "name": "card stats, signed out",
+   "method": "GET",
+   "route": "/api/card/{oracle_id}/stats",
+   "path": "/api/card/{{card_oracle}}/stats"
+  },
+  {
+   "name": "commander stats, signed out",
+   "method": "GET",
+   "route": "/api/card/{oracle_id}/stats",
+   "path": "/api/card/{{commander_oracle}}/stats"
+  },
+  {
    "name": "oracle tag examples",
    "method": "GET",
    "route": "/api/card/oracle-tag/{slug}/examples",

@@ -1,5 +1,7 @@
 //! Metrics domain models and error types.
 
+/// One card's public numbers.
+pub mod card_stats;
 /// Service-layer error types.
 pub mod errors;
 /// Sparse event kinds and audit actions written one row at a time.
