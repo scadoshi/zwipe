@@ -295,7 +295,7 @@
    "route": "/api/card/lookup",
    "path": "/api/card/lookup",
    "body": {
-    "name": "goblin",
+    "name": "krenko",
     "types": [
      "Creature"
     ],
