@@ -212,10 +212,7 @@ fn rule<'css>(css: &'css str, selector: &str) -> &'css str {
 
 #[test]
 fn on_a_phone_the_stepper_ends_the_line_and_the_words_keep_their_width() {
-    let (_, phone) = components::MAGIC_CSS
-        .split_once("@media (max-width: 899px) {\n    /* A card's actions on a phone")
-        .unwrap();
-    let phone = phone.split_once("\n}\n").unwrap().0;
+    let phone = phone_block();
     assert!(rule(phone, ".card-action-split").contains("justify-content: space-between;"));
     assert!(
         !phone.contains(".card-action-words"),
@@ -243,18 +240,71 @@ fn from_900px_the_stepper_stands_as_far_from_the_icons_as_they_stand_from_each_o
     assert!(group.contains("gap: var(--space-2);"), "{group}");
 }
 
-#[test]
-fn on_a_touch_screen_the_icons_stand_far_enough_apart_that_their_reaches_never_meet() {
-    let (_, coarse) = components::MAGIC_CSS
-        .split_once("@media (pointer: coarse) {")
+/// The phone block of the card actions in `magic.css`.
+fn phone_block() -> &'static str {
+    let (_, phone) = components::MAGIC_CSS
+        .split_once("@media (max-width: 899px) {\n    /* A card's actions on a phone")
         .unwrap();
-    let coarse = coarse.split_once("\n}\n").unwrap().0;
-    let group = rule(coarse, ".card-action-group");
-    assert!(group.contains("gap: var(--space-3);"), "{group}");
-    let split = rule(coarse, ".card-action-split");
+    phone.split_once("\n}\n").unwrap().0
+}
+
+#[test]
+fn a_touch_screen_spaces_the_buttons_8px_apart_as_a_mouse_does() {
+    for block in components::MAGIC_CSS
+        .split("@media (pointer: coarse) {")
+        .skip(1)
+    {
+        let block = block.split_once("\n}\n").unwrap().0;
+        for selector in [
+            ".card-action-group {",
+            ".card-action-split {",
+            ".card-action-row {",
+        ] {
+            assert!(
+                !block.contains(selector),
+                "no touch rule sets a gap in {selector}...: {block}"
+            );
+        }
+    }
+    let phone = phone_block();
+    let row = rule(phone, ".card-action-row");
+    assert!(row.contains("gap: var(--space-2);"), "{row}");
+    assert!(row.contains("margin-top: var(--space-2);"), "{row}");
+    let split = rule(phone, ".card-action-split");
+    assert!(split.contains("column-gap: var(--space-2);"), "{split}");
+}
+
+#[test]
+fn on_a_touch_screen_the_kit_s_44px_tap_box_shrinks_to_half_the_gap_past_each_edge() {
+    let coarse = components::MAGIC_CSS
+        .split("@media (pointer: coarse) {")
+        .skip(1)
+        .map(|block| block.split_once("\n}\n").unwrap().0)
+        .find(|block| block.contains(".card-action-row .card-action-btn::after"))
+        .expect("a touch rule for the card actions' tap box");
+    let tap = rule(coarse, ".card-action-row .card-action-btn::after");
+    for want in [
+        "inset: calc(-1 * var(--space-1) - 1px);",
+        "width: auto;",
+        "height: auto;",
+        "transform: none;",
+    ] {
+        assert!(tap.contains(want), "{want} in {tap}");
+    }
+}
+
+#[test]
+fn on_a_phone_each_button_reaches_half_the_gap_so_neighbors_meet_at_its_middle() {
+    let phone = phone_block();
+    let reach = rule(phone, ".card-action-btn::before");
     assert!(
-        split.contains("column-gap: var(--space-3);"),
-        "the stepper too: {split}"
+        reach.contains("inset: calc(-1 * var(--space-1) - 1px);"),
+        "4px past the border, half the 8px gap: {reach}"
+    );
+    let last = rule(phone, ".card-action-row:last-child");
+    assert!(
+        last.contains("margin-bottom: var(--space-1);"),
+        "the bottom row's reach stays inside the row: {last}"
     );
 }
 
