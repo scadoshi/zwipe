@@ -30,7 +30,7 @@ pub(crate) enum UndoAction {
     /// A card was removed (qty crossed below 1, or a remove-screen swipe);
     /// undo re-creates it on its old board at its pre-burst quantity.
     Removed { entry: DeckEntry, baseline: i32 },
-    /// A debounced quantity burst posted; undo applies the inverse net.
+    /// A burst of quantity taps, recorded as they change the row; undo applies the inverse net.
     QuantityChanged {
         card_id: Uuid,
         card_name: String,

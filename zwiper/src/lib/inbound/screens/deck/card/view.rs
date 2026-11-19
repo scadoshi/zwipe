@@ -335,6 +335,20 @@ impl Driver {
                     |a| matches!(a, UndoAction::Removed { entry, .. } if entry.card.scryfall_data.id == card_id),
                 );
             }
+            Effect::ForgetQuantityChange {
+                card_id,
+                net,
+                baseline,
+            } => {
+                let mut log = undo_log.0;
+                take_newest_in(&mut log.write(), |a| {
+                    matches!(
+                        a,
+                        UndoAction::QuantityChanged { card_id: id, net: n, baseline: b, .. }
+                            if *id == card_id && *n == net && *b == baseline
+                    )
+                });
+            }
             Effect::ClearFilter => {
                 filter.write().clear();
             }
@@ -433,6 +447,7 @@ impl Driver {
             | Effect::RecordUndo(_)
             | Effect::PrintingSwapped { .. }
             | Effect::ForgetRemoval { .. }
+            | Effect::ForgetQuantityChange { .. }
             | Effect::ClearFilter
             | Effect::Refilter
             | Effect::Collapse
@@ -576,6 +591,7 @@ impl Driver {
             | Effect::RecordUndo(_)
             | Effect::PrintingSwapped { .. }
             | Effect::ForgetRemoval { .. }
+            | Effect::ForgetQuantityChange { .. }
             | Effect::ClearFilter
             | Effect::Refilter
             | Effect::Collapse

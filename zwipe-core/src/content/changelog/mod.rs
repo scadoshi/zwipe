@@ -70,6 +70,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, the top nav folds into the menu on narrower windows instead of wrapping onto two rows",
         "Deck lists and commander suggestions load faster",
         "After a dropped connection, a quantity change or board move tries once more on its own and lands only once",
+        "Undo right after a + or - on a card takes it back, even before it saves",
     ],
 }];
 
