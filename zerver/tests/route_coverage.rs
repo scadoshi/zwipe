@@ -15,9 +15,9 @@ use uuid::Uuid;
 use zwipe_core::http::endpoint::Method;
 use zwipe_core::http::paths::{
     COOKIE_LOGOUT_ROUTE, FEATURED_FLAVOR_ROUTE, FIXED_ROUTES, add_commander_maybeboard_card_route,
-    card_route, clear_deck_suppressions_route, clone_deck_route, collection_printings_route,
-    create_deck_card_route, deck_profile_route, deck_route, deck_tokens_route,
-    delete_deck_card_route, delete_deck_route, import_archidekt_deck_route,
+    card_route, card_stats_route, clear_deck_suppressions_route, clone_deck_route,
+    collection_printings_route, create_deck_card_route, deck_profile_route, deck_route,
+    deck_tokens_route, delete_deck_card_route, delete_deck_route, import_archidekt_deck_route,
     import_deck_cards_route, oracle_tag_examples_route, printings_route,
     remove_commander_maybeboard_card_route, search_deck_cards_route, share_deck_route,
     shared_deck_route, skip_deck_card_route, undismiss_commander_route, unskip_deck_card_route,
@@ -132,11 +132,12 @@ async fn every_id_carrying_route_matches_the_contract(pool: sqlx::PgPool) {
         assert_contract_route(&app, method, &path, true).await;
     }
 
-    // Public id routes answer 404 for a nil id, which is the handler talking
+    // Public id routes answer 404 or an empty 200 for a nil id, which is the handler talking
     // rather than the router, so they only get the weak check.
     for (method, path) in [
         (Method::Get, card_route(id)),
         (Method::Get, printings_route(id)),
+        (Method::Get, card_stats_route(id)),
         (Method::Get, shared_deck_route(id)),
         (
             Method::Get,

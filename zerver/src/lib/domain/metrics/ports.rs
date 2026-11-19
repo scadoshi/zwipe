@@ -6,6 +6,7 @@ use uuid::Uuid;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
 
+use crate::domain::metrics::models::card_stats::CardStats;
 use crate::domain::metrics::models::errors::MetricsError;
 use crate::domain::metrics::models::kinds::{AdminAction, AuditAction, EventKind};
 use crate::domain::metrics::models::lifetime_counters::LifetimeCounters;
@@ -95,6 +96,14 @@ pub trait MetricsRepository: Clone + Send + Sync + 'static {
     /// in from `retired_lifetime_counters`, so the totals never drop. Used for
     /// public stats.
     fn public_metrics(&self) -> impl Future<Output = Result<PublicMetrics, MetricsError>> + Send;
+
+    /// Reads one card's public numbers by oracle id: its mainboard decks and vested MVPs, its
+    /// pooled swipes, the decks it leads and its Swipe select picks. An unknown card reads as
+    /// zeros.
+    fn card_stats(
+        &self,
+        oracle_id: Uuid,
+    ) -> impl Future<Output = Result<CardStats, MetricsError>> + Send;
 
     /// Stamps `users.last_active_at` to now.
     fn touch_last_active(
@@ -192,6 +201,12 @@ pub trait MetricsService: Clone + Send + Sync + 'static {
 
     /// Aggregates app-wide totals across every user.
     fn public_metrics(&self) -> impl Future<Output = Result<PublicMetrics, MetricsError>> + Send;
+
+    /// One card's public numbers by oracle id, zeros for a card nobody has touched.
+    fn card_stats(
+        &self,
+        oracle_id: Uuid,
+    ) -> impl Future<Output = Result<CardStats, MetricsError>> + Send;
 
     /// Stamps `users.last_active_at` to now.
     fn touch_last_active(

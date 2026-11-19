@@ -1,6 +1,7 @@
 //! HTTP request/response contract structs shared between frontend and backend.
 
 pub mod auth;
+pub mod card;
 pub mod changelog;
 pub mod client;
 pub mod collection;

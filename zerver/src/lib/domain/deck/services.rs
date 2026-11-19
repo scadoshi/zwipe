@@ -23,7 +23,7 @@ use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
 use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, ImportMode, Quantity};
-use zwipe_core::http::contracts::suggestions::STAPLE_MIN_DECKS;
+use zwipe_core::http::contracts::suggestions::{RankedBy, STAPLE_MIN_DECKS};
 
 use crate::domain::card::models::synergy::SynergyPayload;
 use crate::domain::card::ports::{CardRepository, DeckServeContext};
@@ -31,11 +31,14 @@ use crate::domain::card::requests::get_scryfall_data::ScryfallDataIds;
 use crate::domain::deck::models::deck::activity::{self, Activity, HardPass};
 use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
+use crate::domain::deck::models::deck::commander_deal::{
+    CommanderDeal, CommanderDealPage, DealSignal,
+};
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
 use crate::domain::deck::models::deck::commander_suggestions::{
     self, ColorAffinity, CommanderDismissal, CommanderSuggestion, CommanderSuggestions,
     CommanderSuggestionsError, DeckTagProfile, MAX_PER_COLOR_IDENTITY, MAX_PROFILED_DECKS,
-    PlayStyleSummary, ProfiledDeck, SCORED_POOL, Staple,
+    PlayStyleSummary, ProfiledDeck, SCORED_POOL, ScoredCommander, Staple,
 };
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
@@ -164,6 +167,85 @@ where
                     card,
                     decks: count.decks,
                     deck_ids: count.deck_ids,
+                })
+            })
+            .collect())
+    }
+
+    /// Each of `decks`' tag profile, the first [`MAX_PROFILED_DECKS`] profiled and the rest
+    /// `None`, and the card role of every slug across them. Every shared tag a suggestion gives is
+    /// one of these slugs, so its role comes from here; the summary's role counts cover tags
+    /// beyond the ones it shows.
+    async fn profile_decks(
+        &self,
+        decks: &[ProfiledDeck],
+    ) -> Result<(Vec<Option<DeckTagProfile>>, HashMap<String, String>), CommanderSuggestionsError>
+    {
+        if decks.is_empty() {
+            return Ok((Vec::new(), HashMap::new()));
+        }
+        let profile_oracle_ids: Vec<Vec<Uuid>> = decks
+            .iter()
+            .take(MAX_PROFILED_DECKS)
+            .map(ProfiledDeck::profile_oracle_ids)
+            .collect();
+        let mut profiles: Vec<Option<DeckTagProfile>> = self
+            .card_repo
+            .deck_tag_profiles(&profile_oracle_ids)
+            .await
+            .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+        profiles.resize(decks.len(), None);
+        let slugs: Vec<String> = profiles
+            .iter()
+            .flatten()
+            .filter_map(|profile| profile.weights.as_object())
+            .flat_map(|weights| weights.keys().cloned())
+            .collect::<HashSet<String>>()
+            .into_iter()
+            .collect();
+        let tag_roles = self.card_repo.tag_roles(&slugs).await?;
+        Ok((profiles, tag_roles))
+    }
+
+    /// `scored` as suggestions, in its order: each commander's current printing, its shared tags
+    /// with their roles from `tag_roles`, and the colors the user's decks use, most-used first. A
+    /// commander the printing fetch misses is dropped.
+    async fn hydrate_suggestions(
+        &self,
+        scored: Vec<ScoredCommander>,
+        color_decks: &HashMap<String, u32>,
+        tag_roles: &HashMap<String, String>,
+    ) -> Result<Vec<CommanderSuggestion>, CommanderSuggestionsError> {
+        let scored_oracle_ids: Vec<Uuid> = scored.iter().map(|s| s.oracle_id).collect();
+        let mut cards_by_oracle: HashMap<Uuid, Card> = self
+            .card_repo
+            .fetch_latest_cards_by_oracle_ids(&scored_oracle_ids)
+            .await
+            .map_err(|e| CommanderSuggestionsError::Database(e.into()))?
+            .into_iter()
+            .filter_map(|card| card.scryfall_data.oracle_id.map(|oid| (oid, card)))
+            .collect();
+
+        // Hydration is unordered, so the scored order is re-imposed here.
+        Ok(scored
+            .into_iter()
+            .filter_map(|scored| {
+                let card = cards_by_oracle.remove(&scored.oracle_id)?;
+                let mut colors: Vec<ColorAffinity> = card
+                    .scryfall_data
+                    .color_identity
+                    .to_short_names()
+                    .into_iter()
+                    .filter_map(|color| {
+                        let decks = *color_decks.get(&color)?;
+                        (decks > 0).then_some(ColorAffinity { color, decks })
+                    })
+                    .collect();
+                colors.sort_by_key(|color| std::cmp::Reverse(color.decks));
+                Some(CommanderSuggestion {
+                    card,
+                    tags: commander_suggestions::shared_tags(scored.tag_slugs, tag_roles),
+                    colors,
                 })
             })
             .collect())
@@ -667,10 +749,6 @@ where
         self.deck_repo.clear_commander_maybeboard(user_id).await
     }
 
-    #[expect(
-        clippy::too_many_lines,
-        reason = "one pipeline in order: profile, summarize, score, cap and hydrate"
-    )]
     async fn commander_suggestions(
         &self,
         user_id: Uuid,
@@ -691,57 +769,15 @@ where
         // rather than an average of all of them. Decks past the most recent
         // MAX_PROFILED_DECKS carry only their colors. All the profiles come
         // from one query on one connection.
-        let profile_oracle_ids: Vec<Vec<Uuid>> = decks
-            .iter()
-            .take(MAX_PROFILED_DECKS)
-            .map(ProfiledDeck::profile_oracle_ids)
-            .collect();
-        let mut profiles: Vec<Option<DeckTagProfile>> = self
-            .card_repo
-            .deck_tag_profiles(&profile_oracle_ids)
-            .await
-            .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
-        profiles.resize(decks.len(), None);
-        // Every slug across the profiles in one role lookup, so the summary's
-        // role counts cover tags beyond the ones it shows. Every shared tag a
-        // suggestion gives is one of these slugs, so its role comes from here.
-        let slugs: Vec<String> = profiles
-            .iter()
-            .flatten()
-            .filter_map(|profile| profile.weights.as_object())
-            .flat_map(|weights| weights.keys().cloned())
-            .collect::<HashSet<String>>()
-            .into_iter()
-            .collect();
-        let tag_roles = self.card_repo.tag_roles(&slugs).await?;
+        let (profiles, tag_roles) = self.profile_decks(&decks).await?;
         let mut profile = commander_suggestions::summarize_profile(&decks, &profiles, &tag_roles);
         if let Some(profile) = profile.as_mut()
             && deck_count >= STAPLE_MIN_DECKS
         {
             profile.staples = self.fetch_staples(user_id).await?;
         }
-        let deck_profiles: Vec<serde_json::Value> = decks
-            .iter()
-            .zip(profiles)
-            .map(|(deck, profile)| {
-                serde_json::json!({
-                    "colors": deck.colors,
-                    "profile": profile.map(|profile| profile.weights),
-                })
-            })
-            .collect();
-        let deck_profiles = serde_json::Value::Array(deck_profiles);
-
-        // Decks per color: each deck counts once per color it has.
-        let mut color_decks: HashMap<String, u32> = HashMap::new();
-        for deck in &decks {
-            let colors: HashSet<&String> = deck.colors.iter().collect();
-            for color in colors {
-                let count = color_decks.entry(color.clone()).or_default();
-                // A display tally; it caps like the deck count.
-                *count = count.saturating_add(1);
-            }
-        }
+        let deck_profiles = deck_profiles_json(&decks, &profiles);
+        let color_decks = color_decks(&decks);
 
         let mut exclude_oracle_ids: Vec<Uuid> = decks
             .iter()
@@ -763,44 +799,69 @@ where
         let mut scored =
             commander_suggestions::cap_color_identities(scored, MAX_PER_COLOR_IDENTITY);
         scored.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
-        let scored_oracle_ids: Vec<Uuid> = scored.iter().map(|s| s.oracle_id).collect();
-        let mut cards_by_oracle: HashMap<Uuid, Card> = self
-            .card_repo
-            .fetch_latest_cards_by_oracle_ids(&scored_oracle_ids)
-            .await
-            .map_err(|e| CommanderSuggestionsError::Database(e.into()))?
-            .into_iter()
-            .filter_map(|card| card.scryfall_data.oracle_id.map(|oid| (oid, card)))
-            .collect();
-
-        // Hydration is unordered, so the scored order is re-imposed here.
-        let suggestions = scored
-            .into_iter()
-            .filter_map(|scored| {
-                let card = cards_by_oracle.remove(&scored.oracle_id)?;
-                let mut colors: Vec<ColorAffinity> = card
-                    .scryfall_data
-                    .color_identity
-                    .to_short_names()
-                    .into_iter()
-                    .filter_map(|color| {
-                        let decks = *color_decks.get(&color)?;
-                        (decks > 0).then_some(ColorAffinity { color, decks })
-                    })
-                    .collect();
-                colors.sort_by_key(|color| std::cmp::Reverse(color.decks));
-                Some(CommanderSuggestion {
-                    card,
-                    tags: commander_suggestions::shared_tags(scored.tag_slugs, &tag_roles),
-                    colors,
-                })
-            })
-            .collect();
+        let suggestions = self
+            .hydrate_suggestions(scored, &color_decks, &tag_roles)
+            .await?;
 
         Ok(CommanderSuggestions {
             suggestions,
             deck_count,
             profile,
+        })
+    }
+
+    async fn deal_commanders(
+        &self,
+        user_id: Uuid,
+        deal: CommanderDeal,
+    ) -> Result<CommanderDealPage, CommanderSuggestionsError> {
+        let decks = self.deck_repo.fetch_profiled_decks(user_id).await?;
+        let (profiles, tag_roles) = self.profile_decks(&decks).await?;
+        let maybeboard = self
+            .deck_repo
+            .fetch_commander_maybeboard_oracle_ids(user_id)
+            .await
+            .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+
+        let mut exclude: Vec<Uuid> = decks
+            .iter()
+            .filter_map(|deck| deck.commander_oracle_id)
+            .collect();
+        if !deal.keep_maybeboard {
+            exclude.extend(maybeboard.iter().copied());
+        }
+        exclude.extend(deal.exclude.iter().copied());
+
+        let deck_profiled = profiles.iter().flatten().any(|profile| {
+            profile
+                .weights
+                .as_object()
+                .is_some_and(|weights| !weights.is_empty())
+        });
+        let ranked_by = if deck_profiled
+            || self
+                .card_repo
+                .any_commander_tag_profile(&maybeboard)
+                .await?
+        {
+            RankedBy::Playstyle
+        } else {
+            RankedBy::Popularity
+        };
+
+        let signal = DealSignal {
+            user_id,
+            decks: deck_profiles_json(&decks, &profiles),
+            maybeboard,
+            exclude,
+        };
+        let scored = self.card_repo.score_commander_deal(&deal, &signal).await?;
+        let suggestions = self
+            .hydrate_suggestions(scored, &color_decks(&decks), &tag_roles)
+            .await?;
+        Ok(CommanderDealPage {
+            suggestions,
+            ranked_by,
         })
     }
 
@@ -1473,4 +1534,39 @@ fn too_large(mut names: Vec<String>) -> impl Iterator<Item = UnresolvedCard> {
         name,
         reason: "quantity too large".to_string(),
     })
+}
+
+/// The decks as the scoring statements read them: a JSON array of
+/// `{"colors": [WUBRG letters], "profile": {otag: weight} | null}`, one per deck, beside its
+/// profile in `profiles`.
+fn deck_profiles_json(
+    decks: &[ProfiledDeck],
+    profiles: &[Option<DeckTagProfile>],
+) -> serde_json::Value {
+    serde_json::Value::Array(
+        decks
+            .iter()
+            .zip(profiles)
+            .map(|(deck, profile)| {
+                serde_json::json!({
+                    "colors": deck.colors,
+                    "profile": profile.as_ref().map(|profile| profile.weights.clone()),
+                })
+            })
+            .collect(),
+    )
+}
+
+/// Decks per color: each deck counts once per color it has.
+fn color_decks(decks: &[ProfiledDeck]) -> HashMap<String, u32> {
+    let mut color_decks: HashMap<String, u32> = HashMap::new();
+    for deck in decks {
+        let colors: HashSet<&String> = deck.colors.iter().collect();
+        for color in colors {
+            let count = color_decks.entry(color.clone()).or_default();
+            // A display tally; it caps like the deck count.
+            *count = count.saturating_add(1);
+        }
+    }
+    color_decks
 }

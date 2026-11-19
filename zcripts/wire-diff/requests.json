@@ -269,6 +269,18 @@
    "as": "tester"
   },
   {
+   "name": "card stats, signed out",
+   "method": "GET",
+   "route": "/api/card/{oracle_id}/stats",
+   "path": "/api/card/{{card_oracle}}/stats"
+  },
+  {
+   "name": "commander stats, signed out",
+   "method": "GET",
+   "route": "/api/card/{oracle_id}/stats",
+   "path": "/api/card/{{commander_oracle}}/stats"
+  },
+  {
    "name": "oracle tag examples",
    "method": "GET",
    "route": "/api/card/oracle-tag/{slug}/examples",
@@ -377,6 +389,30 @@
    "route": "/api/commander/suggestions",
    "path": "/api/commander/suggestions",
    "as": "tester"
+  },
+  {
+   "name": "commander deal, first page",
+   "method": "POST",
+   "route": "/api/commander/deal",
+   "path": "/api/commander/deal",
+   "as": "tester",
+   "body": {
+    "limit": 10
+   }
+  },
+  {
+   "name": "commander deal, deck creation's next page",
+   "method": "POST",
+   "route": "/api/commander/deal",
+   "path": "/api/commander/deal",
+   "as": "tester",
+   "body": {
+    "format": "commander",
+    "offset": 10,
+    "limit": 10,
+    "exclude": ["{{commander_oracle}}"],
+    "keep_maybeboard": true
+   }
   },
   {
    "name": "deck tags",
@@ -790,6 +826,14 @@
     "/user/id",
     "/user/updated_at"
    ]
+  },
+  {
+   "name": "commander deal, no decks",
+   "method": "POST",
+   "route": "/api/commander/deal",
+   "path": "/api/commander/deal",
+   "as": "fresh",
+   "body": {}
   },
   {
    "name": "resend verification",

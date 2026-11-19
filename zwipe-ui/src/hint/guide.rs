@@ -92,7 +92,7 @@ pub const fn one_time_slug(hint: OneTimeHint) -> Option<&'static str> {
         OneTimeHint::OracleTagDictionary | OneTimeHint::OtagExamples => {
             Some("oracle-tag-dictionary")
         }
-        OneTimeHint::CommanderMaybeboard => Some("commander-maybeboard"),
+        OneTimeHint::CommanderMaybeboard | OneTimeHint::Commanders => Some("commander-maybeboard"),
         OneTimeHint::SuggestedCommanders => Some("playstyle"),
         OneTimeHint::Activity => Some("activity"),
         OneTimeHint::Profile

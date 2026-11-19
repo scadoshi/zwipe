@@ -10,5 +10,7 @@
   { "route": "/api/collection/printings/{oracle_id}", "path": "", "kind": "status", "reason": "new private route, owned printings (additive; main has no such route)", "approved_by": "composer" },
   { "route": "/api/collection/printings/{oracle_id}", "path": "", "kind": "type", "reason": "new private route, owned printings: main's 404 has no body", "approved_by": "composer" },
   { "route": "/api/collection/export", "path": "", "kind": "status", "reason": "new private route, collection export (additive; main has no such route)", "approved_by": "composer" },
-  { "route": "/api/collection/export", "path": "", "kind": "type", "reason": "new private route, collection export: main's 404 has no body", "approved_by": "composer" }
+  { "route": "/api/collection/export", "path": "", "kind": "type", "reason": "new private route, collection export: main's 404 has no body", "approved_by": "composer" },
+  { "route": "/api/commander/deal", "path": "", "kind": "status", "reason": "new signed-in route, the commander deal (additive; main has no such route)", "approved_by": "composer" },
+  { "route": "/api/commander/deal", "path": "", "kind": "type", "reason": "new signed-in route, the commander deal: main's 404 has no body", "approved_by": "composer" }
 ]

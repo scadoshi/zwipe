@@ -20,7 +20,7 @@ use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
 use crate::inbound::screens::collection::Collection;
-use crate::inbound::screens::commander_maybeboard::CommanderMaybeboard;
+use crate::inbound::screens::commanders::CommanderMaybeboard;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::deck::cards::add::AddDeckCard;
 use crate::inbound::screens::deck::cards::remove::RemoveDeckCard;
@@ -46,7 +46,7 @@ use crate::inbound::shell::{OpenFrame, PublicFrame};
 /// [`Shell`](crate::inbound::shell::Shell) from screen to screen, About and
 /// Privacy policy included. Privacy policy, About, a shared deck, the guides
 /// and Not found are open to everyone, and the rest need a session ([`AuthGate`]). `/changelog`
-/// redirects to About and `/config` to Settings.
+/// redirects to About, `/config` to Settings and `/maybeboard` to Commanders.
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 #[expect(missing_docs, reason = "each route field is the URL parameter its path names")]
@@ -54,6 +54,7 @@ use crate::inbound::shell::{OpenFrame, PublicFrame};
 pub enum Route {
     #[redirect("/changelog", || Route::About {})]
     #[redirect("/config", || Route::Config {})]
+    #[redirect("/maybeboard", || Route::CommanderMaybeboard {})]
     #[redirect("/decks/:deck_id/cards", |deck_id: Uuid| Route::ViewDeck { deck_id, view: Some(DeckView::Cards) })]
     // == public: Home instead, for a load with a live session ==
     #[layout(SignedOutGate)]
@@ -110,8 +111,9 @@ pub enum Route {
         /// Every deck the user has.
         #[route("/decks")]
         DeckList {},
-        /// Commanders saved for later from commander search.
-        #[route("/maybeboard")]
+        /// Commanders: the maybeboard and the suggested commanders. The old
+        /// `/maybeboard` redirects here.
+        #[route("/commanders")]
         CommanderMaybeboard {},
         /// The user's card collection: importing an export into it.
         #[route("/collection")]
@@ -265,7 +267,7 @@ mod tests {
             (Route::Config {}, "/settings".to_string()),
             (Route::Activity {}, "/activity".to_string()),
             (Route::DeckList {}, "/decks".to_string()),
-            (Route::CommanderMaybeboard {}, "/maybeboard".to_string()),
+            (Route::CommanderMaybeboard {}, "/commanders".to_string()),
             (Route::Collection {}, "/collection".to_string()),
             (Route::Playstyle {}, "/playstyle".to_string()),
             (Route::CreateDeck {}, "/decks/new".to_string()),

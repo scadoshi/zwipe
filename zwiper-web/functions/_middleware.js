@@ -20,6 +20,7 @@ const ROUTES = [
   "/activity",
   "/changelog",
   "/collection",
+  "/commanders",
   "/config",
   "/decks",
   "/decks/:deck_id",

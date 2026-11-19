@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::domain::card::Card;
+use crate::domain::card::search_card::card_filter::CardQuery;
+use crate::domain::deck::models::format::Format;
 
 /// Suggestions returned when the request names no `limit`.
 pub const DEFAULT_SUGGESTION_LIMIT: u32 = 10;
@@ -239,6 +241,65 @@ pub struct HttpDismissCommander {
 pub struct HttpClearedDismissals {
     /// Dismissals removed.
     pub cleared: u32,
+}
+
+/// Most oracle ids a deal request may leave out: the commanders already dealt this session. The
+/// server reads only the first this many.
+pub const MAX_DEAL_EXCLUDE: usize = 500;
+
+/// Body of `POST /api/commander/deal`: one page of the merged commander ranking over every
+/// commander the filter matches that can lead a deck in the format.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HttpCommanderDeal {
+    /// The card filter sheet's query, narrowing the candidates; every commander when absent. Its
+    /// sort is ignored: the ranking is the order.
+    #[serde(default)]
+    pub filter: Option<CardQuery>,
+    /// The format whose commander rules a candidate meets; Commander when absent.
+    #[serde(default)]
+    pub format: Option<Format>,
+    /// How many ranked commanders to skip, for the next page.
+    #[serde(default)]
+    pub offset: u32,
+    /// The page's size, clamped to [`MAX_SUGGESTION_LIMIT`]; [`DEFAULT_SUGGESTION_LIMIT`] when
+    /// absent.
+    #[serde(default = "default_deal_limit")]
+    pub limit: u32,
+    /// Oracle ids to leave out, the commanders already dealt; the first [`MAX_DEAL_EXCLUDE`] count.
+    #[serde(default)]
+    pub exclude: Vec<Uuid>,
+    /// Keeps the user's commander maybeboard among the candidates, still counting it as signal:
+    /// deck creation sends `true`, since saving a commander is often why a deck gets built.
+    /// Suggested leaves it `false`, so the maybeboard stays out.
+    #[serde(default)]
+    pub keep_maybeboard: bool,
+}
+
+/// [`HttpCommanderDeal::limit`] when the request names none.
+const fn default_deal_limit() -> u32 {
+    DEFAULT_SUGGESTION_LIMIT
+}
+
+/// Response of `POST /api/commander/deal`: one page of the ranking, best fit first.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HttpCommanderDealPage {
+    /// The page's commanders, each with the score terms behind it.
+    pub suggestions: Vec<HttpCommanderSuggestion>,
+    /// What the ranking is built from, for the client to word the list.
+    pub ranked_by: RankedBy,
+}
+
+/// What a commander ranking is built from.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum RankedBy {
+    /// The user's decks or saved commanders: their tags and colors lead.
+    Playstyle,
+    /// Nothing of the user's to go on, so popularity orders it.
+    Popularity,
+    /// A value from a newer server.
+    #[serde(other)]
+    Unknown,
 }
 
 #[cfg(test)]
@@ -496,6 +557,36 @@ mod tests {
 
         let cleared: HttpClearedDismissals = serde_json::from_str(r#"{"cleared":4}"#).unwrap();
         assert_eq!(cleared, HttpClearedDismissals { cleared: 4 });
+    }
+
+    #[test]
+    fn an_empty_deal_takes_every_default() {
+        let deal: HttpCommanderDeal = serde_json::from_value(serde_json::json!({})).unwrap();
+        assert_eq!(deal.filter, None, "every commander");
+        assert_eq!(deal.format, None);
+        assert_eq!(deal.offset, 0);
+        assert_eq!(deal.limit, DEFAULT_SUGGESTION_LIMIT);
+        assert_eq!(deal.exclude, Vec::<Uuid>::new());
+        assert!(
+            !deal.keep_maybeboard,
+            "Suggested's rule: the maybeboard stays out"
+        );
+    }
+
+    #[test]
+    fn a_deal_page_round_trips_and_a_newer_ranking_reads_as_unknown() {
+        let page = HttpCommanderDealPage {
+            suggestions: vec![],
+            ranked_by: RankedBy::Popularity,
+        };
+        let json = serde_json::to_value(&page).unwrap();
+        assert_eq!(json["ranked_by"], "popularity");
+        assert_eq!(
+            serde_json::from_value::<HttpCommanderDealPage>(json).unwrap(),
+            page
+        );
+        let newer: RankedBy = serde_json::from_value(serde_json::json!("collection")).unwrap();
+        assert_eq!(newer, RankedBy::Unknown);
     }
 }
 

@@ -212,7 +212,7 @@ body {
 
 /* A screen with a floating dock ends its content a dock's height above the
    footer, so at the page's end the dock rests between the two. */
-.web-scroll-screen:has(> .web-site-footer):has(.action-dock:not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *), .web-dock-pair:not(:is(.swipe-bottom-row, .screen .screen) *)) > .screen-content {
+.web-scroll-screen:has(> .web-site-footer):has(.action-dock:not(:is(.swipe-bottom-row, .web-dock-pair, .web-list-console, .bottom-sheet, .screen .screen) *), .web-dock-pair:not(:is(.swipe-bottom-row, .screen .screen) *)) > .screen-content {
     padding-bottom: 5rem;
 }
 
@@ -228,7 +228,7 @@ body {
    sheet or an overlay screen. The docked details panel shrinks from its
    foot by as much, so it keeps ending above the docks. */
 @supports (animation-timeline: view()) {
-    .web-scroll-screen :is(.action-dock, .web-dock-pair, .swipe-bottom-row):not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *) {
+    .web-scroll-screen :is(.action-dock, .web-dock-pair, .swipe-bottom-row):not(:is(.swipe-bottom-row, .web-dock-pair, .web-list-console, .bottom-sheet, .screen .screen) *) {
         animation: footer-rise linear both;
         animation-timeline: --site-footer;
         animation-range: entry 0px entry 100vh;
@@ -1703,13 +1703,12 @@ body {
     }
 }
 
-/* Below the breakpoint a card list's filter chips sit inside its panel,
-   under the header. */
-.web-card-group-filters {
+/* Staples takes its chip rows above the panel at every width, a panel gap
+   over it, as the deck page keeps its controls. */
+.web-playstyle-staples {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--space-3) var(--space-4) var(--space-1);
+    gap: var(--panel-gap);
 }
 
 /* A wide window draws Summary in the page's first row, so the profile
@@ -1738,15 +1737,6 @@ body {
         min-width: 0;
     }
 
-    /* Suggested commanders and Staples each take their chip rows above the
-       panel, a panel gap over it, as the deck page keeps its controls. */
-    .web-playstyle-suggested,
-    .web-playstyle-staples {
-        display: flex;
-        flex-direction: column;
-        gap: var(--panel-gap);
-    }
-
     /* A profile fold's body, at the accordion section's rhythm. */
     .web-playstyle-fold-body {
         display: flex;
@@ -1765,17 +1755,10 @@ body {
     .web-playstyle-colors { order: 2; }
     .web-playstyle-roles { order: 3; }
     .web-playstyle-tags { order: 4; }
-    .web-playstyle-suggested { order: 5; }
-    .web-playstyle-staples { order: 6; }
-    .web-playstyle-danger {
-        order: 7;
+    /* Staples is the last row, across the page, under the profile's pairs. */
+    .web-playstyle-staples {
+        order: 5;
         grid-column: 1 / -1;
-    }
-
-    .web-playstyle-danger > .settings-list {
-        width: 100%;
-        max-width: none;
-        margin: 0;
     }
 }
 
@@ -2177,11 +2160,32 @@ body {
     }
 }
 
-/* ---- Commander maybeboard ---- */
+/* ---- Commanders: the Maybeboard and Suggested columns ---- */
 
-/* The app's column: Quick add, Show and the list. A wide window gives it
-   the page's width, the list and Danger zone as full panels. */
-.web-maybeboard {
+/* A list's console row: its first control (Quick add, or the Show row) on the
+   left and the list's own filter on the right, the dock in the page's flow as
+   the swipe screens' bottom row holds one. */
+.web-list-console {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+}
+
+.web-list-console > :first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.web-list-console > .action-dock {
+    position: static;
+    flex: none;
+    margin: 0;
+}
+
+/* The app's column: the list's controls and the list. A wide window gives
+   it the page's width, the list and Danger zone as full panels. */
+.web-maybeboard,
+.web-suggested {
     max-width: 40rem;
     width: 100%;
     padding: 0 var(--space-4);
@@ -2189,6 +2193,7 @@ body {
 }
 
 @media (min-width: 900px) {
+    .web-suggested,
     .web-maybeboard {
         max-width: var(--web-page-max);
         padding: 0 var(--space-5) var(--space-6);
@@ -2196,21 +2201,21 @@ body {
 
     /* Quick add is as wide as its bar, as the deck page's is, so its results
        center and wrap under the field rather than across the page. */
-    .web-maybeboard > .quick-add {
+    .web-maybeboard .quick-add {
         width: fit-content;
         max-width: 100%;
     }
 
-    .web-maybeboard > .quick-add .input-clear-wrap:has(> #commander-maybeboard-search) {
+    .web-maybeboard .quick-add .input-clear-wrap:has(> #commander-maybeboard-search) {
         width: var(--web-field-max);
     }
 
-    .web-maybeboard > .quick-add > .quick-add-results {
+    .web-maybeboard .quick-add > .quick-add-results {
         contain: inline-size;
     }
 
-    .web-maybeboard > .settings-list,
-    .web-maybeboard > .card-group {
+    :is(.web-maybeboard, .web-suggested) > .settings-list,
+    :is(.web-maybeboard, .web-suggested) > .card-group {
         width: 100%;
         max-width: none;
         margin-left: 0;
@@ -2887,6 +2892,7 @@ body {
     .web-playstyle,
     .web-activity,
     .web-maybeboard,
+    .web-suggested,
     .web-deck-cards-controls,
     .web-deck-cards-list {
         max-width: none;
