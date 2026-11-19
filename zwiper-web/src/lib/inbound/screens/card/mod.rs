@@ -282,7 +282,9 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
         },
         (Status::NotFound, _) => rsx! {
             div { class: "screen-content web-card-list",
-                p { class: "web-card-message", {message.unwrap_or(card_lookup::NOT_FOUND)} }
+                p { class: "web-card-message",
+                    span { class: "chip-note", {message.unwrap_or(card_lookup::NOT_FOUND)} }
+                }
             }
         },
         (Status::Failed, _) => rsx! {

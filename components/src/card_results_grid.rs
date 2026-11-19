@@ -12,7 +12,9 @@ use crate::{CardSkeleton, CardStack, StackCard};
 #[component]
 pub fn CardResultsGrid(title: String, cards: Vec<Card>, on_select: EventHandler<Uuid>) -> Element {
     rsx! {
-        h1 { class: "deck-head-title card-list-title", "{title}" }
+        h1 { class: "card-list-title",
+            span { class: "chip-note", "{title}" }
+        }
         div { class: "deck-stacks card-list-results",
             for listed in cards {
                 div { key: "{listed.scryfall_data.id}",

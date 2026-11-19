@@ -96,7 +96,9 @@ pub fn Search(q: String) -> Element {
         },
         Status::NoMatch => rsx! {
             div { class: "screen-content card-page-list",
-                p { class: "card-page-message", {card_results::NO_MATCH} }
+                p { class: "card-page-message",
+                    span { class: "chip-note", {card_results::NO_MATCH} }
+                }
             }
         },
         Status::RateLimited | Status::Failed => {

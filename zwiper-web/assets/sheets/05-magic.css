@@ -2877,7 +2877,8 @@ html.keyboard-up .web-dock-pair {
 }
 
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-    .floatable.float-on-hover:hover {
+    .floatable.float-on-hover:hover,
+    .card-list-results .card-stack-card.floatable:hover {
         --float-reach: 1;
         transition-delay: var(--float-delay, 0s);
         animation-play-state: running;
@@ -4102,7 +4103,19 @@ nav.card-search-covers:has(.card-search-nav:focus-within) .nav-links {
    leads to, and the card search's results. */
 
 .card-list-title {
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    margin: 0;
+}
+
+/* Each card floats under a mouse as the deck page's featured cards do: their
+   float, at the defaults, rather than a stack card's toned-down one. */
+.card-list-results .card-stack-card {
+    --float-lift: initial;
+    --float-bob-lift: initial;
+    --float-grow: initial;
+    --float-swing: initial;
+    --float-delay: initial;
 }
 
 /* Its own grid, so the app, which loads no deck page sheet, lays it out
@@ -4125,12 +4138,14 @@ nav.card-search-covers:has(.card-search-nav:focus-within) .nav-links {
     }
 }
 
-/* The grid while its cards load: the heading's bar, centered at its line's
-   height, and each card ghost filling its cell as the card will. */
+/* The grid while its cards load: the heading's chip as a bar of its size,
+   centered, and each card ghost filling its cell as the card will. */
 .card-list-title-ghost {
-    width: 14rem;
-    height: 1.6rem;
-    margin: var(--space-1) auto;
+    width: 11rem;
+    font-size: 0.75rem;
+    height: calc(1lh + 2 * var(--space-1) + 2px);
+    margin: 0 auto;
+    border-radius: 0.6rem;
 }
 
 .card-list-results .skeleton-stack {
