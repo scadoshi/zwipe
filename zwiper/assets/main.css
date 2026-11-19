@@ -202,7 +202,7 @@ body {
  ============================= */
 
 /* Collection's File field: the File chip, then a button styled as a field filling the rest of
-   the row, on one line; a long file name ends in an ellipsis. The placeholder reads muted. */
+   the row, on one line; a long file name ends in an ellipsis. */
 .collection-file {
     flex-wrap: nowrap;
 }
@@ -215,14 +215,6 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
     text-align: left;
-}
-
-.input-placeholder {
-    color: var(--ink-text-muted, var(--text-muted));
-}
-
-.input-tappable {
-    cursor: pointer;
 }
 
 /* Collection's list under the import: the search row, then the list panel, a panel gap apart,

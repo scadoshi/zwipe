@@ -308,8 +308,8 @@ impl State {
         }
     }
 
-    /// Whether Submit would send: a file is picked or text pasted, and no import is out. A finished import clears
-    /// the file, so each pick sends once.
+    /// Whether Submit would send: a file is picked or text pasted, and no import is out. A finished
+    /// import clears the file, so each pick sends once.
     #[must_use]
     pub fn can_submit(&self) -> bool {
         self.file.is_some() && self.phase != Phase::Importing
