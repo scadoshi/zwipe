@@ -730,6 +730,8 @@ impl State {
         if self.entries.is_empty() {
             Some(NO_SUGGESTIONS.to_owned())
         } else if filtered.is_empty() {
+            // `filtered` is narrowed by the Show identity alone, so it stands for the
+            // identity-only list here. A filter added to this list must pass that list instead.
             Some(playstyle::suggested_empty_line(
                 &filtered,
                 self.identity.as_deref(),
