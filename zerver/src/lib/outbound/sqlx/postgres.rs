@@ -75,6 +75,20 @@ impl IsConstraintViolation for sqlx::Error {
 
 // == config ==
 
+/// Whether a pool's connections let Postgres compile a query's plan (JIT).
+///
+/// The request server turns it off: its queries are short, and on them JIT's compile time costs
+/// more than the run it speeds up. zervice keeps the server's setting for its long nightly
+/// queries.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Jit {
+    /// Keep the database server's own `jit` setting.
+    #[default]
+    On,
+    /// `SET jit = off` on every connection.
+    Off,
+}
+
 /// PostgreSQL connection pool with production-ready defaults.
 ///
 /// Wraps [`sqlx::postgres::PgPoolOptions`] with sensible defaults:
@@ -82,11 +96,20 @@ impl IsConstraintViolation for sqlx::Error {
 /// - 10 maximum connections (prevents overloading the database)
 /// - 5 minute idle timeout (releases unused connections)
 /// - 5 second acquire timeout (fails fast on pool exhaustion)
+///
+/// Every connection's session is in UTC, and has JIT off when built with [`Jit::Off`].
 #[derive(Debug)]
 pub struct PostgresPoolOptions(sqlx::postgres::PgPoolOptions);
 
 impl Default for PostgresPoolOptions {
     fn default() -> Self {
+        Self::new(Jit::default())
+    }
+}
+
+impl PostgresPoolOptions {
+    /// Creates pool options with optimized settings for production workloads, with `jit`.
+    pub fn new(jit: Jit) -> Self {
         Self(
             sqlx::postgres::PgPoolOptions::new()
                 .min_connections(MIN_CONNECTIONS)
@@ -98,21 +121,20 @@ impl Default for PostgresPoolOptions {
                 // regardless of where the process runs. TIMESTAMP columns
                 // store wall-clock values, so this is the only thing keeping
                 // them canonically UTC end-to-end.
-                .after_connect(|conn, _meta| {
+                .after_connect(move |conn, _meta| {
                     Box::pin(async move {
                         use sqlx::Executor;
                         conn.execute("SET TIME ZONE 'UTC'").await?;
+                        match jit {
+                            Jit::On => {}
+                            Jit::Off => {
+                                conn.execute("SET jit = off").await?;
+                            }
+                        }
                         Ok(())
                     })
                 }),
         )
-    }
-}
-
-impl PostgresPoolOptions {
-    /// Creates pool options with optimized settings for production workloads.
-    pub fn new() -> Self {
-        Self::default()
     }
 
     /// Establishes a connection pool to the database at the given URL.
@@ -202,7 +224,7 @@ impl Postgres {
         self
     }
 
-    /// Creates a new PostgreSQL connection with optimized pool settings.
+    /// Creates a new PostgreSQL connection with optimized pool settings and `jit`.
     ///
     /// The initial connect retries for about a minute: a simultaneous
     /// service restart (unattended-upgrades bouncing Postgres and this
@@ -213,13 +235,13 @@ impl Postgres {
     ///
     /// Returns an error if the connection cannot be established within the
     /// retry window.
-    pub async fn new(path: &str) -> anyhow::Result<Self> {
+    pub async fn new(path: &str, jit: Jit) -> anyhow::Result<Self> {
         const ATTEMPTS: u32 = 12;
         const RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(5);
         // Every attempt but the last is followed by a retry.
         let mut retried_attempts = 1..ATTEMPTS;
         let pool = loop {
-            match PostgresPoolOptions::new().connect(path).await {
+            match PostgresPoolOptions::new(jit).connect(path).await {
                 Ok(pool) => break pool,
                 Err(e) => {
                     let Some(attempt) = retried_attempts.next() else {

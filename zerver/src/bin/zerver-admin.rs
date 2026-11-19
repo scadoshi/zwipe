@@ -45,7 +45,7 @@ use zwipe::domain::{auth, card, metrics, user};
 use zwipe::inbound::admin::{self, NoticeOutcome, RenameNotice};
 use zwipe::inbound::external::scryfall::bulk::BulkEndpoint;
 use zwipe::outbound::resend::Resend;
-use zwipe::outbound::sqlx::postgres::Postgres;
+use zwipe::outbound::sqlx::postgres::{Jit, Postgres};
 use zwipe::wiring::{Auth, Cards, Metrics, Users};
 use zwipe_core::domain::Email;
 use zwipe_core::domain::site::SUPPORT_EMAIL;
@@ -357,7 +357,7 @@ impl Services {
         let config = Config::from_env()?;
         let support = Email::new(&config.support_email_address)
             .context("SUPPORT_EMAIL_ADDRESS is not an email")?;
-        let db = Postgres::new(&config.database_url).await?;
+        let db = Postgres::new(&config.database_url, Jit::On).await?;
         let resend = Resend::new(config.resend_api_key, config.resend_from_email);
         let auth = auth::services::Service::new(
             db.clone(),
