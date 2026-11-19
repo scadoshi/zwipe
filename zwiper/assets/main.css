@@ -378,6 +378,25 @@ body {
     box-sizing: border-box;
 }
 
+/* The page scrolls as one: nothing in its column shrinks to fit the screen,
+   and the details panel, which elsewhere scrolls its body inside a bounded
+   host, shows whole. */
+.screen-content.card-page {
+    overflow-y: auto;
+}
+
+.card-page > * {
+    flex-shrink: 0;
+}
+
+.card-page > .card-details-panel {
+    overflow: visible;
+}
+
+.card-page > .card-details-panel > .panel-body {
+    overflow-y: visible;
+}
+
 .card-page-image {
     width: 100%;
     max-width: 20rem;

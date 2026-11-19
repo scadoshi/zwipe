@@ -3962,6 +3962,12 @@ footer.site-footer .site-footer-note {
     }
 }
 
+/* The panel is as tall as its bar: Home's panels' 9rem floor would leave a
+   band under it. */
+.home-card-search {
+    min-height: 0;
+}
+
 .home-card-search-body {
     padding: var(--space-3) var(--space-4) var(--space-4);
 }
@@ -4117,10 +4123,24 @@ nav.card-search-covers:has(.card-search-nav:focus-within) .nav-links {
     text-align: center;
 }
 
-.card-list-results {
+/* Its own grid, so the app, which loads no deck page sheet, lays it out
+   too; two columns on a phone, each about half the screen, as the deck's
+   stacks are. Under .deck-stacks, so the deck page's own grid, which loads
+   after this sheet on the web, gives way. */
+.deck-stacks.card-list-results {
+    display: grid;
     width: 100%;
     grid-template-columns: repeat(auto-fit, minmax(12.5rem, 15rem));
+    gap: var(--space-2) var(--space-4);
+    align-items: start;
     justify-content: center;
+}
+
+@media (max-width: 599px) {
+    .deck-stacks.card-list-results {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-2);
+    }
 }
 
 /* The grid while its cards load: the heading's bar, centered at its line's
