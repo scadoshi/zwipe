@@ -1500,6 +1500,20 @@ body {
     }
 }
 
+/* Log in's Card search panel, where the nav folds, is spaced by the column's
+   gap alone; from 900px it is as wide as the hero under it. */
+.web-auth > .home-card-search {
+    margin-top: 0;
+}
+
+@media (min-width: 900px) {
+    .web-auth > .home-card-search {
+        width: 100%;
+        max-width: none;
+        box-sizing: border-box;
+    }
+}
+
 /* Home's Card search panel, where the nav folds: the bar spans the panel
    inside its gutters. */
 .home-card-search .card-search {
