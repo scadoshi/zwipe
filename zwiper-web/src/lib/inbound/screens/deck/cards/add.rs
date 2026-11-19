@@ -89,10 +89,19 @@ fn scope(source: AddSource) -> FilterScope {
     }
 }
 
-/// `filter` as `source`'s search sends it: normalized, and narrowed to owned cards on Collection
-/// while the user has a collection (`offered`), never on Search.
-fn sent(source: AddSource, filter: &CardQueryBuilder, offered: bool) -> CardQueryBuilder {
+/// `filter` as `source`'s search sends it: normalized, and on Collection held to the deck's
+/// limits in `context` and narrowed to owned cards while the user has a collection (`offered`).
+/// Search never narrows to owned cards.
+fn sent(
+    source: AddSource,
+    filter: &CardQueryBuilder,
+    offered: bool,
+    context: &AddContext,
+) -> CardQueryBuilder {
     let mut sent = normalized(filter);
+    if source == AddSource::Collection {
+        context.apply_deck_limits(&mut sent);
+    }
     sent.set_owned_only(source.owned_only() && offered);
     sent
 }
@@ -259,13 +268,13 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         }
         revealing.set(None);
         let offered = *offers_owned.peek();
-        let builder = sent(at, &filter.peek(), offered);
+        let builder = sent(at, &filter.peek(), offered, &context());
         let first = *first_run.peek();
         if first {
             first_run.set(false);
             let parked = stacks.write().take(deck_id);
             if let Some(parked) = parked
-                && sent(at, &parked.filter, offered) == builder
+                && sent(at, &parked.filter, offered, &context()) == builder
                 && !parked.cards.is_empty()
             {
                 exhausted.set(parked.exhausted);
@@ -415,7 +424,13 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         if *loading_more.peek() {
             return;
         }
-        let Ok(query) = sent(*source.peek(), &filter.peek(), *offers_owned.peek()).build() else {
+        let Ok(query) = sent(
+            *source.peek(),
+            &filter.peek(),
+            *offers_owned.peek(),
+            &context(),
+        )
+        .build() else {
             return;
         };
         loading_more.set(true);
@@ -946,7 +961,13 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             fetch_context.call(());
             return;
         }
-        let Ok(query) = sent(*source.peek(), &filter.peek(), *offers_owned.peek()).build() else {
+        let Ok(query) = sent(
+            *source.peek(),
+            &filter.peek(),
+            *offers_owned.peek(),
+            &context(),
+        )
+        .build() else {
             toast.warning("Filter is empty".to_string(), quick);
             return;
         };
@@ -1409,9 +1430,50 @@ fn promote_next(moved: bool, outcome: AddOutcome) -> PromoteNext {
 
 #[cfg(test)]
 mod tests {
+    use zwipe_core::domain::card::scryfall_data::colors::Color;
+    use zwipe_core::domain::deck::Format;
     use zwipe_ui::stores::in_flight::InFlightAdds;
 
     use super::*;
+
+    /// A U/R Commander deck's context.
+    fn izzet() -> AddContext {
+        AddContext {
+            format: Some(Format::Commander),
+            colors: Some(vec![Color::Blue, Color::Red].into()),
+            has_commander: true,
+            lands_at_target: false,
+        }
+    }
+
+    #[test]
+    fn collection_sends_the_deck_s_limits_with_owned_and_search_keeps_its_own_filter() {
+        let context = izzet();
+        let collection = sent(
+            AddSource::Collection,
+            &CardQueryBuilder::default(),
+            true,
+            &context,
+        );
+        assert_eq!(
+            collection.legalities_contains_any(),
+            Some(["commander".to_owned()].as_slice())
+        );
+        assert_eq!(collection.color_identity_within(), context.colors.as_ref());
+        assert!(collection.owned_only());
+        let search = sent(
+            AddSource::Search,
+            &CardQueryBuilder::default(),
+            true,
+            &context,
+        );
+        assert_eq!(
+            search.legalities_contains_any(),
+            None,
+            "Search sends its filter as set"
+        );
+        assert!(!search.owned_only());
+    }
 
     #[test]
     fn a_promote_undone_while_out_moves_back_once_when_it_lands_and_never_logs() {
