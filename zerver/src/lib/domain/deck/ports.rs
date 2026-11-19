@@ -438,6 +438,8 @@ pub trait DeckService: Clone + Send + Sync + 'static {
     /// `limit`, each with the reasons behind it. Decks in every format count.
     /// A user with no deck that has a commander or a mainboard card gets an
     /// empty list and `deck_count` 0.
+    /// A `limit` of 0 returns the deck count and the builder profile with no
+    /// commanders, and scores none.
     fn commander_suggestions(
         &self,
         user_id: uuid::Uuid,
