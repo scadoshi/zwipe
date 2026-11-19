@@ -776,6 +776,14 @@ where
         {
             profile.staples = self.fetch_staples(user_id).await?;
         }
+        // A zero limit asks for the profile alone, so nothing is scored.
+        if limit == 0 {
+            return Ok(CommanderSuggestions {
+                suggestions: vec![],
+                deck_count,
+                profile,
+            });
+        }
         let deck_profiles = deck_profiles_json(&decks, &profiles);
         let color_decks = color_decks(&decks);
 

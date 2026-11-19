@@ -370,3 +370,55 @@ async fn played_colors_break_a_tie_and_saved_colors_count_toward_a_save_s_fit(po
         "the rest tie on popularity"
     );
 }
+
+#[sqlx::test]
+async fn the_filter_s_owned_only_deals_the_user_s_collection_in_ranking_order(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, user_id) = app.register("collector").await;
+    app.verify_email(&user_id).await;
+    let owned_late = commander("Owned Late", "W", 40);
+    let owned_early = commander("Owned Early", "U", 10);
+    let printings = [
+        (owned_late.id(), owned_late.oracle_id().unwrap()),
+        (owned_early.id(), owned_early.oracle_id().unwrap()),
+    ];
+    seed_cards(
+        &pool,
+        &[
+            owned_late,
+            owned_early,
+            commander("Unowned Famous", "B", 1),
+            commander("Unowned Other", "R", 20),
+        ],
+    )
+    .await;
+    for (scryfall_data_id, oracle_id) in printings {
+        sqlx::query(
+            "INSERT INTO collection_cards (user_id, scryfall_data_id, oracle_id, finish, quantity) \
+             VALUES ($1, $2, $3, 'nonfoil', 1)",
+        )
+        .bind(user_id.parse::<Uuid>().unwrap())
+        .bind(scryfall_data_id)
+        .bind(oracle_id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+
+    let mut owned_filter = CardQueryBuilder::default();
+    owned_filter.set_owned_only(true);
+    let owned_filter = serde_json::to_value(owned_filter.build().unwrap()).unwrap();
+    let owned = deal(&app, &token, json!({ "filter": owned_filter })).await;
+    assert_eq!(names(&owned), ["Owned Early", "Owned Late"]);
+    let every = deal(&app, &token, json!({})).await;
+    assert_eq!(
+        names(&every),
+        [
+            "Unowned Famous",
+            "Owned Early",
+            "Unowned Other",
+            "Owned Late"
+        ],
+        "off by default"
+    );
+}

@@ -252,7 +252,8 @@ pub const MAX_DEAL_EXCLUDE: usize = 500;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HttpCommanderDeal {
     /// The card filter sheet's query, narrowing the candidates; every commander when absent. Its
-    /// sort is ignored: the ranking is the order.
+    /// sort is ignored: the ranking is the order. Its `owned_only` keeps the commanders in the
+    /// user's collection, as the card search does: the swipe's From toggle set to Collection.
     #[serde(default)]
     pub filter: Option<CardQuery>,
     /// The format whose commander rules a candidate meets; Commander when absent.

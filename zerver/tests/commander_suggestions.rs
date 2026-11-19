@@ -257,6 +257,39 @@ async fn goblin_user(app: &TestApp) -> (String, Uuid, Uuid) {
 }
 
 #[sqlx::test]
+async fn a_zero_limit_answers_the_profile_without_scoring_a_commander(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, _, _) = goblin_user(&app).await;
+    // Without the profiles table the scoring statement fails, so only a request that skips it
+    // can still answer.
+    sqlx::query("ALTER TABLE commander_tag_profiles RENAME TO commander_tag_profiles_gone")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let (status, _) = app
+        .get(
+            &format!("{COMMANDER_SUGGESTIONS_ROUTE}?limit=10"),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "a ranked list needs the scoring statement"
+    );
+
+    let body = suggestions(&app, &token, 0).await;
+    assert_eq!(body["suggestions"], json!([]), "no commanders");
+    assert_eq!(body["deck_count"], 1);
+    assert!(
+        body["profile"]["tags"]
+            .as_array()
+            .is_some_and(|tags| !tags.is_empty()),
+        "the builder profile still comes: {body}"
+    );
+}
+
+#[sqlx::test]
 async fn cold_start_is_empty_with_zero_decks(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, uid) = app.register("coldstart").await;

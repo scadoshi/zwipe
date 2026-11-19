@@ -256,7 +256,8 @@ impl From<CommanderSuggestion> for HttpCommanderSuggestion {
 #[derive(Debug, Deserialize)]
 pub struct SuggestionsQuery {
     /// Suggestions wanted; `DEFAULT_SUGGESTION_LIMIT` when absent, clamped to
-    /// `MAX_SUGGESTION_LIMIT`.
+    /// `MAX_SUGGESTION_LIMIT`. 0 answers the builder profile alone, scoring
+    /// nothing.
     pub limit: Option<u32>,
 }
 
