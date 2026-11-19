@@ -149,7 +149,8 @@ pub enum Status {
 /// What a user does on the card screen, and each reply the client hands back.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
-    /// Opens the screen from its route.
+    /// Opens the screen from its route. The route the screen is already on, with no ask, does
+    /// nothing: that is the screen's own [`Effect::Replace`] dropping an ask.
     Load {
         /// The route's parts.
         open: Open,
@@ -357,6 +358,11 @@ impl State {
     /// Opens the screen at `open`: drops a Send to ask from the route at once, keeping it for
     /// when the card shows if a session exists, then asks for what the route names.
     fn load(&mut self, open: Open, send: bool, signed_in: bool) -> Vec<Effect> {
+        // The route the screen is on, without an ask, is the screen's own Replace dropping the
+        // ask: the card is already loading or shown, and an asked-for Send to still waits.
+        if !send && self.open.as_ref() == Some(&open) {
+            return Vec::new();
+        }
         self.open = Some(open);
         self.send_pending = send && signed_in;
         let mut effects = Vec::new();

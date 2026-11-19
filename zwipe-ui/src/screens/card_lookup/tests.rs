@@ -507,3 +507,37 @@ fn the_send_to_ask_reads_back_from_its_query_value_and_nothing_else_does() {
         assert!(other.parse::<Ask>().is_err(), "{other:?}");
     }
 }
+
+#[test]
+fn the_ask_leaving_the_route_reloads_nothing_and_keeps_send_to_asked() {
+    let (mut state, ticket, _) = by_name("bind", true, true);
+    // The client hears its own Replace as the route changing: the same card, no ask.
+    assert_eq!(
+        state.update(Action::Load {
+            open: named("bind"),
+            send: false,
+            signed_in: true,
+        }),
+        vec![],
+        "no second fetch"
+    );
+    let bind = card("Bind");
+    assert_eq!(
+        state.update(Action::Named {
+            ticket,
+            cards: vec![bind.clone()]
+        }),
+        vec![Effect::OpenSendTo(Box::new(bind))],
+        "the first fetch still answers and the ask still opens Send to"
+    );
+}
+
+#[test]
+fn another_card_in_place_loads_it() {
+    let (mut state, _, _) = by_name("bind", false, true);
+    let effects = state.update(load(named("sol-ring")));
+    assert!(
+        matches!(effects.last(), Some(Effect::FetchNamed { slug, .. }) if slug.as_str() == "sol-ring"),
+        "{effects:?}"
+    );
+}
