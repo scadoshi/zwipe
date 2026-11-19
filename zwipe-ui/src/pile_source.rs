@@ -21,9 +21,10 @@ pub enum Source {
 /// [`Source::Collection`] is on offer.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Holdings {
-    /// No summary yet, a failed one, an older server, or an empty collection.
+    /// Nothing known to be held: an empty collection, or no summary yet, a failed one or an
+    /// older server.
     #[default]
-    Unknown,
+    Empty,
     /// The collection holds something.
     Held,
 }
@@ -35,7 +36,7 @@ impl Holdings {
         if has_collection {
             Self::Held
         } else {
-            Self::Unknown
+            Self::Empty
         }
     }
 

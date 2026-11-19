@@ -1137,7 +1137,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             AddSource::Search | AddSource::Collection => ctx.format,
             AddSource::Maybeboard => None,
         },
-        // The maybeboard source filters in memory, so only the search source offers it.
         ..SheetConfig::default()
     };
     let panel_key = format!("{at:?}-{}-{}", deck.read().is_some(), ctx.lands_at_target);
