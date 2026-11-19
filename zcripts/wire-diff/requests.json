@@ -306,6 +306,15 @@
    "as": "tester"
   },
   {
+   "name": "card lookup, a split card's name without its slashes",
+   "method": "POST",
+   "route": "/api/card/lookup",
+   "path": "/api/card/lookup",
+   "body": {
+    "name": "sink into stupor soporific"
+   }
+  },
+  {
    "name": "named cards, signed out",
    "method": "GET",
    "route": "/api/card/named/{name_slug}",

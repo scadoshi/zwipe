@@ -285,6 +285,68 @@ async fn a_name_of_only_punctuation_is_refused_rather_than_searching_everything(
 }
 
 #[sqlx::test]
+async fn a_name_matches_however_its_punctuation_and_spaces_are_typed(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    seed_cards(
+        &pool,
+        &[
+            card("Fire // Ice").mono("R"),
+            card("Bounty: Miron Tillas Jr. // Wanted!").mono("B"),
+            card("Lightning Bolt").mono("R"),
+        ],
+    )
+    .await;
+    for (typed, want) in [
+        ("fire ice", "Fire // Ice"),
+        ("fire // ice", "Fire // Ice"),
+        ("fire  ice", "Fire // Ice"),
+        ("bounty miron", "Bounty: Miron Tillas Jr. // Wanted!"),
+        ("bounty: miron", "Bounty: Miron Tillas Jr. // Wanted!"),
+        ("tillas jr wanted", "Bounty: Miron Tillas Jr. // Wanted!"),
+    ] {
+        let (status, results) = app
+            .post(CARD_LOOKUP_ROUTE, json!({ "name": typed }), None)
+            .await;
+        assert_eq!(status, StatusCode::OK, "{typed:?}: {results}");
+        assert_eq!(names(&results), [want], "{typed:?}");
+    }
+}
+
+#[sqlx::test]
+async fn the_whole_name_leads_then_a_name_that_starts_with_it_then_a_word_that_does(
+    pool: sqlx::PgPool,
+) {
+    let app = TestApp::new(pool.clone());
+    let mut cards: Vec<_> = (1..=35)
+        .map(|n| card(&format!("Consolidate {n:02}")).mono("W"))
+        .collect();
+    cards.extend([
+        card("Gift of Solace").mono("W"),
+        card("Solemn Simulacrum").mono("W"),
+        card("Sol Ring").mono("W"),
+        card("Sol").mono("W"),
+    ]);
+    seed_cards(&pool, &cards).await;
+
+    let (status, results) = app
+        .post(CARD_LOOKUP_ROUTE, json!({ "name": "sol" }), None)
+        .await;
+    assert_eq!(status, StatusCode::OK, "{results}");
+    let in_order: Vec<&str> = results
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["scryfall_data"]["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        in_order.get(..4),
+        Some(&["Sol", "Sol Ring", "Solemn Simulacrum", "Gift of Solace"][..]),
+        "{in_order:?}"
+    );
+    assert_eq!(in_order.len(), usize::try_from(LOOKUP_LIMIT).unwrap());
+}
+
+#[sqlx::test]
 async fn no_answer_is_cached_since_a_signed_in_one_follows_the_user_s_setting(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     seed_cards(&pool, &[card("Lightning Bolt").mono("R")]).await;

@@ -11,6 +11,7 @@ use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
 use zwipe_core::domain::card::slug::CardSlug;
 use zwipe_core::http::contracts::card::HttpCardLookup;
@@ -377,13 +378,16 @@ impl<R: CardRepository> CardService for Service<R> {
 
 /// The query a lookup runs, its chips read as the filter's are by default: a type line holding
 /// any of the types, a color identity equal to the colors, and any of the roles. At most
-/// [`LOOKUP_LIMIT`] cards, from the first, in the search's own order.
+/// [`LOOKUP_LIMIT`] cards, best match first: the whole name, then a name whose first word is
+/// the name typed, then one that starts with it, then one with a word that does, then the rest,
+/// each tier by popularity.
 fn lookup_query(lookup: &HttpCardLookup) -> Result<CardQuery, InvalidCardCriteria> {
     let mut builder = CardQueryBuilder::new();
     builder
         .set_name_contains(lookup.name().as_str())
         .set_type_line_contains_any(lookup.types().iter().map(CardTypeWord::as_str))
         .set_card_roles_contains_any(lookup.card_roles().iter().map(ToString::to_string))
+        .set_sort(CardSortKey::BestMatch)
         .set_limit(LOOKUP_LIMIT);
     // No colors leaves identity open; an empty set would mean colorless.
     if !lookup.colors().is_empty() {

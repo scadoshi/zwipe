@@ -49,18 +49,20 @@ impl CardCriteria {
         let cp = &card.card_profile;
 
         // == text ==
-        if let Some(q) = self.name_contains()
-            && !card_filter::strip_punctuation(&sd.name)
+        // A name compares with each run of spaces as one, on both sides.
+        let name_holds = |q: &str| {
+            card_filter::collapse_spaces(&card_filter::strip_punctuation(&sd.name))
                 .to_lowercase()
-                .contains(&q.to_lowercase())
+                .contains(&card_filter::collapse_spaces(q).to_lowercase())
+        };
+        if let Some(q) = self.name_contains()
+            && !name_holds(q)
         {
             return false;
         }
 
         if let Some(q) = self.name_not_contains()
-            && card_filter::strip_punctuation(&sd.name)
-                .to_lowercase()
-                .contains(&q.to_lowercase())
+            && name_holds(q)
         {
             return false;
         }

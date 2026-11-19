@@ -52,9 +52,18 @@ pub fn strip_punctuation(s: &str) -> String {
     kept.trim().to_owned()
 }
 
+/// `s` with each run of whitespace made one space and the ends trimmed: the form a card name
+/// is matched in, after [`strip_punctuation`]. Stripping "Fire // Ice" leaves two spaces between
+/// the words, so a name search compares both sides this way and "fire ice" finds it. The server
+/// collapses the stored name the same way in SQL.
+#[must_use]
+pub fn collapse_spaces(s: &str) -> String {
+    s.split_whitespace().collect::<Vec<&str>>().join(" ")
+}
+
 #[cfg(test)]
 mod tests {
-    use super::strip_punctuation;
+    use super::{collapse_spaces, strip_punctuation};
 
     #[test]
     fn a_comma_with_no_space_still_splits_the_words() {
@@ -74,6 +83,16 @@ mod tests {
             "fire  ice",
             "the server strips \"Fire // Ice\" to two spaces, so the query keeps them"
         );
+    }
+
+    #[test]
+    fn collapsing_spaces_makes_a_split_card_s_name_read_as_typed() {
+        assert_eq!(
+            collapse_spaces(&strip_punctuation("Fire // Ice")),
+            "Fire Ice"
+        );
+        assert_eq!(collapse_spaces("  fire \t  ice "), "fire ice");
+        assert_eq!(collapse_spaces(""), "");
     }
 
     #[test]

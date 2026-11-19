@@ -19,6 +19,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::search_card::card_filter;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::criteria::PLAYABLE_LAYOUTS;
@@ -250,9 +251,10 @@ const BEST_MATCH_POPULARITY: &str = "LEAST(latest_cards.edhrec_rank, \
 const VERY_POPULAR: i64 = 300;
 
 /// A name folded for a best match's word check: hyphens break words ("The Ur-Dragon" holds the
-/// word "Dragon"), then the rest of the punctuation goes, as the name filter strips it.
-const WORDS_NAME: &str =
-    "regexp_replace(regexp_replace(f_unaccent(name), '-', ' ', 'g'), '[^a-zA-Z0-9 ]', '', 'g')";
+/// word "Dragon"), then the rest of the punctuation goes and each run of spaces is one, as the
+/// name filter folds it.
+const WORDS_NAME: &str = "regexp_replace(regexp_replace(regexp_replace(f_unaccent(name), '-', ' ', 'g'), \
+     '[^a-zA-Z0-9 ]', '', 'g'), ' {2,}', ' ', 'g')";
 
 /// The popularity join, aliased so it exposes only `pop_decks`, never a bare
 /// `name`/`oracle_id`/`decks`, which would collide with `latest_cards` and the
@@ -658,9 +660,11 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         // Fold accents, then strip punctuation, from DB columns for accent- and
         // punctuation-insensitive text search. The query values are already
-        // folded and stripped the same way by CardQueryBuilder setters.
-        const STRIP_NAME: &str =
-            "regexp_replace(f_unaccent(name), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+        // folded and stripped the same way by CardQueryBuilder setters. A name
+        // also makes each run of spaces one, as its query value does here, so
+        // "fire ice" finds Fire // Ice.
+        const STRIP_NAME: &str = "regexp_replace(regexp_replace(f_unaccent(name), '[^a-zA-Z0-9 ]', '', 'g'), \
+             ' {2,}', ' ', 'g') ILIKE ";
         const STRIP_TYPE: &str =
             "regexp_replace(f_unaccent(type_line), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
         const STRIP_ORACLE: &str =
@@ -873,12 +877,15 @@ impl CardRepository for MyPostgres {
             sep.push("latest_cards.layout NOT IN ('token', 'double_faced_token', 'emblem')");
         }
 
-        if let Some(query_string) = &criteria.name_contains() {
+        if let Some(query_string) = criteria.name_contains().map(card_filter::collapse_spaces) {
             sep.push(STRIP_NAME);
             sep.push_bind_unseparated(format!("%{query_string}%"));
         }
 
-        if let Some(query_string) = &criteria.name_not_contains() {
+        if let Some(query_string) = criteria
+            .name_not_contains()
+            .map(card_filter::collapse_spaces)
+        {
             sep.push("NOT (");
             sep.push_unseparated(STRIP_NAME);
             sep.push_bind_unseparated(format!("%{query_string}%"));
@@ -1570,12 +1577,13 @@ impl CardRepository for MyPostgres {
             // "bolt" offers Lightning Bolt and "ring" Sol Ring; a match inside
             // a word never lifts.
             let push_tiers = |qb: &mut QueryBuilder<sqlx::Postgres>, lift: bool| {
-                let Some(query_string) = criteria.name_contains() else {
+                let Some(query_string) = criteria.name_contains().map(card_filter::collapse_spaces)
+                else {
                     return;
                 };
                 qb.push("CASE");
                 let tiers = [
-                    query_string.to_owned(),
+                    query_string.clone(),
                     format!("{query_string} %"),
                     format!("{query_string}%"),
                     format!("% {query_string}%"),
