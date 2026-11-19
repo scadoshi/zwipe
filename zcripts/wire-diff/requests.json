@@ -331,7 +331,10 @@
    "method": "GET",
    "route": "/api/collection/export",
    "path": "/api/collection/export",
-   "as": "tester"
+   "as": "tester",
+   "mask": [
+    "/file_name"
+   ]
   },
   {
    "name": "user",
