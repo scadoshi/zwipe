@@ -1,5 +1,5 @@
 //! The card page in the app at `/card/<slug>` and `/card/<slug>/<id>`, over the shared
-//! [`card_lookup`] model: the web's card page at phone width. One card shows its image, its
+//! `card_lookup` model: the web's card page at phone width. One card shows its image, its
 //! details with Printings, and its stats widgets, with Send to and Share in the action dock.
 //! Several cards that share a name show in the results grid, each opening its printing. Share
 //! copies the card's link.

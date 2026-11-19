@@ -1,6 +1,6 @@
 //! The card search in the app: its lookup, signed in with a fresh session when one is held, so
 //! the user's Universes Beyond setting applies, else signed out; and its routes, the card page
-//! and the results page, which [`use_app_search`] drives Home's Card search panel with.
+//! and the results page, which `use_app_search` drives Home's Card search panel with.
 
 use std::time::Duration;
 
