@@ -925,9 +925,10 @@ i.ms.ms-cost.ms-gp {
     margin-top: var(--space-2);
 }
 
-/* The bar's first line: the icons in one group, then the stepper. */
+/* The bar's first line: the icons in one group, then the stepper, a gap
+   apart as the icons are, so the line reads as one row of controls. */
 .card-action-split {
-    column-gap: var(--space-5);
+    column-gap: var(--space-2);
 }
 
 .card-action-group {
@@ -940,11 +941,15 @@ i.ms.ms-cost.ms-gp {
     display: none;
 }
 
-/* On a touch screen the icons stand as far apart as the row's buttons, so
-   their tap reaches never meet. */
+/* On a touch screen the icons and the stepper stand as far apart as the
+   row's buttons, so their tap reaches never meet. */
 @media (pointer: coarse) {
     .card-action-group {
         gap: var(--space-3);
+    }
+
+    .card-action-split {
+        column-gap: var(--space-3);
     }
 }
 

@@ -186,9 +186,9 @@ fn on_a_phone_the_stepper_ends_the_line_and_an_odd_block_s_first_word_spans_both
 }
 
 #[test]
-fn from_900px_the_stepper_stands_24px_after_the_icons() {
+fn from_900px_the_stepper_stands_as_far_from_the_icons_as_they_stand_from_each_other() {
     let split = rule(components::MAGIC_CSS, "\n.card-action-split");
-    assert!(split.contains("column-gap: var(--space-5);"), "{split}");
+    assert!(split.contains("column-gap: var(--space-2);"), "{split}");
     let group = rule(components::MAGIC_CSS, "\n.card-action-group");
     assert!(group.contains("gap: var(--space-2);"), "{group}");
 }
@@ -198,8 +198,14 @@ fn on_a_touch_screen_the_icons_stand_far_enough_apart_that_their_reaches_never_m
     let (_, coarse) = components::MAGIC_CSS
         .split_once("@media (pointer: coarse) {")
         .unwrap();
+    let coarse = coarse.split_once("\n}\n").unwrap().0;
     let group = rule(coarse, ".card-action-group");
     assert!(group.contains("gap: var(--space-3);"), "{group}");
+    let split = rule(coarse, ".card-action-split");
+    assert!(
+        split.contains("column-gap: var(--space-3);"),
+        "the stepper too: {split}"
+    );
 }
 
 #[test]
