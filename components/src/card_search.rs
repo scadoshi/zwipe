@@ -211,9 +211,12 @@ pub fn CardSearchBar(
                         Key::ArrowDown => Action::Step(Step::Down),
                         Key::ArrowUp => Action::Step(Step::Up),
                         Key::Enter => Action::Enter,
-                        Key::Escape if place == SearchPlace::Nav => {
+                        // Escape empties the box and leaves the cursor in it, so the dropdown
+                        // closes and the next letter starts a new search.
+                        Key::Escape => {
                             event.prevent_default();
-                            opened.call(());
+                            event.stop_propagation();
+                            on_action.call(Action::Clear);
                             return;
                         }
                         _ => return,

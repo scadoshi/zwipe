@@ -334,7 +334,8 @@ fn back_after_escape<T>(closed: bool, back: Option<T>) -> Option<T> {
 /// The page-wide keys. While a dialog is open the kit's own listener runs
 /// Escape and Enter, and the kit's theme sheet handles its arrows and
 /// Enter, so this one steps aside. Otherwise Escape in a text field only
-/// leaves the field; anywhere else it sends `true` to the root, which closes
+/// leaves the field, except the card search's box, whose own Escape empties it
+/// and keeps the cursor there; anywhere else it sends `true` to the root, which closes
 /// the top overlay unless it is the deck's Cards layer ([`EscKeeps`]), or,
 /// with nothing to close on a deck's Add, Remove or Edit, goes back as the
 /// screen's Back button does. Enter with nothing focused submits the page's form when it has exactly
@@ -359,7 +360,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         e.preventDefault();
         if (inField) {
-            focus.blur();
+            if (!focus.closest('.card-search')) focus.blur();
             return;
         }
         setTimeout(() => dioxus.send(true), 0);
@@ -540,12 +541,13 @@ mod tests {
             .split("if (e.key === 'Escape') {")
             .nth(1)
             .unwrap_or_default();
-        let blur =
-            esc.find("if (inField) {\n            focus.blur();\n            return;\n        }");
+        let blur = esc.find(
+            "if (inField) {\n            if (!focus.closest('.card-search')) focus.blur();\n            return;\n        }",
+        );
         let send = esc.find("dioxus.send(true)");
         assert!(
             blur.is_some_and(|b| send.is_some_and(|s| b < s)),
-            "a focused field blurs and the key goes no further: {KEYS_JS}"
+            "a focused field blurs, the card search's box keeps the cursor (its own Escape empties it), and the key goes no further: {KEYS_JS}"
         );
         assert!(
             KEYS_JS.contains("const inField = focus && focus.closest('input, textarea, select, [contenteditable=\"true\"]');"),
