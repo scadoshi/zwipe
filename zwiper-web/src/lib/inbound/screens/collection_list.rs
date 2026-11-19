@@ -29,7 +29,9 @@ use zwipe_ui::deck_cards::columns::Side;
 use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
 use zwipe_ui::deck_cards::stacks::{CardsView, Reveal};
 use zwipe_ui::screens::collection_list::stacks::{self, Stack, StackCard};
-use zwipe_ui::screens::collection_list::{self, Action, Effect, RowKey, State, Status, row_tags};
+use zwipe_ui::screens::collection_list::{
+    self, Action, Effect, RowKey, State, Status, row_label, row_tags,
+};
 use zwipe_ui::shortcuts::ListLayout;
 use zwipe_ui::toast::{Toast, ToastKind};
 
@@ -399,8 +401,8 @@ fn sections(stacks: &[Stack]) -> Vec<(DeckSection, Vec<RowInfo>)> {
 }
 
 /// The open stack card's drawer, the deck page's: the card's details with Image, Printings and
-/// Send to in its foot, above them a line for each of its rows with that row's finish, condition
-/// and language and its copies stepper. Mounted, closed, on the first card before any click, so
+/// Send to in its foot, above them a line for each of its rows with that row's label
+/// ([`row_label`]) and its copies stepper. Mounted, closed, on the first card before any click, so
 /// it slides in and out; nothing while no card is listed.
 #[component]
 fn CollectionStackDrawer(
@@ -441,10 +443,7 @@ fn CollectionStackDrawer(
     let footer = rsx! {
         for row in shown.rows {
             div { key: "{row.key.id()}", class: "card-action-row",
-                // The first tag is the copies, which the stepper shows.
-                for tag in row_tags(&row).into_iter().skip(1) {
-                    span { class: "card-row-stat", "{tag}" }
-                }
+                span { class: "card-row-stat", {row_label(&row)} }
                 CardEditButtons {
                     qty: row.copies,
                     on_qty_change: row.editable.then(|| {
