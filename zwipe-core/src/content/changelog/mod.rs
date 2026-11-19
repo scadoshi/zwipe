@@ -66,6 +66,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Send to is a paper-plane button",
         "An open sheet keeps its size when a toast shows, and the toast sits in front",
         "On Android, Send to, Oracle tag examples and the update screen show their header below the status bar",
+        "A card row keeps its icon buttons together with - and + by the count, and puts word buttons on rows of their own",
     ],
 }];
 
