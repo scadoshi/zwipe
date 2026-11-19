@@ -75,6 +75,17 @@ impl IsConstraintViolation for sqlx::Error {
 
 // == config ==
 
+/// What a pool's connections serve, which decides whether Postgres may JIT-compile their plans.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Workload {
+    /// zerver's request handling: short, indexed queries, for which compiling a plan costs more
+    /// than running it. Each connection turns JIT off.
+    Requests,
+    /// zervice's nightly steps and zerver-admin: bulk aggregates, where JIT can pay off. The
+    /// connections keep the server's JIT setting.
+    Batch,
+}
+
 /// PostgreSQL connection pool with production-ready defaults.
 ///
 /// Wraps [`sqlx::postgres::PgPoolOptions`] with sensible defaults:
@@ -82,11 +93,14 @@ impl IsConstraintViolation for sqlx::Error {
 /// - 10 maximum connections (prevents overloading the database)
 /// - 5 minute idle timeout (releases unused connections)
 /// - 5 second acquire timeout (fails fast on pool exhaustion)
+/// - every connection's session in UTC, and JIT off for a [`Workload::Requests`] pool
 #[derive(Debug)]
 pub struct PostgresPoolOptions(sqlx::postgres::PgPoolOptions);
 
-impl Default for PostgresPoolOptions {
-    fn default() -> Self {
+impl PostgresPoolOptions {
+    /// Pool options for connections serving `workload`.
+    #[must_use]
+    pub fn new(workload: Workload) -> Self {
         Self(
             sqlx::postgres::PgPoolOptions::new()
                 .min_connections(MIN_CONNECTIONS)
@@ -98,21 +112,17 @@ impl Default for PostgresPoolOptions {
                 // regardless of where the process runs. TIMESTAMP columns
                 // store wall-clock values, so this is the only thing keeping
                 // them canonically UTC end-to-end.
-                .after_connect(|conn, _meta| {
+                .after_connect(move |conn, _meta| {
                     Box::pin(async move {
                         use sqlx::Executor;
                         conn.execute("SET TIME ZONE 'UTC'").await?;
+                        if workload == Workload::Requests {
+                            conn.execute("SET jit = off").await?;
+                        }
                         Ok(())
                     })
                 }),
         )
-    }
-}
-
-impl PostgresPoolOptions {
-    /// Creates pool options with optimized settings for production workloads.
-    pub fn new() -> Self {
-        Self::default()
     }
 
     /// Establishes a connection pool to the database at the given URL.
@@ -202,7 +212,7 @@ impl Postgres {
         self
     }
 
-    /// Creates a new PostgreSQL connection with optimized pool settings.
+    /// Opens a pool to `path` for connections serving `workload`.
     ///
     /// The initial connect retries for about a minute: a simultaneous
     /// service restart (unattended-upgrades bouncing Postgres and this
@@ -213,13 +223,13 @@ impl Postgres {
     ///
     /// Returns an error if the connection cannot be established within the
     /// retry window.
-    pub async fn new(path: &str) -> anyhow::Result<Self> {
+    pub async fn new(path: &str, workload: Workload) -> anyhow::Result<Self> {
         const ATTEMPTS: u32 = 12;
         const RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(5);
         // Every attempt but the last is followed by a retry.
         let mut retried_attempts = 1..ATTEMPTS;
         let pool = loop {
-            match PostgresPoolOptions::new().connect(path).await {
+            match PostgresPoolOptions::new(workload).connect(path).await {
                 Ok(pool) => break pool,
                 Err(e) => {
                     let Some(attempt) = retried_attempts.next() else {
