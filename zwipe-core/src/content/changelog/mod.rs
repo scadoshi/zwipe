@@ -60,7 +60,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, Clone and Share stay off until the deck loads",
         "On the web, Share stays open after Create link until the link is ready",
         "On the web on Android, Esc during Create link no longer shows an error over a link that was made",
-        "After a dropped connection, Create deck and Clone open the new deck instead of showing an error",
+        "After a dropped connection, Create deck and Clone open one new deck instead of showing an error",
         "A change that went through before your connection dropped no longer shows an error",
         "An unset land target shows your format's usual count, and + and - step from it",
         "Send to is a paper-plane button",
@@ -69,6 +69,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "A card row keeps its icon buttons together with - and + by the count, and puts word buttons on rows of their own",
         "On the web, the top nav folds into the menu on narrower windows instead of wrapping onto two rows",
         "Deck lists and commander suggestions load faster",
+        "After a dropped connection, a quantity change or board move tries once more on its own and lands only once",
     ],
 }];
 
