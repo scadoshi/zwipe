@@ -1149,6 +1149,16 @@ mod tests {
     }
 
     #[test]
+    fn collection_deals_in_the_door_s_format_as_search_does() {
+        let owned = source_filter(Source::Collection, &CardQueryBuilder::new());
+        let door = Door::DeckCreation(Format::Brawl);
+        let collection = deal::next_page(door, &owned, &[], PAGE_SIZE).unwrap();
+        let search = deal::next_page(door, &CardQueryBuilder::new(), &[], PAGE_SIZE).unwrap();
+        assert_eq!(collection.format, Some(Format::Brawl));
+        assert_eq!(collection.format, search.format);
+    }
+
+    #[test]
     fn a_next_deal_leaves_out_the_pile_and_the_host_s_exclusions() {
         let mut stack: CardStack<SelectSwipe> = CardStack::default();
         let dealt = card();

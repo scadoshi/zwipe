@@ -113,6 +113,28 @@ impl AddContext {
         (commander_format && self.has_commander) || b.has_search_intent(self.format)
     }
 
+    /// Holds `b` to the deck's limits whatever else it asks: legal in the deck's format, and inside
+    /// the commander's color identity, narrowed to any identity `b` already keeps cards within.
+    /// The rest of `b` stays as it is, so a filter narrows inside the limits and an empty one
+    /// searches all of them.
+    pub fn apply_deck_limits(&self, b: &mut CardQueryBuilder) {
+        if let Some(format) = self.format {
+            b.set_legalities_contains_any(vec![format.to_legality_key().to_owned()]);
+        }
+        if let Some(colors) = &self.colors {
+            let within: Colors = match b.color_identity_within() {
+                Some(asked) => colors
+                    .iter()
+                    .filter(|color| asked.contains(color))
+                    .copied()
+                    .collect::<Vec<_>>()
+                    .into(),
+                None => colors.clone(),
+            };
+            b.set_color_identity_within(within);
+        }
+    }
+
     /// Puts the deck's legality, commander identity and land exclusion back on `b`.
     pub fn apply_deck_context(&self, b: &mut CardQueryBuilder) {
         if let Some(format) = self.format {
@@ -248,6 +270,32 @@ mod tests {
     use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 
     use super::*;
+
+    #[test]
+    fn deck_limits_narrow_an_asked_identity_and_replace_a_picked_format() {
+        let context = AddContext {
+            format: Some(Format::Commander),
+            colors: Some(vec![Color::Blue, Color::Red].into()),
+            has_commander: true,
+            lands_at_target: false,
+        };
+        let mut b = CardQueryBuilder::default();
+        b.set_color_identity_within(vec![Color::Red, Color::Green].into())
+            .set_legalities_contains_any(vec!["modern".to_owned()]);
+        context.apply_deck_limits(&mut b);
+        assert_eq!(
+            b.color_identity_within(),
+            Some(&vec![Color::Red].into()),
+            "inside both the commander's colors and the ones asked"
+        );
+        assert_eq!(
+            b.legalities_contains_any(),
+            Some(["commander".to_owned()].as_slice())
+        );
+        let mut empty = CardQueryBuilder::default();
+        context.apply_deck_limits(&mut empty);
+        assert_eq!(empty.color_identity_within(), context.colors.as_ref());
+    }
 
     #[test]
     fn apply_refuses_empty_to_empty_only_when_validating() {

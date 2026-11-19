@@ -785,10 +785,14 @@ impl State {
     }
 
     /// Starts a new stack from the top with the live filter, the swiped cards kept behind it for undo. On Search, once the deck is in, a filter Add would not serve asks for one instead.
-    /// The search filter as it goes to the server: normalized, and narrowed to owned cards on
-    /// Collection while the user has a collection, never on Search.
+    /// The search filter as it goes to the server: normalized, and on Collection held to the
+    /// deck's limits and narrowed to owned cards while the user has a collection. Search never
+    /// narrows to owned cards.
     fn sent(&self) -> CardQueryBuilder {
         let mut sent = add::normalized(&self.filter);
+        if self.source == Source::Collection {
+            self.context().apply_deck_limits(&mut sent);
+        }
         sent.set_owned_only(self.source.owned_only() && self.holdings.has_collection());
         sent
     }
@@ -797,6 +801,11 @@ impl State {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
         };
+        if self.source == Source::Collection && self.deck.is_none() {
+            // Collection holds to the deck's limits, so it waits for the deck; the deck's reply
+            // runs the search.
+            return Vec::new();
+        }
         let ticket = self.generation.next_ticket();
         self.epoch = Some(ticket);
         self.revealing = None;

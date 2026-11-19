@@ -1755,3 +1755,50 @@ fn a_collection_pile_never_parks_as_search_s() {
     });
     assert_eq!(state.parked(), None, "nor after leaving it for Maybe");
 }
+
+#[test]
+fn from_collection_keeps_the_deck_s_format_and_commander_colors() {
+    let (state, effects) = on_collection();
+    let colors = state
+        .context()
+        .colors
+        .expect("a commander deck checks color identity");
+    let query = search_query_of(&effects).expect("Collection searches from an empty filter");
+    assert_eq!(
+        query.criteria().legalities_contains_any(),
+        Some(["commander".to_owned()].as_slice()),
+        "only cards legal in the deck's format"
+    );
+    assert_eq!(
+        query.criteria().color_identity_within(),
+        Some(&colors),
+        "only cards inside the commander's colors"
+    );
+    assert!(query.owned_only());
+}
+
+#[test]
+fn a_collection_filter_narrows_within_the_deck_s_limits() {
+    let (mut state, _) = on_collection();
+    let colors = state
+        .context()
+        .colors
+        .expect("a commander deck checks color identity");
+    let mut asked = CardQueryBuilder::default();
+    asked
+        .set_name_contains("bolt")
+        .set_legalities_contains_any(vec!["modern".to_owned()]);
+    let effects = state.update(Action::Filter(asked));
+    let query = search_query_of(&effects).expect("the search");
+    assert_eq!(
+        query.criteria().name_contains(),
+        Some("bolt"),
+        "the user's filter rides on top"
+    );
+    assert_eq!(
+        query.criteria().legalities_contains_any(),
+        Some(["commander".to_owned()].as_slice()),
+        "a picked format never lifts the deck's"
+    );
+    assert_eq!(query.criteria().color_identity_within(), Some(&colors));
+}

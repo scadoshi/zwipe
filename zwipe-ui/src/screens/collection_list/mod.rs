@@ -18,6 +18,7 @@
 //! rows and saves the export's file, with [`EXPORTED`] as it starts. Import is its own model,
 //! [`super::collection_import`].
 
+pub mod stacks;
 #[cfg(test)]
 mod tests;
 
