@@ -10,15 +10,16 @@ use crate::{
     use_overlay_back,
 };
 
-/// `card`'s details as a drawer, while `open`. Its foot carries `Flip` for a multi-faced card,
-/// `Image` when the host passes `on_image` (called with the shown face) and the card has art, and
-/// a `Printings` pill when the host passes `on_printings`, laid out with a deck card's `edit`
-/// actions as the open card row's bar when the host passes them. `describe_tag` gives an Oracle tag's
-/// description, where the host has a catalog, and `on_examples` opens a tag's example cards,
-/// where the host shows them. `class` names the drawer, and a host that adds its
+/// `card`'s details as a drawer, while `open`. Its foot carries `Flip` for a multi-faced
+/// card, `Image` when the host passes `on_image` (called with the shown face) and the card has
+/// art, and a `Printings` pill when the host passes `on_printings`, laid out with a deck card's
+/// `edit` actions as the open card row's bar when the host passes them. `describe_tag` gives an
+/// Oracle tag's description, where the host has a catalog, and `on_examples` opens a tag's
+/// example cards, where the host shows them. `class` names the drawer, and a host that adds its
 /// own class keeps `card-details-drawer` in it. The shown face follows `face` when the host
 /// passes one. The drawer carries the card's id as its `data-card`, so the keys that act on a
-/// card find the one it shows. `edge` is the edge it runs along, the right unless given. Swapping to another card or face while it is open crossfades (`use_drawer_swap`).
+/// card find the one it shows. `edge` is the edge it runs along, the right unless given.
+/// Swapping to another card or face while it is open crossfades (`use_drawer_swap`).
 #[component]
 pub fn CardDetailsSheet(
     open: Signal<bool>,

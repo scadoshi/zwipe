@@ -1,7 +1,8 @@
 //! A deck card's editing buttons, shared by the expanded [`CardRow`] and
 //! the card details drawer the deck page's stacks open: the Star and Flag
 //! with the row's other icons, the quantity stepper at the end of their
-//! line, and the board moves in the word buttons' block under it.
+//! line, and the board moves in the word buttons' block under it. A host
+//! with a layout of its own takes the [`CardEditButtons`] row alone.
 //!
 //! [`CardRow`]: crate::CardRow
 
@@ -109,17 +110,7 @@ pub(crate) fn CardMarkButtons(
 }
 
 /// The moves off `current_board` (the main board when `None`) to the other
-/// two, as one `card-action-words` row.
-#[component]
-pub fn CardBoardMoves(current_board: Option<Board>, on_move_to: EventHandler<Board>) -> Element {
-    rsx! {
-        div { class: "card-action-row card-action-words",
-            BoardMoveButtons { current_board, on_move_to }
-        }
-    }
-}
-
-/// The two move buttons of [`CardBoardMoves`], for a host's own row.
+/// two, as buttons for a host's own words block.
 #[component]
 pub(crate) fn BoardMoveButtons(
     current_board: Option<Board>,
