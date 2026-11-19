@@ -19,15 +19,16 @@ pub const PICKER_DRAWER_PX: u32 = 600;
 const SCREEN_ENTRY: &str = ".picker-screen.show .page-header-support";
 
 /// The picker, open on `open`. From [`PICKER_DRAWER_PX`], or at any width with `every_width`,
-/// it is a [`DrawerSheet`] at every width, sliding in from the right, its title bar's × and a
-/// backdrop tap calling `on_back`; below the kit's breakpoint that drawer floats along the right
-/// edge under the header, as the card details do. Narrower without `every_width` it is a screen
-/// over the page: it fades in with no slide, and its header's back arrow calls `on_back`. With `on_save`, the dock's checkmark calls it and stays off while
-/// `unchanged`; without it the picker has no dock, for a picker whose choice acts on the tap.
-/// With `hint_open`, the title bar's `?` sets it. The body mounts while open (and, as a drawer,
-/// through the slide out), so its keys stop answering once the picker is gone; with
-/// `search_key`, `/` focuses the search field `search_id`. As a screen its back arrow takes
-/// focus as it opens and the opener gets it back as it closes; as a drawer, its ×.
+/// it is a [`DrawerSheet`] sliding in from the right, its title bar's × and a backdrop tap
+/// calling `on_back`; below the kit's breakpoint that drawer floats along the right edge under
+/// the header, as the card details do. Narrower without `every_width` it is a screen over the
+/// page: it fades in with no slide, and its header's back arrow calls `on_back`. With
+/// `on_save`, the dock's checkmark calls it and stays off while `unchanged`; without it the
+/// picker has no dock, for a picker whose choice acts on the tap. With `hint_open`, the title
+/// bar's `?` sets it. The body mounts while open (and, as a drawer, through the slide out), so
+/// its keys stop answering once the picker is gone; with `search_key`, `/` focuses the search
+/// field `search_id`. As a screen its back arrow takes focus as it opens and the opener gets it
+/// back as it closes; as a drawer, its ×.
 #[component]
 pub fn PickerSheet(
     open: Signal<bool>,
@@ -43,8 +44,10 @@ pub fn PickerSheet(
     children: Element,
 ) -> Element {
     let min_width = use_min_width(PICKER_DRAWER_PX);
-    let drawer = use_memo(move || every_width || min_width());
-    let as_screen = use_memo(move || open() && !drawer());
+    let drawer = every_width || min_width();
+    let as_screen = use_memo(use_reactive!(
+        |every_width| open() && !(every_width || min_width())
+    ));
     use_sheet_focus(as_screen.into(), SCREEN_ENTRY);
     let save = on_save.map(|on_save| {
         rsx! {
@@ -58,7 +61,7 @@ pub fn PickerSheet(
         }
     });
     let on_hint = hint_open.map(|mut hint_open| Callback::new(move |()| hint_open.set(true)));
-    if !drawer() {
+    if !drawer {
         let shown = open();
         return rsx! {
             div {
