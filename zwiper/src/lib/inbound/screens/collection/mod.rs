@@ -30,13 +30,16 @@ use zwipe_ui::screens::collection_import::{self, Action, Effect, State};
 
 use self::list::CollectionList;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
+use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::collection::CollectionCache;
 use crate::inbound::components::navigation::back_handler;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::Screen;
 use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
+use crate::inbound::screens::deck::card::components::card_row::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
+use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// The File field's id, which the page's tap listener looks for.
 const FILE_ID: &str = "collection-file";
@@ -186,6 +189,26 @@ pub fn Collection() -> Element {
     use_context_provider(|| CopyCap(CollectionQuantity::MAX));
     let preview_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
     let preview_dismissing = use_signal(|| false);
+    // The oracle-tag reveal in an open row or drawer: a description from the shared catalog and
+    // an examples browse, as on the deck page.
+    let cache: CatalogCache = use_context();
+    let client = use_context();
+    use_effect(move || cache.ensure_oracle_tags(client));
+    let describe_tag = use_callback(move |slug: String| {
+        cache.oracle_tags.cell().read().loaded().and_then(|tags| {
+            tags.iter()
+                .find(|t| t.slug == slug)
+                .and_then(|t| t.description.clone())
+        })
+    });
+    let mut examples_open = use_signal(|| false);
+    let mut examples_slug = use_signal(String::new);
+    let open_examples = use_callback(move |slug: String| {
+        examples_slug.set(slug);
+        examples_open.set(true);
+    });
+    use_context_provider(|| OtagDescribe(describe_tag));
+    use_context_provider(|| OtagExamplesOpen(open_examples));
 
     let model = driver.model.read();
     let mode = model.mode();
@@ -306,6 +329,9 @@ pub fn Collection() -> Element {
                     },
                 ],
                 {collection_import::REPLACE_BODY}
+            }
+            if examples_open() {
+                OracleTagExamples { open: examples_open, slug: examples_slug() }
             }
             ImagePreview { card: preview_card, dismissing: preview_dismissing }
         }

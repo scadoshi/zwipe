@@ -5,23 +5,43 @@
 //! Rows open the details deck rows do, Send to included (it adds the row's printing to the deck
 //! picked). One printing can hold several rows (finish, condition, language), so each row is keyed
 //! by its own id.
+//!
+//! The View chips switch the list to the deck page's stacks, one per card type with lands last,
+//! and back; Collection opens on the stacks until the user picks, and remembers the pick apart
+//! from the deck page's. A stack shows a printing once with its rows' copies summed, and its
+//! drawer holds a stepper for each of those rows.
+
+use std::collections::{HashMap, HashSet};
 
 use components::{
-    Button, ButtonVariant, CardListFold, ClearWrap, LoadFailed, Toasts, spawn_write, use_toast,
+    Button, ButtonVariant, CardEditButtons, CardListFold, CardsViewSwitch, ClearWrap,
+    DRAWER_CLASSES, DeckSection, DeckStacks, DeckStacksGhost, DrawerEdge, GroupBuyDialog,
+    LoadFailed, StackDetails, Toasts, spawn_write, use_group_buy, use_stack_details,
+    use_stack_details_sync, use_toast,
 };
 use dioxus::prelude::*;
 use tokio::time;
 use uuid::Uuid;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::collection::CollectionPageSize;
-use zwipe_ui::screens::collection_list::{self, Action, Effect, State, Status, row_tags};
+use zwipe_ui::deck_cards::columns::Side;
+use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
+use zwipe_ui::deck_cards::stacks::{
+    CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
+};
+use zwipe_ui::screens::collection_list::stacks::{self, Stack, StackCard};
+use zwipe_ui::screens::collection_list::{self, Action, Effect, RowKey, State, Status, row_tags};
 use zwipe_ui::toast::{Toast, ToastKind};
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::collection::CollectionCache;
 use crate::inbound::components::telemetry::vocabulary::Screen;
 use crate::inbound::components::ui_toast;
-use crate::inbound::screens::deck::card::components::card_row::CardRow;
+use crate::inbound::screens::deck::card::components::card_row::{
+    CardRow, DeckFaces, OtagDescribe, OtagExamplesOpen,
+};
+use crate::outbound::cards_view_store;
 use crate::outbound::share::{self, ShareError};
 
 /// The list's header.
@@ -188,6 +208,42 @@ pub(crate) fn CollectionList(
     });
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
 
+    // List or Stacks, as last left here.
+    let view = use_signal(cards_view_store::restored_collection);
+    // Every card's shown face, shared by its row, its stack card and its drawer.
+    let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
+    use_context_provider(|| DeckFaces(faces));
+    let group_buy = use_group_buy();
+    let collapsed = use_signal(HashSet::new);
+    let details = use_stack_details(use_signal(Reveal::default), use_signal(|| false));
+    let shown_stacks = use_memo(move || stacks::stacks(driver.model.read().rows()));
+    let listed = use_memo(move || -> Vec<Uuid> {
+        shown_stacks()
+            .iter()
+            .flat_map(|s| s.cards.iter().map(|c| c.card.scryfall_data.id))
+            .collect()
+    });
+    use_stack_details_sync(details.reveal, details.details_open, listed);
+    // The stacks deal in on entering Stacks once the first page is in, and again after an
+    // import, for as long as the longest stack takes.
+    let mut deal_cue = use_signal(DealCue::default);
+    let mut dealing = use_signal(|| false);
+    use_effect(move || {
+        let shown = view();
+        let ready = driver.model.read().status() != Status::Loading;
+        let _landed = imports();
+        if deal_cue.write().on(shown, ready) {
+            dealing.set(true);
+            spawn(async move {
+                time::sleep(deal_delay(DEAL_STAGGER_CAP).saturating_add(DEAL_DURATION)).await;
+                dealing.set(false);
+            });
+        }
+    });
+    let on_step = EventHandler::new(move |(key, delta): (RowKey, i32)| {
+        driver.dispatch(Action::Step { key, delta });
+    });
+
     let model = driver.model.read();
     let status = model.status();
     let rows = model.rows().to_vec();
@@ -195,6 +251,8 @@ pub(crate) fn CollectionList(
     let exporting = model.exporting();
     let more = status == Status::List && model.has_more();
     drop(model);
+    let stacks_on = view() == CardsView::Stacks;
+    let stack_cards: Vec<StackCard> = shown_stacks().into_iter().flat_map(|s| s.cards).collect();
 
     rsx! {
         div { class: "collection-list",
@@ -217,7 +275,16 @@ pub(crate) fn CollectionList(
                     }
                 }
             }
-            if status == Status::Loading {
+            CardsViewSwitch {
+                view,
+                on_change: move |choice: CardsView| {
+                    cards_view_store::infallible_save_collection(choice);
+                    details.dismiss();
+                },
+            }
+            if status == Status::Loading && stacks_on {
+                DeckStacksGhost { touch: true }
+            } else if status == Status::Loading {
                 div { class: "maybeboard-list card-group row-enter",
                     div { class: "card-group-header",
                         div { class: "skeleton-bar skeleton-card-bar-header" }
@@ -250,7 +317,21 @@ pub(crate) fn CollectionList(
                     } else if status == Status::NoMatch {
                         div { class: "card-row card-row-note", {collection_list::NO_MATCH} }
                     }
-                    for row in rows {
+                    if stacks_on && !rows.is_empty() {
+                        div { class: "collection-stacks", "data-settle-scope": "",
+                            DeckStacks {
+                                sections: sections(&shown_stacks()),
+                                currency: PriceCurrency::default(),
+                                collapsed,
+                                details,
+                                faces,
+                                group_buy,
+                                dealing: dealing(),
+                                touch: true,
+                            }
+                        }
+                    }
+                    for row in rows.into_iter().filter(|_| !stacks_on) {
                         CardRow {
                             key: "{row.key.id()}",
                             card: row.card.card.clone(),
@@ -260,7 +341,6 @@ pub(crate) fn CollectionList(
                             preview_dismissing,
                             row_key: row.key.id(),
                             qty_tags: row_tags(&row),
-                            send_to: true,
                             on_qty_change: row.editable.then(|| {
                                 let key = row.key;
                                 EventHandler::new(move |delta: i32| {
@@ -278,6 +358,108 @@ pub(crate) fn CollectionList(
                     }
                 }
             }
+            GroupBuyDialog { group_buy }
+            CollectionStackDrawer { cards: stack_cards, details, faces, preview_card, preview_dismissing, on_step }
+        }
+    }
+}
+
+/// The deck page's sections for `stacks`, each card's row carrying its copies.
+fn sections(stacks: &[Stack]) -> Vec<(DeckSection, Vec<RowInfo>)> {
+    stacks
+        .iter()
+        .map(|stack| {
+            let section = DeckSection {
+                key: stack.key.clone(),
+                title: stack.title.clone(),
+                pips: None,
+                cards: stack.cards.iter().map(|c| c.card.clone()).collect(),
+            };
+            let rows = stack
+                .cards
+                .iter()
+                .map(|c| RowInfo {
+                    card: c.card.clone(),
+                    qty: c.copies,
+                    kind: RowKind::Main { mvp: false },
+                })
+                .collect();
+            (section, rows)
+        })
+        .collect()
+}
+
+/// The open stack card's drawer: the card's details with Image and Send to in its foot, above
+/// them a line for each of its rows with that row's finish, condition and language and its copies
+/// stepper. Mounted, closed, on the first card before any tap, so it slides in and out; nothing
+/// while no card is listed.
+#[component]
+fn CollectionStackDrawer(
+    cards: Vec<StackCard>,
+    details: StackDetails,
+    faces: Signal<HashMap<Uuid, usize>>,
+    mut preview_card: Signal<Option<(ScryfallData, usize)>>,
+    mut preview_dismissing: Signal<bool>,
+    on_step: EventHandler<(RowKey, i32)>,
+) -> Element {
+    let StackDetails {
+        reveal,
+        details_open,
+        side,
+        ..
+    } = details;
+    let drawn = reveal().drawn();
+    let Some(shown) = cards
+        .iter()
+        .find(|c| Some(c.card.scryfall_data.id) == drawn)
+        .or_else(|| cards.first())
+        .cloned()
+    else {
+        return rsx! {};
+    };
+    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
+    let card = shown.card;
+    let card_id = card.scryfall_data.id;
+    let shown_face = faces.read().get(&card_id).copied().unwrap_or(0);
+    let image_of = card.scryfall_data.clone();
+    let footer = rsx! {
+        for row in shown.rows {
+            div { key: "{row.key.id()}", class: "card-action-row",
+                for tag in row_tags(&row).into_iter().skip(1) {
+                    span { class: "card-row-stat", "{tag}" }
+                }
+                CardEditButtons {
+                    qty: row.copies,
+                    on_qty_change: row.editable.then(|| {
+                        let key = row.key;
+                        EventHandler::new(move |delta: i32| on_step.call((key, delta)))
+                    }),
+                }
+            }
+        }
+    };
+    rsx! {
+        components::CardDetailsSheet {
+            open: details_open,
+            card,
+            on_image: move |face: usize| {
+                preview_card.set(Some((image_of.clone(), face)));
+                preview_dismissing.set(false);
+            },
+            footer,
+            class: DRAWER_CLASSES,
+            face: Some(shown_face),
+            on_face_change: move |face: usize| {
+                let mut faces = faces;
+                faces.write().insert(card_id, face);
+            },
+            describe_tag,
+            on_examples,
+            edge: match side() {
+                Side::Left => DrawerEdge::Left,
+                Side::Right => DrawerEdge::Right,
+            },
         }
     }
 }
