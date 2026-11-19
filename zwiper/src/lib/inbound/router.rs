@@ -14,6 +14,7 @@ use crate::inbound::screens::activity::Activity;
 use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
+use crate::inbound::screens::collection::Collection;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::deck::card::add::Add as AddDeckCard;
 use crate::inbound::screens::deck::card::remove::Remove as RemoveDeckCard;
@@ -77,6 +78,11 @@ pub enum Router {
     /// Home counters.
     #[route("/activity")]
     Activity {},
+
+    /// Collection: import a ManaBox or Archidekt export, the collection's
+    /// list, and Export to the share sheet.
+    #[route("/collection")]
+    Collection {},
 
     /// List all user's decks with name, format, and card count.
     #[route("/deck")]

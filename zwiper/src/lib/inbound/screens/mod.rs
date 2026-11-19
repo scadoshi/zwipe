@@ -10,6 +10,8 @@ pub mod account;
 pub mod activity;
 /// Authentication screens (login, register).
 pub mod auth;
+/// The user's collection: importing an export, the list, and Export to the share sheet.
+pub mod collection;
 /// Appearance and card settings (theme, app icon, Universes Beyond).
 pub mod config;
 /// Deck builder and card management screens.

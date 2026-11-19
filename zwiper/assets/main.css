@@ -201,6 +201,55 @@ body {
   specific - skeleton
  ============================= */
 
+/* Collection's File field: the File chip, then a button styled as a field filling the rest of
+   the row, on one line; a long file name ends in an ellipsis. The placeholder reads muted. */
+.collection-file {
+    flex-wrap: nowrap;
+}
+
+.collection-file > button.input {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+}
+
+.input-placeholder {
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
+.input-tappable {
+    cursor: pointer;
+}
+
+/* Collection's list under the import: the search row, then the list panel, a panel gap apart,
+   at the import's width and gutter, clear of the dock at the end. The import above it gives up
+   its own dock room. */
+.import-panels.container-sm.collection-import {
+    padding-bottom: 0;
+}
+
+.collection-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    width: calc(100% - 2rem);
+    max-width: 40rem;
+    margin: var(--panel-gap) auto 0;
+    padding-bottom: 6rem;
+    box-sizing: border-box;
+}
+
+.collection-list > .card-group {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
 /* Import's and Export's panels: the box and the results, a panel gap
    apart, at the screen's width with the page gutter, scrolling under the
    pinned chips past the screen's foot with the fade at the top only, clear

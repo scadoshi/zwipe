@@ -65,6 +65,12 @@ pub(crate) fn CardRow(
     /// Tags in place of the leading qty, forwarded to the shared row.
     #[props(default)]
     qty_tags: Vec<String>,
+    /// The row's own id, where one card can hold several rows; the card's id otherwise.
+    #[props(default)]
+    row_key: Option<Uuid>,
+    /// Offers Send to off the deck page, whose rows always carry it.
+    #[props(default)]
+    send_to: bool,
 ) -> Element {
     let scryfall_data_for_preview = card.scryfall_data.clone();
     // Which face the expanded detail is flipped to (0 = front), so the fullscreen
@@ -133,12 +139,13 @@ pub(crate) fn CardRow(
             extra_actions,
             footer,
             qty_tags,
+            row_key,
             price_currency,
             show_classification: true,
             describe_tag,
             on_examples,
             // The deck page's rows, the one place that keeps the shared faces, carry Send to.
-            send_to: deck_faces.is_some(),
+            send_to: send_to || deck_faces.is_some(),
             flagged,
             on_toggle_flag,
         }

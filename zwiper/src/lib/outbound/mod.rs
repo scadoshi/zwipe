@@ -35,5 +35,7 @@ pub mod pending_settings_store;
 pub mod session;
 /// Turns off iOS's shake-to-undo prompt.
 pub mod shake_to_edit;
+/// Hands a text file to the OS share sheet.
+pub mod share;
 /// Local theme cache so pre-auth screens render in the last-used theme.
 pub mod theme_store;
