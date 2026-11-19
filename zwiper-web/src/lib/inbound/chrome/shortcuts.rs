@@ -12,7 +12,8 @@ pub use components::swipe_stack::SWIPE_LETTERS;
 use components::swipe_stack::{Swipe, swipe_key};
 use zwipe_ui::shortcuts::{
     self, Editable, FILTER_NAME_ROW, FLIP_ROW, ListLayout, ScreenKeys, SheetGroup, SheetRow,
-    card_rows_groups, commander_maybeboard_groups, deck_cards_groups, examples_groups, rows_of,
+    card_page_groups, card_rows_groups, commander_maybeboard_groups, deck_cards_groups,
+    examples_groups, rows_of,
 };
 pub use zwipe_ui::shortcuts::{
     CardKey, DeckAction, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, QUICK_ADD_KEY, SEND_TO_KEY,
@@ -153,6 +154,28 @@ pub enum ShortcutsScreen {
     CommanderMaybeboard,
     /// A deck's Edit: the keys every page has, and Esc going back to the deck once nothing is open.
     EditDeck,
+    /// A card page showing one card: `p` for its Printings and `/` for the card search.
+    CardPage,
+}
+
+/// What a key does on a card page showing one card.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CardPageKey {
+    /// Opens the card's Printings sheet.
+    Printings,
+    /// Puts the cursor in the card search box that shows.
+    Search,
+}
+
+/// The card page key `key` (a `KeyboardEvent.key`) stands for. Lowercase `p` only, so Shift+P
+/// stays free.
+#[must_use]
+pub fn card_page_key(key: &str) -> Option<CardPageKey> {
+    match key {
+        shortcuts::PRINTINGS_KEY => Some(CardPageKey::Printings),
+        shortcuts::CARD_SEARCH_KEY => Some(CardPageKey::Search),
+        _ => None,
+    }
 }
 
 /// The groups the shortcuts sheet lists on `screen` ([`shortcuts::sheet_groups`]): each key, with
@@ -187,6 +210,7 @@ pub fn sheet_groups(screen: &ShortcutsScreen) -> Vec<SheetGroup> {
         ShortcutsScreen::DeckCards => deck_cards_groups(Editable::Yes),
         ShortcutsScreen::Examples => examples_groups(),
         ShortcutsScreen::EditDeck => shortcuts::going_back_groups(),
+        ShortcutsScreen::CardPage => card_page_groups(),
         ShortcutsScreen::CardRows(layout) => card_rows_groups(*layout),
         ShortcutsScreen::CommanderMaybeboard => commander_maybeboard_groups(),
     }
@@ -208,7 +232,7 @@ pub fn claims_steps(screen: &ShortcutsScreen) -> bool {
         | ShortcutsScreen::Examples
         | ShortcutsScreen::CardRows(_)
         | ShortcutsScreen::CommanderMaybeboard => true,
-        ShortcutsScreen::EditDeck => false,
+        ShortcutsScreen::EditDeck | ShortcutsScreen::CardPage => false,
     }
 }
 
@@ -659,5 +683,21 @@ mod tests {
             let swipes = matches!(swipe_screen_shortcut(&key), Some(Shortcut::Swipe(_)));
             assert_eq!(swipes, SWIPE_LETTERS.contains(&key.as_str()), "{key}");
         }
+    }
+
+    #[test]
+    fn the_card_page_answers_p_with_printings_and_slash_with_the_search() {
+        assert_eq!(card_page_key("p"), Some(CardPageKey::Printings));
+        assert_eq!(card_page_key("/"), Some(CardPageKey::Search));
+        for key in ["P", "i", "d", "v"] {
+            assert_eq!(card_page_key(key), None, "{key}");
+        }
+    }
+
+    #[test]
+    fn every_key_the_card_page_sheet_lists_on_the_page_works_there() {
+        let rows = sheet_rows(&ShortcutsScreen::CardPage);
+        assert!(rows.contains(&(&["p"][..], "Printings")), "{rows:?}");
+        assert!(!claims_steps(&ShortcutsScreen::CardPage));
     }
 }

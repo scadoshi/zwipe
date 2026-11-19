@@ -16,7 +16,7 @@ use std::collections::HashSet;
 use components::icons::{DockIcon, SEND, ShareIcon};
 use components::{
     CardDetailsPanel, CardDetailsPanelSkeleton, CardResultsGrid, FlippableCardImage, LoadFailed,
-    SendTo, USER_PLUS,
+    SendTo, USER_PLUS, focus_card_search,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -35,6 +35,8 @@ use zwipe_ui::telemetry::vocabulary::Screen;
 use self::stats::StatsWidget;
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::send_to::{SendToHost, use_send_to};
+use crate::inbound::chrome::shortcuts::{CardPageKey, ShortcutsScreen, card_page_key};
+use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::chrome::toast;
 use crate::inbound::router::Route;
 use crate::inbound::session::return_to;
@@ -214,6 +216,7 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
             let leads = commander_eligibility::is_valid_commander(&card, &Format::Commander);
             rsx! {
                 div { class: "screen-content content-enter web-cards-swipe web-card-page",
+                    CardPageKeys { on_printings: move |()| printings_open.set(true) }
                     div { class: "web-cards-swipe-main",
                         div { class: "web-card-image",
                             FlippableCardImage { sd, size: ImageSize::Large }
@@ -308,6 +311,21 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
             SendToHost { send_to }
         }
     }
+}
+
+/// The keys of a card page showing one card, while it is mounted: `p` opens its Printings and `/`
+/// puts the cursor in the card search, and Shift+H lists both.
+#[component]
+fn CardPageKeys(on_printings: EventHandler<()>) -> Element {
+    use_offer_shortcuts(ShortcutsScreen::CardPage);
+    components::keys::use_page_keys(Callback::new(move |key: String| {
+        match card_page_key(&key) {
+            Some(CardPageKey::Printings) => on_printings.call(()),
+            Some(CardPageKey::Search) => focus_card_search(),
+            None => {}
+        }
+    }));
+    rsx! {}
 }
 
 #[cfg(test)]

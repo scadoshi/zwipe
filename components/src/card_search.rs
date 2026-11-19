@@ -131,6 +131,12 @@ impl<H: SearchHost> CardSearch<H> {
     }
 }
 
+/// Puts the cursor in whichever card search box shows, the nav's or a panel's, for `/` on a
+/// screen whose own keys answer before the bar's.
+pub fn focus_card_search() {
+    document::eval(FOCUS_SHOWN_JS);
+}
+
 /// A fresh bar driven by `host`, for one mount of the nav or the panel.
 pub fn use_card_search<H: SearchHost>(host: H) -> CardSearch<H> {
     CardSearch {
@@ -157,7 +163,7 @@ pub fn CardSearchBar(
     // registers after the bar, so its keys win.
     use_page_keys(Callback::new(move |key: String| {
         if key == shortcuts::CARD_SEARCH_KEY {
-            document::eval(FOCUS_SHOWN_JS);
+            focus_card_search();
         }
     }));
 
