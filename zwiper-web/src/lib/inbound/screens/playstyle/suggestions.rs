@@ -527,7 +527,7 @@ pub(crate) fn SuggestedOverlays(list: Suggestions) -> Element {
             open: swipe_open,
             mode: SwipeMode::Commanders(Door::Suggested),
             start_filter: Some(filter.into()),
-            reasons_deck_count: deck_count(),
+            reasons_deck_count: Some(deck_count.into()),
             on_select: move |card: Card| {
                 swipe_open.set(false);
                 create_with.call(card);

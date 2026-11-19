@@ -21,7 +21,6 @@ pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uui
     let mut show_row_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_row_art));
     let Suggestions {
-        deck_count,
         is_loading,
         load_failed,
         ..
@@ -58,10 +57,6 @@ pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uui
                 } else if load_failed() {
                     div { class: "message-empty",
                         span { class: "chip-note", "Couldn't load your suggestions" }
-                    }
-                } else if deck_count() == 0 {
-                    div { class: "message-empty",
-                        span { class: "chip-note", "Build a deck to see suggestions" }
                     }
                 } else {
                     // The console sits over the list at every width, as Staples' and the

@@ -296,7 +296,7 @@ pub fn SwipeSelect(
     on_close: EventHandler<()>,
     #[props(default)] exclude_oracle_ids: Option<ReadSignal<HashSet<Uuid>>>,
     #[props(default)] start_filter: Option<ReadSignal<CardQueryBuilder>>,
-    #[props(default)] reasons_deck_count: u32,
+    #[props(default)] reasons_deck_count: Option<ReadSignal<u32>>,
     #[props(default)] commander: Option<Card>,
     #[props(default)] starts_deck: bool,
 ) -> Element {
@@ -309,7 +309,7 @@ pub fn SwipeSelect(
     let pile = Pile {
         stack: use_signal(CardStack::default),
         suggestions: use_signal(Vec::new),
-        deck_count: use_signal(|| reasons_deck_count),
+        deck_count: use_signal(|| 0),
         offset: use_signal(|| 0),
         exhausted: use_signal(|| false),
         loading: use_signal(|| false),
@@ -340,6 +340,13 @@ pub fn SwipeSelect(
         if open() && !*hint_fired.peek() {
             hint_fired.set(true);
             open_and_record_hint(OneTimeHint::SwipeSelect, session, client, hint_open);
+        }
+    });
+
+    // The deck count a suggestion's reasons count against, as the host knows it.
+    use_effect(move || {
+        if let Some(count) = reasons_deck_count {
+            deck_count.set(count());
         }
     });
 
@@ -471,7 +478,6 @@ pub fn SwipeSelect(
         exhausted.set(false);
         searched.set(false);
         suggestions.set(Vec::new());
-        deck_count.set(reasons_deck_count);
         if let Some(door) = mode.door() {
             loading.set(true);
             spawn(async move {
