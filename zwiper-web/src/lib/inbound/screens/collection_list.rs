@@ -7,21 +7,18 @@
 //! row that id names.
 
 use components::{
-    Button, ButtonVariant, CardListFold, ClearWrap, CopyCap, HoverStackHost, LoadFailed,
-    spawn_write, use_hover_stack,
+    Button, ButtonVariant, CardListFold, ClearWrap, HoverStack, LoadFailed, spawn_write,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{Toasts, use_toast};
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::collection::{CollectionPageSize, CollectionQuantity};
+use zwipe_core::domain::collection::CollectionPageSize;
 use zwipe_ui::screens::collection_list::{self, Action, Effect, State, Status, row_tags};
 use zwipe_ui::shortcuts::ListLayout;
 
-use crate::inbound::cards::card_row::{CardOverlaysHost, CardRow, use_card_overlays};
-use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
+use crate::inbound::cards::card_row::CardRow;
 use crate::inbound::cards::row_keys::use_keyed_row_keys;
-use crate::inbound::cards::stack_view::use_row_faces;
 use crate::inbound::chrome::authed::{Authed, use_authed};
 use crate::inbound::chrome::ghost::{GhostButton, GhostText};
 use crate::inbound::chrome::shortcuts::ShortcutsScreen;
@@ -170,13 +167,9 @@ pub fn CollectionList(imports: ReadSignal<u32>) -> Element {
             driver.dispatch(Action::Imported);
         }
     });
-    // The collection holds up to 9,999 copies of a printing; a deck's 99 doesn't apply.
-    use_context_provider(|| CopyCap(CollectionQuantity::MAX));
-    let examples = use_otag_reveals();
-    let overlays = use_card_overlays();
-    let hover_stack = use_hover_stack();
+    // The screen holds the overlays, the hover preview and the copy cap, outside its content.
+    let hover_stack: HoverStack = use_context();
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
-    use_row_faces();
     let keyed = use_memo(move || -> Vec<(Uuid, Card)> {
         driver
             .model
@@ -285,8 +278,5 @@ pub fn CollectionList(imports: ReadSignal<u32>) -> Element {
                 }
             }
         }
-        OtagExamplesHost { examples }
-        HoverStackHost { stack: hover_stack }
-        CardOverlaysHost { overlays }
     }
 }

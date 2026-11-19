@@ -6,9 +6,10 @@
 //! first. The collection's own list follows, [`CollectionList`].
 
 use components::icons::{CHECK, DockIcon};
-use components::{AlertDialog, Chip, DialogAction};
+use components::{AlertDialog, Chip, CopyCap, DialogAction, HoverStackHost, use_hover_stack};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{Toasts, use_toast};
+use zwipe_core::domain::collection::CollectionQuantity;
 use zwipe_core::domain::collection::limits::MAX_BODY_BYTES;
 use zwipe_core::domain::deck::ImportMode;
 use zwipe_core::http::contracts::collection::HttpImportCollection;
@@ -16,6 +17,9 @@ use zwipe_core::http::endpoints::collection::ImportCollection;
 use zwipe_ui::screens::collection_import::{self, Action, Effect, State};
 use zwipe_ui::telemetry::vocabulary::Screen;
 
+use crate::inbound::cards::card_row::{CardOverlaysHost, use_card_overlays};
+use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
+use crate::inbound::cards::stack_view::use_row_faces;
 use crate::inbound::chrome::authed::{Authed, use_authed};
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::collection::CollectionCache;
@@ -109,6 +113,14 @@ pub fn Collection() -> Element {
         imports: use_signal(|| 0),
     };
     let confirm = use_callback(move |()| driver.dispatch(Action::ConfirmReplace));
+    // The list's overlays live here, outside the screen's content: its entrance keeps it a
+    // stacking context, which would hold a sheet under the site footer.
+    let examples = use_otag_reveals();
+    let overlays = use_card_overlays();
+    let hover_stack = use_hover_stack();
+    use_row_faces();
+    // The collection holds up to 9,999 copies of a printing; a deck's 99 doesn't apply.
+    use_context_provider(|| CopyCap(CollectionQuantity::MAX));
 
     let model = driver.model.read();
     let mode = model.mode();
@@ -234,6 +246,9 @@ pub fn Collection() -> Element {
             ],
             {collection_import::REPLACE_BODY}
         }
+        OtagExamplesHost { examples }
+        HoverStackHost { stack: hover_stack }
+        CardOverlaysHost { overlays }
     }
 }
 
