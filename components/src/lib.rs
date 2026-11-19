@@ -138,7 +138,7 @@ pub use card_icon_button::{
 };
 pub use card_list_fold::CardListFold;
 pub use card_proxy::{CardProxy, FIT_JS as CARD_PROXY_FIT_JS, ProxyFace, use_card_proxy_fit};
-pub use card_results_grid::CardResultsGrid;
+pub use card_results_grid::{CardResultsGrid, CardResultsGridGhost};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use card_search::{

@@ -1,16 +1,15 @@
 //! The card search's results page at `/search?q=<text>`, signed in or out, over the
 //! [`card_results`] model: every card the lookup matches for the text, in the card page's
-//! several-cards grid, each opening its card page. A text only one card matches opens that
-//! card's page in this page's place.
+//! several-cards grid, each opening its card page, and a ghost of the grid while they load. A
+//! text only one card matches opens that card's page in this page's place.
 
-use components::{CardResultsGrid, LoadFailed};
+use components::{CardResultsGrid, CardResultsGridGhost, LoadFailed};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::screens::card_results::{self, Action, Effect, State, Status};
-use zwipe_ui::screens::card_search;
 
 use crate::inbound::cards::card_search::{lookup_cards, route_of};
 use crate::inbound::shell::ScreenFrame;
@@ -88,9 +87,7 @@ pub fn Search(q: String) -> Element {
             }
         },
         Status::Loading => rsx! {
-            div { class: "screen-content web-card-list",
-                p { class: "web-card-message", {card_search::SEARCHING} }
-            }
+            div { class: "screen-content web-card-list", CardResultsGridGhost {} }
         },
         Status::NoMatch => rsx! {
             div { class: "screen-content web-card-list",

@@ -3824,7 +3824,9 @@ footer.site-footer .site-footer-note {
    search panel on a phone. The field draws its own look, so zwipe.net, which
    loads no app sheet, draws it the same. */
 
-.card-search-input {
+/* Under .card-search, so the kit's .input, which loads after this sheet in
+   the apps, gives way. */
+.card-search .card-search-input {
     box-sizing: border-box;
     width: 100%;
     height: 2rem;
@@ -3833,27 +3835,27 @@ footer.site-footer .site-footer-note {
     text-align: left;
     background-color: var(--bg-primary);
     border: 1px solid var(--ink-text-muted, var(--text-muted));
-    border-radius: 0.5rem;
+    border-radius: 0.4rem;
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
     font-size: 0.875rem;
     box-shadow: var(--shadow-sm);
 }
 
-.card-search-input:focus {
+.card-search .card-search-input:focus {
     outline: none;
     background-color: var(--border-muted);
     border-color: var(--accent-primary);
 }
 
-.card-search-input::placeholder {
+.card-search .card-search-input::placeholder {
     color: var(--ink-text-muted, var(--text-muted));
 }
 
 /* On a touch screen the field reads at 16px, under which iOS zooms the page
    into it as it takes focus. */
 @media (pointer: coarse) {
-    .card-search-input {
+    .card-search .card-search-input {
         font-size: 1rem;
     }
 }
@@ -4060,6 +4062,23 @@ nav.card-search-covers:has(.card-search-nav:focus-within) .nav-links {
     width: 100%;
     grid-template-columns: repeat(auto-fit, minmax(12.5rem, 15rem));
     justify-content: center;
+}
+
+/* The grid while its cards load: the heading's bar, centered at its line's
+   height, and each card ghost filling its cell as the card will. */
+.card-list-title-ghost {
+    width: 14rem;
+    height: 1.6rem;
+    margin: var(--space-1) auto;
+}
+
+.card-list-results .skeleton-stack {
+    padding: 0;
+}
+
+.card-list-results .skeleton-image {
+    width: 100%;
+    border-radius: 0.75rem;
 }
 
 /* ---- Card stats ----

@@ -5,9 +5,9 @@
 //! It sits in one of two places ([`SearchPlace`]). On a wide screen it is the nav's box: 120px
 //! at rest with the search icon and the placeholder, the icon alone where the nav leaves it
 //! less room, growing over the nav's links while it has focus, with the chips in a dropdown
-//! under it. `/` focuses whichever bar shows, unless a text field has focus or the screen answers
-//! its own keys. On
-//! a phone it fills Home's Card search panel ([`CardSearchPanel`]), the chips in the page's flow.
+//! under it. On a phone it fills Home's Card search panel ([`CardSearchPanel`]), the chips in
+//! the page's flow. `/` focuses whichever bar shows, unless a text field has focus or the
+//! screen answers its own keys.
 //!
 //! A host runs the model's effects through [`use_card_search`] with its own [`SearchHost`]: its
 //! clock, its lookup and its routes.
@@ -191,7 +191,7 @@ pub fn CardSearchBar(
             on_clear: move |()| on_action.call(Action::Clear),
             label: "Clear the search".to_string(),
             input {
-                class: "input input-compact card-search-input",
+                class: "input card-search-input",
                 id: "{input_id}",
                 r#type: "text",
                 placeholder: model::PLACEHOLDER,

@@ -272,9 +272,16 @@ fn CardScreen(open: Open) -> Element {
         },
     };
 
+    // Several cards draw their own heading, so the header leaves its title out, as the web's
+    // nav does.
+    let header = if status == Status::Several {
+        String::new()
+    } else {
+        title
+    };
     rsx! {
         div { class: "screen",
-            ScreenHeader { title, back: move |()| navigator.go_back() }
+            ScreenHeader { title: header, back: move |()| navigator.go_back() }
             {body}
         }
     }

@@ -1,16 +1,15 @@
 //! The card search's results page in the app at `/search?q=<text>`, over the shared
 //! [`card_results`] model: every card the lookup matches for the text, in the card page's
-//! results grid, each opening its card page. A text only one card matches opens that card's
-//! page in this page's place.
+//! results grid, each opening its card page, and a ghost of the grid while they load. A text
+//! only one card matches opens that card's page in this page's place.
 
-use components::{CardResultsGrid, LoadFailed};
+use components::{CardResultsGrid, CardResultsGridGhost, LoadFailed};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::screens::card_results::{self, Action, Effect, State, Status};
-use zwipe_ui::screens::card_search;
 
 use crate::inbound::components::card_search::{lookup_cards, route_of};
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -93,9 +92,7 @@ pub fn Search(q: String) -> Element {
             }
         },
         Status::Loading => rsx! {
-            div { class: "screen-content card-page-list",
-                p { class: "card-page-message", {card_search::SEARCHING} }
-            }
+            div { class: "screen-content card-page-list", CardResultsGridGhost {} }
         },
         Status::NoMatch => rsx! {
             div { class: "screen-content card-page-list",
@@ -116,9 +113,15 @@ pub fn Search(q: String) -> Element {
         }
     };
 
+    // The grid draws its own heading, so the header leaves its title out, as the web's nav does.
+    let header = if status == Status::Several {
+        String::new()
+    } else {
+        title
+    };
     rsx! {
         div { class: "screen",
-            ScreenHeader { title, back: move |()| navigator.go_back() }
+            ScreenHeader { title: header, back: move |()| navigator.go_back() }
             {body}
         }
     }
