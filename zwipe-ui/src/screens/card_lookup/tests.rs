@@ -110,6 +110,92 @@ fn one_card_shows_it_several_list_them_none_says_so() {
     assert_eq!(state.message(), Some(NOT_FOUND));
 }
 
+/// `card` with Scryfall layout `layout`.
+fn laid_out(name: &str, layout: &str) -> Card {
+    let mut card = card(name);
+    card.scryfall_data.layout = layout.to_owned();
+    card
+}
+
+#[test]
+fn only_playable_cards_make_a_list() {
+    let (mut state, ticket, _) = by_name("sol-ring", false, true);
+    let ring = laid_out("Sol Ring", "normal");
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![ring.clone(), laid_out("Sol Ring // Sol Ring", "art_series")],
+    });
+    assert_eq!(
+        state.status(),
+        Status::One,
+        "an art card's front face is no rival"
+    );
+    assert_eq!(state.card(), Some(&ring));
+
+    let (mut state, ticket, _) = by_name("rampant-growth", false, true);
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![
+            laid_out("Rampant Growth", "normal"),
+            laid_out("Rampant, Growth", "normal"),
+            laid_out("Rampant Growth", "token"),
+        ],
+    });
+    assert_eq!(state.status(), Status::Several);
+    assert_eq!(state.cards().len(), 2, "the list is the playable cards");
+
+    let (mut state, ticket, _) = by_name("goblin", false, true);
+    let tokens = vec![laid_out("Goblin", "token"), laid_out("Goblin", "token")];
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: tokens.clone(),
+    });
+    assert_eq!(
+        state.status(),
+        Status::Several,
+        "no playable card: every match lists"
+    );
+    assert_eq!(state.cards(), tokens.as_slice());
+}
+
+#[test]
+fn a_full_name_match_wins_over_front_faces() {
+    let (mut state, ticket, _) = by_name("bind", false, true);
+    let bind = laid_out("Bind", "normal");
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![bind.clone(), laid_out("Bind // Liberate", "split")],
+    });
+    assert_eq!(state.status(), Status::One, "Bind is Bind");
+    assert_eq!(state.card(), Some(&bind));
+
+    let (mut state, ticket, _) = by_name("delver-of-secrets", false, true);
+    let delver = laid_out("Delver of Secrets // Insectile Aberration", "transform");
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![delver.clone()],
+    });
+    assert_eq!(
+        state.card(),
+        Some(&delver),
+        "a front face still opens its card"
+    );
+
+    let (mut state, ticket, _) = by_name("shared-front", false, true);
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![
+            laid_out("Shared Front // One Back", "modal_dfc"),
+            laid_out("Shared Front // Other Back", "modal_dfc"),
+        ],
+    });
+    assert_eq!(
+        state.status(),
+        Status::Several,
+        "two fronts and no full name: both list"
+    );
+}
+
 #[test]
 fn a_route_that_is_not_a_slug_finds_nothing_without_asking() {
     let mut state = State::new();
@@ -336,6 +422,33 @@ fn an_asked_for_send_to_waits_on_a_session_and_a_single_card() {
         }),
         vec![],
         "several: no one card to send"
+    );
+}
+
+#[test]
+fn an_asked_for_send_to_on_a_list_goes_with_the_picked_card() {
+    let (mut state, ticket, _) = by_name("rampant-growth", true, true);
+    let comma = card("Rampant, Growth");
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![card("Rampant Growth"), comma.clone()],
+    });
+    let id = comma.scryfall_data.id;
+    assert_eq!(
+        state.update(Action::Pick(id)),
+        vec![Effect::Navigate(Destination::Printing {
+            slug: "rampant-growth".to_owned(),
+            id,
+            send: true,
+        })],
+        "the printing opens with the sheet"
+    );
+    assert!(
+        matches!(
+            state.update(Action::Pick(id)).as_slice(),
+            [Effect::Navigate(Destination::Printing { send: false, .. })]
+        ),
+        "the ask goes with one pick only"
     );
 }
 
