@@ -975,7 +975,9 @@ impl MetricsRepository for Postgres {
     async fn card_stats(&self, oracle_id: Uuid) -> Result<CardStats, MetricsError> {
         // Each count starts on an index: deck_cards by oracle id, scryfall_data by oracle id,
         // and the two signal pools by their primary keys. Leading decks are matched by any
-        // printing of the card, since a deck stores the printing it leads with.
+        // printing of the card, since a deck stores the printing it leads with. The pools are
+        // read through scalar subqueries rather than outer joins, so the columns' recorded
+        // nullability doesn't depend on the plan the database picks.
         let row = sqlx::query!(
             r#"SELECT
                    (SELECT COUNT(*) FROM deck_cards
@@ -988,16 +990,13 @@ impl MetricsRepository for Postgres {
                                     WHERE sd.oracle_id = $1
                                       AND sd.id IN (d.commander_id, d.partner_commander_id))
                    ) AS "decks_led!",
-                   s.shown AS "swipe_shown?",
-                   s.added AS "swipe_added?",
-                   s.skipped AS "swipe_skipped?",
-                   s.maybed AS "swipe_maybed?",
-                   s.removed AS "swipe_removed?",
-                   c.shown AS "pick_shown?",
-                   c.selected AS "pick_selected?"
-               FROM (SELECT 1) AS one
-               LEFT JOIN card_swipe_signal s ON s.card_oracle_id = $1
-               LEFT JOIN commander_select_signal c ON c.commander_oracle_id = $1"#,
+                   (SELECT shown FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_shown?",
+                   (SELECT added FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_added?",
+                   (SELECT skipped FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_skipped?",
+                   (SELECT maybed FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_maybed?",
+                   (SELECT removed FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_removed?",
+                   (SELECT shown FROM commander_select_signal WHERE commander_oracle_id = $1) AS "pick_shown?",
+                   (SELECT selected FROM commander_select_signal WHERE commander_oracle_id = $1) AS "pick_selected?""#,
             oracle_id,
             MVP_VESTING_DAYS,
         )
