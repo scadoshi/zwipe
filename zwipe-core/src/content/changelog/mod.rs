@@ -68,6 +68,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On Android, Send to, Oracle tag examples and the update screen show their header below the status bar",
         "A card row keeps its icon buttons together with - and + by the count, and puts word buttons on rows of their own",
         "On the web, the top nav folds into the menu on narrower windows instead of wrapping onto two rows",
+        "Deck lists and commander suggestions load faster",
     ],
 }];
 
