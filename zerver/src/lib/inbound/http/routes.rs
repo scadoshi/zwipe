@@ -238,6 +238,7 @@ pub fn public_routes(limits: &RateLimits) -> Router<AppState> {
                         .route("/{scryfall_data_id}", get(card::get_card))
                         .route("/featured-flavor", get(card::get_featured_flavor))
                         .route("/{oracle_id}/printings", get(card::get_printings))
+                        .route("/{oracle_id}/stats", get(card::get_card_stats))
                         .route("/artists", get(card::get_artists))
                         .route("/types", get(card::get_card_types))
                         .route("/keywords", get(card::get_keywords))
@@ -459,6 +460,7 @@ pub fn private_routes(jwt_secret: JwtSecret, limits: &RateLimits) -> Router<AppS
                     "/commander",
                     Router::new()
                         .route("/suggestions", get(deck::get_commander_suggestions))
+                        .route("/deal", post(deck::deal_commanders))
                         .route(
                             "/suggestions/dismissals",
                             post(deck::dismiss_commander).delete(deck::clear_commander_dismissals),

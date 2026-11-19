@@ -20,8 +20,11 @@ use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
-use zwipe_core::domain::card::search_card::card_filter::criteria::PLAYABLE_LAYOUTS;
+use zwipe_core::domain::card::search_card::card_filter::criteria::{
+    CardCriteria, PLAYABLE_LAYOUTS,
+};
 use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
 use zwipe_core::domain::deck::Format;
 use zwipe_core::domain::deck::requests::import_deck_cards;
@@ -48,8 +51,9 @@ use crate::domain::card::requests::get_scryfall_data::{
     GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
 };
 use crate::domain::card::requests::get_sets::GetSetsError;
+use crate::domain::deck::models::deck::commander_deal::{CommanderDeal, DealSignal};
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderSuggestionsError, DeckTagProfile, ScoredCommander,
+    CommanderSuggestionsError, DeckTagProfile, MAX_PER_COLOR_IDENTITY, ScoredCommander,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::commander_scoring::SCORE_COMMANDER_SUGGESTIONS_SQL;
@@ -213,6 +217,265 @@ const SUGGESTION_TAG_LIMIT: i64 = 5;
 /// again restarts the clock.
 const DISMISSAL_TTL_DAYS: i32 = 7;
 
+/// Weight of a deal candidate's best match to a commander the user saved (that commander's tag
+/// overlap plus the color term, on the deck term's scale): half a built deck's, since a save shows
+/// interest and a deck shows play.
+const W_SAVED: f64 = 0.5;
+
+/// Weight of a deal candidate's popularity prior (0..1): lean, so the user's decks and saves decide
+/// wherever they reach and popularity orders only what they leave even.
+const W_POPULARITY: f64 = 0.1;
+
+/// The Jaccard match of two `text[]` color identities, `a` and `b`, as a SQL expression: shared
+/// colors over all of them; colorless against colorless is 1, colorless against colored 0.
+fn jaccard_sql(a: &str, b: &str) -> String {
+    format!(
+        "CASE WHEN cardinality({a}) = 0 AND cardinality({b}) = 0 THEN 1.0::float8 \
+         WHEN cardinality({a}) = 0 OR cardinality({b}) = 0 THEN 0.0::float8 \
+         ELSE (SELECT count(*) FROM unnest({a}) x WHERE x = ANY({b}))::float8 \
+         / (SELECT count(DISTINCT x) FROM unnest({a} || {b}) x)::float8 END"
+    )
+}
+
+/// The deal statement for `deal` against `signal`, `commander` holding only the format's commander
+/// rules. The candidates are the card search's own WHERE (`push_criteria_conditions`) over the
+/// filter and those rules; the scoring is the suggestions statement's, plus the saved-commander
+/// and popularity terms. See [`CardRepository::score_commander_deal`] for the ranking.
+///
+/// Each color match is worked out once per distinct color identity among the candidates, not
+/// once per candidate. The per-user terms are materialized: inlined, the planner reruns them for
+/// every candidate row.
+fn commander_deal_query(
+    deal: &CommanderDeal,
+    signal: &DealSignal,
+    commander: &CardCriteria,
+) -> QueryBuilder<Postgres> {
+    let mut qb = deal_candidates(deal, signal, commander);
+    push_deal_ranking(&mut qb, deal);
+    qb
+}
+
+/// The deal statement's opening CTEs, through `candidates`: the user's decks and saved
+/// commanders, the popularity scale, and every commander the filter and `commander`'s rules let
+/// through, less tokens, `signal.exclude` and the user's live dismissals. The `candidates` CTE is
+/// left open for [`push_deal_ranking`] to close.
+fn deal_candidates(
+    deal: &CommanderDeal,
+    signal: &DealSignal,
+    commander: &CardCriteria,
+) -> QueryBuilder<Postgres> {
+    let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
+        "WITH decks AS (
+             SELECT d.ord,
+                    ARRAY(SELECT jsonb_array_elements_text(d.value->'colors')) AS colors,
+                    COALESCE(d.value->'profile', '{}'::jsonb) AS profile
+             FROM jsonb_array_elements(",
+    );
+    qb.push_bind(signal.decks.clone());
+    qb.push(
+        "::jsonb) WITH ORDINALITY d(value, ord)
+         ),
+         deck_tags AS MATERIALIZED (
+             SELECT d.ord, k.key, k.value::float8 AS w
+             FROM decks d, jsonb_each_text(d.profile) k
+             WHERE jsonb_typeof(d.profile) = 'object'
+         ),
+         saved AS (
+             SELECT lc.oracle_id AS saved_id, COALESCE(lc.color_identity, '{}') AS colors,
+                    sp.profile
+             FROM latest_cards lc
+             LEFT JOIN commander_tag_profiles sp ON sp.oracle_id = lc.oracle_id
+             WHERE lc.oracle_id = ANY(",
+    );
+    qb.push_bind(signal.maybeboard.clone());
+    qb.push(
+        "::uuid[])
+         ),
+         saved_tags AS MATERIALIZED (
+             SELECT s.saved_id, k.key, k.value::float8 AS w
+             FROM saved s, jsonb_each_text(s.profile) k
+             WHERE jsonb_typeof(s.profile) = 'object'
+         ),
+         popularity_scale AS (
+             SELECT (SELECT ln(1 + max(decks))::float8 FROM commander_popularity) AS decks,
+                    (SELECT max(edhrec_rank)::float8 FROM latest_cards) AS rank
+         ),
+         candidates AS (
+             SELECT latest_cards.oracle_id,
+                    COALESCE(latest_cards.color_identity, '{}') AS color_identity,
+                    ctp.ctp_profile AS profile,
+                    CASE
+                        WHEN pop.pop_decks IS NOT NULL AND ps.decks > 0
+                            THEN ln(1 + pop.pop_decks)::float8 / ps.decks
+                        WHEN latest_cards.edhrec_rank IS NOT NULL AND ps.rank > 0
+                            THEN 1 - latest_cards.edhrec_rank::float8 / ps.rank
+                        ELSE 0
+                    END AS popularity
+             FROM latest_cards
+             JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
+             LEFT JOIN (SELECT oracle_id AS ctp_oracle_id, profile AS ctp_profile
+                        FROM commander_tag_profiles) ctp
+                 ON ctp.ctp_oracle_id = latest_cards.oracle_id
+             ",
+    );
+    qb.push(POPULARITY_JOIN);
+    qb.push(
+        "
+             CROSS JOIN popularity_scale ps
+             WHERE ",
+    );
+    {
+        let mut sep: Separated<'_, Postgres, &'static str> = qb.separated(" AND ");
+        sep.push("TRUE");
+        if let Some(filter) = &deal.filter {
+            push_criteria_conditions(&mut sep, filter.criteria());
+        }
+        push_criteria_conditions(&mut sep, commander);
+        sep.push("latest_cards.layout NOT IN ('token', 'double_faced_token', 'emblem')");
+        sep.push("latest_cards.oracle_id IS NOT NULL");
+        sep.push("NOT (latest_cards.oracle_id = ANY(");
+        sep.push_bind_unseparated(signal.exclude.clone());
+        sep.push_unseparated("::uuid[]))");
+        sep.push("NOT EXISTS (SELECT 1 FROM user_commander_dismissals dis WHERE dis.user_id = ");
+        sep.push_bind_unseparated(signal.user_id);
+        sep.push_unseparated(
+            " AND dis.oracle_id = latest_cards.oracle_id \
+             AND dis.dismissed_at > now() - make_interval(days => ",
+        );
+        sep.push_bind_unseparated(DISMISSAL_TTL_DAYS);
+        sep.push_unseparated("))");
+    }
+    qb
+}
+
+/// The deal statement's CTEs after `candidates`: each candidate's tags, its best deck and the
+/// tags it shares with that deck, and the color and saved-commander matches, then
+/// [`push_deal_order`] for the score and the page.
+fn push_deal_ranking(qb: &mut QueryBuilder<Postgres>, deal: &CommanderDeal) {
+    qb.push(format!(
+        "
+         ),
+         candidate_tags AS MATERIALIZED (
+             SELECT c.oracle_id, t.key, t.value::float8 AS w
+             FROM candidates c, jsonb_each_text(c.profile) t
+             WHERE jsonb_typeof(c.profile) = 'object'
+         ),
+         overlap AS (
+             SELECT ct.oracle_id, dt.ord AS deck, ct.key AS oracle_tag, dt.w * ct.w AS w
+             FROM candidate_tags ct
+             JOIN deck_tags dt ON dt.key = ct.key
+         ),
+         deck_tag_score AS (
+             SELECT oracle_id, deck, sum(w) AS s FROM overlap GROUP BY oracle_id, deck
+         ),
+         best_deck AS MATERIALIZED (
+             SELECT DISTINCT ON (oracle_id) oracle_id, deck, s
+             FROM deck_tag_score
+             ORDER BY oracle_id, s DESC, deck
+         ),
+         identities AS MATERIALIZED (
+             SELECT DISTINCT color_identity FROM candidates
+         ),
+         color_score AS MATERIALIZED (
+             SELECT i.color_identity, max({deck_colors}) AS s
+             FROM identities i CROSS JOIN decks d
+             GROUP BY i.color_identity
+         ),
+         saved_colors AS MATERIALIZED (
+             SELECT i.color_identity, s.saved_id, {saved_colors} AS s
+             FROM identities i CROSS JOIN saved s
+         ),
+         saved_overlap AS (
+             SELECT ct.oracle_id, st.saved_id, sum(ct.w * st.w) AS s
+             FROM candidate_tags ct
+             JOIN saved_tags st ON st.key = ct.key
+             GROUP BY ct.oracle_id, st.saved_id
+         ),
+         saved_fit AS MATERIALIZED (
+             SELECT c.oracle_id, max(COALESCE(so.s, 0) + ",
+        deck_colors = jaccard_sql("i.color_identity", "d.colors"),
+        saved_colors = jaccard_sql("i.color_identity", "s.colors"),
+    ));
+    qb.push_bind(W_COLOR_AFFINITY);
+    qb.push(
+        " * sc.s) AS s
+             FROM candidates c
+             JOIN saved_colors sc ON sc.color_identity = c.color_identity
+             LEFT JOIN saved_overlap so ON so.oracle_id = c.oracle_id AND so.saved_id = sc.saved_id
+             WHERE sc.saved_id <> c.oracle_id
+             GROUP BY c.oracle_id
+         ),
+         shared_tags AS MATERIALIZED (
+             SELECT o.oracle_id,
+                    array_agg(o.oracle_tag ORDER BY o.w DESC, o.oracle_tag) AS tags
+             FROM (
+                 SELECT o.oracle_id, o.oracle_tag, o.w,
+                        row_number() OVER (
+                            PARTITION BY o.oracle_id ORDER BY o.w DESC, o.oracle_tag
+                        ) AS rn
+                 FROM overlap o
+                 JOIN best_deck bd ON bd.oracle_id = o.oracle_id AND bd.deck = o.deck
+             ) o
+             WHERE o.rn <= ",
+    );
+    qb.push_bind(SUGGESTION_TAG_LIMIT);
+    qb.push(
+        "
+             GROUP BY o.oracle_id
+         ),",
+    );
+    push_deal_order(qb, deal);
+}
+
+/// The deal statement's last CTEs and its page: each candidate's score from the terms before
+/// it, the identity cap as an ordering key while `deal.caps_identities()`, then the order and
+/// `deal`'s offset and limit.
+fn push_deal_order(qb: &mut QueryBuilder<Postgres>, deal: &CommanderDeal) {
+    qb.push(
+        "
+         scored AS (
+             SELECT c.oracle_id, c.color_identity,
+                    COALESCE(bd.s, 0) + ",
+    );
+    qb.push_bind(W_COLOR_AFFINITY);
+    qb.push(" * COALESCE(cs.s, 0) + ");
+    qb.push_bind(W_SAVED);
+    qb.push(" * COALESCE(sf.s, 0) + ");
+    qb.push_bind(W_POPULARITY);
+    qb.push(
+        " * c.popularity AS score,
+                    COALESCE(st.tags, '{}'::text[]) AS tags
+             FROM candidates c
+             LEFT JOIN best_deck bd ON bd.oracle_id = c.oracle_id
+             LEFT JOIN color_score cs ON cs.color_identity = c.color_identity
+             LEFT JOIN saved_fit sf ON sf.oracle_id = c.oracle_id
+             LEFT JOIN shared_tags st ON st.oracle_id = c.oracle_id
+         ),
+         ranked AS (
+             SELECT s.*,
+                    (",
+    );
+    qb.push_bind(deal.caps_identities());
+    qb.push(
+        " AND row_number() OVER (
+                        PARTITION BY s.color_identity ORDER BY s.score DESC, s.oracle_id
+                    ) > ",
+    );
+    qb.push_bind(i64::try_from(MAX_PER_COLOR_IDENTITY).unwrap_or(i64::MAX));
+    qb.push(
+        ") AS over_cap
+             FROM scored s
+         )
+         SELECT oracle_id, color_identity, score, tags
+         FROM ranked
+         ORDER BY over_cap, score DESC, oracle_id
+         OFFSET ",
+    );
+    qb.push_bind(i64::from(deal.offset));
+    qb.push(" LIMIT ");
+    qb.push_bind(i64::from(deal.limit));
+}
+
 /// The last key of every order the card search builds: the printing id, so cards tied on every
 /// other key come back in one fixed order, on any copy of the database and under any plan.
 const TIEBREAK: &str = ", latest_cards.id";
@@ -359,6 +622,622 @@ impl MyPostgres {
                     .unwrap_or(card)
             })
             .collect())
+    }
+}
+
+// Fold accents, then strip punctuation, from DB columns for accent- and
+// punctuation-insensitive text search. The query values are already
+// folded and stripped the same way by CardQueryBuilder setters.
+const STRIP_NAME: &str = "regexp_replace(f_unaccent(name), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+const STRIP_TYPE: &str = "regexp_replace(f_unaccent(type_line), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+const STRIP_ORACLE: &str =
+    "regexp_replace(f_unaccent(oracle_text), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+
+/// Pushes the conditions `criteria` sets onto `sep`, a WHERE over `latest_cards` joined to
+/// `card_profiles` whose items `AND` joins: every filter the card search takes, the commander
+/// eligibility for a format among them. The search writes its WHERE with it, so anything that
+/// reuses it filters exactly as the search does.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one condition per filter field, pushed in order onto one WHERE"
+)]
+fn push_criteria_conditions(
+    sep: &mut Separated<'_, Postgres, &'static str>,
+    criteria: &CardCriteria,
+) {
+    if let Some(query_string) = &criteria.name_contains() {
+        sep.push(STRIP_NAME);
+        sep.push_bind_unseparated(format!("%{query_string}%"));
+    }
+
+    if let Some(query_string) = &criteria.name_not_contains() {
+        sep.push("NOT (");
+        sep.push_unseparated(STRIP_NAME);
+        sep.push_bind_unseparated(format!("%{query_string}%"));
+        sep.push_unseparated(")");
+    }
+
+    if let Some(query_string) = &criteria.type_line_contains() {
+        sep.push(STRIP_TYPE);
+        sep.push_bind_unseparated(format!("%{query_string}%"));
+    }
+
+    if let Some(query_string_array) = &criteria.type_line_contains_any() {
+        sep.push(" (");
+        for (i, query_string) in query_string_array.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(" OR ");
+            }
+            sep.push_unseparated(STRIP_TYPE);
+            sep.push_bind_unseparated(format!("%{query_string}%"));
+        }
+        sep.push_unseparated(") ");
+    }
+
+    if let Some(card_types) = &criteria.card_type_contains_any() {
+        sep.push(" (");
+        for (i, query_string) in card_types.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(" OR ");
+            }
+            sep.push_unseparated(STRIP_TYPE);
+            sep.push_bind_unseparated(format!("%{query_string}%"));
+        }
+        sep.push_unseparated(") ");
+    }
+
+    if let Some(query_string_array) = &criteria.type_line_contains_all() {
+        for query_string in *query_string_array {
+            sep.push(STRIP_TYPE);
+            sep.push_bind_unseparated(format!("%{query_string}%"));
+        }
+    }
+
+    if let Some(card_types) = &criteria.card_type_contains_all() {
+        for card_type in *card_types {
+            sep.push(STRIP_TYPE);
+            sep.push_bind_unseparated(format!("%{card_type}%"));
+        }
+    }
+
+    if let Some(query_string) = &criteria.type_line_not_contains() {
+        sep.push("(type_line IS NULL OR NOT (");
+        sep.push_unseparated(STRIP_TYPE);
+        sep.push_bind_unseparated(format!("%{query_string}%"));
+        sep.push_unseparated("))");
+    }
+
+    if let Some(query_string_array) = &criteria.type_line_excludes_any() {
+        sep.push("(type_line IS NULL OR NOT (");
+        for (i, query_string) in query_string_array.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(" OR ");
+            }
+            sep.push_unseparated(STRIP_TYPE);
+            sep.push_bind_unseparated(format!("%{query_string}%"));
+        }
+        sep.push_unseparated(")) ");
+    }
+
+    if let Some(card_types) = &criteria.card_type_excludes_any() {
+        sep.push("(type_line IS NULL OR NOT (");
+        for (i, query_string) in card_types.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(" OR ");
+            }
+            sep.push_unseparated(STRIP_TYPE);
+            sep.push_bind_unseparated(format!("%{query_string}%"));
+        }
+        sep.push_unseparated(")) ");
+    }
+
+    if let Some(sets) = criteria.set_equals_any() {
+        // Printing-aware: matches a card with a printing in any of these
+        // sets, not just the view's picked printing (printing_set_names
+        // aggregates every printing). && is array overlap.
+        sep.push("printing_set_names && ");
+        sep.push_bind_unseparated(sets);
+    }
+
+    if let Some(artists) = criteria.artist_equals_any() {
+        sep.push("artist = ANY(");
+        sep.push_bind_unseparated(artists);
+        sep.push_unseparated(")");
+    }
+
+    if let Some(rarities) = criteria.rarity_equals_any() {
+        sep.push("rarity = ANY(");
+        sep.push_bind_unseparated(rarities.to_short_names());
+        sep.push_unseparated(")");
+    }
+
+    if let Some(sets) = criteria.set_excludes_any() {
+        // Printing-aware: a card survives unless EVERY set it was printed
+        // in is excluded (<@ is "contained by"), so one excluded set never
+        // hides a card whose picked printing happens to be in it.
+        sep.push("NOT (printing_set_names <@ ");
+        sep.push_bind_unseparated(sets);
+        sep.push_unseparated(")");
+    }
+
+    if let Some(artists) = criteria.artist_excludes_any() {
+        sep.push("(artist IS NULL OR NOT (artist = ANY(");
+        sep.push_bind_unseparated(artists);
+        sep.push_unseparated(")))");
+    }
+
+    if let Some(rarities) = criteria.rarity_excludes_any() {
+        sep.push("NOT (rarity = ANY(");
+        sep.push_bind_unseparated(rarities.to_short_names());
+        sep.push_unseparated("))");
+    }
+
+    if let Some(query_string) = criteria.cmc_equals() {
+        sep.push("cmc = ");
+        sep.push_bind_unseparated(query_string);
+    }
+
+    if let Some(cmc_range) = criteria.cmc_range() {
+        let lower = cmc_range.0.min(cmc_range.1);
+        let higher = cmc_range.0.max(cmc_range.1);
+        sep.push("cmc between ");
+        sep.push_bind_unseparated(lower);
+        sep.push("");
+        sep.push_bind_unseparated(higher);
+    }
+
+    // Price range against the selected currency's JSONB price. NULLIF turns
+    // empty/missing prices into NULL (excluded, no cast error), matching the
+    // client predicate. json_key() is a fixed enum literal, not user input.
+    if criteria.price_min().is_some() || criteria.price_max().is_some() {
+        let col = format!(
+            "NULLIF(prices->>'{}', '')::FLOAT8",
+            criteria.price_currency().unwrap_or_default().json_key()
+        );
+        if let Some(min) = criteria.price_min() {
+            sep.push(format!("{col} >= "));
+            sep.push_bind_unseparated(min);
+        }
+        if let Some(max) = criteria.price_max() {
+            sep.push(format!("{col} <= "));
+            sep.push_bind_unseparated(max);
+        }
+    }
+
+    if let Some(query_string) = criteria.power_equals() {
+        sep.push("power ~ '^\\d+$' AND CAST(power AS INT) = ");
+        sep.push_bind_unseparated(query_string);
+    }
+
+    if let Some(power_range) = criteria.power_range() {
+        let lower = power_range.0.min(power_range.1);
+        let higher = power_range.0.max(power_range.1);
+        sep.push("power ~ '^\\d+$' AND CAST(power AS INT) between ");
+        sep.push_bind_unseparated(lower);
+        sep.push_unseparated(" AND ");
+        sep.push_bind_unseparated(higher);
+    }
+
+    if let Some(query_string) = criteria.toughness_equals() {
+        sep.push("toughness ~ '^\\d+$' AND CAST(toughness AS INT) = ");
+        sep.push_bind_unseparated(query_string);
+    }
+
+    if let Some(toughness_range) = criteria.toughness_range() {
+        let lower = toughness_range.0.min(toughness_range.1);
+        let higher = toughness_range.0.max(toughness_range.1);
+        sep.push("toughness ~ '^\\d+$' AND CAST(toughness AS INT) between ");
+        sep.push_bind_unseparated(lower);
+        sep.push_unseparated(" AND ");
+        sep.push_bind_unseparated(higher);
+    }
+
+    if let Some(colors) = criteria.color_identity_equals() {
+        sep.push("color_identity @> ");
+        sep.push_bind_unseparated(colors.to_short_names());
+        sep.push("color_identity <@ ");
+        sep.push_bind_unseparated(colors.to_short_names());
+    }
+
+    if let Some(colors) = criteria.color_identity_within() {
+        sep.push("color_identity <@ ");
+        sep.push_bind_unseparated(colors.to_short_names());
+    }
+
+    if let Some(query_string) = &criteria.oracle_text_contains() {
+        sep.push(STRIP_ORACLE);
+        sep.push_bind_unseparated(format!("%{query_string}%"));
+    }
+
+    if let Some(query_string_array) = &criteria.oracle_text_contains_any() {
+        sep.push(" (");
+        for (i, query_string) in query_string_array.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(" OR ");
+            }
+            sep.push_unseparated(STRIP_ORACLE);
+            sep.push_bind_unseparated(format!("%{query_string}%"));
+        }
+        sep.push_unseparated(") ");
+    }
+
+    if let Some(query_string_array) = &criteria.oracle_text_contains_all() {
+        for query_string in *query_string_array {
+            sep.push(STRIP_ORACLE);
+            sep.push_bind_unseparated(format!("%{query_string}%"));
+        }
+    }
+
+    if let Some(query_string) = &criteria.oracle_text_not_contains() {
+        sep.push("(oracle_text IS NULL OR NOT (");
+        sep.push_unseparated(STRIP_ORACLE);
+        sep.push_bind_unseparated(format!("%{query_string}%"));
+        sep.push_unseparated("))");
+    }
+
+    if let Some(query_string_array) = &criteria.oracle_text_excludes_any() {
+        sep.push("(oracle_text IS NULL OR NOT (");
+        for (i, query_string) in query_string_array.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(" OR ");
+            }
+            sep.push_unseparated(STRIP_ORACLE);
+            sep.push_bind_unseparated(format!("%{query_string}%"));
+        }
+        sep.push_unseparated(")) ");
+    }
+
+    // Keywords are stored capitalized (e.g. "Flying") but UI lowercases them.
+    // Use array_lowercase() via subquery to compare case-insensitively.
+    if let Some(keywords) = &criteria.keywords_contains_any() {
+        sep.push("(SELECT array_agg(lower(k)) FROM unnest(keywords) k) && ARRAY[");
+        for (i, kw) in keywords.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(", ");
+            }
+            sep.push_bind_unseparated(kw.to_lowercase());
+        }
+        sep.push_unseparated("]::text[]");
+    }
+
+    if let Some(keywords) = &criteria.keywords_contains_all() {
+        sep.push("(SELECT array_agg(lower(k)) FROM unnest(keywords) k) @> ARRAY[");
+        for (i, kw) in keywords.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(", ");
+            }
+            sep.push_bind_unseparated(kw.to_lowercase());
+        }
+        sep.push_unseparated("]::text[]");
+    }
+
+    if let Some(keywords) = &criteria.keywords_excludes() {
+        sep.push("(keywords IS NULL OR NOT ((SELECT array_agg(lower(k)) FROM unnest(keywords) k) && ARRAY[");
+        for (i, kw) in keywords.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(", ");
+            }
+            sep.push_bind_unseparated(kw.to_lowercase());
+        }
+        sep.push_unseparated("]::text[]))");
+    }
+
+    if let Some(colors) = &criteria.produced_mana_contains_any() {
+        sep.push("produced_mana && ARRAY[");
+        for (i, c) in colors.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(", ");
+            }
+            sep.push_bind_unseparated(c.to_uppercase());
+        }
+        sep.push_unseparated("]::text[]");
+    }
+
+    if let Some(colors) = &criteria.produced_mana_contains_all() {
+        sep.push("produced_mana @> ARRAY[");
+        for (i, c) in colors.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(", ");
+            }
+            sep.push_bind_unseparated(c.to_uppercase());
+        }
+        sep.push_unseparated("]::text[]");
+    }
+
+    if let Some(colors) = &criteria.produced_mana_excludes() {
+        sep.push("(produced_mana IS NULL OR NOT (produced_mana && ARRAY[");
+        for (i, c) in colors.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(", ");
+            }
+            sep.push_bind_unseparated(c.to_uppercase());
+        }
+        sep.push_unseparated("]::text[]))");
+    }
+
+    if let Some(query_string) = &criteria.flavor_text_contains() {
+        sep.push("regexp_replace(f_unaccent(flavor_text), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
+        sep.push_bind_unseparated(format!("%{query_string}%"));
+    }
+
+    if let Some(query_string) = &criteria.flavor_text_not_contains() {
+        sep.push("(flavor_text IS NULL OR NOT (regexp_replace(f_unaccent(flavor_text), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
+        sep.push_bind_unseparated(format!("%{query_string}%"));
+        sep.push_unseparated("))");
+    }
+
+    if let Some(has_flavor_text) = criteria.has_flavor_text() {
+        if has_flavor_text {
+            sep.push("flavor_text IS NOT NULL AND flavor_text != ''");
+        } else {
+            sep.push("(flavor_text IS NULL OR flavor_text = '')");
+        }
+    }
+
+    // flag filters
+    if let Some(is_tok) = criteria.is_token() {
+        sep.push(" card_profiles.is_token = ");
+        sep.push_bind_unseparated(is_tok);
+    }
+
+    if let Some(is_playable) = criteria.is_playable()
+        && is_playable
+    {
+        // Only playable layouts
+        sep.push("latest_cards.layout = ANY(");
+        sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
+        sep.push_unseparated(")");
+    } else if let Some(is_playable) = criteria.is_playable()
+        && !is_playable
+    {
+        // Only non-playable layouts
+        sep.push("latest_cards.layout != ALL(");
+        sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
+        sep.push_unseparated(")");
+    }
+
+    if let Some(is_digital) = criteria.digital() {
+        sep.push("latest_cards.digital = ");
+        sep.push_bind_unseparated(is_digital);
+    }
+
+    if let Some(is_oversized) = criteria.oversized() {
+        sep.push("latest_cards.oversized = ");
+        sep.push_bind_unseparated(is_oversized);
+    }
+
+    match criteria.promo() {
+        // Printing-aware: a card with any promo printing (in a filtered
+        // set, when the Set filter is on, so the one shown is both).
+        Some(true) => {
+            sep.push(
+                "EXISTS (SELECT 1 FROM scryfall_data p \
+                 JOIN card_profiles pp ON p.id = pp.scryfall_data_id \
+                 WHERE p.oracle_id = latest_cards.oracle_id AND p.promo",
+            );
+            if let Some(sets) = criteria.set_equals_any() {
+                sep.push_unseparated(" AND p.set_name = ANY(");
+                sep.push_bind_unseparated(sets);
+                sep.push_unseparated(")");
+            }
+            sep.push_unseparated(")");
+        }
+        // The view picks a non-promo printing whenever the card has one.
+        Some(false) => {
+            sep.push("latest_cards.promo = false");
+        }
+        None => {}
+    }
+
+    if let Some(has_warning) = criteria.content_warning() {
+        if has_warning {
+            sep.push("latest_cards.content_warning = true");
+        } else {
+            // Hide cards with warnings (include false OR null)
+            sep.push(
+                "(latest_cards.content_warning = false OR latest_cards.content_warning IS NULL)",
+            );
+        }
+    }
+
+    if let Some(language) = criteria.language() {
+        sep.push("latest_cards.lang = ");
+        sep.push_bind_unseparated(language);
+    }
+
+    if let Some(formats) = criteria.legalities_contains_any() {
+        sep.push("(");
+        for (i, format_key) in formats.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(" OR ");
+            }
+            sep.push_unseparated("legalities->>");
+            sep.push_bind_unseparated(format_key.clone());
+            sep.push_unseparated(" IN ('legal', 'restricted')");
+        }
+        sep.push_unseparated(")");
+    }
+
+    if let Some(formats) = criteria.legalities_contains_all() {
+        sep.push("(");
+        for (i, format_key) in formats.iter().enumerate() {
+            if i > 0 {
+                sep.push_unseparated(" AND ");
+            }
+            sep.push_unseparated("legalities->>");
+            sep.push_bind_unseparated(format_key.clone());
+            sep.push_unseparated(" IN ('legal', 'restricted')");
+        }
+        sep.push_unseparated(")");
+    }
+
+    if let Some(format) = criteria.is_commander_in_format() {
+        // A meld result (Brisela, Titania Gaea Incarnate) is its own card
+        // object with a legendary creature type line and no " // " to
+        // split, so the front-face rule below cannot see it. It can never
+        // be a commander: it exists only by melding two cards already on
+        // the battlefield. Its two parts share `layout = 'meld'` and are
+        // often legal commanders, so the layout alone cannot separate
+        // them; each meld card names its own role in `all_parts`.
+        //
+        // Applied before the match because it holds for every format.
+        // `all_parts` is nullable and `jsonb_array_elements` over NULL
+        // yields no rows, so a null column leaves the card alone.
+        sep.push(
+            "NOT (latest_cards.layout = 'meld' AND EXISTS (\
+             SELECT 1 FROM jsonb_array_elements(latest_cards.all_parts) mp \
+             WHERE mp->>'component' = 'meld_result' \
+               AND mp->>'name' = latest_cards.name))",
+        );
+
+        // Mirrors `zwipe_core::domain::card::is_valid_commander`. Every type
+        // test reads the FRONT face: Scryfall joins both faces into one
+        // `type_line` with " // ", so matching the whole string makes a card
+        // eligible for what its back face is (Westvale Abbey is a Land).
+        //
+        // Each `split_part` is paired with the same test on the raw column.
+        // That conjunct is logically redundant, since the front face is a
+        // substring of the whole line, but `type_line ILIKE` can use the
+        // trigram index while `split_part(type_line, ...)` cannot. Keeping
+        // both lets the index narrow first: measured at 12ms, against 57ms
+        // with the raw test dropped.
+        match format {
+            // Legendary creature, legendary vehicle with P/T, or "can be your commander"
+            Format::Commander | Format::Duel | Format::Predh => {
+                sep.push(
+                    "((type_line ILIKE '%Legendary%' \
+                       AND split_part(type_line, ' // ', 1) ILIKE '%Legendary%' \
+                       AND ((type_line ILIKE '%Creature%' \
+                             AND split_part(type_line, ' // ', 1) ILIKE '%Creature%') \
+                            OR (power IS NOT NULL AND toughness IS NOT NULL))) \
+                     OR oracle_text ILIKE '%can be your commander%')",
+                );
+            }
+            // Legendary creature or legendary planeswalker
+            Format::Brawl | Format::StandardBrawl | Format::HistoricBrawl => {
+                sep.push(
+                    "(type_line ILIKE '%Legendary%' \
+                     AND split_part(type_line, ' // ', 1) ILIKE '%Legendary%' \
+                     AND ((type_line ILIKE '%Creature%' \
+                           AND split_part(type_line, ' // ', 1) ILIKE '%Creature%') \
+                          OR (type_line ILIKE '%Planeswalker%' \
+                              AND split_part(type_line, ' // ', 1) ILIKE '%Planeswalker%')))",
+                );
+            }
+            // Uncommon creature: legendary or not. Two fixes here:
+            //   1. Rarity is stored as the short code ('U'), not the word
+            //      'uncommon'.
+            //   2. PDH eligibility is "has appeared at uncommon in ANY
+            //      printing", not "this cached printing is uncommon", so we
+            //      check all printings via scryfall_data (catches cards whose
+            //      preferred printing is common but were printed uncommon).
+            Format::PauperCommander => {
+                sep.push(
+                    "(type_line ILIKE '%Creature%' \
+                     AND split_part(type_line, ' // ', 1) ILIKE '%Creature%' AND EXISTS (\
+                     SELECT 1 FROM scryfall_data sd2 \
+                     WHERE sd2.oracle_id = latest_cards.oracle_id \
+                     AND sd2.rarity = 'U'))",
+                );
+            }
+            // Any planeswalker
+            Format::Oathbreaker => {
+                sep.push(
+                    "(type_line ILIKE '%Planeswalker%' \
+                     AND split_part(type_line, ' // ', 1) ILIKE '%Planeswalker%')",
+                );
+            }
+            // Non-commander formats: no filter (should not happen, but safe)
+            Format::Standard
+            | Format::Future
+            | Format::Historic
+            | Format::Timeless
+            | Format::Gladiator
+            | Format::Pioneer
+            | Format::Modern
+            | Format::Legacy
+            | Format::Pauper
+            | Format::Vintage
+            | Format::Penny
+            | Format::Alchemy
+            | Format::OldSchool
+            | Format::Premodern
+            | Format::Explorer => {}
+        }
+    }
+
+    // partner/background/spell filters
+    if let Some(true) = criteria.is_partner() {
+        sep.push(
+            "(type_line ILIKE '%Legendary%' AND type_line ILIKE '%Creature%' AND (\
+             keywords @> ARRAY['Partner']::text[] \
+             OR keywords @> ARRAY['Friends forever']::text[] \
+             OR keywords @> ARRAY['Doctor''s companion']::text[] \
+             OR oracle_text ILIKE '%partner with%'))",
+        );
+    }
+
+    if let Some(true) = criteria.is_background() {
+        sep.push(
+            "(type_line ILIKE '%Legendary%' AND type_line ILIKE '%Enchantment%' \
+             AND type_line ILIKE '%Background%')",
+        );
+    }
+
+    if let Some(true) = criteria.is_signature_spell() {
+        // Mirrors `zwipe_core::domain::card::is_valid_signature_spell_type`.
+        // Oathbreaker wants an instant or sorcery CARD, so an Adventure or
+        // `prepare` creature does not qualify however its back half reads.
+        // Split cards are both halves at once (CR 709.4) and keep the whole
+        // line; everything else is judged on its front face (CR 712.4a).
+        //
+        // The raw ILIKE pair stays in front for the trigram index, as in the
+        // commander filter above.
+        sep.push(
+            "((type_line ILIKE '%Instant%' OR type_line ILIKE '%Sorcery%') \
+             AND (layout = 'split' \
+                  OR split_part(type_line, ' // ', 1) ILIKE '%Instant%' \
+                  OR split_part(type_line, ' // ', 1) ILIKE '%Sorcery%'))",
+        );
+    }
+
+    // mechanical category filters
+    if let Some(categories) = criteria.card_roles_contains_any() {
+        sep.push("(card_profiles.card_roles ?| ");
+        sep.push_bind_unseparated(categories.to_vec());
+        sep.push_unseparated(")");
+    }
+
+    if let Some(categories) = criteria.card_roles_contains_all() {
+        let json = serde_json::to_value(categories).unwrap_or_default();
+        sep.push("(card_profiles.card_roles @> ");
+        sep.push_bind_unseparated(json);
+        sep.push_unseparated(")");
+    }
+
+    if let Some(categories) = criteria.card_roles_excludes() {
+        sep.push("NOT (card_profiles.card_roles ?| ");
+        sep.push_bind_unseparated(categories.to_vec());
+        sep.push_unseparated(")");
+    }
+
+    if let Some(tags) = criteria.oracle_tags_contains_any() {
+        sep.push("(card_profiles.oracle_tags ?| ");
+        sep.push_bind_unseparated(tags.to_vec());
+        sep.push_unseparated(")");
+    }
+
+    if let Some(tags) = criteria.oracle_tags_contains_all() {
+        let json = serde_json::to_value(tags).unwrap_or_default();
+        sep.push("(card_profiles.oracle_tags @> ");
+        sep.push_bind_unseparated(json);
+        sep.push_unseparated(")");
+    }
+
+    if let Some(tags) = criteria.oracle_tags_excludes() {
+        sep.push("NOT (card_profiles.oracle_tags ?| ");
+        sep.push_bind_unseparated(tags.to_vec());
+        sep.push_unseparated(")");
     }
 }
 
@@ -651,16 +1530,6 @@ impl CardRepository for MyPostgres {
         request: &CardQuery,
         context: DeckServeContext<'_>,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
-        // Fold accents, then strip punctuation, from DB columns for accent- and
-        // punctuation-insensitive text search. The query values are already
-        // folded and stripped the same way by CardQueryBuilder setters.
-        const STRIP_NAME: &str =
-            "regexp_replace(f_unaccent(name), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
-        const STRIP_TYPE: &str =
-            "regexp_replace(f_unaccent(type_line), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
-        const STRIP_ORACLE: &str =
-            "regexp_replace(f_unaccent(oracle_text), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
-
         // Deck-serving inputs arrive bundled; unpack them into the locals the
         // QueryBuilder threads them into (never stored beyond this call).
         let DeckServeContext {
@@ -868,599 +1737,7 @@ impl CardRepository for MyPostgres {
             sep.push("latest_cards.layout NOT IN ('token', 'double_faced_token', 'emblem')");
         }
 
-        if let Some(query_string) = &criteria.name_contains() {
-            sep.push(STRIP_NAME);
-            sep.push_bind_unseparated(format!("%{query_string}%"));
-        }
-
-        if let Some(query_string) = &criteria.name_not_contains() {
-            sep.push("NOT (");
-            sep.push_unseparated(STRIP_NAME);
-            sep.push_bind_unseparated(format!("%{query_string}%"));
-            sep.push_unseparated(")");
-        }
-
-        if let Some(query_string) = &criteria.type_line_contains() {
-            sep.push(STRIP_TYPE);
-            sep.push_bind_unseparated(format!("%{query_string}%"));
-        }
-
-        if let Some(query_string_array) = &criteria.type_line_contains_any() {
-            sep.push(" (");
-            for (i, query_string) in query_string_array.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(" OR ");
-                }
-                sep.push_unseparated(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{query_string}%"));
-            }
-            sep.push_unseparated(") ");
-        }
-
-        if let Some(card_types) = &criteria.card_type_contains_any() {
-            sep.push(" (");
-            for (i, query_string) in card_types.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(" OR ");
-                }
-                sep.push_unseparated(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{query_string}%"));
-            }
-            sep.push_unseparated(") ");
-        }
-
-        if let Some(query_string_array) = &criteria.type_line_contains_all() {
-            for query_string in *query_string_array {
-                sep.push(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{query_string}%"));
-            }
-        }
-
-        if let Some(card_types) = &criteria.card_type_contains_all() {
-            for card_type in *card_types {
-                sep.push(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{card_type}%"));
-            }
-        }
-
-        if let Some(query_string) = &criteria.type_line_not_contains() {
-            sep.push("(type_line IS NULL OR NOT (");
-            sep.push_unseparated(STRIP_TYPE);
-            sep.push_bind_unseparated(format!("%{query_string}%"));
-            sep.push_unseparated("))");
-        }
-
-        if let Some(query_string_array) = &criteria.type_line_excludes_any() {
-            sep.push("(type_line IS NULL OR NOT (");
-            for (i, query_string) in query_string_array.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(" OR ");
-                }
-                sep.push_unseparated(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{query_string}%"));
-            }
-            sep.push_unseparated(")) ");
-        }
-
-        if let Some(card_types) = &criteria.card_type_excludes_any() {
-            sep.push("(type_line IS NULL OR NOT (");
-            for (i, query_string) in card_types.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(" OR ");
-                }
-                sep.push_unseparated(STRIP_TYPE);
-                sep.push_bind_unseparated(format!("%{query_string}%"));
-            }
-            sep.push_unseparated(")) ");
-        }
-
-        if let Some(sets) = criteria.set_equals_any() {
-            // Printing-aware: matches a card with a printing in any of these
-            // sets, not just the view's picked printing (printing_set_names
-            // aggregates every printing). && is array overlap.
-            sep.push("printing_set_names && ");
-            sep.push_bind_unseparated(sets);
-        }
-
-        if let Some(artists) = criteria.artist_equals_any() {
-            sep.push("artist = ANY(");
-            sep.push_bind_unseparated(artists);
-            sep.push_unseparated(")");
-        }
-
-        if let Some(rarities) = criteria.rarity_equals_any() {
-            sep.push("rarity = ANY(");
-            sep.push_bind_unseparated(rarities.to_short_names());
-            sep.push_unseparated(")");
-        }
-
-        if let Some(sets) = criteria.set_excludes_any() {
-            // Printing-aware: a card survives unless EVERY set it was printed
-            // in is excluded (<@ is "contained by"). One excluded set can no
-            // longer hide a staple whose picked printing happened to be there,
-            // the Sol Ring / Secret Lair Drop bug this replaced.
-            sep.push("NOT (printing_set_names <@ ");
-            sep.push_bind_unseparated(sets);
-            sep.push_unseparated(")");
-        }
-
-        if let Some(artists) = criteria.artist_excludes_any() {
-            sep.push("(artist IS NULL OR NOT (artist = ANY(");
-            sep.push_bind_unseparated(artists);
-            sep.push_unseparated(")))");
-        }
-
-        if let Some(rarities) = criteria.rarity_excludes_any() {
-            sep.push("NOT (rarity = ANY(");
-            sep.push_bind_unseparated(rarities.to_short_names());
-            sep.push_unseparated("))");
-        }
-
-        if let Some(query_string) = criteria.cmc_equals() {
-            sep.push("cmc = ");
-            sep.push_bind_unseparated(query_string);
-        }
-
-        if let Some(cmc_range) = criteria.cmc_range() {
-            let lower = cmc_range.0.min(cmc_range.1);
-            let higher = cmc_range.0.max(cmc_range.1);
-            sep.push("cmc between ");
-            sep.push_bind_unseparated(lower);
-            sep.push("");
-            sep.push_bind_unseparated(higher);
-        }
-
-        // Price range against the selected currency's JSONB price. NULLIF turns
-        // empty/missing prices into NULL (excluded, no cast error), matching the
-        // client predicate. json_key() is a fixed enum literal, not user input.
-        if criteria.price_min().is_some() || criteria.price_max().is_some() {
-            let col = format!(
-                "NULLIF(prices->>'{}', '')::FLOAT8",
-                criteria.price_currency().unwrap_or_default().json_key()
-            );
-            if let Some(min) = criteria.price_min() {
-                sep.push(format!("{col} >= "));
-                sep.push_bind_unseparated(min);
-            }
-            if let Some(max) = criteria.price_max() {
-                sep.push(format!("{col} <= "));
-                sep.push_bind_unseparated(max);
-            }
-        }
-
-        if let Some(query_string) = criteria.power_equals() {
-            sep.push("power ~ '^\\d+$' AND CAST(power AS INT) = ");
-            sep.push_bind_unseparated(query_string);
-        }
-
-        if let Some(power_range) = criteria.power_range() {
-            let lower = power_range.0.min(power_range.1);
-            let higher = power_range.0.max(power_range.1);
-            sep.push("power ~ '^\\d+$' AND CAST(power AS INT) between ");
-            sep.push_bind_unseparated(lower);
-            sep.push_unseparated(" AND ");
-            sep.push_bind_unseparated(higher);
-        }
-
-        if let Some(query_string) = criteria.toughness_equals() {
-            sep.push("toughness ~ '^\\d+$' AND CAST(toughness AS INT) = ");
-            sep.push_bind_unseparated(query_string);
-        }
-
-        if let Some(toughness_range) = criteria.toughness_range() {
-            let lower = toughness_range.0.min(toughness_range.1);
-            let higher = toughness_range.0.max(toughness_range.1);
-            sep.push("toughness ~ '^\\d+$' AND CAST(toughness AS INT) between ");
-            sep.push_bind_unseparated(lower);
-            sep.push_unseparated(" AND ");
-            sep.push_bind_unseparated(higher);
-        }
-
-        if let Some(colors) = criteria.color_identity_equals() {
-            sep.push("color_identity @> ");
-            sep.push_bind_unseparated(colors.to_short_names());
-            sep.push("color_identity <@ ");
-            sep.push_bind_unseparated(colors.to_short_names());
-        }
-
-        if let Some(colors) = criteria.color_identity_within() {
-            sep.push("color_identity <@ ");
-            sep.push_bind_unseparated(colors.to_short_names());
-        }
-
-        if let Some(query_string) = &criteria.oracle_text_contains() {
-            sep.push(STRIP_ORACLE);
-            sep.push_bind_unseparated(format!("%{query_string}%"));
-        }
-
-        if let Some(query_string_array) = &criteria.oracle_text_contains_any() {
-            sep.push(" (");
-            for (i, query_string) in query_string_array.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(" OR ");
-                }
-                sep.push_unseparated(STRIP_ORACLE);
-                sep.push_bind_unseparated(format!("%{query_string}%"));
-            }
-            sep.push_unseparated(") ");
-        }
-
-        if let Some(query_string_array) = &criteria.oracle_text_contains_all() {
-            for query_string in *query_string_array {
-                sep.push(STRIP_ORACLE);
-                sep.push_bind_unseparated(format!("%{query_string}%"));
-            }
-        }
-
-        if let Some(query_string) = &criteria.oracle_text_not_contains() {
-            sep.push("(oracle_text IS NULL OR NOT (");
-            sep.push_unseparated(STRIP_ORACLE);
-            sep.push_bind_unseparated(format!("%{query_string}%"));
-            sep.push_unseparated("))");
-        }
-
-        if let Some(query_string_array) = &criteria.oracle_text_excludes_any() {
-            sep.push("(oracle_text IS NULL OR NOT (");
-            for (i, query_string) in query_string_array.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(" OR ");
-                }
-                sep.push_unseparated(STRIP_ORACLE);
-                sep.push_bind_unseparated(format!("%{query_string}%"));
-            }
-            sep.push_unseparated(")) ");
-        }
-
-        // Keywords are stored capitalized (e.g. "Flying") but UI lowercases them.
-        // Use array_lowercase() via subquery to compare case-insensitively.
-        if let Some(keywords) = &criteria.keywords_contains_any() {
-            sep.push("(SELECT array_agg(lower(k)) FROM unnest(keywords) k) && ARRAY[");
-            for (i, kw) in keywords.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(", ");
-                }
-                sep.push_bind_unseparated(kw.to_lowercase());
-            }
-            sep.push_unseparated("]::text[]");
-        }
-
-        if let Some(keywords) = &criteria.keywords_contains_all() {
-            sep.push("(SELECT array_agg(lower(k)) FROM unnest(keywords) k) @> ARRAY[");
-            for (i, kw) in keywords.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(", ");
-                }
-                sep.push_bind_unseparated(kw.to_lowercase());
-            }
-            sep.push_unseparated("]::text[]");
-        }
-
-        if let Some(keywords) = &criteria.keywords_excludes() {
-            sep.push("(keywords IS NULL OR NOT ((SELECT array_agg(lower(k)) FROM unnest(keywords) k) && ARRAY[");
-            for (i, kw) in keywords.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(", ");
-                }
-                sep.push_bind_unseparated(kw.to_lowercase());
-            }
-            sep.push_unseparated("]::text[]))");
-        }
-
-        if let Some(colors) = &criteria.produced_mana_contains_any() {
-            sep.push("produced_mana && ARRAY[");
-            for (i, c) in colors.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(", ");
-                }
-                sep.push_bind_unseparated(c.to_uppercase());
-            }
-            sep.push_unseparated("]::text[]");
-        }
-
-        if let Some(colors) = &criteria.produced_mana_contains_all() {
-            sep.push("produced_mana @> ARRAY[");
-            for (i, c) in colors.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(", ");
-                }
-                sep.push_bind_unseparated(c.to_uppercase());
-            }
-            sep.push_unseparated("]::text[]");
-        }
-
-        if let Some(colors) = &criteria.produced_mana_excludes() {
-            sep.push("(produced_mana IS NULL OR NOT (produced_mana && ARRAY[");
-            for (i, c) in colors.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(", ");
-                }
-                sep.push_bind_unseparated(c.to_uppercase());
-            }
-            sep.push_unseparated("]::text[]))");
-        }
-
-        if let Some(query_string) = &criteria.flavor_text_contains() {
-            sep.push("regexp_replace(f_unaccent(flavor_text), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
-            sep.push_bind_unseparated(format!("%{query_string}%"));
-        }
-
-        if let Some(query_string) = &criteria.flavor_text_not_contains() {
-            sep.push("(flavor_text IS NULL OR NOT (regexp_replace(f_unaccent(flavor_text), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
-            sep.push_bind_unseparated(format!("%{query_string}%"));
-            sep.push_unseparated("))");
-        }
-
-        if let Some(has_flavor_text) = criteria.has_flavor_text() {
-            if has_flavor_text {
-                sep.push("flavor_text IS NOT NULL AND flavor_text != ''");
-            } else {
-                sep.push("(flavor_text IS NULL OR flavor_text = '')");
-            }
-        }
-
-        // flag filters
-        if let Some(is_tok) = criteria.is_token() {
-            sep.push(" card_profiles.is_token = ");
-            sep.push_bind_unseparated(is_tok);
-        }
-
-        if let Some(is_playable) = criteria.is_playable()
-            && is_playable
-        {
-            // Only playable layouts
-            sep.push("latest_cards.layout = ANY(");
-            sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
-            sep.push_unseparated(")");
-        } else if let Some(is_playable) = criteria.is_playable()
-            && !is_playable
-        {
-            // Only non-playable layouts
-            sep.push("latest_cards.layout != ALL(");
-            sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
-            sep.push_unseparated(")");
-        }
-
-        if let Some(is_digital) = criteria.digital() {
-            sep.push("latest_cards.digital = ");
-            sep.push_bind_unseparated(is_digital);
-        }
-
-        if let Some(is_oversized) = criteria.oversized() {
-            sep.push("latest_cards.oversized = ");
-            sep.push_bind_unseparated(is_oversized);
-        }
-
-        match criteria.promo() {
-            // Printing-aware: a card with any promo printing (in a filtered
-            // set, when the Set filter is on, so the one shown is both).
-            Some(true) => {
-                sep.push(
-                    "EXISTS (SELECT 1 FROM scryfall_data p \
-                     JOIN card_profiles pp ON p.id = pp.scryfall_data_id \
-                     WHERE p.oracle_id = latest_cards.oracle_id AND p.promo",
-                );
-                if let Some(sets) = criteria.set_equals_any() {
-                    sep.push_unseparated(" AND p.set_name = ANY(");
-                    sep.push_bind_unseparated(sets);
-                    sep.push_unseparated(")");
-                }
-                sep.push_unseparated(")");
-            }
-            // The view picks a non-promo printing whenever the card has one.
-            Some(false) => {
-                sep.push("latest_cards.promo = false");
-            }
-            None => {}
-        }
-
-        if let Some(has_warning) = criteria.content_warning() {
-            if has_warning {
-                sep.push("latest_cards.content_warning = true");
-            } else {
-                // Hide cards with warnings (include false OR null)
-                sep.push("(latest_cards.content_warning = false OR latest_cards.content_warning IS NULL)");
-            }
-        }
-
-        if let Some(language) = criteria.language() {
-            sep.push("latest_cards.lang = ");
-            sep.push_bind_unseparated(language);
-        }
-
-        if let Some(formats) = criteria.legalities_contains_any() {
-            sep.push("(");
-            for (i, format_key) in formats.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(" OR ");
-                }
-                sep.push_unseparated("legalities->>");
-                sep.push_bind_unseparated(format_key.clone());
-                sep.push_unseparated(" IN ('legal', 'restricted')");
-            }
-            sep.push_unseparated(")");
-        }
-
-        if let Some(formats) = criteria.legalities_contains_all() {
-            sep.push("(");
-            for (i, format_key) in formats.iter().enumerate() {
-                if i > 0 {
-                    sep.push_unseparated(" AND ");
-                }
-                sep.push_unseparated("legalities->>");
-                sep.push_bind_unseparated(format_key.clone());
-                sep.push_unseparated(" IN ('legal', 'restricted')");
-            }
-            sep.push_unseparated(")");
-        }
-
-        if let Some(format) = criteria.is_commander_in_format() {
-            // A meld result (Brisela, Titania Gaea Incarnate) is its own card
-            // object with a legendary creature type line and no " // " to
-            // split, so the front-face rule below cannot see it. It can never
-            // be a commander: it exists only by melding two cards already on
-            // the battlefield. Its two parts share `layout = 'meld'` and are
-            // often legal commanders, so the layout alone cannot separate
-            // them; each meld card names its own role in `all_parts`.
-            //
-            // Applied before the match because it holds for every format.
-            // `all_parts` is nullable and `jsonb_array_elements` over NULL
-            // yields no rows, so a null column leaves the card alone.
-            sep.push(
-                "NOT (latest_cards.layout = 'meld' AND EXISTS (\
-                 SELECT 1 FROM jsonb_array_elements(latest_cards.all_parts) mp \
-                 WHERE mp->>'component' = 'meld_result' \
-                   AND mp->>'name' = latest_cards.name))",
-            );
-
-            // Mirrors `zwipe_core::domain::card::is_valid_commander`. Every type
-            // test reads the FRONT face: Scryfall joins both faces into one
-            // `type_line` with " // ", so matching the whole string makes a card
-            // eligible for what its back face is (Westvale Abbey is a Land).
-            //
-            // Each `split_part` is paired with the same test on the raw column.
-            // That conjunct is logically redundant, since the front face is a
-            // substring of the whole line, but `type_line ILIKE` can use the
-            // trigram index while `split_part(type_line, ...)` cannot. Keeping
-            // both lets the index narrow first: measured at 12ms, against 57ms
-            // with the raw test dropped.
-            match format {
-                // Legendary creature, legendary vehicle with P/T, or "can be your commander"
-                Format::Commander | Format::Duel | Format::Predh => {
-                    sep.push(
-                        "((type_line ILIKE '%Legendary%' \
-                           AND split_part(type_line, ' // ', 1) ILIKE '%Legendary%' \
-                           AND ((type_line ILIKE '%Creature%' \
-                                 AND split_part(type_line, ' // ', 1) ILIKE '%Creature%') \
-                                OR (power IS NOT NULL AND toughness IS NOT NULL))) \
-                         OR oracle_text ILIKE '%can be your commander%')",
-                    );
-                }
-                // Legendary creature or legendary planeswalker
-                Format::Brawl | Format::StandardBrawl | Format::HistoricBrawl => {
-                    sep.push(
-                        "(type_line ILIKE '%Legendary%' \
-                         AND split_part(type_line, ' // ', 1) ILIKE '%Legendary%' \
-                         AND ((type_line ILIKE '%Creature%' \
-                               AND split_part(type_line, ' // ', 1) ILIKE '%Creature%') \
-                              OR (type_line ILIKE '%Planeswalker%' \
-                                  AND split_part(type_line, ' // ', 1) ILIKE '%Planeswalker%')))",
-                    );
-                }
-                // Uncommon creature: legendary or not. Two fixes here:
-                //   1. Rarity is stored as the short code ('U'), not the word
-                //      'uncommon'.
-                //   2. PDH eligibility is "has appeared at uncommon in ANY
-                //      printing", not "this cached printing is uncommon", so we
-                //      check all printings via scryfall_data (catches cards whose
-                //      preferred printing is common but were printed uncommon).
-                Format::PauperCommander => {
-                    sep.push(
-                        "(type_line ILIKE '%Creature%' \
-                         AND split_part(type_line, ' // ', 1) ILIKE '%Creature%' AND EXISTS (\
-                         SELECT 1 FROM scryfall_data sd2 \
-                         WHERE sd2.oracle_id = latest_cards.oracle_id \
-                         AND sd2.rarity = 'U'))",
-                    );
-                }
-                // Any planeswalker
-                Format::Oathbreaker => {
-                    sep.push(
-                        "(type_line ILIKE '%Planeswalker%' \
-                         AND split_part(type_line, ' // ', 1) ILIKE '%Planeswalker%')",
-                    );
-                }
-                // Non-commander formats: no filter (should not happen, but safe)
-                Format::Standard
-                | Format::Future
-                | Format::Historic
-                | Format::Timeless
-                | Format::Gladiator
-                | Format::Pioneer
-                | Format::Modern
-                | Format::Legacy
-                | Format::Pauper
-                | Format::Vintage
-                | Format::Penny
-                | Format::Alchemy
-                | Format::OldSchool
-                | Format::Premodern
-                | Format::Explorer => {}
-            }
-        }
-
-        // partner/background/spell filters
-        if let Some(true) = criteria.is_partner() {
-            sep.push(
-                "(type_line ILIKE '%Legendary%' AND type_line ILIKE '%Creature%' AND (\
-                 keywords @> ARRAY['Partner']::text[] \
-                 OR keywords @> ARRAY['Friends forever']::text[] \
-                 OR keywords @> ARRAY['Doctor''s companion']::text[] \
-                 OR oracle_text ILIKE '%partner with%'))",
-            );
-        }
-
-        if let Some(true) = criteria.is_background() {
-            sep.push(
-                "(type_line ILIKE '%Legendary%' AND type_line ILIKE '%Enchantment%' \
-                 AND type_line ILIKE '%Background%')",
-            );
-        }
-
-        if let Some(true) = criteria.is_signature_spell() {
-            // Mirrors `zwipe_core::domain::card::is_valid_signature_spell_type`.
-            // Oathbreaker wants an instant or sorcery CARD, so an Adventure or
-            // `prepare` creature does not qualify however its back half reads.
-            // Split cards are both halves at once (CR 709.4) and keep the whole
-            // line; everything else is judged on its front face (CR 712.4a).
-            //
-            // The raw ILIKE pair stays in front for the trigram index, as in the
-            // commander filter above.
-            sep.push(
-                "((type_line ILIKE '%Instant%' OR type_line ILIKE '%Sorcery%') \
-                 AND (layout = 'split' \
-                      OR split_part(type_line, ' // ', 1) ILIKE '%Instant%' \
-                      OR split_part(type_line, ' // ', 1) ILIKE '%Sorcery%'))",
-            );
-        }
-
-        // mechanical category filters
-        if let Some(categories) = criteria.card_roles_contains_any() {
-            sep.push("(card_profiles.card_roles ?| ");
-            sep.push_bind_unseparated(categories.to_vec());
-            sep.push_unseparated(")");
-        }
-
-        if let Some(categories) = criteria.card_roles_contains_all() {
-            let json = serde_json::to_value(categories).unwrap_or_default();
-            sep.push("(card_profiles.card_roles @> ");
-            sep.push_bind_unseparated(json);
-            sep.push_unseparated(")");
-        }
-
-        if let Some(categories) = criteria.card_roles_excludes() {
-            sep.push("NOT (card_profiles.card_roles ?| ");
-            sep.push_bind_unseparated(categories.to_vec());
-            sep.push_unseparated(")");
-        }
-
-        if let Some(tags) = criteria.oracle_tags_contains_any() {
-            sep.push("(card_profiles.oracle_tags ?| ");
-            sep.push_bind_unseparated(tags.to_vec());
-            sep.push_unseparated(")");
-        }
-
-        if let Some(tags) = criteria.oracle_tags_contains_all() {
-            let json = serde_json::to_value(tags).unwrap_or_default();
-            sep.push("(card_profiles.oracle_tags @> ");
-            sep.push_bind_unseparated(json);
-            sep.push_unseparated(")");
-        }
-
-        if let Some(tags) = criteria.oracle_tags_excludes() {
-            sep.push("NOT (card_profiles.oracle_tags ?| ");
-            sep.push_bind_unseparated(tags.to_vec());
-            sep.push_unseparated(")");
-        }
+        push_criteria_conditions(&mut sep, criteria);
 
         // Deck-aware exclusion: omit cards already in the deck. Null-oracle
         // printings are kept; they can't match a deck's oracle_ids anyway,
@@ -2462,6 +2739,52 @@ impl CardRepository for MyPostgres {
                 },
             )
             .collect())
+    }
+
+    async fn score_commander_deal(
+        &self,
+        deal: &CommanderDeal,
+        signal: &DealSignal,
+    ) -> Result<Vec<ScoredCommander>, CommanderSuggestionsError> {
+        // The format's commander rules, as the search writes them for a commander pick.
+        let mut commander = CardQueryBuilder::default();
+        commander.set_is_commander_in_format(deal.format);
+        let commander = commander
+            .build()
+            .map_err(|e| CommanderSuggestionsError::Database(anyhow::anyhow!(e)))?;
+        let rows: Vec<(uuid::Uuid, Vec<String>, f64, Vec<String>)> =
+            commander_deal_query(deal, signal, commander.criteria())
+                .build()
+                .map(|row: sqlx::postgres::PgRow| (row.get(0), row.get(1), row.get(2), row.get(3)))
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+        Ok(rows
+            .into_iter()
+            .map(
+                |(oracle_id, color_identity, _score, tag_slugs)| ScoredCommander {
+                    oracle_id,
+                    color_identity,
+                    tag_slugs,
+                },
+            )
+            .collect())
+    }
+
+    async fn any_commander_tag_profile(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+    ) -> Result<bool, CommanderSuggestionsError> {
+        if oracle_ids.is_empty() {
+            return Ok(false);
+        }
+        sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS (SELECT 1 FROM commander_tag_profiles WHERE oracle_id = ANY($1))",
+        )
+        .bind(oracle_ids)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| CommanderSuggestionsError::Database(e.into()))
     }
 
     async fn tag_roles(

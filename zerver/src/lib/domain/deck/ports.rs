@@ -28,6 +28,7 @@ use zwipe_core::domain::deck::{Deck, DeckCard};
 use crate::domain::deck::models::deck::activity::{Activity, ActivityCounts};
 use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
+use crate::domain::deck::models::deck::commander_deal::{CommanderDeal, CommanderDealPage};
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
 use crate::domain::deck::models::deck::commander_suggestions::{
     CommanderDismissal, CommanderSuggestions, CommanderSuggestionsError, MainboardCard,
@@ -442,6 +443,18 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         user_id: uuid::Uuid,
         limit: u32,
     ) -> impl Future<Output = Result<CommanderSuggestions, CommanderSuggestionsError>> + Send;
+
+    /// One page of the merged commander ranking for `user_id`: every commander `deal`'s filter
+    /// matches that can lead a deck in its format, scored on the user's decks and saved
+    /// commanders, with popularity ordering what they leave even. The commanders the user leads
+    /// stay out, and so does the commander maybeboard unless `deal.keep_maybeboard`; the
+    /// maybeboard counts as signal either way. The page says it is ranked by playstyle when any
+    /// deck has a tag profile or any saved commander does, else by popularity.
+    fn deal_commanders(
+        &self,
+        user_id: uuid::Uuid,
+        deal: CommanderDeal,
+    ) -> impl Future<Output = Result<CommanderDealPage, CommanderSuggestionsError>> + Send;
 
     /// The user's deck count and color map, from the same decks
     /// [`DeckService::commander_suggestions`] reads, without tag profiles or

@@ -1,1 +1,4 @@
-[]
+[
+  { "route": "/api/commander/deal", "path": "", "kind": "status", "reason": "new signed-in route, the commander deal (additive; main has no such route)", "approved_by": "composer" },
+  { "route": "/api/commander/deal", "path": "", "kind": "type", "reason": "new signed-in route, the commander deal: main's 404 has no body", "approved_by": "composer" }
+]

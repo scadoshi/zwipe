@@ -8,6 +8,8 @@ pub mod activity;
 pub mod clear_deck_suppressions;
 /// Clone deck operation.
 pub mod clone_deck;
+/// The commander deal: one page of the merged ranking over every commander a filter matches.
+pub mod commander_deal;
 /// Commander maybeboard operations (per-user "maybe this commander" list).
 pub mod commander_maybeboard;
 /// Suggested commanders and their dismissals.

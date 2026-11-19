@@ -98,6 +98,8 @@ pub const PLAYSTYLE_ROUTE: &str = "/api/deck/playstyle";
 
 /// Ranked commander suggestions; the `limit` query caps how many.
 pub const COMMANDER_SUGGESTIONS_ROUTE: &str = "/api/commander/suggestions";
+/// One page of the merged commander ranking over every commander a filter matches.
+pub const COMMANDER_DEAL_ROUTE: &str = "/api/commander/deal";
 /// POST dismisses one commander for a week; DELETE clears every dismissal.
 pub const COMMANDER_DISMISSALS_ROUTE: &str = "/api/commander/suggestions/dismissals";
 
@@ -123,6 +125,11 @@ pub fn card_route(scryfall_data_id: Uuid) -> String {
 #[must_use]
 pub fn printings_route(oracle_id: Uuid) -> String {
     format!("{CARD_ROUTE}/{oracle_id}/printings")
+}
+
+#[must_use]
+pub fn card_stats_route(oracle_id: Uuid) -> String {
+    format!("{CARD_ROUTE}/{oracle_id}/stats")
 }
 
 #[must_use]
@@ -274,6 +281,7 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Post, COMMANDER_DISMISSALS_ROUTE, true),
     (Method::Delete, COMMANDER_DISMISSALS_ROUTE, true),
     (Method::Get, COMMANDER_SUGGESTIONS_ROUTE, true),
+    (Method::Post, COMMANDER_DEAL_ROUTE, true),
     (Method::Post, CONFIRM_EMAIL_CHANGE_ROUTE, false),
     (Method::Post, CREATE_DECK_ROUTE, true),
     (Method::Delete, DELETE_USER_ROUTE, true),
@@ -335,6 +343,7 @@ mod tests {
 
         assert_eq!(card_route(a), format!("/api/card/{sa}"));
         assert_eq!(printings_route(a), format!("/api/card/{sa}/printings"));
+        assert_eq!(card_stats_route(a), format!("/api/card/{sa}/stats"));
         let slug: OracleTagSlug = "spot-removal".parse().unwrap();
         assert_eq!(
             oracle_tag_examples_route(&slug),
