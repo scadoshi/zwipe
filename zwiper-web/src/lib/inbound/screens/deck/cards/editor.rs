@@ -355,11 +355,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         let (mut rows, mut retries, mut entries) = (removed_rows, undo_retry, entries);
         let removed = rows.write().remove(&card_id);
         let retry = retries.write().remove(&card_id);
-        let name = entries
-            .peek()
-            .iter()
-            .find(|e| e.deck_card.scryfall_data_id == card_id)
-            .map_or_default(|e| e.card.scryfall_data.name.clone());
         spawn_write(async move {
             let mut undo = undo;
             let mut put_back = {
@@ -416,29 +411,20 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                             c.update_deck_card(deck_id, card_id, &request, &s).await
                         })
                         .await;
-                    match reply {
-                        Ok(_) if burst.record => undo.write().push(
-                            deck_id,
-                            UndoAction::QuantityChanged {
-                                card_id,
-                                card_name: name,
-                                net: burst.delta,
-                                baseline: burst.baseline,
-                            },
-                        ),
-                        Ok(_) => landed(),
-                        Err(_) => {
-                            put_back();
-                            if mounted.get()
-                                && let Ok(quantity) = Quantity::new(burst.baseline)
-                                && let Some(entry) = entries
-                                    .write()
-                                    .iter_mut()
-                                    .find(|e| e.deck_card.scryfall_data_id == card_id)
-                            {
-                                entry.deck_card.quantity = quantity;
-                            }
-                        }
+                    if reply.is_ok() {
+                        landed();
+                        return;
+                    }
+                    put_back();
+                    deck_cards::take_burst_entry(&mut undo.write(), deck_id, card_id, &burst);
+                    if mounted.get()
+                        && let Ok(quantity) = Quantity::new(burst.baseline)
+                        && let Some(entry) = entries
+                            .write()
+                            .iter_mut()
+                            .find(|e| e.deck_card.scryfall_data_id == card_id)
+                    {
+                        entry.deck_card.quantity = quantity;
                     }
                 }
             }
@@ -478,7 +464,13 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 .record_removal(deck_id, entry.card.scryfall_data.oracle_id);
             removed_rows.write().insert(card_id, entry.clone());
             if record {
-                let baseline = bursts.peek().baseline(card_id).unwrap_or(current);
+                let open = bursts.peek().open(card_id);
+                // The removal's entry puts back the copies from before the burst, so it stands
+                // for the burst's own entry too.
+                if let Some(burst) = open {
+                    deck_cards::take_burst_entry(&mut undo.write(), deck_id, card_id, &burst);
+                }
+                let baseline = open.map_or(current, |b| b.baseline);
                 undo.write().push(
                     deck_id,
                     UndoAction::Removed {
@@ -507,6 +499,20 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 entry.deck_card.quantity = quantity;
             }
             crossings(&before);
+            if record {
+                let name = before
+                    .iter()
+                    .find(|e| e.deck_card.scryfall_data_id == card_id)
+                    .map_or_default(|e| e.card.scryfall_data.name.clone());
+                bursts.peek().record_tap(
+                    &mut undo.write(),
+                    deck_id,
+                    card_id,
+                    &name,
+                    current,
+                    delta,
+                );
+            }
         }
         let generation = bursts.write().tap(card_id, current, delta, record);
         spawn(async move {

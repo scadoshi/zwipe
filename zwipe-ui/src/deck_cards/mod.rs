@@ -16,7 +16,7 @@ use zwipe_core::domain::deck::{
 };
 
 use crate::deck::form::Slot;
-use crate::stores::undo::UndoAction;
+use crate::stores::undo::{UndoAction, UndoStore};
 
 pub mod columns;
 pub mod cursor;
@@ -399,7 +399,7 @@ pub struct Burst {
     pub delta: i32,
     /// Bumped by each tap, so only the last tap's timer writes.
     pub generation: u64,
-    /// Whether the write records an undo entry; undo-driven bursts do not.
+    /// Whether the burst's taps record an undo entry; undo-driven bursts do not.
     pub record: bool,
 }
 
@@ -455,6 +455,48 @@ impl Bursts {
         self.open.get(&card_id).map(|b| b.baseline)
     }
 
+    /// The card's open burst, if it has one.
+    #[must_use]
+    pub fn open(&self, card_id: Uuid) -> Option<Burst> {
+        self.open.get(&card_id).copied()
+    }
+
+    /// Records a tap of `delta` on `card_id`, at `current` copies, on the deck's undo `log` as
+    /// the row changes, before its write goes out, so an Undo pressed while the write is on its
+    /// way takes this tap back. Call it before [`Self::tap`] folds the tap in.
+    ///
+    /// A tap that joins a recording burst folds into that burst's entry, so one Undo takes the
+    /// whole burst back, and taps that cancel out leave no entry. A tap that joins an undo's
+    /// burst gets an entry of its own.
+    pub fn record_tap(
+        &self,
+        log: &mut UndoStore,
+        deck_id: Uuid,
+        card_id: Uuid,
+        card_name: &str,
+        current: i32,
+        delta: i32,
+    ) {
+        let (baseline, net) = match self.open(card_id) {
+            Some(burst) if burst.record => {
+                take_burst_entry(log, deck_id, card_id, &burst);
+                (burst.baseline, burst.delta.saturating_add(delta))
+            }
+            Some(_) | None => (current, delta),
+        };
+        if net != 0 {
+            log.push(
+                deck_id,
+                UndoAction::QuantityChanged {
+                    card_id,
+                    card_name: card_name.to_owned(),
+                    net,
+                    baseline,
+                },
+            );
+        }
+    }
+
     /// Takes the burst when `generation` is still its latest tap.
     pub fn due(&mut self, card_id: Uuid, generation: u64) -> Option<Burst> {
         if self.open.get(&card_id)?.generation != generation {
@@ -467,6 +509,27 @@ impl Bursts {
     pub fn drain(&mut self) -> Vec<(Uuid, Burst)> {
         self.open.drain().collect()
     }
+}
+
+/// Takes `burst`'s entry for `card_id` off the deck's undo `log`, as when its write fails or a
+/// later tap removes the card: the newest entry for the card with the burst's baseline and net.
+/// `None` when the burst records nothing, or its entry is gone because Undo took it.
+pub fn take_burst_entry(
+    log: &mut UndoStore,
+    deck_id: Uuid,
+    card_id: Uuid,
+    burst: &Burst,
+) -> Option<UndoAction> {
+    if !burst.record {
+        return None;
+    }
+    log.take_newest(deck_id, |action| {
+        matches!(
+            action,
+            UndoAction::QuantityChanged { card_id: id, net, baseline, .. }
+                if *id == card_id && *net == burst.delta && *baseline == burst.baseline
+        )
+    })
 }
 
 /// How many main board cards a deck may star as MVPs; the server refuses a fourth.
@@ -1017,6 +1080,114 @@ mod tests {
         );
         bursts.tap(card, 1, -1, true);
         assert_eq!(bursts.drain()[0].1.write(), Write::Delete);
+    }
+
+    /// The deck's undo log, newest last.
+    fn log_of(log: &UndoStore, deck: Uuid) -> Vec<UndoAction> {
+        log.log(deck).to_vec()
+    }
+
+    fn quantity(card: Uuid, net: i32, baseline: i32) -> UndoAction {
+        UndoAction::QuantityChanged {
+            card_id: card,
+            card_name: "Cyberman Patrol".to_owned(),
+            net,
+            baseline,
+        }
+    }
+
+    /// A recorded tap: on the log, then folded into its burst.
+    fn tap(bursts: &mut Bursts, log: &mut UndoStore, deck: Uuid, card: Uuid, at: i32, delta: i32) {
+        bursts.record_tap(log, deck, card, "Cyberman Patrol", at, delta);
+        bursts.tap(card, at, delta, true);
+    }
+
+    #[test]
+    fn a_tap_is_on_the_undo_log_before_its_write_goes_out() {
+        let (deck, card, flagged) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let unflag = UndoAction::FlagToggled {
+            card_id: flagged,
+            card_name: "Diluvian Primordial".to_owned(),
+            before: true,
+        };
+        let mut log = UndoStore::default();
+        log.push(deck, unflag.clone());
+        let mut bursts = Bursts::default();
+
+        tap(&mut bursts, &mut log, deck, card, 1, 1);
+
+        assert_eq!(
+            log.pop(deck),
+            Some(quantity(card, 1, 1)),
+            "Undo right after + takes the + back, not the Unflag before it"
+        );
+        assert_eq!(log.pop(deck), Some(unflag));
+    }
+
+    #[test]
+    fn a_burst_s_taps_fold_into_one_entry_and_taps_that_cancel_leave_none() {
+        let (deck, card) = (Uuid::new_v4(), Uuid::new_v4());
+        let mut log = UndoStore::default();
+        let mut bursts = Bursts::default();
+
+        tap(&mut bursts, &mut log, deck, card, 1, 1);
+        tap(&mut bursts, &mut log, deck, card, 2, 1);
+        assert_eq!(
+            log_of(&log, deck),
+            [quantity(card, 2, 1)],
+            "one Undo per burst"
+        );
+
+        tap(&mut bursts, &mut log, deck, card, 3, -1);
+        tap(&mut bursts, &mut log, deck, card, 2, -1);
+        assert_eq!(log_of(&log, deck), [], "back where it started");
+    }
+
+    #[test]
+    fn a_tap_after_an_undo_folded_into_its_burst_leaves_older_entries_alone() {
+        let (deck, card) = (Uuid::new_v4(), Uuid::new_v4());
+        let mut log = UndoStore::default();
+        let older = quantity(card, 1, 2);
+        log.push(deck, older.clone());
+        let mut bursts = Bursts::default();
+
+        tap(&mut bursts, &mut log, deck, card, 2, 1);
+        // Undo pops the burst's entry and taps the inverse into the same burst.
+        assert_eq!(log.pop(deck), Some(quantity(card, 1, 2)));
+        bursts.tap(card, 3, -1, false);
+        tap(&mut bursts, &mut log, deck, card, 2, 1);
+
+        assert_eq!(log_of(&log, deck), [older, quantity(card, 1, 2)]);
+    }
+
+    #[test]
+    fn a_burst_s_entry_comes_off_the_log_alone() {
+        let (deck, card) = (Uuid::new_v4(), Uuid::new_v4());
+        let mut log = UndoStore::default();
+        let older = quantity(card, 1, 1);
+        log.push(deck, older.clone());
+        let mut bursts = Bursts::default();
+        tap(&mut bursts, &mut log, deck, card, 2, 1);
+        let Some(burst) = bursts.open(card) else {
+            panic!("the burst is open");
+        };
+
+        assert_eq!(
+            take_burst_entry(&mut log, deck, card, &burst),
+            Some(quantity(card, 1, 2))
+        );
+        assert_eq!(log_of(&log, deck), [older]);
+
+        let unrecorded = Burst {
+            record: false,
+            ..burst
+        };
+        log.push(deck, quantity(card, 1, 2));
+        assert_eq!(
+            take_burst_entry(&mut log, deck, card, &unrecorded),
+            None,
+            "an undo's burst has no entry"
+        );
     }
 
     #[test]
