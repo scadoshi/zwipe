@@ -241,7 +241,25 @@ fn jaccard_sql(a: &str, b: &str) -> String {
 /// rules. The candidates are the card search's own WHERE (`push_criteria_conditions`) over the
 /// filter and those rules; the scoring is the suggestions statement's, plus the saved-commander
 /// and popularity terms. See [`CardRepository::score_commander_deal`] for the ranking.
+///
+/// Each color match is worked out once per distinct color identity among the candidates, not
+/// once per candidate. The per-user terms are materialized: inlined, the planner reruns them for
+/// every candidate row.
 fn commander_deal_query(
+    deal: &CommanderDeal,
+    signal: &DealSignal,
+    commander: &CardCriteria,
+) -> QueryBuilder<Postgres> {
+    let mut qb = deal_candidates(deal, signal, commander);
+    push_deal_ranking(&mut qb, deal);
+    qb
+}
+
+/// The deal statement's opening CTEs, through `candidates`: the user's decks and saved
+/// commanders, the popularity scale, and every commander the filter and `commander`'s rules let
+/// through, less tokens, `signal.exclude` and the user's live dismissals. The `candidates` CTE is
+/// left open for [`push_deal_ranking`] to close.
+fn deal_candidates(
     deal: &CommanderDeal,
     signal: &DealSignal,
     commander: &CardCriteria,
@@ -327,6 +345,13 @@ fn commander_deal_query(
         sep.push_bind_unseparated(DISMISSAL_TTL_DAYS);
         sep.push_unseparated("))");
     }
+    qb
+}
+
+/// The deal statement's CTEs after `candidates`: each candidate's tags, its best deck and the
+/// tags it shares with that deck, and the color and saved-commander matches, then
+/// [`push_deal_order`] for the score and the page.
+fn push_deal_ranking(qb: &mut QueryBuilder<Postgres>, deal: &CommanderDeal) {
     qb.push(format!(
         "
          ),
@@ -343,15 +368,22 @@ fn commander_deal_query(
          deck_tag_score AS (
              SELECT oracle_id, deck, sum(w) AS s FROM overlap GROUP BY oracle_id, deck
          ),
-         best_deck AS (
+         best_deck AS MATERIALIZED (
              SELECT DISTINCT ON (oracle_id) oracle_id, deck, s
              FROM deck_tag_score
              ORDER BY oracle_id, s DESC, deck
          ),
-         color_score AS (
-             SELECT c.oracle_id, max({deck_colors}) AS s
-             FROM candidates c CROSS JOIN decks d
-             GROUP BY c.oracle_id
+         identities AS MATERIALIZED (
+             SELECT DISTINCT color_identity FROM candidates
+         ),
+         color_score AS MATERIALIZED (
+             SELECT i.color_identity, max({deck_colors}) AS s
+             FROM identities i CROSS JOIN decks d
+             GROUP BY i.color_identity
+         ),
+         saved_colors AS MATERIALIZED (
+             SELECT i.color_identity, s.saved_id, {saved_colors} AS s
+             FROM identities i CROSS JOIN saved s
          ),
          saved_overlap AS (
              SELECT ct.oracle_id, st.saved_id, sum(ct.w * st.w) AS s
@@ -359,17 +391,18 @@ fn commander_deal_query(
              JOIN saved_tags st ON st.key = ct.key
              GROUP BY ct.oracle_id, st.saved_id
          ),
-         saved_fit AS (
+         saved_fit AS MATERIALIZED (
              SELECT c.oracle_id, max(COALESCE(so.s, 0) + ",
-        deck_colors = jaccard_sql("c.color_identity", "d.colors"),
+        deck_colors = jaccard_sql("i.color_identity", "d.colors"),
+        saved_colors = jaccard_sql("i.color_identity", "s.colors"),
     ));
     qb.push_bind(W_COLOR_AFFINITY);
-    qb.push(format!(
-        " * {saved_colors}) AS s
+    qb.push(
+        " * sc.s) AS s
              FROM candidates c
-             CROSS JOIN saved s
-             LEFT JOIN saved_overlap so ON so.oracle_id = c.oracle_id AND so.saved_id = s.saved_id
-             WHERE s.saved_id <> c.oracle_id
+             JOIN saved_colors sc ON sc.color_identity = c.color_identity
+             LEFT JOIN saved_overlap so ON so.oracle_id = c.oracle_id AND so.saved_id = sc.saved_id
+             WHERE sc.saved_id <> c.oracle_id
              GROUP BY c.oracle_id
          ),
          shared_tags AS MATERIALIZED (
@@ -384,13 +417,22 @@ fn commander_deal_query(
                  JOIN best_deck bd ON bd.oracle_id = o.oracle_id AND bd.deck = o.deck
              ) o
              WHERE o.rn <= ",
-        saved_colors = jaccard_sql("c.color_identity", "s.colors"),
-    ));
+    );
     qb.push_bind(SUGGESTION_TAG_LIMIT);
     qb.push(
         "
              GROUP BY o.oracle_id
-         ),
+         ),",
+    );
+    push_deal_order(qb, deal);
+}
+
+/// The deal statement's last CTEs and its page: each candidate's score from the terms before
+/// it, the identity cap as an ordering key while `deal.caps_identities()`, then the order and
+/// `deal`'s offset and limit.
+fn push_deal_order(qb: &mut QueryBuilder<Postgres>, deal: &CommanderDeal) {
+    qb.push(
+        "
          scored AS (
              SELECT c.oracle_id, c.color_identity,
                     COALESCE(bd.s, 0) + ",
@@ -405,7 +447,7 @@ fn commander_deal_query(
                     COALESCE(st.tags, '{}'::text[]) AS tags
              FROM candidates c
              LEFT JOIN best_deck bd ON bd.oracle_id = c.oracle_id
-             LEFT JOIN color_score cs ON cs.oracle_id = c.oracle_id
+             LEFT JOIN color_score cs ON cs.color_identity = c.color_identity
              LEFT JOIN saved_fit sf ON sf.oracle_id = c.oracle_id
              LEFT JOIN shared_tags st ON st.oracle_id = c.oracle_id
          ),
@@ -432,7 +474,6 @@ fn commander_deal_query(
     qb.push_bind(i64::from(deal.offset));
     qb.push(" LIMIT ");
     qb.push_bind(i64::from(deal.limit));
-    qb
 }
 
 /// The last key of every order the card search builds: the printing id, so cards tied on every
@@ -712,9 +753,8 @@ fn push_criteria_conditions(
 
     if let Some(sets) = criteria.set_excludes_any() {
         // Printing-aware: a card survives unless EVERY set it was printed
-        // in is excluded (<@ is "contained by"). One excluded set can no
-        // longer hide a staple whose picked printing happened to be there,
-        // the Sol Ring / Secret Lair Drop bug this replaced.
+        // in is excluded (<@ is "contained by"), so one excluded set never
+        // hides a card whose picked printing happens to be in it.
         sep.push("NOT (printing_set_names <@ ");
         sep.push_bind_unseparated(sets);
         sep.push_unseparated(")");
