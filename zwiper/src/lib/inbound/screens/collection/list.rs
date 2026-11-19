@@ -440,8 +440,9 @@ fn sections(stacks: &[Stack]) -> Vec<(DeckSection, Vec<RowInfo>)> {
 }
 
 /// The open stack card's drawer: the card's details with Image and Send to in its foot, above
-/// them a line for each of its rows with that row's label and its copies stepper. Mounted, closed, on the first card before any tap, so it slides in and out; nothing
-/// while no card is listed.
+/// them a line for each of its rows with that row's label and its copies stepper. Mounted,
+/// closed, on the first card before any tap, so it slides in and out; nothing while no card is
+/// listed.
 #[component]
 fn CollectionStackDrawer(
     cards: Vec<StackCard>,

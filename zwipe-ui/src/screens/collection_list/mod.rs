@@ -16,8 +16,8 @@
 //!
 //! The model holds the list and the edits; the client fetches, saves, runs the timers, draws the
 //! rows and saves the export's file, raising [`EXPORTED`] once the file is saved where saving is
-//! the client's own act (a download) and nothing where the user finishes it (a share sheet). Import is its own model,
-//! [`super::collection_import`].
+//! the client's own act (a download) and nothing where the user finishes it (a share sheet).
+//! Import is its own model, [`super::collection_import`].
 
 pub mod stacks;
 #[cfg(test)]
