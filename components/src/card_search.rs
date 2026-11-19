@@ -211,12 +211,17 @@ pub fn CardSearchBar(
                         Key::ArrowDown => Action::Step(Step::Down),
                         Key::ArrowUp => Action::Step(Step::Up),
                         Key::Enter => Action::Enter,
-                        // Escape empties the box and leaves the cursor in it, so the dropdown
-                        // closes and the next letter starts a new search.
+                        // Escape empties a box with text and leaves the cursor in it, so the
+                        // next letter starts a new search; on an empty nav box it lets the box
+                        // go, so it shrinks back off the links.
                         Key::Escape => {
                             event.prevent_default();
                             event.stop_propagation();
-                            on_action.call(Action::Clear);
+                            if model.peek().query().is_empty() {
+                                opened.call(());
+                            } else {
+                                on_action.call(Action::Clear);
+                            }
                             return;
                         }
                         _ => return,
