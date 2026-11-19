@@ -1227,6 +1227,15 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 .then_some(NO_CARDS_MATCH)
         }
     };
+    // On the ghost past a spent pile, so it never reads as loading: every card dealt on Collection
+    // with no filter of the user's, else no cards left.
+    let every_card_dealt = at.ran_dry(&filter.read(), 0);
+    let end_note = if every_card_dealt {
+        add_cards::COLLECTION_DONE
+    } else {
+        NO_CARDS_LEFT
+    };
+    let end_detail = every_card_dealt.then_some(add_cards::COLLECTION_DONE_DETAIL);
     // In place of the ghost, with a Retry, when the cards could not load.
     let load_failed = at.searches()
         && !stack.read().has_served()
@@ -1313,7 +1322,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                             undo_search.call(());
                                         }
                                     },
-                                    CardGhost {}
+                                    CardGhost { note: Some(end_note.to_owned()), detail: end_detail.map(str::to_owned) }
                                 }
                             }
                         } else if at.searches() && loading_cards() {

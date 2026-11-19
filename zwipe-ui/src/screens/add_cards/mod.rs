@@ -1745,14 +1745,18 @@ impl State {
         }
     }
 
-    /// The note the ghost card carries: [`TRY_A_FILTER`] when the deck is in and the filter gives
-    /// Search nothing to serve, so the ghost never reads as loading; [`NO_CARDS_MATCH`] when a
-    /// search came back empty or a maybeboard holds cards none of which match. `None` while cards
-    /// show, while a search runs and for an empty maybeboard.
+    /// The note the ghost card carries, so it never reads as loading: [`TRY_A_FILTER`] when the
+    /// deck is in and the filter gives Search nothing to serve; [`NO_CARDS_MATCH`] when a search
+    /// came back empty or a maybeboard holds cards none of which match; once a dealt pile is spent,
+    /// [`NO_CARDS_LEFT`]. Collection with no filter of the user's says [`COLLECTION_DONE`] in place
+    /// of either. `None` while cards show, while a search runs and for an empty maybeboard.
     #[must_use]
     pub fn ghost_note(&self) -> Option<&'static str> {
-        if self.pile() != Pile::Empty {
-            return None;
+        match self.pile() {
+            Pile::End if self.source.ran_dry(&self.filter, 0) => return Some(COLLECTION_DONE),
+            Pile::End => return Some(NO_CARDS_LEFT),
+            Pile::Empty => {}
+            Pile::Cards | Pile::Loading => return None,
         }
         if self.source == Source::Search && self.ask == Ask::Filter {
             return Some(TRY_A_FILTER);

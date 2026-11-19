@@ -818,7 +818,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     let p = e.client_coordinates();
                                     end_pull((p.x, p.y), start);
                                 },
-                                CardSkeleton {}
+                                CardSkeleton { note: ghost_note.map(str::to_owned), detail: ghost_detail.map(str::to_owned) }
                             }
                         } else if load_failed {
                             LoadFailed { message: add_cards::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Retry) }

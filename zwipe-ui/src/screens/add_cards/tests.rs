@@ -1855,3 +1855,38 @@ fn an_empty_collection_deal_under_a_filter_stays_on_collection() {
     assert_eq!(state.ghost_note(), Some(NO_CARDS_MATCH));
     assert!(!effects.contains(&Effect::CollectionStale));
 }
+
+#[test]
+fn a_spent_search_pile_says_no_cards_left_on_the_ghost() {
+    let mut state = serving(&[card("A")]);
+    let effects = state.update(Action::Swipe(Direction::Left));
+    let _ = state.update(Action::Searched {
+        ticket: ticket_of(&effects[1..]),
+        page: page(Vec::new()),
+    });
+    assert_eq!(state.pile(), Pile::End);
+    assert_eq!(
+        state.ghost_note(),
+        Some(NO_CARDS_LEFT),
+        "the end ghost says why, not a blank card that reads as loading"
+    );
+    assert_eq!(state.ghost_detail(), None);
+}
+
+#[test]
+fn a_spent_collection_pile_with_no_filter_says_every_card_is_dealt() {
+    let (mut state, effects) = on_collection();
+    let _ = state.update(Action::Searched {
+        ticket: ticket_of(&effects),
+        page: page(vec![card("Counterspell")]),
+    });
+    shown(&mut state);
+    let effects = state.update(Action::Swipe(Direction::Left));
+    let _ = state.update(Action::Searched {
+        ticket: ticket_of(&effects[1..]),
+        page: page(Vec::new()),
+    });
+    assert_eq!(state.pile(), Pile::End);
+    assert_eq!(state.ghost_note(), Some(COLLECTION_DONE));
+    assert_eq!(state.ghost_detail(), Some(COLLECTION_DONE_DETAIL));
+}
