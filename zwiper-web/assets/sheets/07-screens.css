@@ -116,6 +116,25 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
     padding-bottom: calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px));
 }
 
+/* An overlay screen that opens with a page header (a phone picker such as
+   Send to, the Oracle tag examples) holds that header in the flow at the
+   screen's top edge. The header pads the status bar's inset in its own
+   color, so its title and back arrow sit below the bar, and the content
+   under it keeps only the kit's 1rem. */
+.screen > .page-header {
+    padding-top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
+}
+
+.screen > .page-header ~ .screen-content {
+    padding-top: var(--space-4);
+}
+
+/* The corner buttons center on the title, below the inset. */
+.screen > .page-header .page-header-support,
+.screen > .page-header .page-header-corner {
+    top: calc(50% + env(safe-area-inset-top, 0px) / 2);
+}
+
 /* Width wrapper for the shared changelog (screen-content centers full-width
    children, so the content needs its own inset like the privacy screen). */
 .changelog-screen {
