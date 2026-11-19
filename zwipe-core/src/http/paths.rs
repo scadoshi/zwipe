@@ -126,6 +126,11 @@ pub fn printings_route(oracle_id: Uuid) -> String {
 }
 
 #[must_use]
+pub fn card_stats_route(oracle_id: Uuid) -> String {
+    format!("{CARD_ROUTE}/{oracle_id}/stats")
+}
+
+#[must_use]
 pub fn oracle_tag_examples_route(slug: &OracleTagSlug) -> String {
     format!("{CARD_ROUTE}/oracle-tag/{slug}/examples")
 }
@@ -335,6 +340,7 @@ mod tests {
 
         assert_eq!(card_route(a), format!("/api/card/{sa}"));
         assert_eq!(printings_route(a), format!("/api/card/{sa}/printings"));
+        assert_eq!(card_stats_route(a), format!("/api/card/{sa}/stats"));
         let slug: OracleTagSlug = "spot-removal".parse().unwrap();
         assert_eq!(
             oracle_tag_examples_route(&slug),
