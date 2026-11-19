@@ -178,9 +178,9 @@ body {
 }
 
 /* The screen's `?` in the bar's icon row where the full bar shows. Where
-   the header folds (below 1110px, media.rs's NAV_FOLD_MAX_PX) the folded
+   the header folds (below 1180px, media.rs's NAV_FOLD_MAX_PX) the folded
    nav's title carries it, so the menu's footer row leaves it out. */
-@media (max-width: 1109px) {
+@media (max-width: 1179px) {
     .web-nav-hint {
         display: none;
     }
@@ -591,7 +591,7 @@ body {
 
 /* The nav's width-only pieces keep their own boxes: a corner button, a
    list item, the footer row. */
-@media (max-width: 1109px) {
+@media (max-width: 1179px) {
     .web-nav-wide {
         display: none !important;
     }
@@ -599,7 +599,7 @@ body {
 
 /* Where the full bar fits, it shows the app's list as pills, in the app's
    order, with the menu footer's icons after them. */
-@media (min-width: 1110px) {
+@media (min-width: 1180px) {
     .web-nav-narrow {
         display: none !important;
     }
@@ -717,7 +717,7 @@ body {
     visibility: hidden;
 }
 
-/* ---- Header while folded (below 1110px, media.rs's NAV_FOLD_MAX_PX) ----
+/* ---- Header while folded (below 1180px, media.rs's NAV_FOLD_MAX_PX) ----
 
    The app's header from the kit's NavBar: the back arrow or an empty left
    corner, the screen's title and its `?` in the middle, the hamburger on
@@ -728,7 +728,7 @@ body {
    (.app-nav-back, .app-nav-title, the menu footer's buttons) come from
    components' SCREENS_CSS; these are the ones the app scopes to its
    .app-nav. */
-@media (max-width: 1109px) {
+@media (max-width: 1179px) {
     .web-shell {
         position: relative;
     }
@@ -1923,12 +1923,12 @@ body {
 }
 
 /* Where the header floats and slides away on scroll (below the fold's edge,
-   media.rs's 1110px), the layer starts at the window's top under the
+   media.rs's 1180px), the layer starts at the window's top under the
    header, as every screen does, with the header's height as room above its
    content, so its cards scroll up under the header and fill the space it
    leaves. It sits under the header (101) and over the Profile; every sheet
    opened over it is at 200 and up. */
-@media (max-width: 1109px) {
+@media (max-width: 1179px) {
     .web-cards-layer {
         top: 0;
         z-index: 100;
@@ -2140,7 +2140,7 @@ body {
    screen, so on Add and Remove the last swipe's chip sits under it, at the
    nav's height, and the title tag stays hidden as it does on a phone. Swipe
    select already starts under the nav. */
-@media (min-width: 900px) and (max-width: 1109px) {
+@media (min-width: 900px) and (max-width: 1179px) {
     .web-cards-swipe > .web-screen-chips {
         top: calc(var(--web-nav-h, 2.75rem) + 0.5rem);
         left: 1rem;

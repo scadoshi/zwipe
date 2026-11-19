@@ -1,4 +1,4 @@
-@media (max-width: 1109px) {
+@media (max-width: 1179px) {
 /* NavBar at hamburger widths: the panel folds behind the toggle, and the
    pieces that live in or beside the folded menu take their narrow shape.
    orangui's COMPONENTS_CSS applies these at the kit's 60rem breakpoint; a
