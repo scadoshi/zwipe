@@ -337,7 +337,7 @@ fn deal_candidates(
         sep.push("NOT (latest_cards.oracle_id = ANY(");
         sep.push_bind_unseparated(signal.exclude.clone());
         sep.push_unseparated("::uuid[]))");
-        // The filter's "In my collection", as the card search applies it: a commander the user
+        // The filter's Owned chip (From set to Collection), as the card search applies it: a commander the user
         // holds any printing of.
         if deal.filter.as_ref().is_some_and(CardQuery::owned_only) {
             sep.push("EXISTS (SELECT 1 FROM collection_cards owned WHERE owned.user_id = ");
