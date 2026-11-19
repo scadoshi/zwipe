@@ -47,6 +47,7 @@ impl Endpoint for RecordAnonymousEvent {
 pub struct RecordCrash(pub HttpCrashReport);
 impl Endpoint for RecordCrash {
     const METHOD: Method = Method::Post;
+    const IDEMPOTENT: bool = true;
     const AUTH: bool = false;
     type Request = HttpCrashReport;
     type Response = ();

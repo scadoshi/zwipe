@@ -67,6 +67,11 @@ pub trait Endpoint {
     /// using it, for an answer that changes on a deploy. Off by default, so
     /// other calls keep whatever caching their headers allow.
     const REVALIDATE: bool = false;
+    /// Whether sending the call a second time leaves the server as one send does: it sets a
+    /// value, upserts a row, or imports a list whose quantities it sets. A client sends such a
+    /// call once more when the reply to the first is lost. Off by default, so a call that adds
+    /// or makes something goes once; a delete stays off too, since its second send answers 404.
+    const IDEMPOTENT: bool = false;
     /// Body this call accepts. `()` when it sends none.
     type Request: Serialize;
     /// Decoded success body.

@@ -38,6 +38,8 @@ impl Endpoint for GetDeckProfiles {
 /// Create a deck. Answers 201.
 #[derive(Debug)]
 pub struct CreateDeck(pub HttpCreateDeckProfile);
+// Not IDEMPOTENT though the body may name the deck's id: when the reply is lost, the client looks
+// the deck up by that id instead of sending the call again.
 impl Endpoint for CreateDeck {
     const METHOD: Method = Method::Post;
     type Request = HttpCreateDeckProfile;
@@ -79,6 +81,7 @@ impl Endpoint for GetDeckProfile {
 pub struct UpdateDeckProfile(pub Uuid, pub HttpUpdateDeckProfile);
 impl Endpoint for UpdateDeckProfile {
     const METHOD: Method = Method::Patch;
+    const IDEMPOTENT: bool = true;
     type Request = HttpUpdateDeckProfile;
     type Response = DeckProfile;
     fn path(&self) -> Cow<'static, str> {
@@ -104,6 +107,8 @@ impl Endpoint for DeleteDeck {
 /// Copy a deck into a new one. Answers 201.
 #[derive(Debug)]
 pub struct CloneDeck(pub Uuid, pub HttpCloneDeck);
+// Not IDEMPOTENT though the body may name the deck's id: when the reply is lost, the client looks
+// the deck up by that id instead of sending the call again.
 impl Endpoint for CloneDeck {
     const METHOD: Method = Method::Post;
     type Request = HttpCloneDeck;
@@ -185,6 +190,7 @@ impl Endpoint for UnshareDeck {
 pub struct SkipDeckCard(pub Uuid, pub HttpSkipDeckCard);
 impl Endpoint for SkipDeckCard {
     const METHOD: Method = Method::Post;
+    const IDEMPOTENT: bool = true;
     type Request = HttpSkipDeckCard;
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
@@ -239,6 +245,7 @@ impl Endpoint for CreateDeckCard {
 pub struct UpdateDeckCard(pub Uuid, pub Uuid, pub HttpPatchDeckCard);
 impl Endpoint for UpdateDeckCard {
     const METHOD: Method = Method::Patch;
+    const IDEMPOTENT: bool = true;
     type Request = HttpPatchDeckCard;
     type Response = DeckCard;
     fn path(&self) -> Cow<'static, str> {
@@ -283,6 +290,7 @@ impl Endpoint for DeleteDeckCard {
 pub struct ImportDeckCards(pub Uuid, pub HttpImportDeckCards);
 impl Endpoint for ImportDeckCards {
     const METHOD: Method = Method::Post;
+    const IDEMPOTENT: bool = true;
     type Request = HttpImportDeckCards;
     type Response = ImportDeckCardsResult;
     fn path(&self) -> Cow<'static, str> {
@@ -296,6 +304,8 @@ impl Endpoint for ImportDeckCards {
 /// Import a public Archidekt deck by URL.
 #[derive(Debug)]
 pub struct ImportArchidektDeck(pub Uuid, pub HttpImportArchidektDeck);
+// Not IDEMPOTENT though its upsert sets quantities: a second send fetches the deck from
+// Archidekt again and spends another of the import limiter's tries.
 impl Endpoint for ImportArchidektDeck {
     const METHOD: Method = Method::Post;
     type Request = HttpImportArchidektDeck;
