@@ -139,7 +139,7 @@ pub(crate) fn PrintingSheet(
     let oracle_id = card.scryfall_data.oracle_id;
 
     // With a collection, the owned printings of this card come in beside the full list, so
-    // Only mine can narrow it. Without one nothing is fetched and the chip never shows.
+    // Owned can narrow it. Without one nothing is fetched and the chip never shows.
     use_effect(move || {
         if !open() || !offers_owned() {
             return;
@@ -208,7 +208,7 @@ pub(crate) fn PrintingSheet(
                             Chip {
                                 selected: only_mine,
                                 onclick: move |_| driver.dispatch(Action::OnlyMine { on: !only_mine, at: current_idx }),
-                                "{model::ONLY_MINE}"
+                                "{model::OWNED}"
                             }
                         }
                     }

@@ -40,7 +40,7 @@ pub const SAVE: &str = "Save";
 pub const LOAD_FAILED: &str = "Couldn't load printings";
 
 /// The chip that narrows the printings to those in the user's collection.
-pub const ONLY_MINE: &str = "Only mine";
+pub const OWNED: &str = "Owned";
 
 /// Whether the sheet can hand a printing back.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
@@ -93,14 +93,14 @@ pub enum Action {
     /// Retry, under a failed fetch: sends it again.
     Retry,
     /// The user's owned printings of the card `oracle_id` arrived. A client fetches them only
-    /// when the user has a collection, so without them [`ONLY_MINE`] never shows.
+    /// when the user has a collection, so without them [`OWNED`] never shows.
     OwnedLoaded {
         /// The card they belong to.
         oracle_id: Uuid,
         /// The owned printings' ids.
         owned: Vec<Uuid>,
     },
-    /// [`ONLY_MINE`] turned on or off, with printing `at` showing. Does nothing unless
+    /// [`OWNED`] turned on or off, with printing `at` showing. Does nothing unless
     /// [`State::offers_only_mine`] holds.
     OnlyMine {
         /// Whether it is on.
@@ -164,16 +164,16 @@ pub struct State {
     /// again.
     failed: Option<(Uuid, Uuid)>,
     loading: bool,
-    /// Where the opening printing sits in `printings`; `None` when [`ONLY_MINE`] hides it, so
+    /// Where the opening printing sits in `printings`; `None` when [`OWNED`] hides it, so
     /// every printing listed differs from it.
     initial: Option<usize>,
     /// The printing the sheet opened on.
     opened: Option<Uuid>,
     /// The user's owned printings, with the card they belong to.
     owned: Option<(Uuid, HashSet<Uuid>)>,
-    /// Whether [`ONLY_MINE`] is on.
+    /// Whether [`OWNED`] is on.
     only_mine: bool,
-    /// Where turning [`ONLY_MINE`] on placed the sheet when it hides the opening printing: leaving
+    /// Where turning [`OWNED`] on placed the sheet when it hides the opening printing: leaving
     /// from there says nothing, since the user picked nothing.
     placed: Option<usize>,
     generation: Generation,
@@ -342,13 +342,13 @@ impl State {
         self.initial.unwrap_or(0)
     }
 
-    /// Whether [`ONLY_MINE`] shows: the user owns a printing of this card among those listed.
+    /// Whether [`OWNED`] shows: the user owns a printing of this card among those listed.
     #[must_use]
     pub fn offers_only_mine(&self) -> bool {
         self.opened.is_some() && offers_only_mine(&self.fetched, self.owned_here())
     }
 
-    /// Whether [`ONLY_MINE`] is on.
+    /// Whether [`OWNED`] is on.
     #[must_use]
     pub fn only_mine(&self) -> bool {
         self.only_mine
@@ -363,7 +363,7 @@ impl State {
     }
 
     /// Lists the fetch again for the opening printing, narrowed to the owned printings while
-    /// [`ONLY_MINE`] is on, and finds where the opening printing sits.
+    /// [`OWNED`] is on, and finds where the opening printing sits.
     fn relist(&mut self) {
         let Some(keep) = self.opened else {
             return;
@@ -399,7 +399,7 @@ impl State {
     }
 
     /// Whether the user moved to printing `at` from where the sheet put them: off the opening
-    /// printing, or, when [`ONLY_MINE`] hides it, off where turning it on placed them.
+    /// printing, or, when [`OWNED`] hides it, off where turning it on placed them.
     fn has_moved(&self, at: usize) -> bool {
         match self.initial {
             Some(_) => self.has_changed(at),
@@ -441,7 +441,7 @@ pub fn shown_printings(all: &[Card], keep: Uuid) -> Vec<Card> {
 
 /// The printings a sheet lists for `keep`: [`shown_printings`], or with `owned` every owned
 /// printing of `all`, an imageless one too (it shows as its stock card), so a printing the user
-/// owns is never hidden from [`ONLY_MINE`].
+/// owns is never hidden from [`OWNED`].
 #[must_use]
 pub fn listed<S: BuildHasher>(
     all: &[Card],
@@ -458,7 +458,7 @@ pub fn listed<S: BuildHasher>(
     }
 }
 
-/// Whether a sheet offers [`ONLY_MINE`]: `owned` holds a printing of the card among `all`.
+/// Whether a sheet offers [`OWNED`]: `owned` holds a printing of the card among `all`.
 #[must_use]
 pub fn offers_only_mine<S: BuildHasher>(all: &[Card], owned: Option<&HashSet<Uuid, S>>) -> bool {
     owned.is_some_and(|owned| all.iter().any(|p| owned.contains(&p.scryfall_data.id)))

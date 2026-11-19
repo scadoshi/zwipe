@@ -56,7 +56,7 @@ pub struct PrintingsSource {
 }
 
 /// The user's owned printings, by each card's Oracle id, and the callback that fetches them. The
-/// sheet offers [`model::ONLY_MINE`] only once the results hold an owned printing of the card it
+/// sheet offers [`model::OWNED`] only once the results hold an owned printing of the card it
 /// lists, so a host without it, or whose user has no collection and never fetches, shows none.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct OwnedPrintingsSource {
@@ -147,7 +147,7 @@ pub fn PrintingSheet(
     let source = try_use_context::<PrintingsSource>();
     let owned_source = try_use_context::<OwnedPrintingsSource>();
     let mut only_mine = use_signal(|| false);
-    // Where turning Only mine on placed the sheet when it hides the opening printing.
+    // Where turning Owned on placed the sheet when it hides the opening printing.
     let mut placed: Signal<Option<usize>> = use_signal(|| None);
     // From the kit's modal width on, the picker is the cover flow.
     let flow = use_min_width(KIT_MODAL_PX);
@@ -212,7 +212,7 @@ pub fn PrintingSheet(
         _ => Vec::new(),
     };
     let offers_mine = model::offers_only_mine(&fetched, owned.as_ref());
-    // Only mine narrows the list only while it is offered, so a hidden toggle never filters.
+    // Owned narrows the list only while it is offered, so a hidden toggle never filters.
     let narrowed = owned.as_ref().filter(|_| only_mine() && offers_mine);
     let all = model::listed(&fetched, shown_id, narrowed);
     let count = all.len();
@@ -242,7 +242,7 @@ pub fn PrintingSheet(
     let mine_chip = (offers_mine && !loading).then(|| {
         rsx! {
             div { class: "keyword-chips printing-only-mine",
-                Chip { selected: only_mine(), onclick: toggle_mine, "{model::ONLY_MINE}" }
+                Chip { selected: only_mine(), onclick: toggle_mine, "{model::OWNED}" }
             }
         }
     });
@@ -252,7 +252,7 @@ pub fn PrintingSheet(
     let shown_face = (printing_face.face)();
 
     // Leaving says Printing unchanged only when the user moved: off the opening printing, or,
-    // when Only mine hides it, off where turning it on placed them.
+    // when Owned hides it, off where turning it on placed them.
     let opening_listed = all.iter().any(|card| card.scryfall_data.id == shown_id);
     let moved = if opening_listed {
         changed
@@ -444,7 +444,7 @@ fn CoverFlowSheet(
     open: Signal<bool>,
     printings: Vec<Card>,
     shown: Vec<Card>,
-    // "Only mine", when the sheet offers it.
+    // "Owned", when the sheet offers it.
     mine_chip: Option<Element>,
     printing_face: PrintingFace,
     mut index: Signal<usize>,

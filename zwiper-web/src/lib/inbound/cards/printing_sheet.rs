@@ -82,7 +82,7 @@ pub(crate) fn use_printings_source() {
     use_context_provider(|| PrintingsSource { results, request });
 
     // The user's owned printings, fetched only when they have a collection, quietly: a failure
-    // leaves Only mine unoffered rather than toasting over the sheet.
+    // leaves Owned unoffered rather than toasting over the sheet.
     let offers_owned = use_offers_owned();
     let mut owned: Signal<HashMap<Uuid, HashSet<Uuid>>> = use_signal(HashMap::new);
     // The card asked for before the summary said there is a collection, sent once it does.
