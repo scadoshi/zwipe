@@ -58,6 +58,12 @@ pub struct RateLimits {
     ///
     /// IPv6 /64: double the burst and the rate.
     pub public_examples: PerFamily,
+    /// 20 at once, then one more each second per IP: the card lookup is a real search open to
+    /// signed-out callers. A search box debounced at 250ms sends up to 4 a second, 3 more than the
+    /// refill, so the burst carries about 6 seconds of steady typing before a 429.
+    ///
+    /// IPv6 /64: double the burst and the rate.
+    pub public_lookup: PerFamily,
     /// 30 req / 2s per IP: public marketing aggregates. CF cache absorbs most
     /// traffic; this guards origin if someone bypasses CF or warms many POPs.
     ///
@@ -165,6 +171,10 @@ impl Default for RateLimits {
                 limit(Duration::from_secs(3), 10),
                 limit(Duration::from_millis(1500), 20),
             ),
+            public_lookup: pair(
+                limit(Duration::from_secs(1), 20),
+                limit(Duration::from_millis(500), 40),
+            ),
             public_marketing: pair(
                 limit(Duration::from_secs(2), 30),
                 limit(Duration::from_secs(1), 60),
@@ -241,6 +251,10 @@ impl RateLimits {
             public_examples: PerFamily {
                 ipv4: every(self.public_examples.ipv4),
                 ipv6: every(self.public_examples.ipv6),
+            },
+            public_lookup: PerFamily {
+                ipv4: every(self.public_lookup.ipv4),
+                ipv6: every(self.public_lookup.ipv6),
             },
             public_marketing: PerFamily {
                 ipv4: every(self.public_marketing.ipv4),
@@ -368,6 +382,18 @@ mod tests {
                 limits.public_examples.ipv6,
                 Duration::from_millis(1500),
                 20,
+            ),
+            (
+                "public_lookup ipv4",
+                limits.public_lookup.ipv4,
+                Duration::from_secs(1),
+                20,
+            ),
+            (
+                "public_lookup ipv6",
+                limits.public_lookup.ipv6,
+                Duration::from_millis(500),
+                40,
             ),
             (
                 "public_marketing ipv4",

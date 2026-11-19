@@ -4,6 +4,7 @@
 
 pub mod card_info;
 pub mod card_row;
+pub mod card_search;
 pub mod charts;
 pub mod image_preview;
 pub mod meld;

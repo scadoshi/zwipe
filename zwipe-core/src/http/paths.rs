@@ -12,6 +12,7 @@
 use uuid::Uuid;
 
 use crate::domain::card::oracle_tag_examples::OracleTagSlug;
+use crate::domain::card::slug::CardSlug;
 use crate::http::endpoint::Method;
 
 // == health ==
@@ -83,6 +84,8 @@ pub const GET_ORACLE_TAGS_ROUTE: &str = "/api/card/oracle-tags";
 pub const GET_UB_FRANCHISES_ROUTE: &str = "/api/card/ub-franchises";
 pub const GET_SETS_ROUTE: &str = "/api/card/sets";
 pub const GET_LANGUAGES_ROUTE: &str = "/api/card/languages";
+/// The card lookup: a narrow card search open to signed-out callers, limited per address.
+pub const CARD_LOOKUP_ROUTE: &str = "/api/card/lookup";
 
 // == deck ==
 
@@ -123,6 +126,12 @@ pub fn card_route(scryfall_data_id: Uuid) -> String {
 #[must_use]
 pub fn printings_route(oracle_id: Uuid) -> String {
     format!("{CARD_ROUTE}/{oracle_id}/printings")
+}
+
+/// Every card whose name, or front face's name, folds to `slug`.
+#[must_use]
+pub fn named_card_route(slug: &CardSlug) -> String {
+    format!("{CARD_ROUTE}/named/{slug}")
 }
 
 #[must_use]
@@ -266,6 +275,7 @@ pub fn import_deck_cards_route(deck_id: Uuid) -> String {
 /// Fixed paths only. The id-carrying routes are functions, so the test builds
 /// those itself. Health routes are absent: they have no `Endpoint`.
 pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
+    (Method::Post, CARD_LOOKUP_ROUTE, false),
     (Method::Get, CHANGELOG_ROUTE, false),
     (Method::Patch, CHANGE_EMAIL_ROUTE, true),
     (Method::Patch, CHANGE_PASSWORD_ROUTE, true),
@@ -335,6 +345,8 @@ mod tests {
 
         assert_eq!(card_route(a), format!("/api/card/{sa}"));
         assert_eq!(printings_route(a), format!("/api/card/{sa}/printings"));
+        let name: CardSlug = "fire-ice".parse().unwrap();
+        assert_eq!(named_card_route(&name), "/api/card/named/fire-ice");
         let slug: OracleTagSlug = "spot-removal".parse().unwrap();
         assert_eq!(
             oracle_tag_examples_route(&slug),

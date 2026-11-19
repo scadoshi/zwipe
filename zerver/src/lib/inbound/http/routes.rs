@@ -26,6 +26,10 @@ use crate::inbound::http::rate_limits::RateLimits;
 /// truncated panic text, and the route takes it unauthenticated.
 const CRASH_REPORT_BODY_LIMIT: usize = 4096;
 
+/// Largest card lookup body accepted, in bytes. The largest valid lookup, a 100-character name
+/// and fifteen short chip words, is about 1 KB, and the route takes it signed out.
+const CARD_LOOKUP_BODY_LIMIT: usize = 4096;
+
 /// Largest decklist import body accepted, in bytes. A 500-card list pasted
 /// from any deck site is about 15 KB.
 const IMPORT_BODY_LIMIT: usize = 64 * 1024;
@@ -164,6 +168,7 @@ pub fn public_routes(limits: &RateLimits) -> Router<AppState> {
     let verify_reset_limit = FamilyLimitLayer::new(limits.verify_reset, stable_rate_limit);
     let public_card_limit = FamilyLimitLayer::new(limits.public_card, stable_rate_limit);
     let public_examples_limit = FamilyLimitLayer::new(limits.public_examples, stable_rate_limit);
+    let public_lookup_limit = FamilyLimitLayer::new(limits.public_lookup, stable_rate_limit);
     let public_marketing_limit = FamilyLimitLayer::new(limits.public_marketing, stable_rate_limit);
     let public_client_limit = FamilyLimitLayer::new(limits.public_client, stable_rate_limit);
     let public_changelog_limit = FamilyLimitLayer::new(limits.public_changelog, stable_rate_limit);
@@ -236,6 +241,7 @@ pub fn public_routes(limits: &RateLimits) -> Router<AppState> {
                     "/card",
                     Router::new()
                         .route("/{scryfall_data_id}", get(card::get_card))
+                        .route("/named/{name_slug}", get(card::get_named_cards))
                         .route("/featured-flavor", get(card::get_featured_flavor))
                         .route("/{oracle_id}/printings", get(card::get_printings))
                         .route("/artists", get(card::get_artists))
@@ -257,6 +263,15 @@ pub fn public_routes(limits: &RateLimits) -> Router<AppState> {
                         .route("/{slug}/examples", get(card::get_oracle_tag_examples))
                         .layer(public_examples_limit)
                         .layer(hourly_cache_layer()),
+                )
+                .merge(
+                    Router::new()
+                        .route("/card/lookup", post(card::lookup_cards))
+                        .layer(public_lookup_limit)
+                        .layer(DefaultBodyLimit::max(CARD_LOOKUP_BODY_LIMIT))
+                        // A signed-in answer follows the user's Universes Beyond setting, so no
+                        // answer, a refusal included, is kept by a cache.
+                        .layer(private_no_store_layer()),
                 )
                 .nest(
                     "/marketing",
