@@ -15,7 +15,7 @@ use std::collections::{HashMap, HashSet};
 
 use components::{
     Button, ButtonVariant, CardEditButtons, CardListFold, CardsViewSwitch, ClearWrap,
-    DRAWER_CLASSES, DeckSection, DeckStacks, DeckStacksGhost, DrawerEdge, GroupBuyDialog,
+    DRAWER_CLASSES, DeckSection, DeckStacks, DeckStacksGhost, DrawerEdge, GroupBuy, GroupBuyDialog,
     LoadFailed, StackDetails, Toasts, spawn_write, use_group_buy, use_stack_details,
     use_stack_details_sync, use_toast,
 };
@@ -170,13 +170,65 @@ impl Driver {
     }
 }
 
+/// What the stacks share with the overlays they open, which sit at the screen's root: inside
+/// the list's scroll they would sit under the pinned controls.
+#[derive(Clone, Copy, PartialEq)]
+pub(super) struct StackOverlays {
+    /// The stacks' reveal and open card.
+    details: StackDetails,
+    /// Every card's shown face, shared by its row, its stack card and its drawer.
+    faces: Signal<HashMap<Uuid, usize>>,
+    /// The stack headers' group buy.
+    group_buy: GroupBuy,
+    /// The stacks' cards, as the list last laid them out.
+    cards: Signal<Vec<StackCard>>,
+    /// Sets a row's copies, once the list is up.
+    step: Signal<Option<EventHandler<(RowKey, i32)>>>,
+}
+
+/// The screen's [`StackOverlays`], and the shared faces every row on it reads.
+pub(super) fn use_stack_overlays() -> StackOverlays {
+    let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
+    use_context_provider(|| DeckFaces(faces));
+    StackOverlays {
+        details: use_stack_details(use_signal(Reveal::default), use_signal(|| false)),
+        faces,
+        group_buy: use_group_buy(),
+        cards: use_signal(Vec::new),
+        step: use_signal(|| None),
+    }
+}
+
+/// The overlays the stacks open: the group buy and the open card's drawer.
+#[component]
+pub(super) fn StackOverlaysHost(
+    overlays: StackOverlays,
+    preview_card: Signal<Option<(ScryfallData, usize)>>,
+    preview_dismissing: Signal<bool>,
+) -> Element {
+    let StackOverlays {
+        details,
+        faces,
+        group_buy,
+        cards,
+        step,
+    } = overlays;
+    rsx! {
+        GroupBuyDialog { group_buy }
+        if let Some(on_step) = step() {
+            CollectionStackDrawer { cards: cards(), details, faces, preview_card, preview_dismissing, on_step }
+        }
+    }
+}
+
 /// Collection's list: the search row, then the rows under the `Cards` header with Export.
 ///
 /// `imports` counts the imports that landed on this visit; each one reads the list again from
-/// its first page. `preview_card` and `preview_dismissing` drive the screen's full-size image.
+/// its first page. `overlays` holds what the stacks share with the drawer they open.
 #[component]
 pub(crate) fn CollectionList(
     imports: ReadSignal<u32>,
+    overlays: StackOverlays,
     preview_card: Signal<Option<(ScryfallData, usize)>>,
     preview_dismissing: Signal<bool>,
 ) -> Element {
@@ -206,17 +258,27 @@ pub(crate) fn CollectionList(
             driver.dispatch(Action::Imported);
         }
     });
-    let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
+    let mut expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
 
     // List or Stacks, as last left here.
     let view = use_signal(cards_view_store::restored_collection);
-    // Every card's shown face, shared by its row, its stack card and its drawer.
-    let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
-    use_context_provider(|| DeckFaces(faces));
-    let group_buy = use_group_buy();
+    let StackOverlays {
+        details,
+        faces,
+        group_buy,
+        mut cards,
+        mut step,
+    } = overlays;
     let collapsed = use_signal(HashSet::new);
-    let details = use_stack_details(use_signal(Reveal::default), use_signal(|| false));
     let shown_stacks = use_memo(move || stacks::stacks(driver.model.read().rows()));
+    use_effect(move || cards.set(shown_stacks().into_iter().flat_map(|s| s.cards).collect()));
+    use_hook(move || {
+        step.set(Some(EventHandler::new(
+            move |(key, delta): (RowKey, i32)| {
+                driver.dispatch(Action::Step { key, delta });
+            },
+        )));
+    });
     let listed = use_memo(move || -> Vec<Uuid> {
         shown_stacks()
             .iter()
@@ -240,9 +302,6 @@ pub(crate) fn CollectionList(
             });
         }
     });
-    let on_step = EventHandler::new(move |(key, delta): (RowKey, i32)| {
-        driver.dispatch(Action::Step { key, delta });
-    });
 
     let model = driver.model.read();
     let status = model.status();
@@ -252,7 +311,6 @@ pub(crate) fn CollectionList(
     let more = status == Status::List && model.has_more();
     drop(model);
     let stacks_on = view() == CardsView::Stacks;
-    let stack_cards: Vec<StackCard> = shown_stacks().into_iter().flat_map(|s| s.cards).collect();
 
     rsx! {
         div { class: "collection-list",
@@ -280,6 +338,7 @@ pub(crate) fn CollectionList(
                 on_change: move |choice: CardsView| {
                     cards_view_store::infallible_save_collection(choice);
                     details.dismiss();
+                    expanded_card.set(None);
                 },
             }
             if status == Status::Loading && stacks_on {
@@ -358,8 +417,6 @@ pub(crate) fn CollectionList(
                     }
                 }
             }
-            GroupBuyDialog { group_buy }
-            CollectionStackDrawer { cards: stack_cards, details, faces, preview_card, preview_dismissing, on_step }
         }
     }
 }
@@ -426,6 +483,7 @@ fn CollectionStackDrawer(
     let footer = rsx! {
         for row in shown.rows {
             div { key: "{row.key.id()}", class: "card-action-row",
+                // The first tag is the copies, which the stepper shows.
                 for tag in row_tags(&row).into_iter().skip(1) {
                     span { class: "card-row-stat", "{tag}" }
                 }

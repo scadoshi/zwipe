@@ -28,7 +28,7 @@ use zwipe_core::http::contracts::collection::HttpImportCollection;
 use zwipe_core::http::endpoints::collection::ImportCollection;
 use zwipe_ui::screens::collection_import::{self, Action, Effect, State};
 
-use self::list::CollectionList;
+use self::list::{CollectionList, StackOverlaysHost};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::collection::CollectionCache;
@@ -209,6 +209,7 @@ pub fn Collection() -> Element {
     });
     use_context_provider(|| OtagDescribe(describe_tag));
     use_context_provider(|| OtagExamplesOpen(open_examples));
+    let overlays = list::use_stack_overlays();
 
     let model = driver.model.read();
     let mode = model.mode();
@@ -305,7 +306,7 @@ pub fn Collection() -> Element {
                             }
                         }
                     }
-                    CollectionList { imports: driver.imports, preview_card, preview_dismissing }
+                    CollectionList { imports: driver.imports, overlays, preview_card, preview_dismissing }
                 }
             }
             div { class: "action-dock action-dock-right",
@@ -330,6 +331,7 @@ pub fn Collection() -> Element {
                 ],
                 {collection_import::REPLACE_BODY}
             }
+            StackOverlaysHost { overlays, preview_card, preview_dismissing }
             if examples_open() {
                 OracleTagExamples { open: examples_open, slug: examples_slug() }
             }
