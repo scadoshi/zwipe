@@ -16,7 +16,7 @@ use zwipe_ui::screens::playstyle as suggested_model;
 use zwipe_ui::telemetry::vocabulary::Screen;
 
 use super::filter::{FilterButton, FilterSheet};
-use super::maybeboard::{MaybeboardPanel, QUICK_ADD_ID};
+use super::maybeboard::{MaybeboardOverlays, MaybeboardPanel, QUICK_ADD_ID, use_board};
 use super::suggested::SuggestedPanel;
 use crate::inbound::cards::card_row::{CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
@@ -24,7 +24,7 @@ use crate::inbound::cards::row_keys::use_card_row_keys_and;
 use crate::inbound::cards::stack_view::use_row_faces;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
-use crate::inbound::screens::playstyle::use_suggestions;
+use crate::inbound::screens::playstyle::{SuggestedOverlays, use_suggestions};
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
 
@@ -70,6 +70,7 @@ pub fn CommanderMaybeboard() -> Element {
 
     // The saved commanders, which the Maybeboard list loads and edits, and the suggestions.
     let mut saved: Signal<Vec<Card>> = use_signal(Vec::new);
+    let board = use_board(saved);
     let suggestions = use_suggestions(Some(filter));
     let mut held = suggestions.entries;
 
@@ -143,7 +144,7 @@ pub fn CommanderMaybeboard() -> Element {
                 onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
                 div { class: "web-page web-commanders content-enter",
                     div { class: "web-columns",
-                        MaybeboardPanel { entries: saved, filter, expanded_card }
+                        MaybeboardPanel { board, filter, expanded_card }
                         SuggestedPanel { list: suggestions, expanded_card }
                     }
                 }
@@ -159,6 +160,10 @@ pub fn CommanderMaybeboard() -> Element {
             on_printing_save: picks.then_some(EventHandler::new(on_printing_save)),
         }
         OtagExamplesHost { examples }
+        // Each list's overlays sit outside the page: its entrance animation would make it their
+        // containing block.
+        MaybeboardOverlays { board }
+        SuggestedOverlays { list: suggestions }
     }
 }
 
@@ -182,6 +187,38 @@ mod tests {
                 shortcuts::card_key(&key) == Some(CardKey::FilterByName),
                 "{key}"
             );
+        }
+    }
+
+    /// The page carries an entrance animation, which makes it the containing block of any fixed
+    /// layer inside it, so each list's overlays render at the screen's root, after the frame.
+    #[test]
+    fn each_list_s_overlays_render_outside_the_page() {
+        let source = include_str!("screen.rs");
+        let root = source
+            .split("OneTimeHintDialog { hint: OneTimeHint::Commanders")
+            .nth(1)
+            .and_then(|rest| rest.split("#[cfg(test)]").next())
+            .unwrap_or_default();
+        for overlays in ["MaybeboardOverlays {", "SuggestedOverlays {"] {
+            assert!(root.contains(overlays), "{overlays} renders at the root");
+        }
+        for (panel, source) in [
+            ("suggested.rs", include_str!("suggested.rs")),
+            ("maybeboard.rs", include_str!("maybeboard.rs")),
+        ] {
+            let body = source.split("#[cfg(test)]").next().unwrap_or_default();
+            for overlay in ["SuggestedOverlays {", "SwipeSelect {", "AlertDialog {"] {
+                let inside_panel = body
+                    .split("fn MaybeboardOverlays(")
+                    .next()
+                    .unwrap_or_default()
+                    .contains(overlay);
+                assert!(
+                    !inside_panel,
+                    "{panel} renders no {overlay} inside its panel"
+                );
+            }
         }
     }
 

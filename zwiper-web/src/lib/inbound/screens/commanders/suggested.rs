@@ -8,13 +8,14 @@ use uuid::Uuid;
 
 use crate::inbound::cards::card_row::ShowRowArt;
 use crate::inbound::chrome::ghost::{GhostShowRow, GhostText};
-use crate::inbound::screens::playstyle::{SuggestedFold, SuggestedOverlays, Suggestions};
+use crate::inbound::screens::playstyle::{SuggestedFold, Suggestions};
 
 /// The list's header.
 const LIST_TITLE: &str = "Suggested";
 
 /// The Suggested list over the screen's `list`, which the screen's filter narrows; its rows open
-/// into `expanded_card`. Its Show row's Art chip shows or hides this list's art only.
+/// into `expanded_card`. Its Show row's Art chip shows or hides this list's art only. Its
+/// overlays render at the screen's root.
 #[component]
 pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uuid>>) -> Element {
     let mut show_row_art = use_signal(|| true);
@@ -75,6 +76,5 @@ pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uui
                 }
             }
         }
-        SuggestedOverlays { list }
     }
 }

@@ -50,7 +50,7 @@ pub(super) const QUICK_ADD_ID: &str = "commander-maybeboard-search";
 /// and Quick add edit the list in place. Each load takes a ticket, and an
 /// edit made while a load is out starts a new one: that reply left before
 /// the edit reached the server and could bring a removed row back.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 struct SavedList {
     entries: Signal<Vec<Card>>,
     is_loading: Signal<bool>,
@@ -115,36 +115,32 @@ impl SavedList {
     }
 }
 
-/// The Maybeboard list over `entries`, the screen's copy of the saved
-/// commanders, narrowed by the screen's `filter`. A row opens into
-/// `expanded_card`, which the screen's card keys share.
-#[component]
-#[expect(
-    clippy::wildcard_enum_match_arm,
-    reason = "keyboard_types::Key is a foreign enum of every key; only the keys handled act"
-)]
-pub(super) fn MaybeboardPanel(
-    entries: Signal<Vec<Card>>,
-    filter: Signal<CardQueryBuilder>,
-    expanded_card: Signal<Option<Uuid>>,
-) -> Element {
+/// The Maybeboard list's state that its overlays share with it: the saved list and its load,
+/// Swipe and the Clear maybeboard dialog, and Create deck. The screen holds it, so the overlays
+/// render at its root, outside the page, whose entrance animation would otherwise be their
+/// containing block.
+#[derive(Clone, Copy, PartialEq)]
+pub(super) struct Board {
+    list: SavedList,
+    saved_oracles: Memo<HashSet<Uuid>>,
+    swipe_open: Signal<bool>,
+    show_clear_dialog: Signal<bool>,
+    create_with: Callback<Card>,
+    clear_maybeboard: Callback<()>,
+}
+
+/// The [`Board`] over `entries`, the screen's copy of the saved commanders: loads them, and
+/// reloads once a save or remove from Swipe select lands.
+pub(super) fn use_board(entries: Signal<Vec<Card>>) -> Board {
     let navigator = use_navigator();
     let session: Signal<Option<Session>> = use_context();
     let seed: CreateDeckSeed = use_context();
     let stores = try_use_context::<CardStores>();
     let toast = use_toast();
-    // A save or remove lands even after the screen goes; its list update waits on this.
+    // A clear lands even after the screen goes; its list update waits on this.
     let mounted = use_mounted();
     let authed = use_authed();
-    let usage = telemetry::use_usage();
-    let mut show_clear_dialog = use_signal(|| false);
-
-    let mut show_row_art = use_signal(|| true);
-    use_context_provider(|| ShowRowArt(show_row_art));
-
-    let mut query = use_signal(String::new);
-    let mut highlight: Signal<Option<usize>> = use_signal(|| None);
-    let mut sort: Signal<Sort> = use_signal(|| MaybeboardSortStore::browser().load());
+    let show_clear_dialog = use_signal(|| false);
 
     let mut list = SavedList {
         entries,
@@ -154,13 +150,7 @@ pub(super) fn MaybeboardPanel(
         loads: use_signal(Generation::default),
         load_out: use_signal(|| false),
     };
-    let SavedList {
-        mut entries,
-        is_loading,
-        load_failed,
-        reload,
-        ..
-    } = list;
+    let reload = list.reload;
     // A save or remove from Swipe select or Playstyle reloads the list once it has landed, so
     // the list never reads the server ahead of the write.
     use_effect(move || {
@@ -176,6 +166,160 @@ pub(super) fn MaybeboardPanel(
             list.land(ticket, reply.ok());
         });
     });
+
+    let saved_oracles = use_memo(move || -> HashSet<Uuid> {
+        entries()
+            .iter()
+            .filter_map(|c| c.scryfall_data.oracle_id)
+            .collect()
+    });
+
+    // The create gate: an unverified account with a deck already is at its
+    // limit. Quiet; a failure leaves the gate open.
+    let deck_profiles = use_resource(move || async move {
+        authed
+            .run_quiet("load_deck_profiles", |c, s| async move {
+                c.fetch_deck_profiles(&s).await
+            })
+            .await
+    });
+    let swipe_open = use_signal(|| false);
+    let create_with = use_callback(move |card: Card| {
+        let at_limit = session.peek().as_ref().is_some_and(|s| {
+            s.user.email_verified_at.is_none()
+                && deck_profiles
+                    .peek()
+                    .as_ref()
+                    .and_then(Option::as_ref)
+                    .is_some_and(|p| !p.is_empty())
+        });
+        if at_limit {
+            toast.warning(
+                "Verify your email to create more than one deck".to_string(),
+                ToastOptions::default().duration(TOAST_LONG),
+            );
+        } else {
+            let mut slot = seed.0;
+            slot.set(Some(card));
+            navigator.push(Route::CreateDeck {});
+        }
+    });
+
+    let clear_maybeboard = use_callback(move |()| {
+        spawn_write(async move {
+            if authed
+                .run("clear_commander_maybeboard", |c, s| async move {
+                    c.clear_commander_maybeboard(&s).await
+                })
+                .await
+                .is_some()
+            {
+                if mounted.get() {
+                    list.clear();
+                }
+                toast.info(
+                    "Maybeboard cleared".to_string(),
+                    ToastOptions::default().duration(TOAST_QUICK),
+                );
+            }
+        });
+    });
+
+    Board {
+        list,
+        saved_oracles,
+        swipe_open,
+        show_clear_dialog,
+        create_with,
+        clear_maybeboard,
+    }
+}
+
+/// The Maybeboard list's Clear maybeboard dialog and its Swipe select, at the screen's root.
+#[component]
+pub(super) fn MaybeboardOverlays(board: Board) -> Element {
+    let Board {
+        mut list,
+        saved_oracles,
+        mut swipe_open,
+        show_clear_dialog,
+        create_with,
+        clear_maybeboard,
+    } = board;
+    rsx! {
+        AlertDialog {
+            open: show_clear_dialog,
+            title: "Clear maybeboard",
+            actions: vec![
+                DialogAction::Dismiss("Cancel".into()),
+                DialogAction::Confirm {
+                    label: "Clear".into(),
+                    danger: true,
+                    on_confirm: clear_maybeboard,
+                },
+            ],
+            "Every commander on your maybeboard will be removed. This can't be undone."
+        }
+        // Commanders not saved yet: up saves one here, right starts a deck
+        // with it.
+        SwipeSelect {
+            open: swipe_open,
+            mode: SwipeMode::Commander(Format::Commander),
+            exclude_oracle_ids: Some(saved_oracles.into()),
+            starts_deck: true,
+            on_select: move |card: Card| {
+                swipe_open.set(false);
+                list.refetch();
+                create_with.call(card);
+            },
+            on_close: move |()| {
+                swipe_open.set(false);
+                list.refetch();
+            },
+        }
+    }
+}
+
+/// The Maybeboard list over `board`'s saved commanders, narrowed by the
+/// screen's `filter`; its overlays are [`MaybeboardOverlays`]. A row opens into
+/// `expanded_card`, which the screen's card keys share.
+#[component]
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "keyboard_types::Key is a foreign enum of every key; only the keys handled act"
+)]
+pub(super) fn MaybeboardPanel(
+    board: Board,
+    filter: Signal<CardQueryBuilder>,
+    expanded_card: Signal<Option<Uuid>>,
+) -> Element {
+    let toast = use_toast();
+    // A save or remove lands even after the screen goes; its list update waits on this.
+    let mounted = use_mounted();
+    let authed = use_authed();
+    let usage = telemetry::use_usage();
+    let Board {
+        mut list,
+        saved_oracles,
+        mut swipe_open,
+        mut show_clear_dialog,
+        create_with,
+        ..
+    } = board;
+
+    let mut show_row_art = use_signal(|| true);
+    use_context_provider(|| ShowRowArt(show_row_art));
+
+    let mut query = use_signal(String::new);
+    let mut highlight: Signal<Option<usize>> = use_signal(|| None);
+    let mut sort: Signal<Sort> = use_signal(|| MaybeboardSortStore::browser().load());
+
+    let SavedList {
+        mut entries,
+        is_loading,
+        load_failed,
+        ..
+    } = list;
 
     // The debounced commander search feeding the result chips. Every edit
     // takes a ticket, so a reply for an older query never lands over a newer
@@ -219,12 +363,6 @@ pub(super) fn MaybeboardPanel(
         });
     });
 
-    let saved_oracles = use_memo(move || -> HashSet<Uuid> {
-        entries()
-            .iter()
-            .filter_map(|c| c.scryfall_data.oracle_id)
-            .collect()
-    });
     let shown_results = use_memo(move || -> Vec<Card> {
         let saved = saved_oracles();
         search_results()
@@ -275,37 +413,6 @@ pub(super) fn MaybeboardPanel(
         });
     });
 
-    // The create gate: an unverified account with a deck already is at its
-    // limit. Quiet; a failure leaves the gate open.
-    let deck_profiles = use_resource(move || async move {
-        authed
-            .run_quiet("load_deck_profiles", |c, s| async move {
-                c.fetch_deck_profiles(&s).await
-            })
-            .await
-    });
-    let mut swipe_open = use_signal(|| false);
-    let create_with = use_callback(move |card: Card| {
-        let at_limit = session.peek().as_ref().is_some_and(|s| {
-            s.user.email_verified_at.is_none()
-                && deck_profiles
-                    .peek()
-                    .as_ref()
-                    .and_then(Option::as_ref)
-                    .is_some_and(|p| !p.is_empty())
-        });
-        if at_limit {
-            toast.warning(
-                "Verify your email to create more than one deck".to_string(),
-                ToastOptions::default().duration(TOAST_LONG),
-            );
-        } else {
-            let mut slot = seed.0;
-            slot.set(Some(card));
-            navigator.push(Route::CreateDeck {});
-        }
-    });
-
     let on_remove = use_callback(move |oracle_id: Uuid| {
         spawn_write(async move {
             if authed
@@ -320,26 +427,6 @@ pub(super) fn MaybeboardPanel(
                 }
                 toast.info(
                     "Removed".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
-            }
-        });
-    });
-
-    let clear_maybeboard = use_callback(move |()| {
-        spawn_write(async move {
-            if authed
-                .run("clear_commander_maybeboard", |c, s| async move {
-                    c.clear_commander_maybeboard(&s).await
-                })
-                .await
-                .is_some()
-            {
-                if mounted.get() {
-                    list.clear();
-                }
-                toast.info(
-                    "Maybeboard cleared".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
@@ -544,36 +631,6 @@ pub(super) fn MaybeboardPanel(
                     }
                 }
             }
-        AlertDialog {
-            open: show_clear_dialog,
-            title: "Clear maybeboard",
-            actions: vec![
-                DialogAction::Dismiss("Cancel".into()),
-                DialogAction::Confirm {
-                    label: "Clear".into(),
-                    danger: true,
-                    on_confirm: clear_maybeboard,
-                },
-            ],
-            "Every commander on your maybeboard will be removed. This can't be undone."
-        }
-        // Commanders not saved yet: up saves one here, right starts a deck
-        // with it.
-        SwipeSelect {
-            open: swipe_open,
-            mode: SwipeMode::Commander(Format::Commander),
-            exclude_oracle_ids: Some(saved_oracles.into()),
-            starts_deck: true,
-            on_select: move |card: Card| {
-                swipe_open.set(false);
-                list.refetch();
-                create_with.call(card);
-            },
-            on_close: move |()| {
-                swipe_open.set(false);
-                list.refetch();
-            },
-        }
     }
 }
 
