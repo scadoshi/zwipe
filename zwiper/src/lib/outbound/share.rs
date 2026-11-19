@@ -159,9 +159,10 @@ mod platform {
         let popover: Option<Retained<AnyObject>> =
             unsafe { msg_send![&*sheet, popoverPresentationController] };
         if let Some(popover) = popover {
-            // SAFETY: `view` is the presenter's UIView; `setSourceView:` takes a nullable UIView.
+            // SAFETY: `view` is the presenter's UIView getter.
+            let view: Option<Retained<AnyObject>> = unsafe { msg_send![&*presenter, view] };
+            // SAFETY: `setSourceView:` takes a nullable UIView.
             unsafe {
-                let view: Option<Retained<AnyObject>> = msg_send![&*presenter, view];
                 let () = msg_send![&*popover, setSourceView: view.as_deref()];
             }
         }

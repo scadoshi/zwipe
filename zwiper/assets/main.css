@@ -239,7 +239,7 @@ body {
     width: calc(100% - 2rem);
     max-width: 40rem;
     margin: var(--panel-gap) auto 0;
-    padding-bottom: 6rem;
+    padding-bottom: var(--content-pad-bottom);
     box-sizing: border-box;
 }
 

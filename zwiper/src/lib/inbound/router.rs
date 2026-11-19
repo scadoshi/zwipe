@@ -79,7 +79,7 @@ pub enum Router {
     #[route("/activity")]
     Activity {},
 
-    /// Collection: import a ManaBox or Archidekt export, the collection's
+    /// Collection: import a `ManaBox` or Archidekt export, the collection's
     /// list, and Export to the share sheet.
     #[route("/collection")]
     Collection {},

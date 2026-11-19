@@ -16,7 +16,7 @@ use std::collections::{HashMap, HashSet};
 use components::{
     Button, ButtonVariant, CardEditButtons, CardListFold, CardsViewSwitch, ClearWrap,
     DRAWER_CLASSES, DeckSection, DeckStacks, DeckStacksGhost, DrawerEdge, GroupBuy, GroupBuyDialog,
-    LoadFailed, StackDetails, Toasts, spawn_write, use_group_buy, use_stack_details,
+    LoadFailed, StackDetails, Toasts, spawn_in_order, use_group_buy, use_stack_details,
     use_stack_details_sync, use_toast,
 };
 use dioxus::prelude::*;
@@ -118,8 +118,9 @@ impl Driver {
                 });
             }
             Effect::SetCopies { ticket, set } => {
-                // A write outlives the screen, so leaving mid-save never drops it.
-                spawn_write(async move {
+                // One printing's sets reach the server in the order they were made, each the
+                // row's whole count.
+                spawn_in_order(set.scryfall_data_id, async move {
                     let reply = self
                         .authed
                         .try_run_quiet("set_collection_card", |c, s| async move {

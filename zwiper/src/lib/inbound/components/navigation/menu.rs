@@ -59,13 +59,15 @@ pub const fn section_of(route: &Router) -> Option<Section> {
         Router::SuggestedCommanders {} => Some(Section::Playstyle),
         Router::CommanderMaybeboard {} => Some(Section::Maybeboard),
         Router::Activity {} => Some(Section::Activity),
-        // Collection is the app's and the web's own, not one of the shared menu's sections: its
-        // entry lights itself.
-        Router::Collection {} => None,
         Router::Account {} => Some(Section::Account),
         Router::Config {} => Some(Section::Config),
         Router::About {} | Router::PrivacyPolicy {} => Some(Section::About),
-        Router::Login {} | Router::Register {} | Router::ForgotPassword {} => None,
+        // Collection is the app's and the web's own, not one of the shared menu's sections: its
+        // entry lights itself.
+        Router::Collection {}
+        | Router::Login {}
+        | Router::Register {}
+        | Router::ForgotPassword {} => None,
     }
 }
 

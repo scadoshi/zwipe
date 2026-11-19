@@ -1,6 +1,6 @@
 //! Collection: importing a ManaBox or Archidekt collection export, from a picked file or pasted
 //! text, adding it to the collection or replacing the collection with it, then what landed and the
-//! rows that didn't. The collection's own list follows, [`CollectionList`].
+//! rows that didn't. The collection's own list follows, `CollectionList`.
 //!
 //! Laid out as deck Import is: the Mode chips and their line pinned on top, the File and Paste
 //! panel, the results under it, and the import as the dock's checkmark. A replace asks first.

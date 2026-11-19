@@ -65,7 +65,7 @@ fn save(slot: Slot, view: CardsView) {
 
 fn restore(slot: Slot) -> CardsView {
     match platform::load(slot.name()) {
-        Ok(bytes) => bytes.map_or(slot.default_view(), |b| from_stored(slot, &b)),
+        Ok(bytes) => bytes.map_or_else(|| slot.default_view(), |b| from_stored(slot, &b)),
         Err(e) => {
             tracing::error!("failed to load the cards view: {e}");
             slot.default_view()
@@ -78,7 +78,7 @@ fn from_stored(slot: Slot, bytes: &[u8]) -> CardsView {
     std::str::from_utf8(bytes)
         .ok()
         .and_then(CardsView::from_key)
-        .unwrap_or(slot.default_view())
+        .unwrap_or_else(|| slot.default_view())
 }
 
 // Apple / desktop: OS store via keyring (same service as the session).
