@@ -15,17 +15,16 @@ use std::fs;
 use std::path::PathBuf;
 
 use components::{
-    Bar, BarChart, BarOrientation, CardBoardMoves, CardEditButtons, CardStack,
-    ChangelogCollapseAll, ChangelogFilter, ChangelogFilters, ChangelogReleases, ColorBars,
-    ColorChart, DeckCharts, DeckFacts, DeckHead, DrawOdds, FlippableCardImage, IdentityPips,
-    LabelCase, Pressable, StackCard, use_collapse_set,
+    Bar, BarChart, BarOrientation, CardEditButtons, CardStack, ChangelogCollapseAll,
+    ChangelogFilter, ChangelogFilters, ChangelogReleases, ColorBars, ColorChart, DeckCharts,
+    DeckFacts, DeckHead, DrawOdds, FlippableCardImage, IdentityPips, LabelCase, Pressable,
+    StackCard, use_collapse_set,
 };
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
-use zwipe_core::domain::deck::Board;
 use zwipe_core::http::contracts::changelog::{HttpChangelog, HttpRelease};
 use zwipe_ui::colors::Bar as ColorBar;
 
@@ -655,8 +654,8 @@ fn card_stack_revealed() {
     );
 }
 
-/// The editing buttons a deck card's drawer shows: the stepper at three,
-/// Unstar for an MVP, and the moves off the maybeboard.
+/// The editing buttons as one row: Unstar for an MVP, then the stepper at
+/// three.
 #[test]
 fn card_edit_actions() {
     golden(
@@ -664,7 +663,6 @@ fn card_edit_actions() {
         &render(|| {
             rsx! {
                 CardEditButtons { qty: 3, on_qty_change: move |_| {}, mvp: Some(true), on_toggle_mvp: move |()| {} }
-                CardBoardMoves { current_board: Some(Board::Maybeboard), on_move_to: move |_| {} }
             }
         }),
     );

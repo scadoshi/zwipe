@@ -18,7 +18,7 @@ use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, deck_metrics};
 
-use crate::card_actions::{CardBoardMoves, CardEditButtons};
+use crate::card_actions::{BoardMoveButtons, CardMarkButtons, CardStepper};
 use crate::hover_stack::{HeldEntry, HoverStack};
 use crate::meld::use_meld;
 use crate::{CardDetails, CardProxy, drawer_swap};
@@ -77,9 +77,10 @@ pub fn CardRow(
     /// MVP star state: `Some(true)` filled, `Some(false)` outline, `None` = no
     /// star rendered (non-mainboard rows, tokens, command zone).
     mvp: Option<bool>,
-    /// Host-specific buttons appended to the expanded action bar (e.g. the
-    /// commander maybeboard's Create deck / Remove pair). The host supplies
-    /// `card-action-btn` buttons that stop propagation themselves.
+    /// Host-specific word buttons in the expanded bar's words block, after
+    /// Printings (e.g. the commander maybeboard's Create deck / Remove pair).
+    /// The host supplies `card-action-btn` buttons that stop propagation
+    /// themselves.
     #[props(default)]
     extra_actions: Option<Element>,
     /// Flag state for the Flag toggle in the opened row's bar: `Some` with `on_toggle_flag`
@@ -89,7 +90,7 @@ pub fn CardRow(
     /// Toggles the row's Flag.
     #[props(default)]
     on_toggle_flag: Option<EventHandler<()>>,
-    /// A Send to row under the opened row's moves, where the client provides
+    /// A Send to button among the opened row's icons, where the client provides
     /// [`crate::SendTo`]: the deck page's rows have one.
     #[props(default)]
     send_to: bool,
@@ -249,8 +250,9 @@ pub fn CardRow(
         .clone()
         .or_else(|| front.and_then(|f| f.loyalty.clone()))
         .unwrap_or_default();
-    // The `actions` slot the shared detail hangs its bar on: qty stepper,
-    // printing, star, move-to. Image is a `CardDetails` default, not part of it.
+    // The shared detail's bar: Send to, Star and Flag join its icons, the
+    // stepper ends their line, and Printings, the host's buttons and the moves
+    // form the words' block under it. Image is a `CardDetails` default.
     let send_to = send_to && try_use_context::<crate::SendTo>().is_some();
     let flag_shown = crate::is_flagged(card.scryfall_data.id);
     let has_slot_actions = on_qty_change.is_some()
@@ -260,6 +262,7 @@ pub fn CardRow(
         || extra_actions.is_some()
         || (flagged.is_some() && on_toggle_flag.is_some())
         || send_to;
+    let has_words = on_printing.is_some() || extra_actions.is_some() || on_move_to.is_some();
     // Always mounted; the `.open` class drives the grid-rows + opacity collapse
     // so the detail eases open and closed instead of popping.
     let collapse_class = if is_expanded {
@@ -379,31 +382,40 @@ pub fn CardRow(
                     footer,
                     has_actions: has_slot_actions,
                     actions: rsx! {
-                            if let Some(handler) = on_printing {
-                                {
-                                    let card_clone = card.clone();
-                                    rsx! {
-                                        button {
-                                            class: "card-action-btn",
-                                            "data-action": crate::data_action::PRINTINGS,
-                                            onclick: move |evt| {
-                                                evt.stop_propagation();
-                                                handler.call(card_clone.clone());
-                                            },
-                                            "Printings"
+                        if send_to {
+                            crate::SendToButton { card: card.clone() }
+                        }
+                        CardMarkButtons { mvp, on_toggle_mvp, flagged, on_toggle_flag }
+                    },
+                    action_end: rsx! {
+                        if let Some(on_qty_change) = on_qty_change {
+                            CardStepper { qty, on_qty_change }
+                        }
+                    },
+                    action_rows: rsx! {
+                        if has_words {
+                            div { class: "card-action-row card-action-words",
+                                if let Some(handler) = on_printing {
+                                    {
+                                        let card_clone = card.clone();
+                                        rsx! {
+                                            button {
+                                                class: "card-action-btn",
+                                                "data-action": crate::data_action::PRINTINGS,
+                                                onclick: move |evt| {
+                                                    evt.stop_propagation();
+                                                    handler.call(card_clone.clone());
+                                                },
+                                                "Printings"
+                                            }
                                         }
                                     }
                                 }
+                                {extra_actions}
+                                if let Some(handler) = on_move_to {
+                                    BoardMoveButtons { current_board, on_move_to: handler }
+                                }
                             }
-                            if send_to {
-                                crate::SendToButton { card: card.clone() }
-                            }
-                            CardEditButtons { qty, on_qty_change, mvp, on_toggle_mvp, flagged, on_toggle_flag }
-                            {extra_actions}
-                    },
-                    action_rows: rsx! {
-                        if let Some(handler) = on_move_to {
-                            CardBoardMoves { current_board, on_move_to: handler }
                         }
                     },
                 }

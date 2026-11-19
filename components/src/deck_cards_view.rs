@@ -25,9 +25,8 @@ use zwipe_ui::deck_cards::{Group, columns};
 
 use crate::keys::STACK_DETAILS_CLASS;
 use crate::{
-    CardBoardMoves, CardDetailsSheet, CardEditButtons, CardRow, CardStack, CartButton, Chip,
-    DeckBand, DeckGroupSection, DeckSection, DrawerEdge, GroupBuy, StackCard, TailPlace,
-    group_tail,
+    CardDetailsSheet, CardEdit, CardRow, CardStack, CartButton, Chip, DeckBand, DeckGroupSection,
+    DeckSection, DrawerEdge, GroupBuy, StackCard, TailPlace, group_tail,
 };
 
 /// The deck's edits, each taking the card's id: a quantity change by a step, a move to a board,
@@ -992,22 +991,15 @@ pub fn DeckStackDrawer(
         flagged,
         on_flag,
     } = row_actions(actions, card_id, kind, board);
-    let footer = on_move.map(|on_move_to| {
-        rsx! {
-            // Plain action rows, as the panel's own foot lays out Printings, so
-            // every row starts at the same left edge.
-            div { class: "card-action-row",
-                CardEditButtons {
-                    qty,
-                    on_qty_change: on_qty,
-                    mvp,
-                    on_toggle_mvp: on_star,
-                    flagged,
-                    on_toggle_flag: on_flag,
-                }
-            }
-            CardBoardMoves { current_board: board, on_move_to }
-        }
+    let edit = on_move.map(|on_move_to| CardEdit {
+        qty,
+        on_qty_change: on_qty,
+        mvp,
+        on_toggle_mvp: on_star,
+        flagged,
+        on_toggle_flag: on_flag,
+        current_board: board,
+        on_move_to,
     });
     rsx! {
         CardDetailsSheet {
@@ -1015,7 +1007,7 @@ pub fn DeckStackDrawer(
             card,
             on_image,
             on_printings,
-            footer,
+            edit,
             class: DRAWER_CLASSES,
             face: Some(shown_face),
             on_face_change: move |face: usize| {

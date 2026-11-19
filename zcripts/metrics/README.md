@@ -37,6 +37,7 @@ Read-only usage reports you run against the production database, then paste the 
 | `zervice.sql` | Is the nightly job running, how long does it take, and what does it leave in the database? | Weekly, or after a sync looks off |
 | `totals_check.sql` | Why would the public lifetime totals on Home go down? The API's totals and their parts, the retire trigger, write statistics, the biggest accounts, and counter rows lower than their own records | When the totals look wrong |
 | `card_signal_size.sql` | What would per-card swipe numbers cost? The swipe signal tables' rows and sizes, rows per card, writes per day, timed rollup aggregates, and size estimates for a per-card table and a per-card index | Before building the card screen's metrics |
+| `jit_check.sql` | Does Postgres spend longer compiling zerver's per-user queries (JIT) than running them? The JIT settings, then fetch_profiled_decks for the user with the most decks, as configured and with JIT off | Before turning JIT off for zerver (631) |
 
 All of them are **read-only** (no writes, no locks) and print `── header ──` sections so the output is self-describing. Run any of them the same way:
 

@@ -124,7 +124,7 @@ pub use back_arrow::BackArrow;
 pub use back_online::use_back_online;
 pub use badge_ease::BADGE_EASE_JS;
 pub use buy::{CART, CartButton, StoreDialog, store_actions};
-pub use card_actions::{CardBoardMoves, CardEditButtons};
+pub use card_actions::{CardEdit, CardEditButtons};
 pub use card_details::{
     CardDetails, CardDetailsCost, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count,
     next_card_face, share_face, turn_face, use_shared_face,

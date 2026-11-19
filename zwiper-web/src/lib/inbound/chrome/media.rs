@@ -6,8 +6,10 @@ pub use components::{
 };
 
 /// The widest window whose header folds behind the hamburger. The full bar
-/// needs about 1110px on one row, so below that it folds rather than wrap.
-pub const NAV_FOLD_MAX_PX: u32 = 1109;
+/// signed in needs about 1120px on one row; the fold leaves room past that
+/// for a classic 15px scrollbar and one more 30px nav icon with its gap, so
+/// the bar never wraps above it.
+pub const NAV_FOLD_MAX_PX: u32 = 1179;
 
 /// The kit's nav fold rules under [`NAV_FOLD_MAX_PX`], mounted after its own
 /// sheet so the header folds up to that width and not only to 60rem.
@@ -73,7 +75,7 @@ mod tests {
     fn the_swipe_chips_clear_the_folded_nav() {
         // From the wide layout's 900px up to the fold, the folded nav
         // overlays the swipe screen's top, so its chips drop by its height.
-        let band = "@media (min-width: 900px) and (max-width: 1109px) {";
+        let band = "@media (min-width: 900px) and (max-width: 1179px) {";
         let at = WEB_CSS.find(band).expect("a rule for the folded wide band");
         let rules = WEB_CSS.get(at..).unwrap();
         let rules = rules.get(..rules.find("\n}\n").unwrap()).unwrap();
@@ -198,15 +200,15 @@ mod tests {
     }
 
     #[test]
-    fn the_header_folds_below_1110_and_never_wraps() {
-        assert_eq!(NAV_FOLD_MAX_PX, 1109);
-        assert!(nav_fold_css().starts_with("@media (max-width: 1109px) {"));
+    fn the_header_folds_below_1180_and_never_wraps() {
+        assert_eq!(NAV_FOLD_MAX_PX, 1179);
+        assert!(nav_fold_css().starts_with("@media (max-width: 1179px) {"));
         assert!(nav_fold_css().contains(components::NAV_FOLD_CSS));
         for folded in [".web-nav-wide", ".web-nav-hint", ".web-shell"] {
-            assert_eq!(query_for(folded), "@media (max-width: 1109px)", "{folded}");
+            assert_eq!(query_for(folded), "@media (max-width: 1179px)", "{folded}");
         }
-        assert_eq!(query_for(".web-nav-narrow"), "@media (min-width: 1110px)");
-        assert!(HEADER_HIDE_JS.contains("matchMedia(\"(max-width: 1109px)\")"));
+        assert_eq!(query_for(".web-nav-narrow"), "@media (min-width: 1180px)");
+        assert!(HEADER_HIDE_JS.contains("matchMedia(\"(max-width: 1179px)\")"));
         assert!(
             !WEB_CSS.contains("and (max-width: 60rem)"),
             "no band where the bar is held open to wrap"
