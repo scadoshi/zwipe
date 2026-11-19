@@ -401,6 +401,19 @@
    }
   },
   {
+   "name": "commander deal, owned only",
+   "method": "POST",
+   "route": "/api/commander/deal",
+   "path": "/api/commander/deal",
+   "as": "tester",
+   "body": {
+    "limit": 10,
+    "filter": {
+     "owned_only": true
+    }
+   }
+  },
+  {
    "name": "commander deal, deck creation's next page",
    "method": "POST",
    "route": "/api/commander/deal",

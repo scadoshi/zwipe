@@ -257,7 +257,8 @@ fn commander_deal_query(
 
 /// The deal statement's opening CTEs, through `candidates`: the user's decks and saved
 /// commanders, the popularity scale, and every commander the filter and `commander`'s rules let
-/// through, less tokens, `signal.exclude` and the user's live dismissals. The `candidates` CTE is
+/// through, less tokens, `signal.exclude` and the user's live dismissals, and only those in the
+/// user's collection when the filter's `owned_only` is on. The `candidates` CTE is
 /// left open for [`push_deal_ranking`] to close.
 fn deal_candidates(
     deal: &CommanderDeal,
@@ -336,6 +337,13 @@ fn deal_candidates(
         sep.push("NOT (latest_cards.oracle_id = ANY(");
         sep.push_bind_unseparated(signal.exclude.clone());
         sep.push_unseparated("::uuid[]))");
+        // The filter's "In my collection", as the card search applies it: a commander the user
+        // holds any printing of.
+        if deal.filter.as_ref().is_some_and(CardQuery::owned_only) {
+            sep.push("EXISTS (SELECT 1 FROM collection_cards owned WHERE owned.user_id = ");
+            sep.push_bind_unseparated(signal.user_id);
+            sep.push_unseparated(" AND owned.oracle_id = latest_cards.oracle_id)");
+        }
         sep.push("NOT EXISTS (SELECT 1 FROM user_commander_dismissals dis WHERE dis.user_id = ");
         sep.push_bind_unseparated(signal.user_id);
         sep.push_unseparated(
