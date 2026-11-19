@@ -2996,14 +2996,10 @@ body {
     gap: var(--space-2);
 }
 
-/* The name the cards share, over their grid: the type scale's 1.5rem step at
-   the weight the font has. */
+/* The name the cards share, over their grid: the deck page's heading,
+   centered over the grid. */
 .web-card-list-title {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
     text-align: center;
-    overflow-wrap: anywhere;
 }
 
 .web-card-results {

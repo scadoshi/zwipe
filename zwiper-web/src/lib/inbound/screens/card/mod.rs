@@ -265,7 +265,7 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
         }
         (Status::Several, _) => rsx! {
             div { class: "screen-content content-enter web-card-list",
-                h1 { class: "web-card-list-title", "{title}" }
+                h1 { class: "deck-head-title web-card-list-title", "{title}" }
                 // Each card is a one-card stack in the deck page's Stacks grid: the whole card
                 // shows, and a tap opens its printing.
                 div { class: "deck-stacks web-card-results",
