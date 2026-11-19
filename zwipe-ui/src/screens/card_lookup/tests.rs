@@ -66,10 +66,36 @@ fn by_printing(slug: &str, id: Uuid) -> (State, Ticket) {
 fn the_copy_matches_the_app() {
     assert_eq!(NOT_FOUND, "No card by that name");
     assert_eq!(LINK_COPIED, "Share link copied");
+    assert_eq!(SCREEN_TITLE, "Card");
     assert_eq!(
         several_title("Rampant Growth"),
         "Cards named Rampant Growth"
     );
+}
+
+#[test]
+fn the_screen_is_titled_by_its_card_or_the_name_its_cards_share() {
+    let (mut state, ticket, _) = by_name("gather-the-townsfolk", false, true);
+    assert_eq!(state.screen_title(), SCREEN_TITLE, "while it loads");
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![card("Gather the Townsfolk"), card("Gather, the Townsfolk")],
+    });
+    assert_eq!(state.screen_title(), "Cards named Gather the Townsfolk");
+
+    let (mut state, ticket, _) = by_name("bind", false, true);
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![card("Bind")],
+    });
+    assert_eq!(state.screen_title(), "Bind");
+
+    let (mut state, ticket, _) = by_name("no-such-card", false, true);
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![],
+    });
+    assert_eq!(state.screen_title(), SCREEN_TITLE);
 }
 
 #[test]

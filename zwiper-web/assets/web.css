@@ -1501,6 +1501,26 @@ body {
     display: contents;
 }
 
+/* The card search sizes to its field and sits centered, so its × keeps its
+   slot while hidden: typing only fades it in, and the row never re-centers.
+   The row stays a gutter in from each edge. */
+.web-home-search {
+    max-width: calc(100% - 2 * var(--space-4));
+}
+
+.web-home-search .input-clear-btn {
+    width: 2.2rem;
+    margin-left: var(--space-2);
+}
+
+/* On a phone the row spans the column inside its gutters, so results wider
+   than the field don't widen it. */
+@media (max-width: 899px) {
+    .web-home-search {
+        width: 100%;
+    }
+}
+
 @media (max-width: 899px) {
     .web-home-page .home-hero,
     .web-home-page .home-flavor {
@@ -2976,6 +2996,16 @@ body {
     gap: var(--space-2);
 }
 
+/* The name the cards share, over their grid: the type scale's 1.5rem step at
+   the weight the font has. */
+.web-card-list-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
 .web-card-results {
     width: 100%;
     grid-template-columns: repeat(auto-fit, minmax(12.5rem, 15rem));
@@ -2988,6 +3018,18 @@ body {
 }
 
 @media (min-width: 900px) {
+    /* The stats and details panels share the window with the card: each
+       takes up to 30% of it (13rem to 24rem), and the card takes what lies
+       between them less a 1rem edge and a 1rem gap on each side, plus room
+       for a scrollbar, so no panel covers the card at any width. */
+    .web-card-page {
+        --web-dock-panel-width: clamp(13rem, calc((100vw - 4rem) * 0.3), 24rem);
+    }
+
+    .web-card-page .web-card-image {
+        max-width: min(26rem, calc(100vw - 2 * var(--web-dock-panel-width) - 5rem));
+    }
+
     .web-card-stats {
         position: fixed;
         top: var(--web-dock-panel-top);

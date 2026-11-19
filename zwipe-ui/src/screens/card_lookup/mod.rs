@@ -37,6 +37,9 @@ pub const NOT_FOUND: &str = "No card by that name";
 /// The toast once the card's link is copied.
 pub const LINK_COPIED: &str = "Share link copied";
 
+/// The screen's title while no card or name names it: loading, no card, or a failed fetch.
+pub const SCREEN_TITLE: &str = "Card";
+
 /// What a card route asks the screen to open once the card shows, its `open` query value. A
 /// route with no `open` asks for nothing, so the route holds an `Option<Ask>`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
@@ -539,6 +542,17 @@ impl State {
         self.cards()
             .first()
             .map(|c| several_title(&c.scryfall_data.name))
+    }
+
+    /// The screen's title, for the browser tab and the folded nav: the card's name when one
+    /// shows, the [`several_title`] heading when several share a name, else [`SCREEN_TITLE`].
+    #[must_use]
+    pub fn screen_title(&self) -> String {
+        match &self.shown {
+            Shown::One(card) => card.scryfall_data.name.clone(),
+            Shown::Several(_) => self.title().unwrap_or_else(|| SCREEN_TITLE.to_owned()),
+            Shown::Loading | Shown::NotFound | Shown::Failed => SCREEN_TITLE.to_owned(),
+        }
     }
 
     /// The line to show in place of a card.

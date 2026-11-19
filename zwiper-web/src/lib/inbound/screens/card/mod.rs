@@ -201,10 +201,10 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
     let cards = state.cards().to_vec();
     let message = state.message();
     let stats = state.stats();
+    let title = state.screen_title();
     drop(state);
-    let title = card
-        .as_ref()
-        .map_or_else(|| "Card".to_owned(), |c| c.scryfall_data.name.clone());
+    // Several cards draw their own heading; one card's name is on the card and its details.
+    let titled = status == Status::Several;
 
     let body = match (status, card) {
         (Status::One, Some(card)) => {
@@ -265,6 +265,7 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
         }
         (Status::Several, _) => rsx! {
             div { class: "screen-content content-enter web-card-list",
+                h1 { class: "web-card-list-title", "{title}" }
                 // Each card is a one-card stack in the deck page's Stacks grid: the whole card
                 // shows, and a tap opens its printing.
                 div { class: "deck-stacks web-card-results",
@@ -308,7 +309,7 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
     };
 
     rsx! {
-        ScreenFrame { title, {body} }
+        ScreenFrame { title, titled, {body} }
         if signed_in() {
             SendToHost { send_to }
         }
