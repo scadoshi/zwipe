@@ -1365,7 +1365,10 @@ fn the_copy_matches_the_app() {
     assert_eq!(FROM, "From");
     assert_eq!(SYNERGY, "Synergy");
     assert_eq!([BACK, FILTER, REFRESH], ["Back", "Filter", "Refresh"]);
-    assert_eq!(Source::ALL.map(Source::label), ["Search", "Maybe"]);
+    assert_eq!(
+        Source::ALL.map(Source::label),
+        ["Search", "Maybe", "Collection"]
+    );
     assert_eq!(PRINTING_SWAPPED, "Printing swapped");
     assert_eq!(
         [
@@ -1426,12 +1429,6 @@ fn the_copy_matches_the_app() {
         "That's every synergy pick. Showing cards like your deck"
     );
     assert_eq!((QUICK, NORMAL), (crate::toast::QUICK, crate::toast::NORMAL));
-}
-
-#[test]
-fn the_source_toggle_flips_between_the_two() {
-    assert_eq!(Source::Search.toggled(), Source::Maybeboard);
-    assert_eq!(Source::Maybeboard.toggled(), Source::Search);
 }
 
 #[test]
@@ -1648,22 +1645,40 @@ fn search_query_of(effects: &[Effect]) -> Option<CardQuery> {
 }
 
 #[test]
-fn a_saved_in_my_collection_filters_only_once_the_chip_is_offered() {
+fn search_never_sends_in_my_collection_even_from_a_saved_filter() {
     let built = commander_deck(&["Sol Ring"]);
     let mut saved = CardQueryBuilder::default();
-    saved.set_owned_only(true);
+    saved.set_name_contains("sol").set_owned_only(true);
     let mut state = State::new();
     let effects = state.update(Action::Load {
         deck_id: built.deck_profile.id,
-        filter: Some(saved),
+        filter: Some(saved.clone()),
         parked: None,
     });
-    let effects = state.update(Action::DeckLoaded {
+    let _ = state.update(Action::DeckLoaded {
         ticket: ticket_of(&effects),
         deck: Box::new(built),
     });
-    // The client hands the filter it was given back, as it does after a rerun.
-    let given = effects
+    let _ = state.update(Action::OffersOwned(true));
+    let effects = state.update(Action::Filter(saved));
+    let query = search_query_of(&effects).expect("the search");
+    assert!(
+        !query.owned_only(),
+        "Collection is From's job now: Search never narrows to owned cards"
+    );
+}
+
+/// A deck loaded on Add with a collection, then From moved to Collection with nothing
+/// remembered, and the client handing back the filter the model set, as it does on a rerun.
+fn on_collection() -> (State, Vec<Effect>) {
+    let built = commander_deck(&["Sol Ring"]);
+    let (mut state, _) = with_deck(&built);
+    let _ = state.update(Action::OffersOwned(true));
+    let effects = state.update(Action::PickSource {
+        source: Source::Collection,
+        remembered: None,
+    });
+    let set = effects
         .iter()
         .find_map(|e| {
             if let Effect::SetFilter(filter) = e {
@@ -1672,26 +1687,49 @@ fn a_saved_in_my_collection_filters_only_once_the_chip_is_offered() {
                 None
             }
         })
-        .unwrap();
-    assert!(given.owned_only(), "the saved choice stays in the filter");
-    let effects = state.update(Action::Filter(given));
-    let first = search_query_of(&effects).expect("the deck's first search");
-    assert!(
-        !first.owned_only(),
-        "no chip offered yet: the hidden flag never filters"
-    );
+        .expect("the entering filter");
+    assert!(set.is_empty(), "Collection starts with no filter: {set:?}");
+    let effects = state.update(Action::Filter(set));
+    (state, effects)
+}
 
-    let effects = state.update(Action::OffersOwned(true));
-    let narrowed = search_query_of(&effects).expect("the chip showing re-runs the search");
+#[test]
+fn from_collection_deals_owned_cards_with_no_filter_needed() {
+    let (state, effects) = on_collection();
+    assert_eq!(state.source(), Source::Collection);
+    let query = search_query_of(&effects).expect("Collection searches from an empty filter");
+    assert!(query.owned_only(), "narrowed to owned cards");
     assert!(
-        narrowed.owned_only(),
-        "with the chip offered the saved choice applies"
+        !effects
+            .iter()
+            .any(|e| matches!(e, Effect::Toast(t) if t.text == TRY_A_FILTER)),
+        "owned alone narrows it, so no filter is asked for: {effects:?}"
     );
-    assert_eq!(
-        state.update(Action::OffersOwned(true)),
-        NOTHING,
-        "the same answer again changes nothing"
+}
+
+#[test]
+fn collection_falls_back_to_search_when_the_collection_goes() {
+    let (mut state, _) = on_collection();
+    let effects = state.update(Action::OffersOwned(false));
+    assert_eq!(state.source(), Source::Search);
+    assert!(
+        effects.iter().any(|e| matches!(e, Effect::Rerun)),
+        "Search deals again: {effects:?}"
     );
+}
+
+#[test]
+fn collection_swipes_as_search_does() {
+    let (state, _) = on_collection();
+    assert!(
+        !state.validates_apply(),
+        "an empty filter applies on Collection"
+    );
+    assert!(
+        state.sheet_deck_format().is_some(),
+        "the deck's format bounds it, as on Search"
+    );
+    assert!(!state.shows_synergy(), "Synergy stays Search's");
 }
 
 #[test]
@@ -1699,4 +1737,21 @@ fn the_summary_landing_never_re_deals_a_pile_with_no_collection_filter() {
     let built = commander_deck(&["Sol Ring"]);
     let (mut state, _) = with_deck(&built);
     assert!(!has_search(&state.update(Action::OffersOwned(true))));
+}
+
+#[test]
+fn a_collection_pile_never_parks_as_search_s() {
+    let (mut state, effects) = on_collection();
+    let ticket = ticket_of(&effects);
+    let _ = state.update(Action::Searched {
+        ticket,
+        page: page(vec![card("Sol Ring")]),
+    });
+    shown(&mut state);
+    assert_eq!(state.parked(), None, "on Collection");
+    let _ = state.update(Action::PickSource {
+        source: Source::Maybeboard,
+        remembered: None,
+    });
+    assert_eq!(state.parked(), None, "nor after leaving it for Maybe");
 }

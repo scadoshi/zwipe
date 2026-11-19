@@ -267,7 +267,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Filter, sort, and the maybeboard"),
             Block::P(
-                "The [[funnel]] decides which cards are dealt; a dot on it marks an active filter. Sorting only reorders. The Maybeboard chip after From deals your maybeboard instead; a right swipe there moves a card to the mainboard. Each source keeps its own filter.",
+                "The [[funnel]] decides which cards are dealt; a dot on it marks an active filter. Sorting only reorders. From picks what's dealt: Maybe deals your maybeboard, where a right swipe moves a card to the mainboard, and Collection deals only cards you own. Each source keeps its own filter.",
             ),
             Block::Image {
                 file: "swipe-to-build/02-filter-sheet.webp",

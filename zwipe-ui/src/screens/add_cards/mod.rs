@@ -148,38 +148,7 @@ pub enum Destination {
     DeckList,
 }
 
-/// Which pile the screen swipes.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Source {
-    /// The deck-aware card search, the pick on entry.
-    #[default]
-    Search,
-    /// The deck's maybeboard.
-    Maybeboard,
-}
-
-impl Source {
-    /// The chips in the order they draw.
-    pub const ALL: [Self; 2] = [Self::Search, Self::Maybeboard];
-
-    /// The chip's words.
-    #[must_use]
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Search => "Search",
-            Self::Maybeboard => "Maybe",
-        }
-    }
-
-    /// The other source: what a tap on the one-chip source toggle switches to.
-    #[must_use]
-    pub fn toggled(self) -> Self {
-        match self {
-            Self::Search => Self::Maybeboard,
-            Self::Maybeboard => Self::Search,
-        }
-    }
-}
+pub use crate::pile_source::Source;
 
 /// What the pile area draws.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -663,14 +632,10 @@ impl State {
                     return Vec::new();
                 }
                 self.owned_chip = chip;
-                let matters = self.filter.owned_only()
-                    && self.source == Source::Search
-                    && self.deck.is_some();
-                if matters {
-                    self.fresh_search()
-                } else {
-                    Vec::new()
+                if !offered && self.source == Source::Collection {
+                    return self.pick_source(Source::Search, None);
                 }
+                Vec::new()
             }
             Action::Load {
                 deck_id,
@@ -715,7 +680,7 @@ impl State {
             Action::Undo => {
                 self.revealing = None;
                 match self.source {
-                    Source::Search => self.undo_search(),
+                    Source::Search | Source::Collection => self.undo_search(),
                     Source::Maybeboard => self.undo_maybeboard(),
                 }
             }
@@ -736,7 +701,7 @@ impl State {
         effects.extend(self.announce_related());
         let after = self.pile();
         let ran_out = match self.source {
-            Source::Search => before != Pile::End && after == Pile::End,
+            Source::Search | Source::Collection => before != Pile::End && after == Pile::End,
             Source::Maybeboard => before == Pile::Cards && after == Pile::Empty,
         };
         if ran_out_by && ran_out {
@@ -820,13 +785,12 @@ impl State {
     }
 
     /// Starts a new stack from the top with the live filter, the swiped cards kept behind it for undo. On Search, once the deck is in, a filter Add would not serve asks for one instead.
-    /// The Search filter as it goes to the server: normalized, with "In my collection" dropped
-    /// unless the sheet offers it.
+    /// The search filter as it goes to the server: normalized, and narrowed to owned cards on
+    /// Collection while the user has a collection, never on Search.
     fn sent(&self) -> CardQueryBuilder {
-        crate::screens::card_filter::as_sent(
-            &add::normalized(&self.filter),
-            self.owned_chip.is_offered(),
-        )
+        let mut sent = add::normalized(&self.filter);
+        sent.set_owned_only(self.source.owned_only() && self.owned_chip.is_offered());
+        sent
     }
 
     fn fresh_search(&mut self) -> Vec<Effect> {
@@ -1209,7 +1173,7 @@ impl State {
     fn reset_filter(&self, mut draft: CardQueryBuilder) -> Vec<Effect> {
         let reset = match self.source {
             Source::Search => self.context().reset_search(&mut draft),
-            Source::Maybeboard => filter::reset_maybeboard(&mut draft),
+            Source::Maybeboard | Source::Collection => filter::reset_maybeboard(&mut draft),
         };
         match reset {
             Ok(()) => vec![
@@ -1228,7 +1192,7 @@ impl State {
         let leaving = std::mem::take(&mut self.filter);
         self.filter = match source {
             Source::Search => remembered.unwrap_or_else(|| self.context().fresh_search()),
-            Source::Maybeboard => remembered.unwrap_or_default(),
+            Source::Maybeboard | Source::Collection => remembered.unwrap_or_default(),
         };
         let effects = vec![
             Effect::ParkFilter {
@@ -1239,6 +1203,10 @@ impl State {
             Effect::StopEnter(Source::Maybeboard),
             Effect::Rerun,
         ];
+        if self.source == Source::Collection {
+            // Collection's pile isn't Search's: leave nothing of it to park.
+            self.last_search = None;
+        }
         self.source = source;
         self.maybeboard.rewind();
         effects
@@ -1267,9 +1235,9 @@ impl State {
     /// Commits the top card's exit to `side`.
     fn swipe(&mut self, side: Direction) -> Vec<Effect> {
         match (self.source, side) {
-            (Source::Search, Direction::Left) => self.skip(),
-            (Source::Search, Direction::Right) => self.add(Board::Deck),
-            (Source::Search, Direction::Up) => self.add(Board::Maybeboard),
+            (Source::Search | Source::Collection, Direction::Left) => self.skip(),
+            (Source::Search | Source::Collection, Direction::Right) => self.add(Board::Deck),
+            (Source::Search | Source::Collection, Direction::Up) => self.add(Board::Maybeboard),
             (Source::Maybeboard, Direction::Left) => {
                 if self.maybeboard.current_wrapping().is_none() {
                     return Vec::new();
@@ -1609,7 +1577,7 @@ impl State {
     /// Whether the pile shows [`LOAD_FAILED`] with a Retry in place of its ghost: Search's search from the top failed, or the deck never came and nothing is on show.
     #[must_use]
     pub fn load_failed(&self) -> bool {
-        self.source == Source::Search
+        self.source.searches()
             && !self.stack.has_served()
             && !self.run.searching
             && (self.failed.search || (self.failed.deck && self.deck.is_none()))
@@ -1741,7 +1709,7 @@ impl State {
     #[must_use]
     pub fn sheet_deck_format(&self) -> Option<Format> {
         match self.source {
-            Source::Search => self.deck_format(),
+            Source::Search | Source::Collection => self.deck_format(),
             Source::Maybeboard => None,
         }
     }
@@ -1759,7 +1727,7 @@ impl State {
             return Some(TRY_A_FILTER);
         }
         let matched_none = match self.source {
-            Source::Search => self.last_search.is_some(),
+            Source::Search | Source::Collection => self.last_search.is_some(),
             Source::Maybeboard => {
                 !self.filter.is_empty()
                     && self.deck.as_ref().is_some_and(|d| !d.maybeboard.is_empty())
@@ -1785,19 +1753,20 @@ impl State {
     /// What the pile area draws.
     #[must_use]
     pub fn pile(&self) -> Pile {
+        let searches = self.source.searches();
         match self.source {
-            Source::Search if self.revealing.is_some() => Pile::Loading,
-            Source::Search if self.stack.current().is_some() => Pile::Cards,
-            Source::Search if self.stack.has_served() => {
+            _ if searches && self.revealing.is_some() => Pile::Loading,
+            _ if searches && self.stack.current().is_some() => Pile::Cards,
+            _ if searches && self.stack.has_served() => {
                 if self.run.loading_more {
                     Pile::Loading
                 } else {
                     Pile::End
                 }
             }
-            Source::Search if self.run.searching => Pile::Loading,
+            _ if searches && self.run.searching => Pile::Loading,
             Source::Maybeboard if !self.maybeboard.is_empty() => Pile::Cards,
-            Source::Search | Source::Maybeboard => Pile::Empty,
+            Source::Search | Source::Maybeboard | Source::Collection => Pile::Empty,
         }
     }
 
@@ -1805,7 +1774,7 @@ impl State {
     #[must_use]
     pub fn window(&self) -> &[Card] {
         match self.source {
-            Source::Search => self.stack.window(),
+            Source::Search | Source::Collection => self.stack.window(),
             Source::Maybeboard => self.maybeboard.window(),
         }
     }
@@ -1814,7 +1783,7 @@ impl State {
     #[must_use]
     pub fn current(&self) -> Option<&Card> {
         match self.source {
-            Source::Search => self.printing_card(),
+            Source::Search | Source::Collection => self.printing_card(),
             Source::Maybeboard => self.maybeboard.current_wrapping(),
         }
     }
@@ -1831,9 +1800,13 @@ impl State {
         self.revealing
     }
 
-    /// The Search stack to park on leave: a served stack with the filter that produced it.
+    /// The Search stack to park on leave: a served stack with the filter that produced it. A
+    /// Collection pile never parks, since a visit opens on Search.
     #[must_use]
     pub fn parked(&self) -> Option<ParkedStack> {
+        if self.source == Source::Collection {
+            return None;
+        }
         let filter = self.last_search.clone()?;
         if !self.stack.has_served() {
             return None;

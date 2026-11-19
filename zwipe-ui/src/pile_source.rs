@@ -1,0 +1,103 @@
+//! The From chip both swipe screens share, Add and the commander swipe: which pile they deal.
+//!
+//! Search deals the screen's own search, Maybe the maybeboard, and Collection only cards the
+//! user owns. Collection shows only while the user has a collection, as the collection summary
+//! says; without one the chip cycles Search and Maybe alone, and a pile left on Collection
+//! falls back to Search.
+
+/// Which pile a swipe screen deals.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Source {
+    /// The screen's search, the pick on entry.
+    #[default]
+    Search,
+    /// The maybeboard.
+    Maybeboard,
+    /// Cards the user owns, the screen's search narrowed to the collection.
+    Collection,
+}
+
+impl Source {
+    /// Every source, in the order the chip cycles through them.
+    pub const ALL: [Self; 3] = [Self::Search, Self::Maybeboard, Self::Collection];
+
+    /// The chip's words.
+    #[must_use]
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Search => "Search",
+            Self::Maybeboard => "Maybe",
+            Self::Collection => "Collection",
+        }
+    }
+
+    /// Whether the source is on offer: Collection only while the user `has_collection`.
+    #[must_use]
+    pub fn offered(self, has_collection: bool) -> bool {
+        match self {
+            Self::Search | Self::Maybeboard => true,
+            Self::Collection => has_collection,
+        }
+    }
+
+    /// The source a tap on the chip moves to: the next one on offer, Search after the last.
+    #[must_use]
+    pub fn next(self, has_collection: bool) -> Self {
+        let next = match self {
+            Self::Search => Self::Maybeboard,
+            Self::Maybeboard => Self::Collection,
+            Self::Collection => Self::Search,
+        };
+        if next.offered(has_collection) {
+            next
+        } else {
+            next.next(has_collection)
+        }
+    }
+
+    /// Whether the source deals a search, so it pages from the server: Search and Collection,
+    /// which is the same search narrowed to owned cards.
+    #[must_use]
+    pub fn searches(self) -> bool {
+        matches!(self, Self::Search | Self::Collection)
+    }
+
+    /// Whether the source's search is narrowed to owned cards.
+    #[must_use]
+    pub fn owned_only(self) -> bool {
+        self == Self::Collection
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_chip_cycles_search_maybe_collection_and_back() {
+        assert_eq!(Source::Search.next(true), Source::Maybeboard);
+        assert_eq!(Source::Maybeboard.next(true), Source::Collection);
+        assert_eq!(Source::Collection.next(true), Source::Search);
+    }
+
+    #[test]
+    fn without_a_collection_the_chip_skips_collection() {
+        assert_eq!(Source::Search.next(false), Source::Maybeboard);
+        assert_eq!(Source::Maybeboard.next(false), Source::Search);
+        assert!(!Source::Collection.offered(false));
+        assert!(Source::Collection.offered(true));
+    }
+
+    #[test]
+    fn collection_searches_owned_cards_and_maybe_deals_no_search() {
+        assert!(Source::Collection.searches() && Source::Collection.owned_only());
+        assert!(Source::Search.searches() && !Source::Search.owned_only());
+        assert!(!Source::Maybeboard.searches() && !Source::Maybeboard.owned_only());
+    }
+
+    #[test]
+    fn the_chip_reads_search_maybe_and_collection() {
+        let labels: Vec<&str> = Source::ALL.iter().map(|s| s.label()).collect();
+        assert_eq!(labels, ["Search", "Maybe", "Collection"]);
+    }
+}

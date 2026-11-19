@@ -16,6 +16,8 @@ pub enum FilterScope {
     AddSearch,
     /// Add, swiping the maybeboard.
     AddMaybeboard,
+    /// Add, swiping the user's collection.
+    AddCollection,
 }
 
 /// Remembered filters by screen and deck.

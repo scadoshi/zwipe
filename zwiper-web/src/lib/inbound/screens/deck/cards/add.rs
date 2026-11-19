@@ -40,7 +40,7 @@ use zwipe_ui::filter::AddContext;
 use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
 use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::hint::Role;
-use zwipe_ui::screens::{add_cards, card_filter};
+use zwipe_ui::screens::add_cards;
 use zwipe_ui::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, MAX_CARDS_IN_STACK, MaybeboardAction,
     NO_CARDS_LEFT, NO_CARDS_MATCH, STACK_WARNING_EVERY, StackAction,
@@ -77,39 +77,24 @@ use crate::outbound::timer;
 /// undoes the last swipe, as in the app.
 const BACK_PULL_PX: f64 = 60.0;
 
-/// What Add swipes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum AddSource {
-    /// Search results from the server.
-    Search,
-    /// The deck's own maybeboard.
-    Maybeboard,
+/// What Add swipes: the From chip's source, shared with the app.
+type AddSource = add_cards::Source;
+
+/// The filter store scope each source remembers its filter under.
+fn scope(source: AddSource) -> FilterScope {
+    match source {
+        AddSource::Search => FilterScope::AddSearch,
+        AddSource::Maybeboard => FilterScope::AddMaybeboard,
+        AddSource::Collection => FilterScope::AddCollection,
+    }
 }
 
-impl AddSource {
-    /// The other source, for the From chip.
-    fn toggled(self) -> Self {
-        match self {
-            Self::Search => Self::Maybeboard,
-            Self::Maybeboard => Self::Search,
-        }
-    }
-
-    /// The source's name on the From chip, the app's.
-    fn label(self) -> &'static str {
-        match self {
-            Self::Search => add_cards::Source::Search.label(),
-            Self::Maybeboard => add_cards::Source::Maybeboard.label(),
-        }
-    }
-
-    /// The filter store scope each source remembers its filter under.
-    fn scope(self) -> FilterScope {
-        match self {
-            Self::Search => FilterScope::AddSearch,
-            Self::Maybeboard => FilterScope::AddMaybeboard,
-        }
-    }
+/// `filter` as `source`'s search sends it: normalized, and narrowed to owned cards on Collection
+/// while the user has a collection (`offered`), never on Search.
+fn sent(source: AddSource, filter: &CardQueryBuilder, offered: bool) -> CardQueryBuilder {
+    let mut sent = normalized(filter);
+    sent.set_owned_only(source.owned_only() && offered);
+    sent
 }
 
 /// The swipe directions every Add stack takes.
@@ -199,10 +184,13 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         let (Ok(at), Ok(applied)) = (source.try_peek(), filter.try_peek()) else {
             return;
         };
-        filters.write().park(at.scope(), deck_id, applied.clone());
+        filters.write().park(scope(*at), deck_id, applied.clone());
         let parked_filter = last_search.peek().clone();
         let was_exhausted = exhausted.try_peek().is_ok_and(|e| *e);
+        // Only Search's stack parks: a visit opens on Search, so a Collection pile never
+        // comes back as Search's.
         if let Some(parked_filter) = parked_filter
+            && *at != AddSource::Collection
             && stack.peek().has_served()
         {
             let (cards, index, history) = stack.peek().park_state();
@@ -262,27 +250,22 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     use_back_online(retry);
 
     // The search: on mount, resuming a parked stack when its filter still
-    // stands, and on every bump while the source is Search.
+    // stands, and on every bump while the source searches (Search or Collection).
     use_effect(move || {
         let _bumped = counter();
-        if *source.peek() != AddSource::Search {
+        let at = *source.peek();
+        if !at.searches() {
             return;
         }
         revealing.set(None);
-        // With "In my collection" saved on, the summary landing re-runs the search with it;
-        // otherwise the summary changes nothing here and must not re-deal the pile.
-        let offered = if filter.peek().owned_only() {
-            offers_owned()
-        } else {
-            *offers_owned.peek()
-        };
-        let builder = card_filter::as_sent(&normalized(&filter.peek()), offered);
+        let offered = *offers_owned.peek();
+        let builder = sent(at, &filter.peek(), offered);
         let first = *first_run.peek();
         if first {
             first_run.set(false);
             let parked = stacks.write().take(deck_id);
             if let Some(parked) = parked
-                && card_filter::as_sent(&normalized(&parked.filter), offered) == builder
+                && sent(at, &parked.filter, offered) == builder
                 && !parked.cards.is_empty()
             {
                 exhausted.set(parked.exhausted);
@@ -302,7 +285,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         last_search.set(None);
         exhausted.set(false);
         needs_filter.set(false);
-        if deck.peek().is_some() && !context().serves(&filter.peek()) {
+        // Search needs a filter of its own; owned alone narrows Collection.
+        if at == AddSource::Search && deck.peek().is_some() && !context().serves(&filter.peek()) {
             needs_filter.set(true);
             toast.warning(
                 add_cards::TRY_A_FILTER.to_string(),
@@ -408,10 +392,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         let Some(top) = top else {
             return;
         };
-        if *source.peek() == AddSource::Search
-            && !*related_announced.peek()
-            && related.peek().contains(&top)
-        {
+        if source.peek().searches() && !*related_announced.peek() && related.peek().contains(&top) {
             related_announced.set(true);
             usage
                 .peek()
@@ -434,9 +415,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         if *loading_more.peek() {
             return;
         }
-        let Ok(query) =
-            card_filter::as_sent(&normalized(&filter.peek()), *offers_owned.peek()).build()
-        else {
+        let Ok(query) = sent(*source.peek(), &filter.peek(), *offers_owned.peek()).build() else {
             return;
         };
         loading_more.set(true);
@@ -768,7 +747,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     });
 
     let undo_now = use_callback(move |()| match *source.peek() {
-        AddSource::Search => undo_search.call(()),
+        AddSource::Search | AddSource::Collection => undo_search.call(()),
         AddSource::Maybeboard => undo_maybeboard.call(()),
     });
 
@@ -912,19 +891,31 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         }
         filters
             .write()
-            .park(from.scope(), deck_id, filter.peek().clone());
-        let remembered = filters.peek().restore(to.scope(), deck_id);
+            .park(scope(from), deck_id, filter.peek().clone());
+        let remembered = filters.peek().restore(scope(to), deck_id);
         let next = match (to, remembered) {
             (_, Some(remembered)) => remembered,
-            (AddSource::Maybeboard, None) => CardQueryBuilder::default(),
+            (AddSource::Maybeboard | AddSource::Collection, None) => CardQueryBuilder::default(),
             (AddSource::Search, None) => context().fresh_search(),
         };
         filter.set(next);
         revealing.set(None);
+        if from == AddSource::Collection {
+            // Collection's pile isn't Search's: leave nothing of it to park.
+            last_search.set(None);
+        }
         source.set(to);
         mb_stack.write().rewind();
         bump();
     };
+
+    // A collection gone while From is on Collection: back to Search.
+    use_effect(move || {
+        if !offers_owned() && *source.peek() == AddSource::Collection {
+            let mut back = switch_source;
+            back(AddSource::Search);
+        }
+    });
 
     let refresh = use_callback(move |()| {
         let quick = ToastOptions::default().duration(TOAST_QUICK);
@@ -955,9 +946,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             fetch_context.call(());
             return;
         }
-        let Ok(query) =
-            card_filter::as_sent(&normalized(&filter.peek()), *offers_owned.peek()).build()
-        else {
+        let Ok(query) = sent(*source.peek(), &filter.peek(), *offers_owned.peek()).build() else {
             toast.warning("Filter is empty".to_string(), quick);
             return;
         };
@@ -1018,19 +1007,23 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let at = source();
     // While the ghost holds a new pile, no card is described.
     let current: Option<Card> = match at {
-        AddSource::Search => stack.read().current().filter(|_| reveal.is_none()).cloned(),
+        AddSource::Search | AddSource::Collection => {
+            stack.read().current().filter(|_| reveal.is_none()).cloned()
+        }
         AddSource::Maybeboard => mb_stack.read().current_wrapping().cloned(),
     };
     let has_current = current.is_some();
     let can_undo = match at {
-        AddSource::Search => stack.read().has_history(),
+        AddSource::Search | AddSource::Collection => stack.read().has_history(),
         AddSource::Maybeboard => mb_stack.read().has_history(),
     };
     use_swipe_keys_or_undo(
         control,
         ALL_SWIPES.to_vec(),
         Callback::new(move |()| match *source.peek() {
-            AddSource::Search => stack.peek().current().is_some() && revealing.peek().is_none(),
+            AddSource::Search | AddSource::Collection => {
+                stack.peek().current().is_some() && revealing.peek().is_none()
+            }
             AddSource::Maybeboard => mb_stack.peek().current_wrapping().is_some(),
         }),
         undo_now,
@@ -1039,7 +1032,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     // Synergy on or off, from its dock button or `s`: only on Search, and
     // only for a deck with a commander, where the button shows.
     let toggle_synergy = use_callback(move |()| {
-        let shown = *source.peek() == AddSource::Search
+        let shown = source.peek().searches()
             && deck
                 .peek()
                 .as_ref()
@@ -1070,7 +1063,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         Callback::new(move |key: String| {
             match shortcuts::swipe_screen_shortcut(&key) {
                 Some(Shortcut::Printings) => {
-                    if *source.peek() == AddSource::Search
+                    if source.peek().searches()
                         && revealing.peek().is_none()
                         && let Some(card) = stack.peek().current()
                     {
@@ -1078,7 +1071,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     }
                 }
                 Some(Shortcut::SendTo) => {
-                    if *source.peek() == AddSource::Search
+                    if source.peek().searches()
                         && revealing.peek().is_none()
                         && let (Some(send_to), Some(card)) =
                             (send_to, stack.peek().current().cloned())
@@ -1089,7 +1082,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 Some(Shortcut::Details) => {
                     // As the eye button, which is off while no card shows.
                     let has_card = match *source.peek() {
-                        AddSource::Search => {
+                        AddSource::Search | AddSource::Collection => {
                             stack.peek().current().is_some() && revealing.peek().is_none()
                         }
                         AddSource::Maybeboard => mb_stack.peek().current_wrapping().is_some(),
@@ -1100,7 +1093,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 }
                 Some(Shortcut::Flip) => {
                     let card = match *source.peek() {
-                        AddSource::Search => stack
+                        AddSource::Search | AddSource::Collection => stack
                             .peek()
                             .current()
                             .filter(|_| revealing.peek().is_none())
@@ -1138,14 +1131,15 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         validate: at == AddSource::Search,
         reset: match at {
             AddSource::Search => ResetRule::AddSearch(ctx.clone()),
-            AddSource::Maybeboard => ResetRule::AddMaybeboard,
+            AddSource::Maybeboard | AddSource::Collection => ResetRule::AddMaybeboard,
         },
         deck_format: match at {
-            AddSource::Search => ctx.format,
+            AddSource::Search | AddSource::Collection => ctx.format,
             AddSource::Maybeboard => None,
         },
         // The maybeboard source filters in memory, so only the search source offers it.
-        show_owned: at == AddSource::Search && offers_owned(),
+        // Owned cards are From's Collection, not a filter chip.
+        show_owned: false,
         ..SheetConfig::default()
     };
     let panel_key = format!("{at:?}-{}-{}", deck.read().is_some(), ctx.lands_at_target);
@@ -1154,7 +1148,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         bump();
     };
     let (window, entering, end_of_pile) = match at {
-        AddSource::Search => {
+        AddSource::Search | AddSource::Collection => {
             let s = stack.read();
             (
                 s.window().to_vec(),
@@ -1174,7 +1168,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         AddSource::Search if needs_filter() && !stack.read().has_served() => {
             Some(add_cards::TRY_A_FILTER)
         }
-        AddSource::Search => {
+        AddSource::Search | AddSource::Collection => {
             (!loading_cards() && last_search.read().is_some() && !stack.read().has_served())
                 .then_some(NO_CARDS_MATCH)
         }
@@ -1188,12 +1182,12 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         }
     };
     // In place of the ghost, with a Retry, when the cards could not load.
-    let load_failed = at == AddSource::Search
+    let load_failed = at.searches()
         && !stack.read().has_served()
         && (search_failed() || (deck_failed() && deck.read().is_none()));
     // Under it, after an empty search with Synergy on, whether Synergy may
     // be the reason.
-    let ghost_detail = if at == AddSource::Search && ghost_note == Some(NO_CARDS_MATCH) {
+    let ghost_detail = if at.searches() && ghost_note == Some(NO_CARDS_MATCH) {
         let synergy = last_search
             .read()
             .as_ref()
@@ -1224,20 +1218,20 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                     control,
                                     entering,
                                     on_entered: move |()| match *source.peek() {
-                                        AddSource::Search => stack.write().cancel_entering(),
+                                        AddSource::Search | AddSource::Collection => stack.write().cancel_entering(),
                                         AddSource::Maybeboard => mb_stack.write().cancel_entering(),
                                     },
                                     on_swipe: move |pair: (Swipe, Card)| {
                                         let (swipe, card) = &pair;
                                         usage.peek().record_swipe((*swipe).into());
                                         let at = *source.peek();
-                                        if at == AddSource::Search && *swipe != Swipe::Down {
+                                        if at.searches() && *swipe != Swipe::Down {
                                             usage
                                                 .peek()
                                                 .record_signal(deck_id, card.scryfall_data.oracle_id, (*swipe).into());
                                         }
                                         match at {
-                                            AddSource::Search => on_search_swipe(pair),
+                                            AddSource::Search | AddSource::Collection => on_search_swipe(pair),
                                             AddSource::Maybeboard => on_maybeboard_swipe(pair),
                                         }
                                     },
@@ -1274,7 +1268,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                     CardGhost {}
                                 }
                             }
-                        } else if at == AddSource::Search && loading_cards() {
+                        } else if at.searches() && loading_cards() {
                             CardGhost {}
                         } else if load_failed {
                             LoadFailed { message: add_cards::LOAD_FAILED, on_retry: retry }
@@ -1286,13 +1280,13 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 SwipeDetails {
                     card: current.clone(),
                     faces,
-                    on_printings: (at == AddSource::Search).then(|| EventHandler::new(move |()| printing_open.set(true))),
+                    on_printings: (at.searches()).then(|| EventHandler::new(move |()| printing_open.set(true))),
                     loading: (end_of_pile && loading_more())
-                        || (at == AddSource::Search && (loading_cards() || reveal.is_some())),
+                        || (at.searches() && (loading_cards() || reveal.is_some())),
                 }
             }
             // The bottom row: From and the chip naming the current source on
-            // the left, a tap switching to the other; the action dock (synergy,
+            // the left, a tap moving to the next (Collection only with a collection); the action dock (synergy,
             // filter, refresh, card details) on the right. Back is the header's
             // arrow.
             div { class: "swipe-bottom-row",
@@ -1300,7 +1294,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     span { class: "stat-chip stat-chip-p1 chip-row-label", "{add_cards::FROM}" }
                     Chip {
                         selected: true,
-                        onclick: move |_| switch_source(at.toggled()),
+                        onclick: move |_| switch_source(at.next(offers_owned())),
                         "{at.label()}"
                     }
                 }
@@ -1348,7 +1342,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 };
                 rsx! {
                     SheetFrame { wide: SheetWide::Modal,
-                        if at == AddSource::Search {
+                        if at.searches() {
                             CardDetailsSheet {
                                 open: show_details,
                                 card: card.clone(),
@@ -1367,7 +1361,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     }
                 }
             }
-            if at == AddSource::Search {
+            if at.searches() {
                 PrintingSheet {
                     key: "{card.scryfall_data.id}",
                     card,

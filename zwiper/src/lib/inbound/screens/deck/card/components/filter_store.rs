@@ -12,8 +12,8 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-/// Which screen a remembered filter belongs to. The add screen's two sources
-/// are separate scopes: toggling parks one and restores the other.
+/// Which screen a remembered filter belongs to. The add screen's sources are
+/// separate scopes: moving between them parks one and restores the other.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum FilterScope {
     /// Deck cards screen (view).
@@ -24,6 +24,8 @@ pub(crate) enum FilterScope {
     AddSearch,
     /// Add screen, Maybeboard source.
     AddMaybeboard,
+    /// Add screen, Collection source.
+    AddCollection,
 }
 
 /// App-scoped store of remembered filters, keyed by (scope, deck). Unbounded

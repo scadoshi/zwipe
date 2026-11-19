@@ -27,6 +27,7 @@ pub mod guides;
 pub mod hint;
 pub mod home;
 pub mod pending_settings;
+pub mod pile_source;
 pub mod playstyle;
 pub mod screens;
 pub mod send_to;

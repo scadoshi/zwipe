@@ -392,7 +392,7 @@ impl Driver {
     /// The entrance signal for `pile`.
     fn entering(self, pile: Source) -> Signal<Option<Direction>> {
         match pile {
-            Source::Search => self.search_entering,
+            Source::Search | Source::Collection => self.search_entering,
             Source::Maybeboard => self.maybeboard_entering,
         }
     }
@@ -491,6 +491,7 @@ fn scope(source: Source) -> FilterScope {
     match source {
         Source::Search => FilterScope::AddSearch,
         Source::Maybeboard => FilterScope::AddMaybeboard,
+        Source::Collection => FilterScope::AddCollection,
     }
 }
 
@@ -838,14 +839,14 @@ pub fn Add(deck_id: Uuid) -> Element {
             // The bottom row: the source chips on the left, the action dock
             // (synergy, filter, refresh, card details) on the right.
             div { class: "swipe-bottom-row",
-                // From, then one chip naming the current source; a tap switches
-                // to the other.
+                // From, then one chip naming the current source; a tap moves to the
+                // next, Collection only while the user has a collection.
                 div { class: "swipe-bottom-chips",
                     span { class: "stat-chip stat-chip-p1 chip-row-label", "{add_cards::FROM}" }
                     Chip {
                         selected: true,
                         onclick: move |_| {
-                            let next = source.toggled();
+                            let next = source.next(offers_owned());
                             let remembered = filter_store.restore(scope(next), deck_id);
                             driver.dispatch(Action::PickSource { source: next, remembered });
                         },
@@ -931,9 +932,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // Apply there (e.g. right after Reset) must commit, not warn.
                 validate_before_apply: validates_apply,
                 deck_format: sheet_deck_format,
-                // Maybeboard filters the deck's own cards in memory; only Search reads the
-                // collection on the server.
-                show_owned: source == Source::Search && offers_owned(),
+                // Owned cards are From's Collection, not a filter chip.
+                show_owned: false,
                 on_clear: move |()| {
                     let draft = filter_builder.peek().clone();
                     driver.dispatch(Action::ResetFilter(draft));
