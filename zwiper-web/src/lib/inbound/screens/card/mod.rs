@@ -27,6 +27,7 @@ use zwipe_core::domain::card::models::search_card::commander_eligibility;
 use zwipe_core::domain::card::scryfall_data::image_uris::ImageSize;
 use zwipe_core::domain::deck::models::format::Format;
 use zwipe_ui::screens::card_lookup::{self, Action, Ask, Destination, Effect, Open, State, Status};
+use zwipe_ui::telemetry::vocabulary::Screen;
 
 use self::stats::StatsWidget;
 use crate::inbound::cards::printing_sheet::PrintingSheet;
@@ -35,6 +36,7 @@ use crate::inbound::chrome::toast;
 use crate::inbound::router::Route;
 use crate::inbound::session::return_to;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 use crate::outbound::browser;
 
 /// `/card/<slug>`: every card with the name.
@@ -151,6 +153,7 @@ impl Driver {
 /// The card screen for `open`, opening Send to once the card shows when `ask` says so.
 #[component]
 fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
+    telemetry::use_telemetry_screen(Screen::Card);
     let client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
     let navigator = use_navigator();
@@ -330,6 +333,20 @@ mod tests {
         ] {
             assert_eq!(route.to_string(), path);
             assert_eq!(Route::from_str(&path).ok(), Some(route), "{path}");
+        }
+    }
+
+    #[test]
+    fn an_unknown_open_value_opens_the_card_and_asks_for_nothing() {
+        for path in ["/card/sol-ring?open=nope", "/card/sol-ring?open="] {
+            assert_eq!(
+                Route::from_str(path).ok(),
+                Some(Route::CardNamed {
+                    slug: "sol-ring".to_owned(),
+                    open: None
+                }),
+                "{path}"
+            );
         }
     }
 
