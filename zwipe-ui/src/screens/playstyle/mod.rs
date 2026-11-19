@@ -723,14 +723,16 @@ impl State {
         playstyle::shown(&self.filtered())
     }
 
-    /// The line in place of the list: [`NO_SUGGESTIONS`] when nothing is held, else the Show identity's empty line when no row passes it. `None` when rows show.
+    /// The line in place of the list: [`NO_SUGGESTIONS`] when nothing is held, else [`playstyle::suggested_empty_line`] when no row passes the Show identity. `None` when rows show.
     #[must_use]
     pub fn list_message(&self) -> Option<String> {
+        let filtered = self.filtered();
         if self.entries.is_empty() {
             Some(NO_SUGGESTIONS.to_owned())
-        } else if self.rows().is_empty() {
-            Some(playstyle::empty_identity_line(
-                self.identity.as_deref().unwrap_or_default(),
+        } else if filtered.is_empty() {
+            Some(playstyle::suggested_empty_line(
+                &filtered,
+                self.identity.as_deref(),
             ))
         } else {
             None

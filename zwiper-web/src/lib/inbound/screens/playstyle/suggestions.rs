@@ -21,7 +21,7 @@ use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::http::contracts::suggestions::{HttpBuilderProfile, HttpCommanderSuggestion};
 use zwipe_ui::generation::Generation;
-use zwipe_ui::playstyle::{HELD_SIZE, LIST_SIZE, empty_identity_line, of_identity, shown};
+use zwipe_ui::playstyle::{HELD_SIZE, LIST_SIZE, of_identity, shown, suggested_empty_line};
 
 use super::chips::ShowIdentityChips;
 use super::rows::SuggestionRow;
@@ -430,7 +430,11 @@ pub(crate) fn SuggestedFold(
             } else if rows.is_empty() {
                 div { class: "activity-total activity-total-group",
                     span { class: "chip-note",
-                        {empty_identity_line(&active_identity().unwrap_or_default())}
+                        {
+                            let identity = active_identity();
+                            let of_one = of_identity(&entries(), suggestion_colors, identity.as_deref());
+                            suggested_empty_line(&of_one, identity.as_deref())
+                        }
                     }
                 }
             }
