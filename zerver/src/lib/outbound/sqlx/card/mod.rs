@@ -20,6 +20,7 @@ use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::criteria::{
     CardCriteria, PLAYABLE_LAYOUTS,
@@ -50,8 +51,9 @@ use crate::domain::card::requests::get_scryfall_data::{
     GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
 };
 use crate::domain::card::requests::get_sets::GetSetsError;
+use crate::domain::deck::models::deck::commander_deal::{CommanderDeal, DealSignal};
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderSuggestionsError, DeckTagProfile, ScoredCommander,
+    CommanderSuggestionsError, DeckTagProfile, MAX_PER_COLOR_IDENTITY, ScoredCommander,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::commander_scoring::SCORE_COMMANDER_SUGGESTIONS_SQL;
@@ -214,6 +216,224 @@ const SUGGESTION_TAG_LIMIT: i64 = 5;
 /// Days a dismissal keeps a commander out of the suggestions. Dismissing it
 /// again restarts the clock.
 const DISMISSAL_TTL_DAYS: i32 = 7;
+
+/// Weight of a deal candidate's best match to a commander the user saved (that commander's tag
+/// overlap plus the color term, on the deck term's scale): half a built deck's, since a save shows
+/// interest and a deck shows play.
+const W_SAVED: f64 = 0.5;
+
+/// Weight of a deal candidate's popularity prior (0..1): lean, so the user's decks and saves decide
+/// wherever they reach and popularity orders only what they leave even.
+const W_POPULARITY: f64 = 0.1;
+
+/// The Jaccard match of two `text[]` color identities, `a` and `b`, as a SQL expression: shared
+/// colors over all of them; colorless against colorless is 1, colorless against colored 0.
+fn jaccard_sql(a: &str, b: &str) -> String {
+    format!(
+        "CASE WHEN cardinality({a}) = 0 AND cardinality({b}) = 0 THEN 1.0::float8 \
+         WHEN cardinality({a}) = 0 OR cardinality({b}) = 0 THEN 0.0::float8 \
+         ELSE (SELECT count(*) FROM unnest({a}) x WHERE x = ANY({b}))::float8 \
+         / (SELECT count(DISTINCT x) FROM unnest({a} || {b}) x)::float8 END"
+    )
+}
+
+/// The deal statement for `deal` against `signal`, `commander` holding only the format's commander
+/// rules. The candidates are the card search's own WHERE (`push_criteria_conditions`) over the
+/// filter and those rules; the scoring is the suggestions statement's, plus the saved-commander
+/// and popularity terms. See [`CardRepository::score_commander_deal`] for the ranking.
+fn commander_deal_query(
+    deal: &CommanderDeal,
+    signal: &DealSignal,
+    commander: &CardCriteria,
+) -> QueryBuilder<Postgres> {
+    let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
+        "WITH decks AS (
+             SELECT d.ord,
+                    ARRAY(SELECT jsonb_array_elements_text(d.value->'colors')) AS colors,
+                    COALESCE(d.value->'profile', '{}'::jsonb) AS profile
+             FROM jsonb_array_elements(",
+    );
+    qb.push_bind(signal.decks.clone());
+    qb.push(
+        "::jsonb) WITH ORDINALITY d(value, ord)
+         ),
+         deck_tags AS MATERIALIZED (
+             SELECT d.ord, k.key, k.value::float8 AS w
+             FROM decks d, jsonb_each_text(d.profile) k
+             WHERE jsonb_typeof(d.profile) = 'object'
+         ),
+         saved AS (
+             SELECT lc.oracle_id AS saved_id, COALESCE(lc.color_identity, '{}') AS colors,
+                    sp.profile
+             FROM latest_cards lc
+             LEFT JOIN commander_tag_profiles sp ON sp.oracle_id = lc.oracle_id
+             WHERE lc.oracle_id = ANY(",
+    );
+    qb.push_bind(signal.maybeboard.clone());
+    qb.push(
+        "::uuid[])
+         ),
+         saved_tags AS MATERIALIZED (
+             SELECT s.saved_id, k.key, k.value::float8 AS w
+             FROM saved s, jsonb_each_text(s.profile) k
+             WHERE jsonb_typeof(s.profile) = 'object'
+         ),
+         popularity_scale AS (
+             SELECT (SELECT ln(1 + max(decks))::float8 FROM commander_popularity) AS decks,
+                    (SELECT max(edhrec_rank)::float8 FROM latest_cards) AS rank
+         ),
+         candidates AS (
+             SELECT latest_cards.oracle_id,
+                    COALESCE(latest_cards.color_identity, '{}') AS color_identity,
+                    ctp.ctp_profile AS profile,
+                    CASE
+                        WHEN pop.pop_decks IS NOT NULL AND ps.decks > 0
+                            THEN ln(1 + pop.pop_decks)::float8 / ps.decks
+                        WHEN latest_cards.edhrec_rank IS NOT NULL AND ps.rank > 0
+                            THEN 1 - latest_cards.edhrec_rank::float8 / ps.rank
+                        ELSE 0
+                    END AS popularity
+             FROM latest_cards
+             JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
+             LEFT JOIN (SELECT oracle_id AS ctp_oracle_id, profile AS ctp_profile
+                        FROM commander_tag_profiles) ctp
+                 ON ctp.ctp_oracle_id = latest_cards.oracle_id
+             ",
+    );
+    qb.push(POPULARITY_JOIN);
+    qb.push(
+        "
+             CROSS JOIN popularity_scale ps
+             WHERE ",
+    );
+    {
+        let mut sep: Separated<'_, Postgres, &'static str> = qb.separated(" AND ");
+        sep.push("TRUE");
+        if let Some(filter) = &deal.filter {
+            push_criteria_conditions(&mut sep, filter.criteria());
+        }
+        push_criteria_conditions(&mut sep, commander);
+        sep.push("latest_cards.layout NOT IN ('token', 'double_faced_token', 'emblem')");
+        sep.push("latest_cards.oracle_id IS NOT NULL");
+        sep.push("NOT (latest_cards.oracle_id = ANY(");
+        sep.push_bind_unseparated(signal.exclude.clone());
+        sep.push_unseparated("::uuid[]))");
+        sep.push("NOT EXISTS (SELECT 1 FROM user_commander_dismissals dis WHERE dis.user_id = ");
+        sep.push_bind_unseparated(signal.user_id);
+        sep.push_unseparated(
+            " AND dis.oracle_id = latest_cards.oracle_id \
+             AND dis.dismissed_at > now() - make_interval(days => ",
+        );
+        sep.push_bind_unseparated(DISMISSAL_TTL_DAYS);
+        sep.push_unseparated("))");
+    }
+    qb.push(format!(
+        "
+         ),
+         candidate_tags AS MATERIALIZED (
+             SELECT c.oracle_id, t.key, t.value::float8 AS w
+             FROM candidates c, jsonb_each_text(c.profile) t
+             WHERE jsonb_typeof(c.profile) = 'object'
+         ),
+         overlap AS (
+             SELECT ct.oracle_id, dt.ord AS deck, ct.key AS oracle_tag, dt.w * ct.w AS w
+             FROM candidate_tags ct
+             JOIN deck_tags dt ON dt.key = ct.key
+         ),
+         deck_tag_score AS (
+             SELECT oracle_id, deck, sum(w) AS s FROM overlap GROUP BY oracle_id, deck
+         ),
+         best_deck AS (
+             SELECT DISTINCT ON (oracle_id) oracle_id, deck, s
+             FROM deck_tag_score
+             ORDER BY oracle_id, s DESC, deck
+         ),
+         color_score AS (
+             SELECT c.oracle_id, max({deck_colors}) AS s
+             FROM candidates c CROSS JOIN decks d
+             GROUP BY c.oracle_id
+         ),
+         saved_overlap AS (
+             SELECT ct.oracle_id, st.saved_id, sum(ct.w * st.w) AS s
+             FROM candidate_tags ct
+             JOIN saved_tags st ON st.key = ct.key
+             GROUP BY ct.oracle_id, st.saved_id
+         ),
+         saved_fit AS (
+             SELECT c.oracle_id, max(COALESCE(so.s, 0) + ",
+        deck_colors = jaccard_sql("c.color_identity", "d.colors"),
+    ));
+    qb.push_bind(W_COLOR_AFFINITY);
+    qb.push(format!(
+        " * {saved_colors}) AS s
+             FROM candidates c
+             CROSS JOIN saved s
+             LEFT JOIN saved_overlap so ON so.oracle_id = c.oracle_id AND so.saved_id = s.saved_id
+             WHERE s.saved_id <> c.oracle_id
+             GROUP BY c.oracle_id
+         ),
+         shared_tags AS MATERIALIZED (
+             SELECT o.oracle_id,
+                    array_agg(o.oracle_tag ORDER BY o.w DESC, o.oracle_tag) AS tags
+             FROM (
+                 SELECT o.oracle_id, o.oracle_tag, o.w,
+                        row_number() OVER (
+                            PARTITION BY o.oracle_id ORDER BY o.w DESC, o.oracle_tag
+                        ) AS rn
+                 FROM overlap o
+                 JOIN best_deck bd ON bd.oracle_id = o.oracle_id AND bd.deck = o.deck
+             ) o
+             WHERE o.rn <= ",
+        saved_colors = jaccard_sql("c.color_identity", "s.colors"),
+    ));
+    qb.push_bind(SUGGESTION_TAG_LIMIT);
+    qb.push(
+        "
+             GROUP BY o.oracle_id
+         ),
+         scored AS (
+             SELECT c.oracle_id, c.color_identity,
+                    COALESCE(bd.s, 0) + ",
+    );
+    qb.push_bind(W_COLOR_AFFINITY);
+    qb.push(" * COALESCE(cs.s, 0) + ");
+    qb.push_bind(W_SAVED);
+    qb.push(" * COALESCE(sf.s, 0) + ");
+    qb.push_bind(W_POPULARITY);
+    qb.push(
+        " * c.popularity AS score,
+                    COALESCE(st.tags, '{}'::text[]) AS tags
+             FROM candidates c
+             LEFT JOIN best_deck bd ON bd.oracle_id = c.oracle_id
+             LEFT JOIN color_score cs ON cs.oracle_id = c.oracle_id
+             LEFT JOIN saved_fit sf ON sf.oracle_id = c.oracle_id
+             LEFT JOIN shared_tags st ON st.oracle_id = c.oracle_id
+         ),
+         ranked AS (
+             SELECT s.*,
+                    (",
+    );
+    qb.push_bind(deal.caps_identities());
+    qb.push(
+        " AND row_number() OVER (
+                        PARTITION BY s.color_identity ORDER BY s.score DESC, s.oracle_id
+                    ) > ",
+    );
+    qb.push_bind(i64::try_from(MAX_PER_COLOR_IDENTITY).unwrap_or(i64::MAX));
+    qb.push(
+        ") AS over_cap
+             FROM scored s
+         )
+         SELECT oracle_id, color_identity, score, tags
+         FROM ranked
+         ORDER BY over_cap, score DESC, oracle_id
+         OFFSET ",
+    );
+    qb.push_bind(i64::from(deal.offset));
+    qb.push(" LIMIT ");
+    qb.push_bind(i64::from(deal.limit));
+    qb
+}
 
 /// The last key of every order the card search builds: the printing id, so cards tied on every
 /// other key come back in one fixed order, on any copy of the database and under any plan.
@@ -2479,6 +2699,52 @@ impl CardRepository for MyPostgres {
                 },
             )
             .collect())
+    }
+
+    async fn score_commander_deal(
+        &self,
+        deal: &CommanderDeal,
+        signal: &DealSignal,
+    ) -> Result<Vec<ScoredCommander>, CommanderSuggestionsError> {
+        // The format's commander rules, as the search writes them for a commander pick.
+        let mut commander = CardQueryBuilder::default();
+        commander.set_is_commander_in_format(deal.format);
+        let commander = commander
+            .build()
+            .map_err(|e| CommanderSuggestionsError::Database(anyhow::anyhow!(e)))?;
+        let rows: Vec<(uuid::Uuid, Vec<String>, f64, Vec<String>)> =
+            commander_deal_query(deal, signal, commander.criteria())
+                .build()
+                .map(|row: sqlx::postgres::PgRow| (row.get(0), row.get(1), row.get(2), row.get(3)))
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+        Ok(rows
+            .into_iter()
+            .map(
+                |(oracle_id, color_identity, _score, tag_slugs)| ScoredCommander {
+                    oracle_id,
+                    color_identity,
+                    tag_slugs,
+                },
+            )
+            .collect())
+    }
+
+    async fn any_commander_tag_profile(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+    ) -> Result<bool, CommanderSuggestionsError> {
+        if oracle_ids.is_empty() {
+            return Ok(false);
+        }
+        sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS (SELECT 1 FROM commander_tag_profiles WHERE oracle_id = ANY($1))",
+        )
+        .bind(oracle_ids)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| CommanderSuggestionsError::Database(e.into()))
     }
 
     async fn tag_roles(

@@ -33,6 +33,7 @@ use crate::domain::card::requests::get_scryfall_data::{
     GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
 };
 use crate::domain::card::requests::get_sets::GetSetsError;
+use crate::domain::deck::models::deck::commander_deal::{CommanderDeal, DealSignal};
 use crate::domain::deck::models::deck::commander_suggestions::{
     CommanderSuggestionsError, DeckTagProfile, ScoredCommander,
 };
@@ -418,6 +419,26 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         exclude_oracle_ids: &[uuid::Uuid],
         limit: i64,
     ) -> impl Future<Output = Result<Vec<ScoredCommander>, CommanderSuggestionsError>> + Send;
+
+    /// One page of the merged commander ranking: every commander `deal`'s filter matches that can
+    /// lead a deck in its format, less `signal.exclude`, tokens and the user's live dismissals.
+    /// A candidate scores its best deck's shared-tag sum, the color term over the decks, half its
+    /// best match to a saved commander (that commander's tags and colors), and a lean popularity
+    /// prior every commander has, so popularity orders only what the rest leave even. While
+    /// `deal.caps_identities()`, each exact color identity past its first few sorts after every
+    /// other candidate, over the whole list, so pages are one order. Each result carries its
+    /// shared tags with the best-matching deck, as [`Self::score_commander_suggestions`]'s do.
+    fn score_commander_deal(
+        &self,
+        deal: &CommanderDeal,
+        signal: &DealSignal,
+    ) -> impl Future<Output = Result<Vec<ScoredCommander>, CommanderSuggestionsError>> + Send;
+
+    /// Whether any of `oracle_ids` has a row in `commander_tag_profiles`.
+    fn any_commander_tag_profile(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+    ) -> impl Future<Output = Result<bool, CommanderSuggestionsError>> + Send;
 
     /// The card role each of `slugs` falls under in the card display's own
     /// membership, the first role alphabetically when under several. Slugs

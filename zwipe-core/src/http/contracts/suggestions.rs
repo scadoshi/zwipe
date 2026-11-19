@@ -268,8 +268,9 @@ pub struct HttpCommanderDeal {
     /// Oracle ids to leave out, the commanders already dealt; the first [`MAX_DEAL_EXCLUDE`] count.
     #[serde(default)]
     pub exclude: Vec<Uuid>,
-    /// Keeps the user's commander maybeboard among the candidates, still counting it as signal.
-    /// Off leaves it out, as Suggested does.
+    /// Keeps the user's commander maybeboard among the candidates, still counting it as signal:
+    /// deck creation sends `true`, since saving a commander is often why a deck gets built.
+    /// Suggested leaves it `false`, so the maybeboard stays out.
     #[serde(default)]
     pub keep_maybeboard: bool,
 }
