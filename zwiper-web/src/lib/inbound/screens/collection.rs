@@ -89,8 +89,7 @@ impl Driver {
             }
             Effect::Toast(toast) => raise(self.toast, &toast),
             Effect::CollectionChanged => {
-                let CollectionCache(mut cache) = self.collection;
-                cache.set(None);
+                self.collection.refresh(self.authed);
                 // The list only compares counts, so wrapping keeps it reading a change.
                 let mut imports = self.imports;
                 let next = imports.peek().wrapping_add(1);

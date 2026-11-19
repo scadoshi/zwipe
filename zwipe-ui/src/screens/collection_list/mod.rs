@@ -238,8 +238,8 @@ pub enum Effect {
         /// The row and its copies.
         set: HttpSetCollectionCard,
     },
-    /// The collection changed: the client drops what it kept of it (the summary that decides
-    /// whether From offers Collection).
+    /// The collection changed: the client asks again for what it keeps of it (the summary that
+    /// decides whether From offers Collection).
     CollectionChanged,
     /// Fetches the export; answers with [`Action::Exported`] or [`Action::ExportFailed`]
     /// carrying `ticket`.

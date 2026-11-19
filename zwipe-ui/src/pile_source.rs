@@ -5,6 +5,12 @@
 //! says; without one the chip cycles Search and Maybe alone, and a pile left on Collection
 //! falls back to Search.
 
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+
+/// The toast when the collection turns out empty while From is on Collection, and Search takes
+/// over.
+pub const COLLECTION_NOTHING: &str = "Nothing from your collection to deal, switched to Search";
+
 /// Which pile a swipe screen deals.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Source {
@@ -92,6 +98,15 @@ impl Source {
         matches!(self, Self::Search | Self::Collection)
     }
 
+    /// Whether a first page of `dealt` cards, under the user's `filter`, has dealt the collection
+    /// dry: Collection with no filter of the user's deals every owned card the screen can take, so
+    /// nothing means none is left (skipped, none fits) or the collection is gone, which only a
+    /// fresh summary can tell.
+    #[must_use]
+    pub fn ran_dry(self, filter: &CardQueryBuilder, dealt: usize) -> bool {
+        dealt == 0 && self == Self::Collection && filter.is_empty()
+    }
+
     /// Whether the source's search is narrowed to owned cards.
     #[must_use]
     pub fn owned_only(self) -> bool {
@@ -123,6 +138,23 @@ mod tests {
         assert!(Source::Collection.searches() && Source::Collection.owned_only());
         assert!(Source::Search.searches() && !Source::Search.owned_only());
         assert!(!Source::Maybeboard.searches() && !Source::Maybeboard.owned_only());
+    }
+
+    #[test]
+    fn only_an_unfiltered_collection_that_dealt_nothing_runs_dry() {
+        let blank = CardQueryBuilder::default();
+        assert!(Source::Collection.ran_dry(&blank, 0));
+        assert!(!Source::Collection.ran_dry(&blank, 3), "it dealt cards");
+        assert!(
+            !Source::Search.ran_dry(&blank, 0),
+            "Search keeps its empty pile"
+        );
+        let mut named = CardQueryBuilder::default();
+        named.set_name_contains("bolt");
+        assert!(
+            !Source::Collection.ran_dry(&named, 0),
+            "the user's filter is why"
+        );
     }
 
     #[test]

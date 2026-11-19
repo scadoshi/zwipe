@@ -35,7 +35,7 @@ use super::components::card_info::{CardDetailsSheet, CardSkeleton};
 use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::components::collection::use_offers_owned;
+use crate::inbound::components::collection::{CollectionCache, use_offers_owned};
 use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
@@ -93,9 +93,18 @@ struct Driver {
     hint_open: Signal<bool>,
     /// The swipe confirmations chip's words.
     said: Said,
+    /// What the root keeps of the collection summary, asked for again when it may be stale.
+    collection: CollectionCache,
 }
 
 impl Driver {
+    /// Asks for the collection summary again, for the signed-in user.
+    fn refresh_collection(self) {
+        if let Some(signed_in) = self.session.peek().clone() {
+            self.collection.refresh(self.client, signed_in);
+        }
+    }
+
     /// Applies `action` to the model and performs what it returns.
     fn dispatch(self, action: Action) {
         let mut model = self.model;
@@ -187,6 +196,7 @@ impl Driver {
                 let current = *filter_reset_counter.peek();
                 filter_reset_counter.set(current.wrapping_add(1));
             }
+            Effect::CollectionStale => self.refresh_collection(),
             Effect::ParkFilter { source, filter } => {
                 filter_store.park(scope(source), deck_id, filter);
             }
@@ -620,6 +630,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         maybeboard_entering: use_signal(|| None),
         hint_open: use_signal(|| false),
         said: use_signal(|| None),
+        collection: use_context(),
     };
     // From offers Collection only while the user has a collection.
     use_effect(move || driver.dispatch(Action::OffersOwned(offers_owned())));
@@ -718,7 +729,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             model.source(),
             model.pile(),
             model.ghost_note(),
-            model.ghost_synergy_note(),
+            model.ghost_detail(),
             model.load_failed(),
             model.window().to_vec(),
             model.current().cloned(),

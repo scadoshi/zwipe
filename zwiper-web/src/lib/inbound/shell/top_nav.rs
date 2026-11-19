@@ -144,7 +144,7 @@ pub fn Shell() -> Element {
                                 NavLink { to: route_of(section), label: label_of(section), current: current == Some(section), open }
                             }
                         }
-                        li {
+                        li { class: "web-nav-pair",
                             NavLink { to: Route::Guides {}, label: GUIDES, current: is_guides(&route), open }
                             NavLink { to: Route::Collection {}, label: collection_import::TITLE, current: route == Route::Collection {}, open }
                         }

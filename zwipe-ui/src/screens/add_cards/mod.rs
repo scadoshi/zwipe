@@ -112,6 +112,13 @@ pub const STACK_LIMIT_NEAR: &str =
 /// The toast when Search has nothing to serve without a filter.
 pub const TRY_A_FILTER: &str = "Try a filter to start swiping";
 
+/// The ghost's note when Collection, with no filter of the user's, has nothing left to deal.
+pub const COLLECTION_DONE: &str = "That's every card from your collection for this deck";
+
+/// The line under [`COLLECTION_DONE`].
+pub const COLLECTION_DONE_DETAIL: &str =
+    "Skips come back after a week, or sooner with Clear skips in the deck's Danger zone panel";
+
 /// The toast when the Synergy toggle turns synergy on.
 pub const SYNERGY_ON: &str = "Synergy on";
 
@@ -421,6 +428,9 @@ pub enum Effect {
     SetFilter(CardQueryBuilder),
     /// Bumps the client's filter counter, which resets the sheet's sections; the client answers with [`Action::Filter`] holding its filter.
     Rerun,
+    /// What the client keeps of the collection summary may be out of date: it asks for it again
+    /// and answers with [`Action::OffersOwned`].
+    CollectionStale,
     /// Remembers `filter` for `source` on this deck.
     ParkFilter {
         /// The source the filter belongs to.
@@ -474,6 +484,7 @@ fn toast_line(effect: &Effect) -> Option<Line<'_>> {
         | Effect::StopEnter(_)
         | Effect::SetFilter(_)
         | Effect::Rerun
+        | Effect::CollectionStale
         | Effect::ParkFilter { .. }
         | Effect::EaseImages
         | Effect::PileEnd { .. }
@@ -633,7 +644,12 @@ impl State {
                 }
                 self.holdings = holdings;
                 if !offered && self.source == Source::Collection {
-                    return self.pick_source(Source::Search, None);
+                    let mut effects = self.pick_source(Source::Search, None);
+                    effects.push(Effect::Toast(Toast::normal(
+                        ToastKind::Info,
+                        crate::pile_source::COLLECTION_NOTHING,
+                    )));
+                    return effects;
                 }
                 Vec::new()
             }
@@ -888,12 +904,18 @@ impl State {
                         synergy,
                     });
                 }
+                let dealt = served.len();
                 self.stack.replace_ahead(served);
                 // The ghost stays over the new pile until its top card is on screen.
                 self.revealing = self.stack.current().map(|_| ticket);
                 self.last_search = Some(*snapshot);
                 self.run.searching = false;
                 effects.extend(warned);
+                // The ghost says every card is dealt, and the summary is asked for again: a
+                // collection that is gone hands the pile to Search.
+                if self.source.ran_dry(&self.filter, dealt) {
+                    effects.push(Effect::CollectionStale);
+                }
                 effects
             }
             Some(Pending::Page { epoch, synergy }) => {
@@ -1735,6 +1757,12 @@ impl State {
         if self.source == Source::Search && self.ask == Ask::Filter {
             return Some(TRY_A_FILTER);
         }
+        if self.source == Source::Collection
+            && self.last_search.is_some()
+            && self.source.ran_dry(&self.filter, 0)
+        {
+            return Some(COLLECTION_DONE);
+        }
         let matched_none = match self.source {
             Source::Search | Source::Collection => self.last_search.is_some(),
             Source::Maybeboard => {
@@ -1743,6 +1771,16 @@ impl State {
             }
         };
         matched_none.then_some(NO_CARDS_MATCH)
+    }
+
+    /// The line under [`Self::ghost_note`]: [`COLLECTION_DONE_DETAIL`] under
+    /// [`COLLECTION_DONE`], else [`Self::ghost_synergy_note`].
+    #[must_use]
+    pub fn ghost_detail(&self) -> Option<&'static str> {
+        if self.ghost_note() == Some(COLLECTION_DONE) {
+            return Some(COLLECTION_DONE_DETAIL);
+        }
+        self.ghost_synergy_note()
     }
 
     /// The line under [`Self::ghost_note`] after an empty search with Synergy on, from

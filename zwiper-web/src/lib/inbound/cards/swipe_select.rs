@@ -40,8 +40,8 @@ use components::swipe_stack::{
 };
 use components::{
     BackArrow, CardDetailsPanelSkeleton, CardGhost, Chip, DockEye, DockFilter, MeldSource,
-    PageHeader, PrintingsFace, Surface, TOAST_QUICK, open_on_shown_face, spawn_write_in_order,
-    turn_face, use_details_eye, use_mounted, use_overlay_back,
+    PageHeader, PrintingsFace, Surface, TOAST_NORMAL, TOAST_QUICK, open_on_shown_face,
+    spawn_write_in_order, turn_face, use_details_eye, use_mounted, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -60,7 +60,7 @@ use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::Generation;
 use zwipe_ui::hint::{Role, SwipeSelectMode};
-use zwipe_ui::pile_source::Source;
+use zwipe_ui::pile_source::{COLLECTION_NOTHING, Source};
 use zwipe_ui::screens::add_cards;
 use zwipe_ui::screens::swipe_select::{empty_pile_line, filter_lit};
 use zwipe_ui::stack::{CardStack, Direction, NO_CARDS_LEFT, StackAction};
@@ -79,7 +79,7 @@ use crate::inbound::chrome::authed::{Authed, use_authed};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
 use crate::inbound::chrome::shortcuts::{self, SELECT_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::{use_global_keys, use_offer_shortcuts};
-use crate::inbound::collection::use_offers_owned;
+use crate::inbound::collection::{CollectionCache, use_offers_owned};
 use crate::inbound::screens::deck::cards::SwipeDetailsPanel;
 use crate::inbound::screens::playstyle::SuggestionReasons;
 use crate::inbound::shell::{WebFooter, use_overlay_nav};
@@ -339,6 +339,9 @@ pub fn SwipeSelect(
     let usage = telemetry::use_usage();
     let toast = use_toast();
     let offers_owned = use_offers_owned();
+    let collection: CollectionCache = use_context();
+    // Set when Collection, with no filter of the user's, dealt nothing.
+    let mut ran_dry = use_signal(|| false);
     // The From chip's source, for a mode that deals the merged ranking; kept across a close.
     let mut source = use_signal(Source::default);
     // Each source's filter, parked while another is picked.
@@ -534,6 +537,10 @@ pub fn SwipeSelect(
                         return;
                     }
                     loading.set(false);
+                    let dealt_none = matches!(&reply, Ok(Some(page)) if page.is_empty());
+                    if dealt_none && at.ran_dry(&applied, 0) {
+                        ran_dry.set(true);
+                    }
                     land_deal(&pile, reply, /* first */ true);
                     return;
                 }
@@ -606,10 +613,21 @@ pub fn SwipeSelect(
         let to = source.peek().next(*offers_owned.peek());
         pick_source(to);
     });
-    // A collection gone while From is on Collection: back to Search.
+    // A collection gone while From is on Collection: back to Search, saying so.
     use_effect(move || {
         if !offers_owned() && *source.peek() == Source::Collection {
             pick_source(Source::Search);
+            toast.info(
+                COLLECTION_NOTHING.to_owned(),
+                ToastOptions::default().duration(TOAST_NORMAL),
+            );
+        }
+    });
+    // Collection with nothing to deal: the summary asked for again, in case the collection is gone.
+    use_effect(move || {
+        if ran_dry() {
+            ran_dry.set(false);
+            collection.refresh(authed);
         }
     });
 

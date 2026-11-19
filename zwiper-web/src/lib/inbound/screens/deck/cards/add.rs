@@ -66,7 +66,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::shortcuts::{self, ADD_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
-use crate::inbound::collection::use_offers_owned;
+use crate::inbound::collection::{CollectionCache, use_offers_owned};
 use crate::inbound::root_signal::use_signal_for_root_tasks;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
@@ -115,6 +115,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::CardAdd));
     let toast = use_toast();
     let offers_owned = use_offers_owned();
+    let collection: CollectionCache = use_context();
+    // Set when Collection, with no filter of the user's, dealt nothing.
+    let mut ran_dry = use_signal(|| false);
     let confirm = use_swipe_confirm();
     // An undo's write runs in the root and lands even after the screen goes;
     // what it then shows on the screen waits on this.
@@ -344,6 +347,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             related.set(related_ids(&page));
             related_announced.set(false);
             let served: Vec<Card> = page.cards.into_iter().filter(|c| !holds(c)).collect();
+            if at.ran_dry(&snapshot, served.len()) {
+                ran_dry.set(true);
+            }
             // An empty reply needs no toast: the ghost card says No cards
             // match.
             if served.is_empty() {
@@ -924,11 +930,23 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         bump();
     };
 
-    // A collection gone while From is on Collection: back to Search.
+    // Collection with nothing to deal: the summary asked for again, in case the collection is gone.
+    use_effect(move || {
+        if ran_dry() {
+            ran_dry.set(false);
+            collection.refresh(authed);
+        }
+    });
+
+    // A collection gone while From is on Collection: back to Search, saying so.
     use_effect(move || {
         if !offers_owned() && *source.peek() == AddSource::Collection {
             let mut back = switch_source;
             back(AddSource::Search);
+            toast.info(
+                zwipe_ui::pile_source::COLLECTION_NOTHING.to_owned(),
+                ToastOptions::default().duration(TOAST_NORMAL),
+            );
         }
     });
 
@@ -1001,6 +1019,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             related.set(related_ids(&page));
             related_announced.set(false);
             let served: Vec<Card> = page.cards.into_iter().filter(|c| !holds(c)).collect();
+            if source.peek().ran_dry(&snapshot, served.len()) {
+                ran_dry.set(true);
+            }
             stack.write().replace(served);
             revealing.set(stack.peek().current().is_some().then_some(ticket));
             last_search.set(Some(snapshot));
@@ -1187,8 +1208,15 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             Some(add_cards::TRY_A_FILTER)
         }
         AddSource::Search | AddSource::Collection => {
-            (!loading_cards() && last_search.read().is_some() && !stack.read().has_served())
-                .then_some(NO_CARDS_MATCH)
+            let dealt_none =
+                !loading_cards() && last_search.read().is_some() && !stack.read().has_served();
+            // Collection with no filter of the user's has dealt every owned card it can.
+            let every_card = dealt_none && at.ran_dry(&filter.read(), 0);
+            if every_card {
+                Some(add_cards::COLLECTION_DONE)
+            } else {
+                dealt_none.then_some(NO_CARDS_MATCH)
+            }
         }
         AddSource::Maybeboard => {
             let has_maybe = deck
@@ -1205,7 +1233,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         && (search_failed() || (deck_failed() && deck.read().is_none()));
     // Under it, after an empty search with Synergy on, whether Synergy may
     // be the reason.
-    let ghost_detail = if at.searches() && ghost_note == Some(NO_CARDS_MATCH) {
+    let ghost_detail = if ghost_note == Some(add_cards::COLLECTION_DONE) {
+        Some(add_cards::COLLECTION_DONE_DETAIL)
+    } else if at.searches() && ghost_note == Some(NO_CARDS_MATCH) {
         let synergy = last_search
             .read()
             .as_ref()

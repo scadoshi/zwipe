@@ -131,8 +131,8 @@ pub enum Effect {
     ConfirmReplace,
     /// Raises this toast.
     Toast(Toast),
-    /// The collection changed: the client drops what it kept of it (the summary that decides
-    /// whether From offers Collection), so the next screen that needs it asks again.
+    /// The collection changed: the client asks again for what it keeps of it (the summary that
+    /// decides whether From offers Collection).
     CollectionChanged,
 }
 

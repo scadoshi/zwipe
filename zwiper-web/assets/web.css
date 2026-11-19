@@ -813,6 +813,11 @@ body {
     }
 }
 
+/* Guides and Collection share one entry, spaced as the entries are. */
+.web-app-nav .nav-links > li.web-nav-pair {
+    column-gap: var(--space-3);
+}
+
 /* ---- Toasts ----
 
    The stack sits where the kit puts it: the window's bottom-left corner, as

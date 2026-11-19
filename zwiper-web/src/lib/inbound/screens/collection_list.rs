@@ -129,10 +129,7 @@ impl Driver {
                     });
                 });
             }
-            Effect::CollectionChanged => {
-                let CollectionCache(mut cache) = self.collection;
-                cache.set(None);
-            }
+            Effect::CollectionChanged => self.collection.refresh(self.authed),
             Effect::Export { ticket } => {
                 spawn(async move {
                     let export = self

@@ -1802,3 +1802,56 @@ fn a_collection_filter_narrows_within_the_deck_s_limits() {
     );
     assert_eq!(query.criteria().color_identity_within(), Some(&colors));
 }
+
+#[test]
+fn an_empty_collection_deal_with_no_filter_says_every_card_is_dealt_and_asks_again() {
+    let (mut state, effects) = on_collection();
+    let effects = state.update(Action::Searched {
+        ticket: ticket_of(&effects),
+        page: page(Vec::new()),
+    });
+    assert_eq!(state.source(), Source::Collection, "{effects:?}");
+    assert_eq!(
+        state.ghost_note(),
+        Some(COLLECTION_DONE),
+        "not 'No cards match'"
+    );
+    assert_eq!(state.ghost_detail(), Some(COLLECTION_DONE_DETAIL));
+    assert!(
+        effects.contains(&Effect::CollectionStale),
+        "the summary is asked for again, in case the collection is gone"
+    );
+}
+
+#[test]
+fn a_collection_found_gone_while_on_collection_switches_to_search_and_says_so() {
+    let (mut state, _) = on_collection();
+    let effects = state.update(Action::OffersOwned(false));
+    assert_eq!(state.source(), Source::Search);
+    assert!(effects.contains(&Effect::Rerun), "Search deals at once");
+    assert!(
+        toasts(&effects)
+            .iter()
+            .any(|t| t.text == crate::pile_source::COLLECTION_NOTHING),
+        "{effects:?}"
+    );
+}
+
+#[test]
+fn an_empty_collection_deal_under_a_filter_stays_on_collection() {
+    let (mut state, _) = on_collection();
+    let mut narrowed = CardQueryBuilder::default();
+    narrowed.set_name_contains("bolt");
+    let effects = state.update(Action::Filter(narrowed));
+    let effects = state.update(Action::Searched {
+        ticket: ticket_of(&effects),
+        page: page(Vec::new()),
+    });
+    assert_eq!(
+        state.source(),
+        Source::Collection,
+        "the filter is why: {effects:?}"
+    );
+    assert_eq!(state.ghost_note(), Some(NO_CARDS_MATCH));
+    assert!(!effects.contains(&Effect::CollectionStale));
+}
