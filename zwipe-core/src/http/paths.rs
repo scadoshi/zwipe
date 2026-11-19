@@ -98,6 +98,8 @@ pub const PLAYSTYLE_ROUTE: &str = "/api/deck/playstyle";
 
 /// Ranked commander suggestions; the `limit` query caps how many.
 pub const COMMANDER_SUGGESTIONS_ROUTE: &str = "/api/commander/suggestions";
+/// One page of the merged commander ranking over every commander a filter matches.
+pub const COMMANDER_DEAL_ROUTE: &str = "/api/commander/deal";
 /// POST dismisses one commander for a week; DELETE clears every dismissal.
 pub const COMMANDER_DISMISSALS_ROUTE: &str = "/api/commander/suggestions/dismissals";
 
@@ -274,6 +276,7 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Post, COMMANDER_DISMISSALS_ROUTE, true),
     (Method::Delete, COMMANDER_DISMISSALS_ROUTE, true),
     (Method::Get, COMMANDER_SUGGESTIONS_ROUTE, true),
+    (Method::Post, COMMANDER_DEAL_ROUTE, true),
     (Method::Post, CONFIRM_EMAIL_CHANGE_ROUTE, false),
     (Method::Post, CREATE_DECK_ROUTE, true),
     (Method::Delete, DELETE_USER_ROUTE, true),
