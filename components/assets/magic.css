@@ -1041,7 +1041,8 @@ i.ms.ms-cost.ms-gp {
     }
 
     /* The stepper ends the icons' line, and the word buttons stand in two
-       equal columns with Printings across both. */
+       equal columns, the first across both when they are odd in number, so
+       none stands alone. */
     .card-action-split {
         justify-content: space-between;
         column-gap: var(--space-3);
@@ -1053,9 +1054,26 @@ i.ms.ms-cost.ms-gp {
         gap: var(--space-3);
     }
 
-    .card-action-words > [data-action="printings"] {
+    .card-action-words > :first-child:nth-last-child(odd) {
         grid-column: 1 / -1;
     }
+}
+
+/* The card drawer is a phone's width at every window width, so its bar lays
+   out as a phone's: the stepper ends the icons' line, and the word buttons
+   stand in two equal columns, the first across both when they are odd in
+   number. */
+.card-details-drawer .card-action-split {
+    justify-content: space-between;
+}
+
+.card-details-drawer .card-action-words {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.card-details-drawer .card-action-words > :first-child:nth-last-child(odd) {
+    grid-column: 1 / -1;
 }
 
 /* The quantity stepper: `-`, the count and `+` wrap to the next line

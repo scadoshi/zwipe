@@ -11,6 +11,30 @@ use zwipe_core::domain::deck::Board;
 use crate::copy_room::can_add_copy;
 use crate::{FlagButton, StarButton};
 
+/// A deck card's editing actions, for a host that lays them out with its
+/// own buttons, such as the card details panel's foot: the quantity stepper
+/// when `on_qty_change` is given, the Star and Flag for `mvp` and `flagged`,
+/// and the moves off `current_board`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CardEdit {
+    /// The card's copies.
+    pub qty: i32,
+    /// Changes the copies by the step given.
+    pub on_qty_change: Option<EventHandler<i32>>,
+    /// Whether the card is starred, when it can be.
+    pub mvp: Option<bool>,
+    /// Toggles the star.
+    pub on_toggle_mvp: Option<EventHandler<()>>,
+    /// Whether the card is flagged, when it can be.
+    pub flagged: Option<bool>,
+    /// Toggles the flag.
+    pub on_toggle_flag: Option<EventHandler<()>>,
+    /// The card's board, the main board when `None`.
+    pub current_board: Option<Board>,
+    /// Moves the card to another board.
+    pub on_move_to: EventHandler<Board>,
+}
+
 /// The editing buttons as one `card-action-row`: the [`CardMarkButtons`] in a
 /// `card-action-group`, then the [`CardStepper`] when `on_qty_change` is
 /// given, at the line's far end on a phone.

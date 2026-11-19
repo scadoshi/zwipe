@@ -394,7 +394,7 @@ pub fn CardRow(
                     },
                     action_rows: rsx! {
                         if has_words {
-                            div { class: if on_move_to.is_some() { "card-action-row card-action-words" } else { "card-action-row" },
+                            div { class: "card-action-row card-action-words",
                                 if let Some(handler) = on_printing {
                                     {
                                         let card_clone = card.clone();

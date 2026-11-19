@@ -1,5 +1,6 @@
-//! An open deck card row's actions: the icons in one group with the stepper at the end of their
-//! line, then a block of the word buttons, Printings and the board moves, under them.
+//! An open deck card row's actions, and the deck page's card drawer's: the icons in one group with
+//! the stepper at the end of their line, then a block of the word buttons, Printings and the board
+//! moves, under them.
 
 #![expect(
     clippy::unwrap_used,
@@ -7,7 +8,7 @@
     reason = "test helpers: a failed parse, render or lookup fails the test"
 )]
 
-use components::{CardRow, SendTo, data_action};
+use components::{CardDetailsPanel, CardEdit, CardRow, SendTo, data_action};
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -69,6 +70,31 @@ fn open_row() -> Element {
     }
 }
 
+/// The card's details as the deck page's drawer shows them, with every action.
+fn drawer_panel() -> Element {
+    use_context_provider(|| SendTo {
+        open: Signal::new(false),
+        card: Signal::new(None),
+    });
+    rsx! {
+        CardDetailsPanel {
+            card: card(),
+            on_image: Some(EventHandler::new(|(): ()| {})),
+            on_printings: Some(EventHandler::new(|(): ()| {})),
+            edit: CardEdit {
+                qty: 1,
+                on_qty_change: Some(EventHandler::new(|_: i32| {})),
+                mvp: Some(false),
+                on_toggle_mvp: Some(EventHandler::new(|(): ()| {})),
+                flagged: Some(false),
+                on_toggle_flag: Some(EventHandler::new(|(): ()| {})),
+                current_board: None,
+                on_move_to: EventHandler::new(|_: Board| {}),
+            },
+        }
+    }
+}
+
 /// The part of `html` from `open` to the next `<div class="card-action-row` or the end.
 fn section<'html>(html: &'html str, open: &str) -> &'html str {
     let (_, rest) = html
@@ -84,8 +110,13 @@ fn has(section: &str, action: &str) -> bool {
 
 #[test]
 fn the_icons_share_one_group_with_the_stepper_after_it() {
-    let html = render(open_row);
-    let line = section(&html, SPLIT_ROW);
+    for html in [render(open_row), render(drawer_panel)] {
+        icons_then_stepper(&html);
+    }
+}
+
+fn icons_then_stepper(html: &str) {
+    let line = section(html, SPLIT_ROW);
     let (group, after) = line
         .split_once(r#"<span class="card-action-group">"#)
         .and_then(|(_, rest)| rest.split_once("</span><span class=\"card-action-stepper\">"))
@@ -110,14 +141,24 @@ fn the_icons_share_one_group_with_the_stepper_after_it() {
 
 #[test]
 fn printings_and_the_moves_sit_in_the_block_under_the_icons() {
-    let html = render(open_row);
-    let words = section(&html, WORDS);
+    for html in [render(open_row), render(drawer_panel)] {
+        words_under_icons(&html);
+    }
+}
+
+fn words_under_icons(html: &str) {
+    let words = section(html, WORDS);
     assert!(has(words, data_action::PRINTINGS), "{words}");
     for label in [">To maybeboard<", ">To sideboard<"] {
         assert!(words.contains(label), "{label} in {words}");
     }
     let (icons, _) = html.split_once(WORDS).unwrap();
     assert!(icons.contains(SPLIT_ROW), "the icons come first: {html}");
+    assert_eq!(
+        html.matches(r#"data-action="printings""#).count(),
+        1,
+        "one Printings: {html}"
+    );
 }
 
 /// The declarations of the first rule whose selector is exactly `selector` in `css`.
@@ -129,7 +170,7 @@ fn rule<'css>(css: &'css str, selector: &str) -> &'css str {
 }
 
 #[test]
-fn on_a_phone_the_stepper_ends_the_line_and_printings_spans_the_moves() {
+fn on_a_phone_the_stepper_ends_the_line_and_an_odd_block_s_first_word_spans_both_columns() {
     let (_, phone) = components::MAGIC_CSS
         .split_once("@media (max-width: 899px) {\n    /* A card's actions on a phone")
         .unwrap();
@@ -137,8 +178,11 @@ fn on_a_phone_the_stepper_ends_the_line_and_printings_spans_the_moves() {
     assert!(rule(phone, ".card-action-split").contains("justify-content: space-between;"));
     let words = rule(phone, ".card-action-words");
     assert!(words.contains("grid-template-columns: 1fr 1fr;"), "{words}");
-    let printings = rule(phone, r#".card-action-words > [data-action="printings"]"#);
-    assert!(printings.contains("grid-column: 1 / -1;"), "{printings}");
+    let first = rule(
+        phone,
+        ".card-action-words > :first-child:nth-last-child(odd)",
+    );
+    assert!(first.contains("grid-column: 1 / -1;"), "{first}");
 }
 
 #[test]
@@ -156,4 +200,61 @@ fn on_a_touch_screen_the_icons_stand_far_enough_apart_that_their_reaches_never_m
         .unwrap();
     let group = rule(coarse, ".card-action-group");
     assert!(group.contains("gap: var(--space-3);"), "{group}");
+}
+
+#[test]
+fn the_narrow_drawer_lays_its_bar_out_as_a_phone_does_at_every_width() {
+    let css = components::MAGIC_CSS;
+    let split = rule(css, "\n.card-details-drawer .card-action-split");
+    assert!(split.contains("justify-content: space-between;"), "{split}");
+    let words = rule(css, "\n.card-details-drawer .card-action-words");
+    assert!(words.contains("grid-template-columns: 1fr 1fr;"), "{words}");
+    let first = rule(
+        css,
+        "\n.card-details-drawer .card-action-words > :first-child:nth-last-child(odd)",
+    );
+    assert!(first.contains("grid-column: 1 / -1;"), "{first}");
+}
+
+/// A suggested commander's row: no stepper and no moves, its host's words after Printings.
+fn suggestion_row() -> Element {
+    let card = card();
+    let expanded: Signal<Option<Uuid>> = use_signal(|| Some(card.scryfall_data.id));
+    rsx! {
+        CardRow {
+            card,
+            qty: 1,
+            expanded_card: expanded,
+            on_image: Some(EventHandler::new(|(): ()| {})),
+            on_face_change: None,
+            on_qty_change: None,
+            on_move_to: None,
+            current_board: None,
+            on_printing: Some(EventHandler::new(|_: Card| {})),
+            mvp: None,
+            on_toggle_mvp: None,
+            on_hover_enter: None,
+            on_hover_leave: None,
+            show_art: Some(true),
+            extra_actions: rsx! {
+                button { class: "card-action-btn", "Create deck" }
+                button { class: "card-action-btn", "Maybeboard" }
+                button { class: "card-action-btn", "Remove" }
+            },
+        }
+    }
+}
+
+#[test]
+fn a_row_without_moves_lays_its_words_in_the_same_block() {
+    let html = render(suggestion_row);
+    let words = section(&html, WORDS);
+    for label in [
+        r#"data-action="printings""#,
+        ">Create deck<",
+        ">Maybeboard<",
+        ">Remove<",
+    ] {
+        assert!(words.contains(label), "{label} in {words}");
+    }
 }
