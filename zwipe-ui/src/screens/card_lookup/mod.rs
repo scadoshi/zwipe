@@ -26,6 +26,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::criteria::PLAYABLE_LAYOUTS;
 use zwipe_core::domain::card::slug::{self, CardSlug};
+use zwipe_core::http::contracts::card::HttpCardStats;
 
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
@@ -194,6 +195,20 @@ pub enum Action {
     },
     /// Share, for the card on screen.
     Share,
+    /// The card's stats arrived for the fetch holding `ticket`.
+    Stats {
+        /// The ticket from the [`Effect::FetchStats`] this answers.
+        ticket: Ticket,
+        /// The card's counts.
+        stats: HttpCardStats,
+    },
+    /// The stats fetch holding `ticket` failed.
+    StatsFailed {
+        /// The ticket of the fetch that failed.
+        ticket: Ticket,
+    },
+    /// Retry the card's stats after a failure.
+    RetryStats,
 }
 
 /// What the client does for an action, in order.
@@ -222,6 +237,14 @@ pub enum Effect {
     RememberReturn(Destination),
     /// Opens Send to for this card.
     OpenSendTo(Box<Card>),
+    /// Fetches the card's stats (`fetch_card_stats`), answered with [`Action::Stats`] or
+    /// [`Action::StatsFailed`].
+    FetchStats {
+        /// Handed back on the reply.
+        ticket: Ticket,
+        /// The card's oracle id.
+        oracle_id: Uuid,
+    },
     /// Copies `text`, then raises `done`. A client that hands the link to a share sheet instead
     /// raises nothing.
     Copy {
@@ -243,6 +266,18 @@ enum Shown {
     Failed,
 }
 
+/// Where the card's stats stand, for the client to pick what its stats widgets draw.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum CardStats {
+    /// The fetch is out, or no card shows yet.
+    #[default]
+    Loading,
+    /// The card's counts.
+    Loaded(HttpCardStats),
+    /// The fetch failed: [`Action::RetryStats`] asks again.
+    Failed,
+}
+
 /// The card screen's state. [`State::new`] is the screen before [`Action::Load`].
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct State {
@@ -251,6 +286,8 @@ pub struct State {
     /// Whether Send to opens once the card shows.
     send_pending: bool,
     fetch: Generation,
+    stats: CardStats,
+    stats_fetch: Generation,
 }
 
 impl State {
@@ -286,28 +323,11 @@ impl State {
                         .map_or(Shown::NotFound, |card| Shown::One(Box::new(card))),
                     _ => Shown::Several(cards),
                 };
-                self.send_if_asked()
-            }
-            Action::Printing { ticket, card } => {
-                if !self.fetch.is_current(ticket) {
-                    return Vec::new();
-                }
-                let id = card.scryfall_data.id;
-                let own = own_printing_slug(&card);
-                self.shown = Shown::One(card);
-                let mut effects = Vec::new();
-                if let Some(Open::Printing { slug, .. }) = &self.open
-                    && *slug != own
-                {
-                    effects.push(Effect::Replace(Destination::Printing {
-                        slug: own,
-                        id,
-                        send: false,
-                    }));
-                }
+                let mut effects = self.fetch_stats();
                 effects.extend(self.send_if_asked());
                 effects
             }
+            Action::Printing { ticket, card } => self.printing_arrived(ticket, card),
             Action::Missing { ticket } => {
                 if self.fetch.is_current(ticket) {
                     self.shown = Shown::NotFound;
@@ -352,6 +372,16 @@ impl State {
                 }],
                 _ => Vec::new(),
             },
+            Action::Stats { ticket, stats } => {
+                self.stats_answered(ticket, CardStats::Loaded(stats))
+            }
+            Action::StatsFailed { ticket } => self.stats_answered(ticket, CardStats::Failed),
+            Action::RetryStats => {
+                if self.stats != CardStats::Failed {
+                    return Vec::new();
+                }
+                self.fetch_stats()
+            }
         }
     }
 
@@ -395,6 +425,49 @@ impl State {
         }
     }
 
+    /// Shows the printing that arrived for the fetch holding `ticket`, fixing a stale slug in the
+    /// route, then asks for its stats and opens an asked-for Send to.
+    fn printing_arrived(&mut self, ticket: Ticket, card: Box<Card>) -> Vec<Effect> {
+        if !self.fetch.is_current(ticket) {
+            return Vec::new();
+        }
+        let id = card.scryfall_data.id;
+        let own = own_printing_slug(&card);
+        self.shown = Shown::One(card);
+        let mut effects = self.fetch_stats();
+        if let Some(Open::Printing { slug, .. }) = &self.open
+            && *slug != own
+        {
+            effects.push(Effect::Replace(Destination::Printing {
+                slug: own,
+                id,
+                send: false,
+            }));
+        }
+        effects.extend(self.send_if_asked());
+        effects
+    }
+
+    /// Takes the stats fetch's answer, `answer`, when `ticket` is still the current fetch's.
+    fn stats_answered(&mut self, ticket: Ticket, answer: CardStats) -> Vec<Effect> {
+        if self.stats_fetch.is_current(ticket) {
+            self.stats = answer;
+        }
+        Vec::new()
+    }
+
+    /// Asks for the shown card's stats under a new ticket, so an answer for another card is
+    /// dropped. A card with no oracle id has no stats to ask for, so its figures stay blank.
+    fn fetch_stats(&mut self) -> Vec<Effect> {
+        let ticket = self.stats_fetch.next_ticket();
+        let Some(oracle_id) = self.card().and_then(|c| c.scryfall_data.oracle_id) else {
+            self.stats = CardStats::Loaded(HttpCardStats::default());
+            return Vec::new();
+        };
+        self.stats = CardStats::Loading;
+        vec![Effect::FetchStats { ticket, oracle_id }]
+    }
+
     /// Opens the asked-for Send to, once, when one card shows. On a list the ask waits for the
     /// pick ([`Action::Pick`]), which carries it to that card's printing.
     fn send_if_asked(&mut self) -> Vec<Effect> {
@@ -434,6 +507,12 @@ impl State {
             Shown::NotFound => Status::NotFound,
             Shown::Failed => Status::Failed,
         }
+    }
+
+    /// Where the card's stats stand.
+    #[must_use]
+    pub fn stats(&self) -> CardStats {
+        self.stats
     }
 
     /// The card, when one shows.

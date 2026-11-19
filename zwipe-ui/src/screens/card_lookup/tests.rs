@@ -1,4 +1,5 @@
 use zwipe_core::domain::site::APP_BASE;
+use zwipe_core::http::contracts::card::HttpCardStats;
 
 use super::*;
 use crate::test_support::card;
@@ -27,6 +28,14 @@ fn load(open: Open) -> Action {
 
 fn parsed(slug: &str) -> CardSlug {
     slug.parse().unwrap()
+}
+
+/// `effects` without the stats fetch a card shown asks for, for tests about the rest.
+fn besides_stats(effects: Vec<Effect>) -> Vec<Effect> {
+    effects
+        .into_iter()
+        .filter(|e| !matches!(e, Effect::FetchStats { .. }))
+        .collect()
 }
 
 /// A screen opened at `/card/<slug>` with its fetch out, and that fetch's ticket.
@@ -80,10 +89,10 @@ fn one_card_shows_it_several_list_them_none_says_so() {
     let (mut state, ticket, _) = by_name("bind", false, true);
     let bind = card("Bind");
     assert_eq!(
-        state.update(Action::Named {
+        besides_stats(state.update(Action::Named {
             ticket,
             cards: vec![bind.clone()]
-        }),
+        })),
         vec![]
     );
     assert_eq!(state.status(), Status::One);
@@ -235,10 +244,10 @@ fn a_printing_loads_by_its_id_and_fixes_a_stale_slug() {
     let id = fire.scryfall_data.id;
     let (mut state, ticket) = by_printing("fire-ice", id);
     assert_eq!(
-        state.update(Action::Printing {
+        besides_stats(state.update(Action::Printing {
             ticket,
             card: Box::new(fire.clone())
-        }),
+        })),
         vec![],
         "the slug is already right"
     );
@@ -246,10 +255,10 @@ fn a_printing_loads_by_its_id_and_fixes_a_stale_slug() {
 
     let (mut state, ticket) = by_printing("old-name", id);
     assert_eq!(
-        state.update(Action::Printing {
+        besides_stats(state.update(Action::Printing {
             ticket,
             card: Box::new(fire)
-        }),
+        })),
         vec![Effect::Replace(Destination::Printing {
             slug: "fire-ice".to_owned(),
             id,
@@ -378,10 +387,10 @@ fn an_asked_for_send_to_opens_once_and_leaves_the_route() {
     );
     let bind = card("Bind");
     assert_eq!(
-        state.update(Action::Named {
+        besides_stats(state.update(Action::Named {
             ticket,
             cards: vec![bind.clone()]
-        }),
+        })),
         vec![Effect::OpenSendTo(Box::new(bind))]
     );
     let _ = state.update(Action::Retry);
@@ -389,10 +398,10 @@ fn an_asked_for_send_to_opens_once_and_leaves_the_route() {
         panic!("expected a name fetch");
     };
     assert_eq!(
-        state.update(Action::Named {
+        besides_stats(state.update(Action::Named {
             ticket,
             cards: vec![card("Bind")]
-        }),
+        })),
         vec![],
         "never twice"
     );
@@ -406,10 +415,10 @@ fn an_asked_for_send_to_waits_on_a_session_and_a_single_card() {
         "{effects:?}"
     );
     assert_eq!(
-        state.update(Action::Named {
+        besides_stats(state.update(Action::Named {
             ticket,
             cards: vec![card("Bind")]
-        }),
+        })),
         vec![],
         "no session"
     );
@@ -523,10 +532,10 @@ fn the_ask_leaving_the_route_reloads_nothing_and_keeps_send_to_asked() {
     );
     let bind = card("Bind");
     assert_eq!(
-        state.update(Action::Named {
+        besides_stats(state.update(Action::Named {
             ticket,
             cards: vec![bind.clone()]
-        }),
+        })),
         vec![Effect::OpenSendTo(Box::new(bind))],
         "the first fetch still answers and the ask still opens Send to"
     );
@@ -540,4 +549,100 @@ fn another_card_in_place_loads_it() {
         matches!(effects.last(), Some(Effect::FetchNamed { slug, .. }) if slug.as_str() == "sol-ring"),
         "{effects:?}"
     );
+}
+
+/// The stats fetch among `effects`, with its ticket and oracle id.
+fn stats_fetch(effects: &[Effect]) -> Option<(Ticket, Uuid)> {
+    effects.iter().find_map(|e| {
+        if let Effect::FetchStats { ticket, oracle_id } = e {
+            Some((*ticket, *oracle_id))
+        } else {
+            None
+        }
+    })
+}
+
+#[test]
+fn one_card_shown_asks_for_its_stats_by_oracle_id() {
+    let (mut state, ticket, _) = by_name("bind", false, true);
+    assert_eq!(state.stats(), CardStats::Loading);
+    let bind = card("Bind");
+    let oracle = bind.scryfall_data.oracle_id.unwrap();
+    let effects = state.update(Action::Named {
+        ticket,
+        cards: vec![bind],
+    });
+    let (stats_ticket, asked) = stats_fetch(&effects).expect("a stats fetch");
+    assert_eq!(asked, oracle);
+    let counts = HttpCardStats {
+        in_decks: Some(4),
+        ..HttpCardStats::default()
+    };
+    let _ = state.update(Action::Stats {
+        ticket: stats_ticket,
+        stats: counts,
+    });
+    assert_eq!(state.stats(), CardStats::Loaded(counts));
+}
+
+#[test]
+fn a_printing_shown_asks_for_its_stats_too() {
+    let id = Uuid::new_v4();
+    let (mut state, ticket) = by_printing("bind", id);
+    let mut bind = card("Bind");
+    bind.scryfall_data.id = id;
+    let effects = state.update(Action::Printing {
+        ticket,
+        card: Box::new(bind),
+    });
+    assert!(stats_fetch(&effects).is_some(), "{effects:?}");
+}
+
+#[test]
+fn several_cards_ask_for_no_stats() {
+    let (mut state, ticket, _) = by_name("bind", false, true);
+    let effects = state.update(Action::Named {
+        ticket,
+        cards: vec![card("Bind"), card("Bind")],
+    });
+    assert_eq!(state.status(), Status::Several);
+    assert!(stats_fetch(&effects).is_none(), "{effects:?}");
+}
+
+#[test]
+fn a_failed_stats_fetch_shows_failed_and_retry_asks_again_with_a_new_ticket() {
+    let (mut state, ticket, _) = by_name("bind", false, true);
+    let effects = state.update(Action::Named {
+        ticket,
+        cards: vec![card("Bind")],
+    });
+    let (first, _) = stats_fetch(&effects).unwrap();
+    let _ = state.update(Action::StatsFailed { ticket: first });
+    assert_eq!(state.stats(), CardStats::Failed);
+    let effects = state.update(Action::RetryStats);
+    let (second, _) = stats_fetch(&effects).expect("retry fetches");
+    assert_ne!(second, first);
+    assert_eq!(state.stats(), CardStats::Loading);
+    let _ = state.update(Action::Stats {
+        ticket: first,
+        stats: HttpCardStats::default(),
+    });
+    assert_eq!(
+        state.stats(),
+        CardStats::Loading,
+        "a stale answer is dropped"
+    );
+}
+
+#[test]
+fn retrying_stats_with_no_card_or_no_failure_does_nothing() {
+    let mut state = State::new();
+    assert_eq!(state.update(Action::RetryStats), vec![]);
+    let (mut state, ticket, _) = by_name("bind", false, true);
+    let effects = state.update(Action::Named {
+        ticket,
+        cards: vec![card("Bind")],
+    });
+    assert!(stats_fetch(&effects).is_some());
+    assert_eq!(state.update(Action::RetryStats), vec![], "still loading");
 }

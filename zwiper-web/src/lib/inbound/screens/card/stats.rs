@@ -4,10 +4,13 @@ use std::collections::HashSet;
 
 use components::DeckFold;
 use dioxus::prelude::*;
-use zwipe_ui::screens::card_lookup::stats::{Cell, SOON, Widget};
+use zwipe_ui::screens::card_lookup::stats::{Cell, Widget};
+
+use crate::inbound::chrome::ghost::GhostText;
 
 /// `widget` as a fold: its column labels, then each row's label and a chip per figure, the last
-/// column's chips in the rate color. `folded` holds the folds the user shut.
+/// column's chips in the rate color, a ghost chip while the stats load. `folded` holds the folds
+/// the user shut.
 #[component]
 pub(super) fn StatsWidget(widget: Widget, folded: Signal<HashSet<String>>) -> Element {
     let Widget { title, heads, rows } = widget;
@@ -41,8 +44,11 @@ pub(super) fn StatsWidget(widget: Widget, folded: Signal<HashSet<String>>) -> El
                     for (column, cell) in row.cells.into_iter().enumerate() {
                         span { class: "tag-table-num",
                             match cell {
-                                Cell::Soon => rsx! {
-                                    span { class: chip(column), "{SOON}" }
+                                Cell::Loading => rsx! {
+                                    span { class: "{chip(column)} web-ghost-chip", GhostText { chars: 3 } }
+                                },
+                                Cell::Figure(figure) => rsx! {
+                                    span { class: chip(column), "{figure}" }
                                 },
                                 Cell::Blank => rsx! {},
                             }

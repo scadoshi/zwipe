@@ -26,7 +26,9 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::models::search_card::commander_eligibility;
 use zwipe_core::domain::card::scryfall_data::image_uris::ImageSize;
 use zwipe_core::domain::deck::models::format::Format;
-use zwipe_ui::screens::card_lookup::{self, Action, Ask, Destination, Effect, Open, State, Status};
+use zwipe_ui::screens::card_lookup::{
+    self, Action, Ask, CardStats, Destination, Effect, Open, State, Status,
+};
 use zwipe_ui::telemetry::vocabulary::Screen;
 
 use self::stats::StatsWidget;
@@ -146,6 +148,16 @@ impl Driver {
                 browser::copy_to_clipboard(&text);
                 toast::raise(toasts, &done);
             }
+            Effect::FetchStats { ticket, oracle_id } => {
+                spawn(async move {
+                    let http = client.peek().clone();
+                    let reply = match http.fetch_card_stats(oracle_id).await {
+                        Ok(stats) => Action::Stats { ticket, stats },
+                        Err(_) => Action::StatsFailed { ticket },
+                    };
+                    self.dispatch(reply);
+                });
+            }
         }
     }
 }
@@ -188,6 +200,7 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
     let card = state.card().cloned();
     let cards = state.cards().to_vec();
     let message = state.message();
+    let stats = state.stats();
     drop(state);
     let title = card
         .as_ref()
@@ -212,8 +225,24 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
                         }
                     }
                     div { class: "web-card-stats",
-                        for widget in card_lookup::stats::widgets(leads) {
-                            StatsWidget { key: "{widget.title}", widget, folded: stats_folded }
+                        match stats {
+                            CardStats::Failed => rsx! {
+                                LoadFailed {
+                                    message: "Couldn't load the card's stats",
+                                    on_retry: move |()| dispatch(Action::RetryStats),
+                                }
+                            },
+                            CardStats::Loading | CardStats::Loaded(_) => {
+                                let loaded = match stats {
+                                    CardStats::Loaded(counts) => Some(counts),
+                                    CardStats::Loading | CardStats::Failed => None,
+                                };
+                                rsx! {
+                                    for widget in card_lookup::stats::widgets(loaded.as_ref(), leads) {
+                                        StatsWidget { key: "{widget.title}", widget, folded: stats_folded }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
