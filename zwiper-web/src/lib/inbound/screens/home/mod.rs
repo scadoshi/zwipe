@@ -9,6 +9,7 @@
 //! dialog.
 
 pub mod hero;
+mod search;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -36,6 +37,7 @@ use zwipe_ui::screens::home::{
 use zwipe_ui::telemetry::vocabulary::Screen;
 
 use self::hero::HomeHeroScoped;
+use self::search::CardSearchBar;
 use crate::domain::counts::CachedCounts;
 use crate::inbound::caches::{CachedDecks, CachedMyCounts, CachedPlayStyle};
 use crate::inbound::cards::image_preview::ImagePreview;
@@ -449,6 +451,7 @@ pub fn Home() -> Element {
             },
             div { class: "screen-content home-content web-home",
                 div { class: "web-page web-home-page",
+                    CardSearchBar {}
                     div { class: "web-hero",
                         HomeHeroScoped {
                             figures,

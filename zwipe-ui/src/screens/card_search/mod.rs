@@ -25,6 +25,19 @@ use zwipe_core::http::contracts::card::HttpCardLookup;
 use crate::generation::{Generation, Ticket};
 use crate::timing;
 
+/// The bar's label.
+pub const LABEL: &str = "Search";
+/// The empty box's hint.
+pub const PLACEHOLDER: &str = "Search a card by name";
+/// The line while a lookup is out.
+pub const SEARCHING: &str = "Searching…";
+/// The line when no card matches.
+pub const NO_MATCH: &str = "No card by that name";
+/// The line while a rate limit's wait runs.
+pub const RATE_LIMITED: &str = "Too many searches, trying again in a moment";
+/// The line when a lookup failed, beside Retry.
+pub const FAILED: &str = "Couldn't search";
+
 /// What the bar shows under the box.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Status {
