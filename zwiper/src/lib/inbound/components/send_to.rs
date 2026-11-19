@@ -178,6 +178,9 @@ const fn host_screen(route: &Router) -> Screen {
         Router::ExportDeck { .. } => Screen::Deck(DeckScreen::Export),
         Router::AddDeckCard { .. } => Screen::Deck(DeckScreen::CardAdd),
         Router::RemoveDeckCard { .. } => Screen::Deck(DeckScreen::CardRemove),
+        Router::CardNamed { .. } | Router::CardPrinting { .. } | Router::Search { .. } => {
+            Screen::Card
+        }
     }
 }
 

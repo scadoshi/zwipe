@@ -10,6 +10,8 @@ pub mod account;
 pub mod activity;
 /// Authentication screens (login, register).
 pub mod auth;
+/// The card page and the card search's results page.
+pub mod card;
 /// Appearance and card settings (theme, app icon, Universes Beyond).
 pub mod config;
 /// Deck builder and card management screens.

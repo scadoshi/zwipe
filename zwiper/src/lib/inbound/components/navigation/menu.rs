@@ -42,7 +42,7 @@ pub const fn route_of(section: Section) -> Router {
 }
 
 /// The section `route` sits under, lit in the menu; `None` for the auth
-/// screens.
+/// screens and the card pages.
 #[must_use]
 pub const fn section_of(route: &Router) -> Option<Section> {
     match route {
@@ -61,7 +61,12 @@ pub const fn section_of(route: &Router) -> Option<Section> {
         Router::Account {} => Some(Section::Account),
         Router::Config {} => Some(Section::Config),
         Router::About {} | Router::PrivacyPolicy {} => Some(Section::About),
-        Router::Login {} | Router::Register {} | Router::ForgotPassword {} => None,
+        Router::Login {}
+        | Router::Register {}
+        | Router::ForgotPassword {}
+        | Router::CardNamed { .. }
+        | Router::CardPrinting { .. }
+        | Router::Search { .. } => None,
     }
 }
 
