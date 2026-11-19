@@ -23,7 +23,7 @@ use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
 use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, ImportMode, Quantity};
-use zwipe_core::http::contracts::suggestions::STAPLE_MIN_DECKS;
+use zwipe_core::http::contracts::suggestions::{RankedBy, STAPLE_MIN_DECKS};
 
 use crate::domain::card::models::synergy::SynergyPayload;
 use crate::domain::card::ports::{CardRepository, DeckServeContext};
@@ -31,6 +31,9 @@ use crate::domain::card::requests::get_scryfall_data::ScryfallDataIds;
 use crate::domain::deck::models::deck::activity::{self, Activity, HardPass};
 use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
+use crate::domain::deck::models::deck::commander_deal::{
+    CommanderDeal, CommanderDealPage, DealSignal,
+};
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
 use crate::domain::deck::models::deck::commander_suggestions::{
     self, ColorAffinity, CommanderDismissal, CommanderSuggestion, CommanderSuggestions,
@@ -745,10 +748,6 @@ where
         self.deck_repo.clear_commander_maybeboard(user_id).await
     }
 
-    #[expect(
-        clippy::too_many_lines,
-        reason = "one pipeline in order: profile, summarize, score, cap and hydrate"
-    )]
     async fn commander_suggestions(
         &self,
         user_id: Uuid,
@@ -807,6 +806,61 @@ where
             suggestions,
             deck_count,
             profile,
+        })
+    }
+
+    async fn deal_commanders(
+        &self,
+        user_id: Uuid,
+        deal: CommanderDeal,
+    ) -> Result<CommanderDealPage, CommanderSuggestionsError> {
+        let decks = self.deck_repo.fetch_profiled_decks(user_id).await?;
+        let (profiles, tag_roles) = self.profile_decks(&decks).await?;
+        let maybeboard = self
+            .deck_repo
+            .fetch_commander_maybeboard_oracle_ids(user_id)
+            .await
+            .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+
+        let mut exclude: Vec<Uuid> = decks
+            .iter()
+            .filter_map(|deck| deck.commander_oracle_id)
+            .collect();
+        if !deal.keep_maybeboard {
+            exclude.extend(maybeboard.iter().copied());
+        }
+        exclude.extend(deal.exclude.iter().copied());
+
+        let deck_profiled = profiles.iter().flatten().any(|profile| {
+            profile
+                .weights
+                .as_object()
+                .is_some_and(|weights| !weights.is_empty())
+        });
+        let ranked_by = if deck_profiled
+            || self
+                .card_repo
+                .any_commander_tag_profile(&maybeboard)
+                .await?
+        {
+            RankedBy::Playstyle
+        } else {
+            RankedBy::Popularity
+        };
+
+        let signal = DealSignal {
+            user_id,
+            decks: deck_profiles_json(&decks, &profiles),
+            maybeboard,
+            exclude,
+        };
+        let scored = self.card_repo.score_commander_deal(&deal, &signal).await?;
+        let suggestions = self
+            .hydrate_suggestions(scored, &color_decks(&decks), &tag_roles)
+            .await?;
+        Ok(CommanderDealPage {
+            suggestions,
+            ranked_by,
         })
     }
 

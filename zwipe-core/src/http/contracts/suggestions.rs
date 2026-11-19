@@ -566,7 +566,7 @@ mod tests {
         assert_eq!(deal.format, None);
         assert_eq!(deal.offset, 0);
         assert_eq!(deal.limit, DEFAULT_SUGGESTION_LIMIT);
-        assert!(deal.exclude.is_empty());
+        assert_eq!(deal.exclude, Vec::<Uuid>::new());
         assert!(
             !deal.keep_maybeboard,
             "Suggested's rule: the maybeboard stays out"

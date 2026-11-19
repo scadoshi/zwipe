@@ -21,8 +21,8 @@ pub mod update_deck_profile;
 pub use clear_deck_suppressions::clear_deck_suppressions;
 pub use clone_deck::clone_deck;
 pub use commander_suggestions::{
-    clear_commander_dismissals, dismiss_commander, get_activity, get_commander_suggestions,
-    get_play_style_summary, undismiss_commander,
+    clear_commander_dismissals, deal_commanders, dismiss_commander, get_activity,
+    get_commander_suggestions, get_play_style_summary, undismiss_commander,
 };
 pub use create_deck_profile::create_deck_profile;
 pub use delete_deck::delete_deck;
