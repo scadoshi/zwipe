@@ -1,5 +1,6 @@
 //! Home's card search bar over the [`card_search`] model: typing looks cards up by name, the
 //! results show as chips under the box in the page's flow, and a chip opens that card's page.
+//! The top result starts highlighted, the arrow keys move the highlight, and Enter opens it.
 
 use components::ClearWrap;
 use dioxus::prelude::*;
@@ -7,7 +8,7 @@ use dioxus::router::Navigator;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_ui::screens::card_search::{self, Action, Destination, Effect, State, Status};
+use zwipe_ui::screens::card_search::{self, Action, Destination, Effect, State, Status, Step};
 
 use crate::inbound::cards::card_search::lookup_cards;
 use crate::inbound::router::Route;
@@ -82,6 +83,10 @@ impl Driver {
 
 /// The search bar: the labeled box, then a line or the result chips under it.
 #[component]
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "keyboard_types::Key is a foreign enum of every key; only the keys handled act"
+)]
 pub(super) fn CardSearchBar() -> Element {
     let driver = Driver {
         model: use_signal(State::new),
@@ -92,6 +97,7 @@ pub(super) fn CardSearchBar() -> Element {
     let state = driver.model.read();
     let query = state.query().to_owned();
     let status = state.status();
+    let lit = state.highlight();
     let results: Vec<(Uuid, String)> = state
         .results()
         .iter()
@@ -116,13 +122,23 @@ pub(super) fn CardSearchBar() -> Element {
                     input {
                         class: "input input-compact",
                         id: SEARCH_ID,
-                        r#type: "search",
+                        r#type: "text",
                         placeholder: card_search::PLACEHOLDER,
                         value: "{query}",
                         autocapitalize: "none",
                         autocorrect: "off",
                         spellcheck: "false",
                         oninput: move |event| driver.dispatch(Action::Type(event.value())),
+                        onkeydown: move |event: Event<KeyboardData>| {
+                            let action = match event.key() {
+                                Key::ArrowDown => Action::Step(Step::Down),
+                                Key::ArrowUp => Action::Step(Step::Up),
+                                Key::Enter => Action::Enter,
+                                _ => return,
+                            };
+                            event.prevent_default();
+                            driver.dispatch(action);
+                        },
                     }
                 }
             }
@@ -144,7 +160,7 @@ pub(super) fn CardSearchBar() -> Element {
                         button {
                             key: "{id}",
                             r#type: "button",
-                            class: "chip-unselected card-filter-result",
+                            class: if lit == Some(i) { "chip-unselected card-filter-result card-filter-highlight" } else { "chip-unselected card-filter-result" },
                             style: "animation-delay: {i.saturating_mul(40)}ms;",
                             onclick: move |_| driver.dispatch(Action::Pick(id)),
                             "{name}"

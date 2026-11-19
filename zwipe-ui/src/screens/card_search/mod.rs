@@ -22,19 +22,21 @@ use zwipe_core::domain::card::models::lookup::{LOOKUP_LIMIT, LookupName};
 use zwipe_core::domain::card::slug::{self, CardSlug};
 use zwipe_core::http::contracts::card::HttpCardLookup;
 
+use crate::commander::maybeboard;
+pub use crate::commander::maybeboard::Step;
 use crate::generation::{Generation, Ticket};
 use crate::timing;
 
 /// The bar's label.
 pub const LABEL: &str = "Search";
 /// The empty box's hint.
-pub const PLACEHOLDER: &str = "Search a card by name";
+pub const PLACEHOLDER: &str = "Card name";
 /// The line while a lookup is out.
 pub const SEARCHING: &str = "Searching…";
 /// The line when no card matches.
-pub const NO_MATCH: &str = "No card by that name";
+pub const NO_MATCH: &str = "No cards match";
 /// The line while a rate limit's wait runs.
-pub const RATE_LIMITED: &str = "Too many searches, trying again in a moment";
+pub const RATE_LIMITED: &str = "Too many searches, retrying in a moment";
 /// The line when a lookup failed, beside Retry.
 pub const FAILED: &str = "Couldn't search";
 
@@ -109,6 +111,10 @@ pub enum Action {
     Clear,
     /// A result picked, by its printing id.
     Pick(Uuid),
+    /// An arrow key: moves the highlight one result, stopping at either end.
+    Step(Step),
+    /// Enter in the box: opens the highlighted result. Nothing highlighted does nothing.
+    Enter,
 }
 
 /// What an action asks the client to do.
@@ -149,6 +155,8 @@ pub struct State {
     tickets: Generation,
     /// The rate limit's wait while it runs: typing waits it out instead of sending.
     cooling: Option<Ticket>,
+    /// The highlighted result's place, the top one when an answer arrives.
+    highlight: Option<usize>,
 }
 
 impl State {
@@ -180,6 +188,13 @@ impl State {
         }
     }
 
+    /// The highlighted result's place among [`State::results`], which Enter opens: the top one
+    /// when an answer arrives, moved by the arrow keys, and none while no results show.
+    #[must_use]
+    pub fn highlight(&self) -> Option<usize> {
+        self.highlight.filter(|_| self.status == Status::Results)
+    }
+
     /// Takes one action and answers with what the client should do.
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         match action {
@@ -193,6 +208,7 @@ impl State {
             Action::Loaded { ticket, cards } => {
                 if self.tickets.is_current(ticket) && self.status == Status::Loading {
                     self.results = cards.into_iter().take(limit()).collect();
+                    self.highlight = (!self.results.is_empty()).then_some(0);
                     self.status = if self.results.is_empty() {
                         Status::NoMatch
                     } else {
@@ -232,11 +248,23 @@ impl State {
                 .map(|card| Effect::Navigate(destination(card)))
                 .into_iter()
                 .collect(),
+            Action::Step(step) => {
+                self.highlight =
+                    maybeboard::step_highlight(self.highlight(), self.results().len(), step);
+                Vec::new()
+            }
+            Action::Enter => self
+                .highlight()
+                .and_then(|at| self.results().get(at))
+                .map(|card| Effect::Navigate(destination(card)))
+                .into_iter()
+                .collect(),
         }
     }
 
     fn type_text(&mut self, text: String) -> Vec<Effect> {
         self.query = text;
+        self.highlight = None;
         if self.query.trim().is_empty() {
             self.go_idle();
             return Vec::new();

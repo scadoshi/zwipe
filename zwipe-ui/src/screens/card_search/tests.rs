@@ -308,3 +308,60 @@ fn text_typed_after_clear_during_a_cooldown_is_looked_up_when_it_ends() {
     assert_eq!(lookup.name().as_str(), "bolt");
     assert_eq!(state.status(), Status::Loading);
 }
+
+/// A bar holding the answer `names` for `text`.
+fn answered(text: &str, names: &[&str]) -> State {
+    let mut state = State::new();
+    let (ticket, _) = typed(&mut state, text);
+    let _ = state.update(Action::Loaded {
+        ticket,
+        cards: cards(names),
+    });
+    state
+}
+
+fn opens(name: &str) -> Vec<Effect> {
+    vec![Effect::Navigate(Destination::Card(
+        slug::card_slug(name).unwrap(),
+    ))]
+}
+
+#[test]
+fn an_answer_highlights_its_top_result_and_enter_opens_it() {
+    let mut state = answered("krenko", &["Krenko, Mob Boss", "Krenko's Command"]);
+    assert_eq!(state.highlight(), Some(0));
+    assert_eq!(state.update(Action::Enter), opens("Krenko, Mob Boss"));
+}
+
+#[test]
+fn the_arrows_move_the_highlight_and_stop_at_either_end() {
+    let mut state = answered("krenko", &["Krenko, Mob Boss", "Krenko's Command"]);
+    let _ = state.update(Action::Step(Step::Down));
+    assert_eq!(state.highlight(), Some(1));
+    let _ = state.update(Action::Step(Step::Down));
+    assert_eq!(state.highlight(), Some(1), "stops at the last");
+    assert_eq!(state.update(Action::Enter), opens("Krenko's Command"));
+    let _ = state.update(Action::Step(Step::Up));
+    let _ = state.update(Action::Step(Step::Up));
+    assert_eq!(state.highlight(), Some(0), "stops at the first");
+}
+
+#[test]
+fn enter_with_no_results_opens_nothing() {
+    let mut state = State::new();
+    assert_eq!(state.update(Action::Enter), vec![]);
+    let _ = typed(&mut state, "krenko");
+    assert_eq!(state.highlight(), None, "nothing while the lookup is out");
+    assert_eq!(state.update(Action::Enter), vec![]);
+    let mut empty = answered("zzzz", &[]);
+    assert_eq!(empty.highlight(), None);
+    assert_eq!(empty.update(Action::Enter), vec![]);
+}
+
+#[test]
+fn typing_again_drops_the_highlight_until_the_next_answer() {
+    let mut state = answered("krenko", &["Krenko, Mob Boss"]);
+    let _ = state.update(Action::Type("krenko m".to_owned()));
+    assert_eq!(state.highlight(), None);
+    assert_eq!(state.update(Action::Enter), vec![]);
+}
