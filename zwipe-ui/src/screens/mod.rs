@@ -8,6 +8,7 @@ pub mod activity;
 pub mod add_cards;
 pub mod card_filter;
 pub mod card_lookup;
+pub mod card_results;
 pub mod card_search;
 pub mod commander_maybeboard;
 pub mod config;

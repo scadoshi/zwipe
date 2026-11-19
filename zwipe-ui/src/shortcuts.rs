@@ -251,6 +251,10 @@ pub const QUICK_ADD_KEY: &str = "q";
 /// ([`CardKey::FilterByName`]).
 pub const FILTER_NAME_KEY: &str = "/";
 
+/// The key that puts the cursor in the wide nav's card search, on a screen that answers no
+/// keys of its own.
+pub const CARD_SEARCH_KEY: &str = "/";
+
 /// The sheet's row for [`FILTER_NAME_KEY`], on every screen with a filter.
 pub const FILTER_NAME_ROW: SheetRow = (&[FILTER_NAME_KEY], "Filter by name");
 

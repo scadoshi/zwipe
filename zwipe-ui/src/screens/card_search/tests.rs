@@ -326,42 +326,133 @@ fn opens(name: &str) -> Vec<Effect> {
     ))]
 }
 
+fn opens_results(query: &str) -> Vec<Effect> {
+    vec![Effect::Navigate(Destination::Results {
+        query: query.to_owned(),
+    })]
+}
+
 #[test]
-fn an_answer_highlights_its_top_result_and_enter_opens_it() {
-    let mut state = answered("krenko", &["Krenko, Mob Boss", "Krenko's Command"]);
+fn a_single_match_is_highlighted_and_enter_opens_its_card() {
+    let mut state = answered("krenko, mob", &["Krenko, Mob Boss"]);
     assert_eq!(state.highlight(), Some(0));
     assert_eq!(state.update(Action::Enter), opens("Krenko, Mob Boss"));
+}
+
+#[test]
+fn several_matches_highlight_none_and_enter_opens_the_results_page() {
+    let mut state = answered(" krenko ", &["Krenko, Mob Boss", "Krenko's Command"]);
+    assert_eq!(state.highlight(), None);
+    assert_eq!(state.update(Action::Enter), opens_results("krenko"));
 }
 
 #[test]
 fn the_arrows_move_the_highlight_and_stop_at_either_end() {
     let mut state = answered("krenko", &["Krenko, Mob Boss", "Krenko's Command"]);
     let _ = state.update(Action::Step(Step::Down));
-    assert_eq!(state.highlight(), Some(1));
+    assert_eq!(
+        state.highlight(),
+        Some(0),
+        "the first step lights the top one"
+    );
+    let _ = state.update(Action::Step(Step::Down));
     let _ = state.update(Action::Step(Step::Down));
     assert_eq!(state.highlight(), Some(1), "stops at the last");
-    assert_eq!(state.update(Action::Enter), opens("Krenko's Command"));
+    assert_eq!(
+        state.clone().update(Action::Enter),
+        opens("Krenko's Command")
+    );
     let _ = state.update(Action::Step(Step::Up));
     let _ = state.update(Action::Step(Step::Up));
     assert_eq!(state.highlight(), Some(0), "stops at the first");
+    assert_eq!(state.update(Action::Enter), opens("Krenko, Mob Boss"));
 }
 
 #[test]
-fn enter_with_no_results_opens_nothing() {
+fn enter_with_nothing_typed_or_nothing_matching_opens_nothing() {
     let mut state = State::new();
-    assert_eq!(state.update(Action::Enter), vec![]);
-    let _ = typed(&mut state, "krenko");
-    assert_eq!(state.highlight(), None, "nothing while the lookup is out");
     assert_eq!(state.update(Action::Enter), vec![]);
     let mut empty = answered("zzzz", &[]);
     assert_eq!(empty.highlight(), None);
     assert_eq!(empty.update(Action::Enter), vec![]);
+    let mut blank = State::new();
+    let _ = blank.update(Action::Type("   ".to_owned()));
+    assert_eq!(blank.update(Action::Enter), vec![]);
 }
 
 #[test]
-fn typing_again_drops_the_highlight_until_the_next_answer() {
+fn enter_before_the_answer_opens_the_results_page_for_the_box() {
+    let mut state = State::new();
+    let _ = typed(&mut state, "krenko");
+    assert_eq!(state.highlight(), None, "nothing while the lookup is out");
+    assert_eq!(state.update(Action::Enter), opens_results("krenko"));
+
+    let mut waiting = State::new();
+    let _ = waiting.update(Action::Type("goblin".to_owned()));
+    assert_eq!(
+        waiting.update(Action::Enter),
+        opens_results("goblin"),
+        "still in the typing wait"
+    );
+}
+
+#[test]
+fn typing_again_drops_the_highlight_and_enter_looks_up_the_new_text() {
     let mut state = answered("krenko", &["Krenko, Mob Boss"]);
     let _ = state.update(Action::Type("krenko m".to_owned()));
     assert_eq!(state.highlight(), None);
+    assert_eq!(state.update(Action::Enter), opens_results("krenko m"));
+}
+
+#[test]
+fn typing_past_a_no_match_answer_lets_enter_look_again() {
+    let mut state = answered("krenkp", &[]);
     assert_eq!(state.update(Action::Enter), vec![]);
+    let _ = state.update(Action::Type("krenk".to_owned()));
+    assert_eq!(state.update(Action::Enter), opens_results("krenk"));
+}
+
+#[test]
+fn opening_a_card_or_the_results_empties_the_box() {
+    let mut picked = answered("krenko", &["Krenko, Mob Boss", "Krenko's Command"]);
+    let id = picked.results()[1].scryfall_data.id;
+    assert_eq!(picked.update(Action::Pick(id)), opens("Krenko's Command"));
+    assert_eq!(picked.query(), "");
+    assert_eq!(picked.status(), Status::Idle);
+
+    let mut entered = answered("krenko", &["Krenko, Mob Boss", "Krenko's Command"]);
+    assert_eq!(entered.update(Action::Enter), opens_results("krenko"));
+    assert_eq!(entered.query(), "");
+    assert_eq!(entered.status(), Status::Idle);
+}
+
+#[test]
+fn each_destination_has_its_path() {
+    assert_eq!(
+        Destination::Card(slug::card_slug("Sol Ring").unwrap()).path(),
+        "/card/sol-ring"
+    );
+    let id = Uuid::nil();
+    let printing = slug::printing_path("_____", id);
+    assert_eq!(
+        Destination::Printing {
+            path: printing.clone()
+        }
+        .path(),
+        printing
+    );
+    assert_eq!(
+        Destination::Results {
+            query: "solemn sim".to_owned()
+        }
+        .path(),
+        "/search?q=solemn%20sim"
+    );
+    assert_eq!(
+        Destination::Results {
+            query: "Jötun & co?/#+".to_owned()
+        }
+        .path(),
+        "/search?q=J%C3%B6tun%20%26%20co%3F%2F%23%2B"
+    );
 }

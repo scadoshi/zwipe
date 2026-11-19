@@ -36,6 +36,7 @@ use crate::inbound::screens::home::Home;
 use crate::inbound::screens::not_found::NotFound;
 use crate::inbound::screens::playstyle::Playstyle;
 use crate::inbound::screens::privacy_policy::PrivacyPolicy;
+use crate::inbound::screens::search::Search;
 use crate::inbound::screens::shared_deck::SharedDeck;
 use crate::inbound::session::auth_gate::AuthGate;
 use crate::inbound::session::signed_out_gate::SignedOutGate;
@@ -92,6 +93,9 @@ pub enum Route {
         /// One printing of a card.
         #[route("/card/:slug/:id?:open")]
         CardPrinting { slug: String, id: Uuid, open: Option<Ask> },
+        /// Every card the card search matches for `q`, from Enter with several matches.
+        #[route("/search?:q")]
+        Search { q: String },
         /// The guides, the pages zwipe.net draws.
         #[route("/guides")]
         Guides {},

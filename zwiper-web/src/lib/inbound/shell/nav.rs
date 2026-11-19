@@ -56,6 +56,7 @@ impl Back {
             | Route::Guides {}
             | Route::CardNamed { .. }
             | Route::CardPrinting { .. }
+            | Route::Search { .. }
             | Route::NotFound { .. } => Some(Back::Previous),
             Route::GuidePage { .. } => Some(Back::To(Route::Guides {})),
             Route::CreateDeck {} => Some(Back::To(Route::DeckList {})),
@@ -135,6 +136,7 @@ pub const fn section_of(route: &Route) -> Option<Section> {
         | Route::SharedDeck { .. }
         | Route::CardNamed { .. }
         | Route::CardPrinting { .. }
+        | Route::Search { .. }
         | Route::SharedDeckExport { .. }
         | Route::Guides {}
         | Route::GuidePage { .. }

@@ -3,7 +3,8 @@
 //!
 //! One card draws the deck page's wide card layout: the card in the middle column, its details
 //! docked at the right and its stats widgets at the left; a phone stacks the card,
-//! the details and the widgets. Send to and Share are the floating action dock. Several cards
+//! the details and the widgets. Send to and Share are the floating action dock, Create account in
+//! Send to's place signed out. Several cards
 //! that share a name show as the deck page's Stacks grid, each a whole card that opens its
 //! printing. `?open=send-to` opens Send to once the card shows: a signed-out Send to goes to
 //! Login and comes back with it.
@@ -14,8 +15,8 @@ use std::collections::HashSet;
 
 use components::icons::{DockIcon, SEND, ShareIcon};
 use components::{
-    CardDetailsPanel, CardDetailsPanelSkeleton, CardStack, FlippableCardImage, LoadFailed, SendTo,
-    StackCard,
+    CardDetailsPanel, CardDetailsPanelSkeleton, CardResultsGrid, FlippableCardImage, LoadFailed,
+    SendTo, USER_PLUS,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -71,6 +72,7 @@ fn route_of(to: Destination) -> Route {
             open: ask(send),
         },
         Destination::Login => Route::Login {},
+        Destination::Register => Route::Register {},
     }
 }
 
@@ -247,11 +249,21 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
                     }
                 }
                 div { class: "action-dock action-dock-right",
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": "Send to",
-                        onclick: move |_| dispatch(Action::SendTo { signed_in: signed_in() }),
-                        DockIcon { path: SEND }
+                    if signed_in() {
+                        button {
+                            class: "action-dock-btn",
+                            "aria-label": "Send to",
+                            onclick: move |_| dispatch(Action::SendTo { signed_in: true }),
+                            DockIcon { path: SEND }
+                        }
+                    } else {
+                        button {
+                            class: "action-dock-btn",
+                            "aria-label": "Create account",
+                            title: "Create account",
+                            onclick: move |_| dispatch(Action::CreateAccount),
+                            DockIcon { path: USER_PLUS }
+                        }
                     }
                     button {
                         class: "action-dock-btn",
@@ -265,27 +277,7 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
         }
         (Status::Several, _) => rsx! {
             div { class: "screen-content content-enter web-card-list",
-                h1 { class: "deck-head-title web-card-list-title", "{title}" }
-                // Each card is a one-card stack in the deck page's Stacks grid: the whole card
-                // shows, and a tap opens its printing.
-                div { class: "deck-stacks web-card-results",
-                    for listed in cards {
-                        div { key: "{listed.scryfall_data.id}",
-                            CardStack {
-                                cards: vec![
-                                    StackCard {
-                                        card: listed,
-                                        qty: 1,
-                                        face: 0,
-                                        board: None,
-                                        starred: false,
-                                    },
-                                ],
-                                on_select: move |id: Uuid| dispatch(Action::Pick(id)),
-                            }
-                        }
-                    }
-                }
+                CardResultsGrid { title: title.clone(), cards, on_select: move |id: Uuid| dispatch(Action::Pick(id)) }
             }
         },
         (Status::NotFound, _) => rsx! {

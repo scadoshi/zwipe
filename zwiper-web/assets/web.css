@@ -595,6 +595,11 @@ body {
     .web-nav-wide {
         display: none !important;
     }
+
+    /* Folded, the card search is Home's panel, not the nav's box. */
+    .web-app-nav .card-search-nav {
+        display: none;
+    }
 }
 
 /* Where the full bar fits, it shows the app's list as pills, in the app's
@@ -1501,24 +1506,18 @@ body {
     display: contents;
 }
 
-/* The card search sizes to its field and sits centered, so its × keeps its
-   slot while hidden: typing only fades it in, and the row never re-centers.
-   The row stays a gutter in from each edge. */
-.web-home-search {
-    max-width: calc(100% - 2 * var(--space-4));
-}
-
-.web-home-search .input-clear-btn {
-    width: 2.2rem;
-    margin-left: var(--space-2);
-}
-
-/* On a phone the row spans the column inside its gutters, so results wider
-   than the field don't widen it. */
-@media (max-width: 899px) {
-    .web-home-search {
-        width: 100%;
+/* From 1180px the nav's links hold their one-row width and the card search
+   box alone gives up room, down to its icon, so the nav keeps one row. */
+@media (min-width: 1180px) {
+    .web-app-nav nav:has(> .card-search-nav) > .nav-panel {
+        flex-shrink: 0;
     }
+}
+
+/* Home's Card search panel, where the nav folds: the bar spans the panel
+   inside its gutters. */
+.home-card-search .card-search {
+    width: 100%;
 }
 
 @media (max-width: 899px) {
@@ -2979,11 +2978,6 @@ body {
     gap: var(--space-3);
 }
 
-.web-card-stats-table {
-    row-gap: var(--space-2);
-    padding: var(--space-3);
-}
-
 /* Several cards that share a name, or no card: one centered column. */
 .web-card-list {
     width: 100%;
@@ -2996,18 +2990,7 @@ body {
     gap: var(--space-2);
 }
 
-/* The name the cards share, over their grid: the deck page's heading,
-   centered over the grid. */
-.web-card-list-title {
-    text-align: center;
-}
-
-.web-card-results {
-    width: 100%;
-    grid-template-columns: repeat(auto-fit, minmax(12.5rem, 15rem));
-    justify-content: center;
-}
-
+/* The line in the column's place: no card by that name, or the search's. */
 .web-card-message {
     text-align: center;
     padding: var(--space-5) 0;

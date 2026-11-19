@@ -5,7 +5,8 @@
 //! its own printing link), and [`NOT_FOUND`] when none does; a token or art card that shares a
 //! playable card's name stays out of the count, and a card whose full name it is wins over cards
 //! it only names the front face of. A printing link loads by its id alone, and a
-//! stale slug in it is swapped for the card's own. Send to signed out goes to Login and comes
+//! stale slug in it is swapped for the card's own. Create account, the dock's signed-out button,
+//! goes to Register and back to the card. Send to signed out goes to Login and comes
 //! back to the card with the sheet asked for; the screen opens it once and drops the ask from
 //! the route, so Back or a reload never opens it again; on a list, the ask goes with the card
 //! picked from it. Share copies the card's link: the name's
@@ -133,6 +134,8 @@ pub enum Destination {
     },
     /// Login, for Send to signed out.
     Login,
+    /// Create account, from the dock signed out.
+    Register,
 }
 
 /// What the screen shows, for the client to pick what it draws.
@@ -198,6 +201,8 @@ pub enum Action {
     },
     /// Share, for the card on screen.
     Share,
+    /// The dock's Create account, signed out: opens Register, which comes back to the card.
+    CreateAccount,
     /// The card's stats arrived for the fetch holding `ticket`.
     Stats {
         /// The ticket from the [`Effect::FetchStats`] this answers.
@@ -368,6 +373,12 @@ impl State {
                     Effect::Navigate(Destination::Login),
                 ]
             }
+            Action::CreateAccount => self
+                .route(/* send */ false)
+                .map(Effect::RememberReturn)
+                .into_iter()
+                .chain([Effect::Navigate(Destination::Register)])
+                .collect(),
             Action::Share => match (&self.open, self.card()) {
                 (Some(open), Some(card)) => vec![Effect::Copy {
                     text: share_link(open, card),

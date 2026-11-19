@@ -39,6 +39,7 @@ const ROUTES = [
   "/playstyle",
   "/privacy",
   "/register",
+  "/search",
   "/settings",
 ];
 

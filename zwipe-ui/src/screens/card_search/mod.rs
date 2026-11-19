@@ -1,5 +1,10 @@
-//! Home's card search bar: typing looks cards up by name, signed in or out, and picking one
-//! opens its card page.
+//! The card search bar, in the wide nav and in Home's Card search panel: typing looks cards up
+//! by name, signed in or out, and picking one opens its card page.
+//!
+//! Enter opens the one match's card page. With several matches it opens the results page for
+//! the box, unless the arrow keys have lit one, which it opens instead; before the answer comes
+//! it opens the results page too, which looks the text up itself. Opening anything empties the
+//! box.
 //!
 //! Typing waits [`timing::CARD_SEARCH_DEBOUNCE`] for the user to rest, then sends one lookup.
 //! Every keystroke takes a new ticket, so only the last keystroke's wait sends and only the
@@ -14,6 +19,7 @@
 #[cfg(test)]
 mod tests;
 
+use std::fmt::Write as _;
 use std::time::Duration;
 
 use uuid::Uuid;
@@ -29,6 +35,8 @@ use crate::timing;
 
 /// The bar's label.
 pub const LABEL: &str = "Search";
+/// Home's panel around the bar on a phone.
+pub const PANEL_TITLE: &str = "Card search";
 /// The empty box's hint.
 pub const PLACEHOLDER: &str = "Card name";
 /// The line while a lookup is out.
@@ -80,6 +88,39 @@ pub enum Destination {
         /// The path, [`slug::printing_path`]'s.
         path: String,
     },
+    /// The results page for the box's text, `/search?q=<query>`, trimmed.
+    Results {
+        /// What was typed.
+        query: String,
+    },
+}
+
+impl Destination {
+    /// The destination's path on the web app, for a host that links there rather than routing:
+    /// `/card/<slug>`, the printing's path, or `/search?q=<query>` with the query
+    /// percent-encoded.
+    #[must_use]
+    pub fn path(&self) -> String {
+        match self {
+            Self::Card(slug) => format!("/card/{slug}"),
+            Self::Printing { path } => path.clone(),
+            Self::Results { query } => format!("/search?q={}", percent_encode(query)),
+        }
+    }
+}
+
+/// `text` for a URL's query value: every byte outside the unreserved set (letters, digits and
+/// `-._~`) written as `%XX`, a space as `%20`.
+fn percent_encode(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for byte in text.bytes() {
+        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~') {
+            out.push(char::from(byte));
+        } else {
+            let _ = write!(out, "%{byte:02X}");
+        }
+    }
+    out
 }
 
 /// Every tap, key and reply the bar takes.
@@ -113,7 +154,8 @@ pub enum Action {
     Pick(Uuid),
     /// An arrow key: moves the highlight one result, stopping at either end.
     Step(Step),
-    /// Enter in the box: opens the highlighted result. Nothing highlighted does nothing.
+    /// Enter in the box: opens the highlighted result, else the results page for the box's
+    /// text. A box with nothing to look up, or whose answer matched nothing, opens nothing.
     Enter,
 }
 
@@ -155,7 +197,8 @@ pub struct State {
     tickets: Generation,
     /// The rate limit's wait while it runs: typing waits it out instead of sending.
     cooling: Option<Ticket>,
-    /// The highlighted result's place, the top one when an answer arrives.
+    /// The highlighted result's place: the one match when an answer has exactly one, else
+    /// none until an arrow key lights one.
     highlight: Option<usize>,
 }
 
@@ -188,8 +231,9 @@ impl State {
         }
     }
 
-    /// The highlighted result's place among [`State::results`], which Enter opens: the top one
-    /// when an answer arrives, moved by the arrow keys, and none while no results show.
+    /// The highlighted result's place among [`State::results`], which Enter opens: the match
+    /// when an answer has only one, else the one the arrow keys light, and none while no
+    /// results show.
     #[must_use]
     pub fn highlight(&self) -> Option<usize> {
         self.highlight.filter(|_| self.status == Status::Results)
@@ -208,7 +252,7 @@ impl State {
             Action::Loaded { ticket, cards } => {
                 if self.tickets.is_current(ticket) && self.status == Status::Loading {
                     self.results = cards.into_iter().take(limit()).collect();
-                    self.highlight = (!self.results.is_empty()).then_some(0);
+                    self.highlight = (self.results.len() == 1).then_some(0);
                     self.status = if self.results.is_empty() {
                         Status::NoMatch
                     } else {
@@ -241,25 +285,48 @@ impl State {
                 self.go_idle();
                 Vec::new()
             }
-            Action::Pick(id) => self
-                .results()
-                .iter()
-                .find(|card| card.scryfall_data.id == id)
-                .map(|card| Effect::Navigate(destination(card)))
-                .into_iter()
-                .collect(),
+            Action::Pick(id) => {
+                let to = self
+                    .results()
+                    .iter()
+                    .find(|card| card.scryfall_data.id == id)
+                    .map(destination);
+                self.open(to)
+            }
             Action::Step(step) => {
                 self.highlight =
                     maybeboard::step_highlight(self.highlight(), self.results().len(), step);
                 Vec::new()
             }
-            Action::Enter => self
-                .highlight()
-                .and_then(|at| self.results().get(at))
-                .map(|card| Effect::Navigate(destination(card)))
-                .into_iter()
-                .collect(),
+            Action::Enter => {
+                let to = self.enter();
+                self.open(to)
+            }
         }
+    }
+
+    /// Opens `to` when there is one, emptying the box, which the nav keeps from page to page.
+    fn open(&mut self, to: Option<Destination>) -> Vec<Effect> {
+        let Some(to) = to else {
+            return Vec::new();
+        };
+        self.query.clear();
+        self.go_idle();
+        vec![Effect::Navigate(to)]
+    }
+
+    /// Where Enter goes: the lit result, else the results page while the box holds a name
+    /// that hasn't been answered with nothing.
+    fn enter(&self) -> Option<Destination> {
+        if let Some(card) = self.highlight().and_then(|at| self.results().get(at)) {
+            return Some(destination(card));
+        }
+        if self.status == Status::NoMatch {
+            return None;
+        }
+        name_lookup(&self.query).map(|_| Destination::Results {
+            query: self.query.trim().to_owned(),
+        })
     }
 
     fn type_text(&mut self, text: String) -> Vec<Effect> {
@@ -277,6 +344,10 @@ impl State {
             self.results.clear();
             self.status = Status::NoMatch;
             return Vec::new();
+        }
+        // A no-match line answered the old text, not this.
+        if self.status == Status::NoMatch {
+            self.status = Status::Idle;
         }
         vec![Effect::Debounce {
             ticket,
@@ -331,20 +402,20 @@ impl State {
 }
 
 /// [`LOOKUP_LIMIT`] as a count of cards.
-fn limit() -> usize {
+pub(crate) fn limit() -> usize {
     usize::try_from(LOOKUP_LIMIT).unwrap_or(usize::MAX)
 }
 
 /// The lookup for `text` as a name, or `None` when the server would refuse it (empty once
 /// trimmed, too long, holding a control character, or with no letter or digit).
-fn name_lookup(text: &str) -> Option<HttpCardLookup> {
+pub(crate) fn name_lookup(text: &str) -> Option<HttpCardLookup> {
     let name = LookupName::try_from(text.to_owned()).ok()?;
     HttpCardLookup::try_new(name, Vec::new(), Vec::new(), Vec::new()).ok()
 }
 
 /// Where a picked card opens: its name's card page, or its printing's page for a name with no
 /// slug.
-fn destination(card: &Card) -> Destination {
+pub(crate) fn destination(card: &Card) -> Destination {
     let name = &card.scryfall_data.name;
     match slug::card_slug(name) {
         Some(slug) => Destination::Card(slug),

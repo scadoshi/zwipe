@@ -672,3 +672,37 @@ fn retrying_stats_with_no_card_or_no_failure_does_nothing() {
     assert!(stats_fetch(&effects).is_some());
     assert_eq!(state.update(Action::RetryStats), vec![], "still loading");
 }
+
+#[test]
+fn create_account_goes_to_register_and_back_to_the_card() {
+    let (mut state, ticket, _) = by_name("bind", false, false);
+    let _ = state.update(Action::Named {
+        ticket,
+        cards: vec![card("Bind")],
+    });
+    assert_eq!(
+        state.update(Action::CreateAccount),
+        vec![
+            Effect::RememberReturn(Destination::Named {
+                slug: parsed("bind"),
+                send: false,
+            }),
+            Effect::Navigate(Destination::Register),
+        ]
+    );
+}
+
+#[test]
+fn create_account_before_the_card_shows_still_goes_to_register() {
+    let (mut state, _, _) = by_name("bind", false, false);
+    assert_eq!(
+        state.update(Action::CreateAccount),
+        vec![
+            Effect::RememberReturn(Destination::Named {
+                slug: parsed("bind"),
+                send: false,
+            }),
+            Effect::Navigate(Destination::Register),
+        ]
+    );
+}

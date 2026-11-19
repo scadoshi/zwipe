@@ -11,6 +11,11 @@ use crate::icons::DockIcon;
 /// (ISC, `components/LICENSE-LUCIDE`).
 pub const IMAGE_ICON: &str = "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM9 7a2 2 0 1 0 0 4 2 2 0 1 0 0-4zM21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21";
 
+/// The user-plus icon: a head and shoulders with a plus beside them, Lucide's `user-plus`
+/// drawn as one path (ISC, `components/LICENSE-LUCIDE`), for Create account.
+pub const USER_PLUS: &str =
+    "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 1 0 0-8M19 8v6M22 11h-6";
+
 /// The meld icon: two lines merging into one that points on, Lucide's `merge` drawn as one path
 /// (ISC, `components/LICENSE-LUCIDE`).
 pub const MELD: &str = "M8 6l4-4 4 4M12 2v10.3a4 4 0 0 1-1.17 2.83L4 22M20 22l-5-5";
