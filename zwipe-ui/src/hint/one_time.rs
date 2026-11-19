@@ -616,7 +616,7 @@ fn commanders_hint() -> HintContent {
         "Commanders",
         vec![
             line(vec![text(
-                "Your saved commanders and the ones that fit your decks, side by side",
+                "Your saved commanders and the ones that fit your decks",
             )]),
             bullet(vec![
                 key("Maybeboard"),
@@ -636,7 +636,11 @@ fn commanders_hint() -> HintContent {
             ]),
             bullet(vec![
                 key("Swipe"),
-                text(" deals either list: "),
+                text(
+                    " on Suggested deals its ranking, and on Maybeboard commanders you haven't saved",
+                ),
+            ]),
+            bullet(vec![
                 emph("right", Role::Success),
                 text(" starts a deck, "),
                 emph("up", Role::Warning),
@@ -967,6 +971,25 @@ mod tests {
         );
         let commanders = content_on(OneTimeHint::Commanders, true, Surface::Web).unwrap();
         assert_eq!(commanders.title, "Commanders");
+        let lines = plain(commanders);
+        assert_eq!(
+            lines.first().map(String::as_str),
+            Some("Your saved commanders and the ones that fit your decks")
+        );
+        let swipe = lines
+            .iter()
+            .position(|l| l.starts_with("Swipe "))
+            .and_then(|i| lines.get(i..i.saturating_add(2)));
+        assert_eq!(
+            swipe,
+            Some(
+                &[
+                    "Swipe on Suggested deals its ranking, and on Maybeboard commanders you haven't saved".to_owned(),
+                    "right starts a deck, up saves, left skips".to_owned(),
+                ][..]
+            ),
+            "Swipe's bullet names what each list deals, then the directions"
+        );
         assert_eq!(
             content_on(OneTimeHint::CommanderMaybeboard, true, Surface::Web),
             content_for_user(OneTimeHint::CommanderMaybeboard, true),
