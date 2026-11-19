@@ -3,10 +3,11 @@
 //! other columns hold one figure each, so a widget's column labels fit its rows.
 //!
 //! The figures come from the card's stats route ([`HttpCardStats`]), which sends counts; the
-//! rates are taken here, as whole percents rounded down. Add, Skip and Maybe are shares of the
-//! times the card was dealt, which Total shows; Remove is a share of the adds; a pick is a share
-//! of the times Swipe select dealt the card. A share of nothing has no figure, and nothing is
-//! ever made up: before the stats arrive every figure is [`Cell::Loading`].
+//! rates are taken here, as whole percents rounded to the nearest. Add, Skip and Maybe are
+//! shares of the times the card was dealt, which Dealt shows above them; Remove is a share of
+//! the adds; Picks is a share of the times Swipe select dealt the card. A share of nothing has
+//! no figure, and nothing is ever made up: before the stats arrive every figure is
+//! [`Cell::Loading`].
 
 use orangui_core::number;
 use zwipe_core::http::contracts::card::{HttpCardStats, HttpCardSwipes, HttpCommanderPicks};
@@ -18,7 +19,7 @@ pub enum Cell {
     Loading,
     /// A count or a rate, ready to draw.
     Figure(String),
-    /// No figure in this column, such as a total's rate or a share of nothing.
+    /// No figure in this column, such as the deals' own rate or a share of nothing.
     Blank,
 }
 
@@ -67,13 +68,13 @@ pub fn widgets(stats: Option<&HttpCardStats>, leads: bool) -> Vec<Widget> {
     };
     let swipes_widget = Widget {
         title: SWIPES,
-        heads: &["Swipe", "Swipes", "Rate"],
+        heads: &["Stat", "Count", "Rate"],
         rows: vec![
+            row("Dealt", vec![loaded(swipes.map(|s| s.shown)), Cell::Blank]),
             swipe("Add", |s| (s.added, s.shown)),
             swipe("Skip", |s| (s.skipped, s.shown)),
-            swipe("Remove", |s| (s.removed, s.added)),
             swipe("Maybe", |s| (s.maybed, s.shown)),
-            row("Total", vec![loaded(swipes.map(|s| s.shown)), Cell::Blank]),
+            swipe("Remove", |s| (s.removed, s.added)),
         ],
     };
     let picks = stats.map(|s| s.commander_picks.unwrap_or_default());
@@ -86,7 +87,7 @@ pub fn widgets(stats: Option<&HttpCardStats>, leads: bool) -> Vec<Widget> {
                 vec![count(stats, |s| s.decks_led), Cell::Blank],
             ),
             row(
-                "Pick rate",
+                "Picks",
                 share(picks.map(|p: HttpCommanderPicks| (p.selected, p.shown))),
             ),
         ],
@@ -126,9 +127,13 @@ fn share(parts: Option<(u64, u64)>) -> Vec<Cell> {
     vec![Cell::Figure(number::with_separators(n)), rate]
 }
 
-/// `n` as a whole percent of `of`, rounded down and at most 100; `None` when `of` is zero.
+/// `n` as a whole percent of `of`, rounded to the nearest (a half rounds up) and at most 100;
+/// `None` when `of` is zero.
 fn percent(n: u64, of: u64) -> Option<u64> {
-    n.min(of).saturating_mul(100).checked_div(of)
+    n.min(of)
+        .saturating_mul(100)
+        .saturating_add(of / 2)
+        .checked_div(of)
 }
 
 #[cfg(test)]
@@ -181,6 +186,33 @@ mod tests {
     }
 
     #[test]
+    fn the_deals_lead_the_swipes_and_every_row_names_the_count_in_its_count_column() {
+        let w = widgets(Some(&example()), true);
+        let shape = |title: &str| -> (Vec<&str>, Vec<&str>) {
+            let Some(widget) = w.iter().find(|w| w.title == title) else {
+                panic!("no widget {title}");
+            };
+            (
+                widget.heads.to_vec(),
+                widget.rows.iter().map(|r| r.label).collect(),
+            )
+        };
+        assert_eq!(
+            shape(SWIPES),
+            (
+                vec!["Stat", "Count", "Rate"],
+                vec!["Dealt", "Add", "Skip", "Maybe", "Remove"]
+            ),
+            "the deals come first, so the rows under them read as shares, not a sum"
+        );
+        assert_eq!(
+            shape(AS_COMMANDER),
+            (vec!["Stat", "Count", "Rate"], vec!["Decks led", "Picks"]),
+            "a row's label names its count; the rate sits in its own column"
+        );
+    }
+
+    #[test]
     fn each_row_has_a_cell_for_every_column_after_its_label() {
         for stats in [None, Some(example()), Some(HttpCardStats::default())] {
             for widget in widgets(stats.as_ref(), true) {
@@ -222,14 +254,14 @@ mod tests {
         assert_eq!(cells(&w, "Skip"), [figure("15"), figure("30%")]);
         assert_eq!(cells(&w, "Remove"), [figure("3"), figure("10%")]);
         assert_eq!(cells(&w, "Maybe"), [figure("5"), figure("10%")]);
-        assert_eq!(cells(&w, "Total"), [figure("50"), Cell::Blank]);
+        assert_eq!(cells(&w, "Dealt"), [figure("50"), Cell::Blank]);
         assert_eq!(cells(&w, "Decks led"), [figure("0"), Cell::Blank]);
     }
 
     #[test]
     fn a_card_nobody_has_swiped_or_picked_shows_zero_and_no_rate() {
         let w = widgets(Some(&example()), true);
-        assert_eq!(cells(&w, "Pick rate"), [figure("0"), Cell::Blank]);
+        assert_eq!(cells(&w, "Picks"), [figure("0"), Cell::Blank]);
         let untouched = HttpCardStats {
             in_decks: Some(0),
             mvp_decks: Some(0),
@@ -238,12 +270,12 @@ mod tests {
         };
         let w = widgets(Some(&untouched), true);
         assert_eq!(cells(&w, "Add"), [figure("0"), Cell::Blank]);
-        assert_eq!(cells(&w, "Total"), [figure("0"), Cell::Blank]);
+        assert_eq!(cells(&w, "Dealt"), [figure("0"), Cell::Blank]);
         assert_eq!(cells(&w, "In decks"), [figure("0")]);
     }
 
     #[test]
-    fn rates_round_down_cap_at_a_hundred_and_counts_take_separators() {
+    fn rates_round_to_the_nearest_whole_cap_at_a_hundred_and_counts_take_separators() {
         let stats = HttpCardStats {
             swipes: Some(HttpCardSwipes {
                 shown: 1_722,
@@ -254,19 +286,29 @@ mod tests {
             }),
             commander_picks: Some(HttpCommanderPicks {
                 shown: 3,
-                selected: 1,
+                selected: 2,
             }),
             ..example()
         };
         let w = widgets(Some(&stats), true);
         assert_eq!(cells(&w, "Add"), [figure("1,240"), figure("72%")]);
-        assert_eq!(cells(&w, "Total"), [figure("1,722"), Cell::Blank]);
+        assert_eq!(cells(&w, "Skip"), [figure("310"), figure("18%")]);
+        assert_eq!(
+            cells(&w, "Maybe"),
+            [figure("103"), figure("6%")],
+            "5.98 is 6"
+        );
+        assert_eq!(cells(&w, "Dealt"), [figure("1,722"), Cell::Blank]);
         assert_eq!(
             cells(&w, "Remove"),
             [figure("1,300"), figure("100%")],
             "more removals than adds caps the rate"
         );
-        assert_eq!(cells(&w, "Pick rate"), [figure("1"), figure("33%")]);
+        assert_eq!(
+            cells(&w, "Picks"),
+            [figure("2"), figure("67%")],
+            "2 of 3 is 67"
+        );
     }
 
     #[test]
