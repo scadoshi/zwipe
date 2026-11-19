@@ -19,7 +19,7 @@ use zwipe::domain::card::ports::CardService;
 use zwipe::domain::upkeep::ports::UpkeepService;
 use zwipe::domain::{card, upkeep};
 use zwipe::inbound::external::scryfall::bulk::BulkEndpoint;
-use zwipe::outbound::sqlx::postgres::{Postgres, Writes};
+use zwipe::outbound::sqlx::postgres::{Jit, Postgres, Writes};
 use zwipe_core::domain::logo;
 
 /// Daily log files kept; the appender deletes older ones.
@@ -79,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
     } else {
         Writes::Keep
     };
-    let db = Postgres::new(&config.database_url)
+    let db = Postgres::new(&config.database_url, Jit::Keep)
         .await?
         .with_writes(writes);
     let card_service = card::services::Service::new(db.clone());

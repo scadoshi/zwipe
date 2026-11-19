@@ -10,7 +10,7 @@ use zwipe::config::Config;
 use zwipe::domain::{auth, card, deck, health, metrics, user};
 use zwipe::inbound::http::{HttpServer, HttpServerConfig};
 use zwipe::outbound::resend::Resend;
-use zwipe::outbound::sqlx::postgres::Postgres;
+use zwipe::outbound::sqlx::postgres::{Jit, Postgres};
 use zwipe_core::domain::logo;
 
 /// Daily log files kept; the appender deletes older ones.
@@ -59,7 +59,7 @@ async fn run() -> anyhow::Result<()> {
         )
         .init();
     tracing::info!("zerver running v{}", env!("CARGO_PKG_VERSION"));
-    let db = Postgres::new(&config.database_url)
+    let db = Postgres::new(&config.database_url, Jit::Off)
         .await?
         .with_refresh_reuse_window(config.refresh_reuse_window);
     let resend = Resend::new(config.resend_api_key, config.resend_from_email);
