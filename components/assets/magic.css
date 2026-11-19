@@ -1045,40 +1045,17 @@ i.ms.ms-cost.ms-gp {
         margin-bottom: 0.375rem;
     }
 
-    /* The stepper ends the icons' line, and the word buttons stand in two
-       equal columns, the first across both when they are odd in number, so
-       none stands alone. */
+    /* The stepper ends the icons' line. */
     .card-action-split {
         justify-content: space-between;
         column-gap: var(--space-3);
     }
-
-    .card-action-words {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: var(--space-3);
-    }
-
-    .card-action-words > :first-child:nth-last-child(odd) {
-        grid-column: 1 / -1;
-    }
 }
 
-/* The card drawer is a phone's width at every window width, so its bar lays
-   out as a phone's: the stepper ends the icons' line, and the word buttons
-   stand in two equal columns, the first across both when they are odd in
-   number. */
+/* The card drawer is a phone's width at every window width, so the stepper
+   ends the icons' line there too. */
 .card-details-drawer .card-action-split {
     justify-content: space-between;
-}
-
-.card-details-drawer .card-action-words {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-}
-
-.card-details-drawer .card-action-words > :first-child:nth-last-child(odd) {
-    grid-column: 1 / -1;
 }
 
 /* The quantity stepper: `-`, the count and `+` wrap to the next line

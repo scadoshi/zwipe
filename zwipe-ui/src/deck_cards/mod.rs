@@ -1007,7 +1007,7 @@ mod tests {
         live[0].deck_card.board = Board::Sideboard;
         assert!(
             says(&live, "sideboards"),
-            "To sideboard raises the no-sideboard warning"
+            "Sideboard raises the no-sideboard warning"
         );
     }
 
@@ -1034,7 +1034,7 @@ mod tests {
         live[0].deck_card.board = Board::Sideboard;
         assert!(warnings(&live).iter().any(|w| w.contains("sideboards")));
         live[0].deck_card.board = Board::Deck;
-        assert_eq!(warnings(&live), as_fetched, "To mainboard clears it");
+        assert_eq!(warnings(&live), as_fetched, "Mainboard clears it");
 
         live[0].deck_card.board = Board::Maybeboard;
         let moved = warnings(&live);
@@ -1042,10 +1042,7 @@ mod tests {
             !moved.iter().any(|w| w.contains("sideboards")),
             "the maybeboard is not a sideboard: {moved:?}"
         );
-        assert_ne!(
-            moved, as_fetched,
-            "To maybeboard drops a card from the count"
-        );
+        assert_ne!(moved, as_fetched, "Maybeboard drops a card from the count");
 
         let removed: Vec<DeckEntry> = fetched.iter().skip(1).cloned().collect();
         assert_eq!(

@@ -70,6 +70,47 @@ fn open_row() -> Element {
     }
 }
 
+/// An open maybeboard row, whose moves go to the main board and the sideboard.
+fn open_maybeboard_row() -> Element {
+    use_context_provider(|| SendTo {
+        open: Signal::new(false),
+        card: Signal::new(None),
+    });
+    let card = card();
+    let expanded: Signal<Option<Uuid>> = use_signal(|| Some(card.scryfall_data.id));
+    rsx! {
+        CardRow {
+            card,
+            qty: 1,
+            expanded_card: expanded,
+            on_image: Some(EventHandler::new(|(): ()| {})),
+            on_face_change: None,
+            on_qty_change: Some(EventHandler::new(|_: i32| {})),
+            on_move_to: Some(EventHandler::new(|_: Board| {})),
+            current_board: Some(Board::Maybeboard),
+            on_printing: Some(EventHandler::new(|_: Card| {})),
+            mvp: Some(false),
+            on_toggle_mvp: Some(EventHandler::new(|(): ()| {})),
+            flagged: Some(false),
+            on_toggle_flag: Some(EventHandler::new(|(): ()| {})),
+            on_hover_enter: None,
+            on_hover_leave: None,
+            show_art: Some(true),
+            send_to: true,
+        }
+    }
+}
+
+#[test]
+fn the_moves_name_the_board_they_go_to() {
+    let words = render(open_maybeboard_row);
+    let words = section(&words, WORDS);
+    for label in [">Mainboard<", ">Sideboard<"] {
+        assert!(words.contains(label), "{label} in {words}");
+    }
+    assert!(!words.contains(">Maybeboard<"), "{words}");
+}
+
 /// The card's details as the deck page's drawer shows them, with every action.
 fn drawer_panel() -> Element {
     use_context_provider(|| SendTo {
@@ -149,7 +190,7 @@ fn printings_and_the_moves_sit_in_the_block_under_the_icons() {
 fn words_under_icons(html: &str) {
     let words = section(html, WORDS);
     assert!(has(words, data_action::PRINTINGS), "{words}");
-    for label in [">To maybeboard<", ">To sideboard<"] {
+    for label in [">Maybeboard<", ">Sideboard<"] {
         assert!(words.contains(label), "{label} in {words}");
     }
     let (icons, _) = html.split_once(WORDS).unwrap();
@@ -170,19 +211,28 @@ fn rule<'css>(css: &'css str, selector: &str) -> &'css str {
 }
 
 #[test]
-fn on_a_phone_the_stepper_ends_the_line_and_an_odd_block_s_first_word_spans_both_columns() {
+fn on_a_phone_the_stepper_ends_the_line_and_the_words_keep_their_width() {
     let (_, phone) = components::MAGIC_CSS
         .split_once("@media (max-width: 899px) {\n    /* A card's actions on a phone")
         .unwrap();
     let phone = phone.split_once("\n}\n").unwrap().0;
     assert!(rule(phone, ".card-action-split").contains("justify-content: space-between;"));
-    let words = rule(phone, ".card-action-words");
-    assert!(words.contains("grid-template-columns: 1fr 1fr;"), "{words}");
-    let first = rule(
-        phone,
-        ".card-action-words > :first-child:nth-last-child(odd)",
+    assert!(
+        !phone.contains(".card-action-words"),
+        "the words lay out as on a wide screen: {phone}"
     );
-    assert!(first.contains("grid-column: 1 / -1;"), "{first}");
+}
+
+#[test]
+fn the_words_stand_at_their_own_width_from_the_left_and_wrap() {
+    let row = rule(components::MAGIC_CSS, "\n.card-action-row");
+    assert!(row.contains("display: flex;"), "{row}");
+    assert!(row.contains("flex-wrap: wrap;"), "{row}");
+    assert!(!row.contains("justify-content"), "{row}");
+    assert!(
+        !components::MAGIC_CSS.contains("grid-template-columns: 1fr 1fr;"),
+        "no word block stands in equal columns"
+    );
 }
 
 #[test]
@@ -213,13 +263,10 @@ fn the_narrow_drawer_lays_its_bar_out_as_a_phone_does_at_every_width() {
     let css = components::MAGIC_CSS;
     let split = rule(css, "\n.card-details-drawer .card-action-split");
     assert!(split.contains("justify-content: space-between;"), "{split}");
-    let words = rule(css, "\n.card-details-drawer .card-action-words");
-    assert!(words.contains("grid-template-columns: 1fr 1fr;"), "{words}");
-    let first = rule(
-        css,
-        "\n.card-details-drawer .card-action-words > :first-child:nth-last-child(odd)",
+    assert!(
+        !css.contains(".card-details-drawer .card-action-words"),
+        "the drawer's words lay out as the row's do"
     );
-    assert!(first.contains("grid-column: 1 / -1;"), "{first}");
 }
 
 /// A suggested commander's row: no stepper and no moves, its host's words after Printings.

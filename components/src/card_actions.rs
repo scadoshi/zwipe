@@ -140,8 +140,8 @@ pub(crate) fn BoardMoveButtons(
 /// The button that moves a card to `board`.
 const fn move_label(board: Board) -> &'static str {
     match board {
-        Board::Deck => "To mainboard",
-        Board::Maybeboard => "To maybeboard",
-        Board::Sideboard => "To sideboard",
+        Board::Deck => "Mainboard",
+        Board::Maybeboard => "Maybeboard",
+        Board::Sideboard => "Sideboard",
     }
 }

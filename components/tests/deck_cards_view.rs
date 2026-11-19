@@ -23,7 +23,7 @@ const CARD_JSON: &str = include_str!("../../zwipe-ui/src/test_support/card.json"
 
 /// The words of the edit controls: the quantity stepper's count sits between `-` and `+`, so the
 /// star and the board moves stand for them all.
-const EDIT_WORDS: [&str; 3] = ["Star", "To maybeboard", "To sideboard"];
+const EDIT_WORDS: [&str; 3] = ["Star", "Maybeboard", "Sideboard"];
 
 fn card() -> Card {
     serde_json::from_str(CARD_JSON).unwrap()

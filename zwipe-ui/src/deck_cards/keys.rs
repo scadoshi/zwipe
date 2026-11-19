@@ -309,7 +309,7 @@ mod tests {
         assert_eq!(
             hover_action(HoverKey::ToMaybeboard, &maybe, Board::Maybeboard, 0),
             None,
-            "a maybeboard card has no To maybeboard button"
+            "a maybeboard card has no Maybeboard button"
         );
         assert_eq!(
             hover_action(HoverKey::ToSideboard, &maybe, Board::Maybeboard, 0),
@@ -319,7 +319,7 @@ mod tests {
         assert_eq!(
             hover_action(HoverKey::ToSideboard, &side, Board::Sideboard, 0),
             None,
-            "a sideboard card has no To sideboard button"
+            "a sideboard card has no Sideboard button"
         );
         for kind in [RowKind::Zone(Slot::Commander), RowKind::Token] {
             let other = row(kind);
