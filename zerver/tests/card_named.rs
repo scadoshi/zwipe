@@ -214,7 +214,7 @@ async fn reads_go_on_while_the_slug_indexes_build(pool: sqlx::PgPool) {
     // The index migration, held open as a slow build would hold it.
     let mut building = pool.begin().await.unwrap();
     sqlx::raw_sql(include_str!(
-        "../migrations/20261119100050_card_slugs_index.sql"
+        "../migrations/20261119160050_card_slugs_index.sql"
     ))
     .execute(&mut *building)
     .await
