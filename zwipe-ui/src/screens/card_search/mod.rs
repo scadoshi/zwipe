@@ -38,7 +38,7 @@ pub const LABEL: &str = "Search";
 /// Home's panel around the bar on a phone.
 pub const PANEL_TITLE: &str = "Card search";
 /// The empty box's hint.
-pub const PLACEHOLDER: &str = "Card name";
+pub const PLACEHOLDER: &str = "Card search";
 /// The line while a lookup is out.
 pub const SEARCHING: &str = "Searching…";
 /// The line when no card matches.
