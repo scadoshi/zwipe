@@ -925,6 +925,29 @@ i.ms.ms-cost.ms-gp {
     margin-top: var(--space-2);
 }
 
+/* The bar's first line: the icons in one group, then the stepper. */
+.card-action-split {
+    column-gap: var(--space-5);
+}
+
+.card-action-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.card-action-group:empty {
+    display: none;
+}
+
+/* On a touch screen the icons stand as far apart as the row's buttons, so
+   their tap reaches never meet. */
+@media (pointer: coarse) {
+    .card-action-group {
+        gap: var(--space-3);
+    }
+}
+
 .card-action-btn {
     padding: var(--space-1) var(--space-2);
     font-family: inherit;
@@ -1016,15 +1039,51 @@ i.ms.ms-cost.ms-gp {
         /* The action reach's 0.375rem, so its reach stays inside a clipping row; off the scale. */
         margin-bottom: 0.375rem;
     }
+
+    /* The stepper ends the icons' line, and the word buttons stand in two
+       equal columns, the first across both when they are odd in number, so
+       none stands alone. */
+    .card-action-split {
+        justify-content: space-between;
+        column-gap: var(--space-3);
+    }
+
+    .card-action-words {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-3);
+    }
+
+    .card-action-words > :first-child:nth-last-child(odd) {
+        grid-column: 1 / -1;
+    }
+}
+
+/* The card drawer is a phone's width at every window width, so its bar lays
+   out as a phone's: the stepper ends the icons' line, and the word buttons
+   stand in two equal columns, the first across both when they are odd in
+   number. */
+.card-details-drawer .card-action-split {
+    justify-content: space-between;
+}
+
+.card-details-drawer .card-action-words {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.card-details-drawer .card-action-words > :first-child:nth-last-child(odd) {
+    grid-column: 1 / -1;
 }
 
 /* The quantity stepper: `-`, the count and `+` wrap to the next line
-   together, spaced as the row spaces its buttons. */
+   together and sit close enough to read as one control. The count's width
+   keeps the - and + 27px apart, so their 44px tap boxes never meet. */
 .card-action-stepper {
     display: inline-flex;
     flex: none;
     align-items: center;
-    gap: inherit;
+    gap: var(--space-1);
 }
 
 .card-action-count {
