@@ -38,16 +38,14 @@ impl Endpoint for GetDeckProfiles {
 /// Create a deck. Answers 201.
 #[derive(Debug)]
 pub struct CreateDeck(pub HttpCreateDeckProfile);
+// Not IDEMPOTENT though the body may name the deck's id: when the reply is lost, the client looks
+// the deck up by that id instead of sending the call again.
 impl Endpoint for CreateDeck {
     const METHOD: Method = Method::Post;
     type Request = HttpCreateDeckProfile;
     type Response = DeckProfile;
     fn path(&self) -> Cow<'static, str> {
         Cow::Borrowed(CREATE_DECK_ROUTE)
-    }
-    /// A repeat answers the deck the first send made only when the body names its id.
-    fn idempotent(&self) -> bool {
-        self.0.id.is_some()
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.0)
@@ -109,16 +107,14 @@ impl Endpoint for DeleteDeck {
 /// Copy a deck into a new one. Answers 201.
 #[derive(Debug)]
 pub struct CloneDeck(pub Uuid, pub HttpCloneDeck);
+// Not IDEMPOTENT though the body may name the deck's id: when the reply is lost, the client looks
+// the deck up by that id instead of sending the call again.
 impl Endpoint for CloneDeck {
     const METHOD: Method = Method::Post;
     type Request = HttpCloneDeck;
     type Response = HttpClonedDeck;
     fn path(&self) -> Cow<'static, str> {
         Cow::Owned(paths::clone_deck_route(self.0))
-    }
-    /// A repeat answers the deck the first send made only when the body names its id.
-    fn idempotent(&self) -> bool {
-        self.1.id.is_some()
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.1)

@@ -88,12 +88,6 @@ pub trait Endpoint {
         None
     }
 
-    /// Whether this call may be sent a second time: [`Self::IDEMPOTENT`], unless the call's body
-    /// decides, as a create that names the row it makes does.
-    fn idempotent(&self) -> bool {
-        Self::IDEMPOTENT
-    }
-
     /// JSON request body, or `None` to send none.
     ///
     /// Bodyless calls must return `None`: sending `null` on a GET would put a

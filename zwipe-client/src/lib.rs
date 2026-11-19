@@ -324,22 +324,32 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn a_create_with_its_own_id_goes_once_more_and_one_without_goes_once() {
-        use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
-        use zwipe_core::http::endpoints::deck::CreateDeck;
+    async fn a_create_or_clone_goes_once_even_with_its_own_id_since_a_lost_reply_is_looked_up() {
+        use zwipe_core::http::contracts::deck::{HttpCloneDeck, HttpCreateDeckProfile};
+        use zwipe_core::http::endpoints::deck::{CloneDeck, CreateDeck};
 
-        let with_id = CreateDeck(
-            HttpCreateDeckProfile::builder("Krenko")
-                .id(Some(uuid::Uuid::from_u128(7)))
-                .build(),
+        let id = Some(uuid::Uuid::from_u128(7));
+        let create = CreateDeck(HttpCreateDeckProfile::builder("Krenko").id(id).build());
+        let (result, seen) = sent_through_a_lost_reply(create).await;
+        assert!(
+            result.as_ref().is_err_and(|e| e.starts_with("Network")),
+            "the lost reply reaches the read-back: {result:?}"
         );
-        let (_, seen) = sent_through_a_lost_reply(with_id).await;
-        assert_eq!(seen, 2, "a repeat answers the deck the first one made");
+        assert_eq!(seen, 1, "a create is sent once");
 
-        let without = CreateDeck(HttpCreateDeckProfile::builder("Krenko").build());
-        let (result, seen) = sent_through_a_lost_reply(without).await;
-        assert!(result.is_err(), "{result:?}");
-        assert_eq!(seen, 1, "a second send would make a second deck");
+        let clone = CloneDeck(
+            uuid::Uuid::nil(),
+            HttpCloneDeck {
+                new_name: "Krenko copy".to_owned(),
+                id,
+            },
+        );
+        let (result, seen) = sent_through_a_lost_reply(clone).await;
+        assert!(
+            result.as_ref().is_err_and(|e| e.starts_with("Network")),
+            "{result:?}"
+        );
+        assert_eq!(seen, 1, "a clone is sent once");
     }
 
     #[tokio::test]

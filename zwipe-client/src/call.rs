@@ -171,18 +171,18 @@ fn dropped(e: &reqwest::Error) -> bool {
     (e.is_request() || e.is_connect()) && !e.is_timeout()
 }
 
-/// Runs `attempt`, and once more when `endpoint` may be sent twice and the first try's reply was
-/// lost: a [`ClientError::Network`] that isn't a timeout, as when the browser aborts a fetch in
-/// flight or a phone network drops the answer. A call past its own time limit goes once, so a
-/// slow server never waits twice as long.
-async fn once_more_if_lost<E, T, F, Fut>(endpoint: &E, attempt: F) -> Result<T, ClientError>
+/// Runs `attempt`, and once more when `E` may be sent twice ([`Endpoint::IDEMPOTENT`]) and the
+/// first try's reply was lost: a [`ClientError::Network`] that isn't a timeout, as when the
+/// browser aborts a fetch in flight or a phone network drops the answer. A call past its own time
+/// limit goes once, so a slow server never waits twice as long.
+async fn once_more_if_lost<E, T, F, Fut>(_endpoint: &E, attempt: F) -> Result<T, ClientError>
 where
     E: Endpoint,
     F: Fn() -> Fut,
     Fut: Future<Output = Result<T, ClientError>>,
 {
     match attempt().await {
-        Err(ClientError::Network(error)) if endpoint.idempotent() && !error.is_timeout() => {
+        Err(ClientError::Network(error)) if E::IDEMPOTENT && !error.is_timeout() => {
             tracing::warn!(%error, "reply lost; sending the call again");
             attempt().await
         }
