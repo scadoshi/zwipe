@@ -629,15 +629,25 @@ fn a_card_at_99_copies_takes_no_more_and_still_goes_down() {
 fn taps_fold_into_one_write_with_the_burst_net() {
     let (mut state, cards) = loaded();
     let ring = id(&cards[0]);
-    let first = debounce(&state.update(Action::ChangeQuantity {
-        card_id: ring,
-        delta: 1,
-    }));
     let effects = state.update(Action::ChangeQuantity {
         card_id: ring,
         delta: 1,
     });
-    assert!(matches!(effects.first(), Some(Effect::Refilter)));
+    assert_eq!(undo_records(&effects), [sol_ring_quantity(ring, 1, 1)]);
+    let first = debounce(&effects);
+    let effects = state.update(Action::ChangeQuantity {
+        card_id: ring,
+        delta: 1,
+    });
+    assert!(matches!(
+        effects.first(),
+        Some(Effect::ForgetQuantityChange { card_id, net: 1, baseline: 1 }) if *card_id == ring
+    ));
+    assert_eq!(
+        undo_records(&effects),
+        [sol_ring_quantity(ring, 2, 1)],
+        "the burst's taps fold into one entry"
+    );
     let second = debounce(&effects);
     assert_eq!(state.quantity(ring), 3, "the row changes at once");
     assert!(
@@ -667,12 +677,8 @@ fn taps_fold_into_one_write_with_the_burst_net() {
     });
     assert_eq!(
         undo_records(&effects),
-        [UndoAction::QuantityChanged {
-            card_id: ring,
-            card_name: "Sol Ring".to_owned(),
-            net: 2,
-            baseline: 1
-        }]
+        [],
+        "the entry went on the log with the taps"
     );
 }
 
@@ -720,8 +726,156 @@ fn a_failed_write_rolls_the_burst_back() {
         panic!("the burst writes");
     };
     let effects = state.update(Action::Failed { ticket: *ticket });
-    assert!(matches!(effects.as_slice(), [Effect::Refilter]));
+    assert!(
+        matches!(
+            effects.as_slice(),
+            [Effect::ForgetQuantityChange { card_id, net: 2, baseline: 1 }, Effect::Refilter] if *card_id == ring
+        ),
+        "the burst's entry comes back off the log: {effects:?}"
+    );
     assert_eq!(state.quantity(ring), 1);
+}
+
+fn sol_ring_quantity(ring: Uuid, net: i32, baseline: i32) -> UndoAction {
+    UndoAction::QuantityChanged {
+        card_id: ring,
+        card_name: "Sol Ring".to_owned(),
+        net,
+        baseline,
+    }
+}
+
+/// The client's undo log for one deck, kept as the client keeps it from `effects`.
+fn keep_log(log: &mut Vec<UndoAction>, effects: &[Effect]) {
+    for effect in effects {
+        if let Effect::RecordUndo(action) = effect {
+            log.push((**action).clone());
+        } else if let Effect::ForgetQuantityChange {
+            card_id,
+            net,
+            baseline,
+        } = effect
+        {
+            let entry = Logged {
+                net: *net,
+                baseline: *baseline,
+            };
+            if let Some(at) = log.iter().rposition(|a| entry.is(*card_id, a)) {
+                log.remove(at);
+            }
+        }
+    }
+}
+
+/// A quantity tap, with the client keeping its log.
+fn tap(state: &mut State, log: &mut Vec<UndoAction>, card_id: Uuid, delta: i32) -> Vec<Effect> {
+    let effects = state.update(Action::ChangeQuantity { card_id, delta });
+    keep_log(log, &effects);
+    effects
+}
+
+/// The client's Undo: pops the newest entry and hands it in.
+fn undo(state: &mut State, log: &mut Vec<UndoAction>) -> Vec<Effect> {
+    let popped = log.pop().expect("something to undo");
+    let effects = state.update(Action::Undo(Box::new(popped)));
+    keep_log(log, &effects);
+    effects
+}
+
+/// Lets `ticket`'s debounce run and the write it sends land.
+fn land(state: &mut State, log: &mut Vec<UndoAction>, ticket: Ticket) {
+    let effects = state.update(Action::Debounced { ticket });
+    keep_log(log, &effects);
+    let Some(Effect::PatchCard {
+        ticket, card_id, ..
+    }) = effects.first()
+    else {
+        panic!("the burst writes: {effects:?}");
+    };
+    let mut deck_card = state.entry(*card_id).expect("the row").deck_card.clone();
+    deck_card.quantity = Quantity::new(state.quantity(*card_id)).expect("a quantity");
+    let effects = state.update(Action::Patched {
+        ticket: *ticket,
+        deck_card: Box::new(deck_card),
+    });
+    keep_log(log, &effects);
+}
+
+#[test]
+fn undo_right_after_a_tap_takes_the_tap_back_before_its_write_lands() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let older = UndoAction::FlagToggled {
+        card_id: id(&cards[1]),
+        card_name: "Unflagged".to_owned(),
+        before: true,
+    };
+    let mut log = vec![older.clone()];
+
+    let _ = tap(&mut state, &mut log, ring, 1);
+    assert_eq!(state.quantity(ring), 2);
+    let _ = undo(&mut state, &mut log);
+
+    assert_eq!(state.quantity(ring), 1, "the + is taken back");
+    assert_eq!(log, [older], "the Unflag before it stays");
+}
+
+#[test]
+fn a_tap_after_two_undos_inside_one_burst_records_its_own_entry() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let mut log = Vec::new();
+    let first = debounce(&tap(&mut state, &mut log, ring, 1));
+    land(&mut state, &mut log, first);
+    let _ = tap(&mut state, &mut log, ring, 1);
+    assert_eq!(
+        log,
+        [sol_ring_quantity(ring, 1, 1), sol_ring_quantity(ring, 1, 2)]
+    );
+
+    let _ = undo(&mut state, &mut log);
+    let _ = undo(&mut state, &mut log);
+    assert_eq!(state.quantity(ring), 1);
+    let _ = tap(&mut state, &mut log, ring, 1);
+
+    assert_eq!(state.quantity(ring), 2);
+    assert_eq!(
+        log,
+        [sol_ring_quantity(ring, 1, 1)],
+        "the + has its own entry"
+    );
+    let _ = undo(&mut state, &mut log);
+    assert_eq!(
+        state.quantity(ring),
+        1,
+        "and Undo takes it back to one copy"
+    );
+}
+
+#[test]
+fn a_failed_write_whose_entry_undo_took_takes_nothing_else_off() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let older = sol_ring_quantity(ring, 1, 2);
+    let mut log = vec![older.clone()];
+    let ticket = debounce(&tap(&mut state, &mut log, ring, 1));
+    let effects = state.update(Action::Debounced { ticket });
+    let Some(Effect::PatchCard { ticket, .. }) = effects.first() else {
+        panic!("the burst writes: {effects:?}");
+    };
+    let ticket = *ticket;
+
+    let _ = undo(&mut state, &mut log);
+    let effects = state.update(Action::Failed { ticket });
+    keep_log(&mut log, &effects);
+
+    assert!(
+        !effects
+            .iter()
+            .any(|e| matches!(e, Effect::ForgetQuantityChange { .. })),
+        "{effects:?}"
+    );
+    assert_eq!(log, [older]);
 }
 
 #[test]
