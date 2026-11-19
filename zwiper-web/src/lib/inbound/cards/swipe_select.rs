@@ -39,9 +39,9 @@ use components::swipe_stack::{
     Swipe, SwipeControl, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use components::{
-    BackArrow, CardDetailsPanelSkeleton, CardGhost, DockEye, DockFilter, MeldSource, PageHeader,
-    PrintingsFace, Surface, TOAST_QUICK, open_on_shown_face, spawn_write_in_order, turn_face,
-    use_details_eye, use_mounted, use_overlay_back,
+    BackArrow, CardDetailsPanelSkeleton, CardGhost, Chip, DockEye, DockFilter, MeldSource,
+    PageHeader, PrintingsFace, Surface, TOAST_QUICK, open_on_shown_face, spawn_write_in_order,
+    turn_face, use_details_eye, use_mounted, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -51,6 +51,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 use zwipe_ui::commander::deal::{self, Door};
@@ -59,6 +60,8 @@ use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::Generation;
 use zwipe_ui::hint::{Role, SwipeSelectMode};
+use zwipe_ui::pile_source::Source;
+use zwipe_ui::screens::add_cards;
 use zwipe_ui::screens::swipe_select::{empty_pile_line, filter_lit};
 use zwipe_ui::stack::{CardStack, Direction, NO_CARDS_LEFT, StackAction};
 use zwipe_ui::telemetry::vocabulary::component;
@@ -76,6 +79,7 @@ use crate::inbound::chrome::authed::{Authed, use_authed};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
 use crate::inbound::chrome::shortcuts::{self, SELECT_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::{use_global_keys, use_offer_shortcuts};
+use crate::inbound::collection::use_offers_owned;
 use crate::inbound::screens::deck::cards::SwipeDetailsPanel;
 use crate::inbound::screens::playstyle::SuggestionReasons;
 use crate::inbound::shell::{WebFooter, use_overlay_nav};
@@ -221,16 +225,26 @@ fn dealt_ids(stack: &CardStack<SelectSwipe>, host: &HashSet<Uuid>) -> Vec<Uuid> 
         .collect()
 }
 
-/// One page of `door`'s merged ranking under `filter`, leaving out `dealt`: `Ok(None)` once the
-/// session has dealt as many as the server reads, and `Err(())` when the request failed (logged
-/// quietly; the pile just stops growing).
+/// `filter` as `source` deals it from the merged ranking: narrowed to owned commanders on
+/// Collection.
+fn source_filter(source: Source, filter: &CardQueryBuilder) -> CardQueryBuilder {
+    let mut dealt = filter.clone();
+    dealt.set_owned_only(source.owned_only());
+    dealt
+}
+
+/// One page of `door`'s merged ranking for `source` under `filter`, leaving out `dealt`:
+/// `Ok(None)` once the session has dealt as many as the server reads, and `Err(())` when the
+/// request failed (logged quietly; the pile just stops growing).
 async fn deal_page(
     authed: Authed,
     door: Door,
+    source: Source,
     filter: &CardQueryBuilder,
     dealt: Vec<Uuid>,
 ) -> Result<Option<Vec<HttpCommanderSuggestion>>, ()> {
-    let Some(request) = deal::next_page(door, filter, &dealt, PAGE_SIZE) else {
+    let filter = source_filter(source, filter);
+    let Some(request) = deal::next_page(door, &filter, &dealt, PAGE_SIZE) else {
         return Ok(None);
     };
     authed
@@ -240,6 +254,24 @@ async fn deal_page(
         .await
         .map(|page| Some(page.suggestions))
         .ok_or(())
+}
+
+/// The user's commander maybeboard under `filter`, matched on the device: `Err(())` when it
+/// didn't load (logged quietly).
+async fn maybeboard_pile(authed: Authed, filter: &CardQueryBuilder) -> Result<Vec<Card>, ()> {
+    let saved = authed
+        .run_quiet("swipe_select_maybeboard", |c, s| async move {
+            c.fetch_commander_maybeboard(&s).await
+        })
+        .await
+        .ok_or(())?;
+    if filter.is_empty() {
+        return Ok(saved);
+    }
+    Ok(match filter.build_criteria() {
+        Ok(criteria) => Cards::from(saved).matching(&criteria).into(),
+        Err(_) => saved,
+    })
 }
 
 /// Lands a deal's reply on the pile: the first page replaces it, a next one joins it; a short
@@ -306,6 +338,11 @@ pub fn SwipeSelect(
     let authed = use_authed().in_component(component::SWIPE_SELECT);
     let usage = telemetry::use_usage();
     let toast = use_toast();
+    let offers_owned = use_offers_owned();
+    // The From chip's source, for a mode that deals the merged ranking; kept across a close.
+    let mut source = use_signal(Source::default);
+    // Each source's filter, parked while another is picked.
+    let mut parked: Signal<HashMap<Source, CardQueryBuilder>> = use_signal(HashMap::new);
     let pile = Pile {
         stack: use_signal(CardStack::default),
         suggestions: use_signal(Vec::new),
@@ -364,10 +401,15 @@ pub fn SwipeSelect(
         let ticket = loads.peek().current();
         let commander = commander_for_more.clone();
         if let Some(door) = mode.door() {
+            let at = *source.peek();
+            if !at.searches() {
+                loading_more.set(false);
+                return;
+            }
             spawn(async move {
                 let dealt = dealt_ids(&stack.peek(), &excluded_now());
                 let applied = user_filter.peek().clone();
-                let reply = deal_page(authed, door, &applied, dealt).await;
+                let reply = deal_page(authed, door, at, &applied, dealt).await;
                 if loads.peek().is_current(ticket) {
                     land_deal(&pile, reply, /* first */ false);
                     if *exhausted.peek()
@@ -459,7 +501,9 @@ pub fn SwipeSelect(
         // The host's filter is where the pile starts: a change since the last
         // open deals again from the top.
         let mut restart = false;
-        if let Some(start) = start_filter {
+        if let Some(start) = start_filter
+            && *source.peek() == Source::Search
+        {
             let start = start.peek().clone();
             if *user_filter.peek() != start {
                 let mut user_filter = user_filter;
@@ -480,15 +524,29 @@ pub fn SwipeSelect(
         suggestions.set(Vec::new());
         if let Some(door) = mode.door() {
             loading.set(true);
+            let at = *source.peek();
             spawn(async move {
-                let dealt = dealt_ids(&CardStack::default(), &excluded_now());
                 let applied = user_filter.peek().clone();
-                let reply = deal_page(authed, door, &applied, dealt).await;
+                if at.searches() {
+                    let dealt = dealt_ids(&CardStack::default(), &excluded_now());
+                    let reply = deal_page(authed, door, at, &applied, dealt).await;
+                    if !loads.peek().is_current(ticket) {
+                        return;
+                    }
+                    loading.set(false);
+                    land_deal(&pile, reply, /* first */ true);
+                    return;
+                }
+                let reply = maybeboard_pile(authed, &applied).await;
                 if !loads.peek().is_current(ticket) {
                     return;
                 }
                 loading.set(false);
-                land_deal(&pile, reply, /* first */ true);
+                if let Ok(saved) = reply {
+                    searched.set(true);
+                    exhausted.set(true);
+                    stack.write().replace(saved);
+                }
             });
             return;
         }
@@ -527,6 +585,32 @@ pub fn SwipeSelect(
                 load_more.call(());
             }
         });
+    });
+
+    // The From chip: parks this source's filter, takes the next one's, and deals again.
+    let mut pick_source = move |to: Source| {
+        let from = *source.peek();
+        if from == to {
+            return;
+        }
+        let leaving = user_filter.peek().clone();
+        parked.write().insert(from, leaving);
+        let entering = parked.peek().get(&to).cloned().unwrap_or_default();
+        let mut user_filter = user_filter;
+        user_filter.set(entering);
+        source.set(to);
+        let next = refreshes.peek().wrapping_add(1);
+        refreshes.set(next);
+    };
+    let next_source = use_callback(move |()| {
+        let to = source.peek().next(*offers_owned.peek());
+        pick_source(to);
+    });
+    // A collection gone while From is on Collection: back to Search.
+    use_effect(move || {
+        if !offers_owned() && *source.peek() == Source::Collection {
+            pick_source(Source::Search);
+        }
     });
 
     let title = if mode == SwipeMode::Commanders(Door::Suggested) {
@@ -572,6 +656,8 @@ pub fn SwipeSelect(
                         refreshes.set(next);
                     },
                     user_filter,
+                    source: mode.door().map(|_| source),
+                    next_source,
                 }
                 // It scrolls as a screen does and ends as one, with the
                 // site's footer below the fold.
@@ -596,6 +682,8 @@ fn SwipeSelectBody(
     load_more: Callback<()>,
     on_refresh: EventHandler<()>,
     user_filter: Signal<CardQueryBuilder>,
+    source: Option<Signal<Source>>,
+    next_source: Callback<()>,
 ) -> Element {
     let toast = use_toast();
     let confirm = use_swipe_confirm();
@@ -626,8 +714,11 @@ fn SwipeSelectBody(
     let handed = try_use_context::<PrintingsFace>();
     let melds = try_use_context::<MeldSource>();
     let mut filter_open = use_signal(|| false);
-    let dismisses = mode.door().is_some();
-    let allowed = if mode.saves_up() {
+    // The pile's source on the From chip: the maybeboard's commanders are saved already, so up
+    // saves nothing there, and left only passes one by.
+    let on_maybe = source.is_some_and(|s| s() == Source::Maybeboard);
+    let dismisses = mode.door().is_some() && !on_maybe;
+    let allowed = if mode.saves_up() && !on_maybe {
         vec![Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Down]
     } else {
         vec![Swipe::Left, Swipe::Right, Swipe::Down]
@@ -855,6 +946,30 @@ fn SwipeSelectBody(
         dealt_nothing.then(|| empty_pile_line(mode.noun(), filter_lit(&user_filter.read())));
     let has_card = current.is_some();
 
+    let dock = rsx! {
+        SwipeDock {
+            control,
+            buttons: labels.buttons(),
+            card_on_top: has_card,
+            can_undo: stack.read().has_history(),
+            on_undo: move |()| undo.call(()),
+            div { class: if source.is_some() { "action-dock" } else { "action-dock action-dock-right" },
+                DockFilter {
+                    label: "Filter",
+                    dot: filter::shows_dot(&user_filter.read()),
+                    onclick: move |()| filter_open.set(true),
+                }
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Refresh",
+                    onclick: move |_| refresh.call(()),
+                    DockIcon { path: REFRESH }
+                }
+                span { class: "action-dock-divider" }
+                DockEye { eye, disabled: !has_card }
+            }
+        }
+    };
     rsx! {
         PageHeader {
             title,
@@ -910,29 +1025,22 @@ fn SwipeSelectBody(
                 }
             }
         }
-        // Filter, refresh and card details as the action dock. Back is the
-        // header's arrow.
-        SwipeDock {
-            control,
-            buttons: labels.buttons(),
-            card_on_top: has_card,
-            can_undo: stack.read().has_history(),
-            on_undo: move |()| undo.call(()),
-            div { class: "action-dock action-dock-right",
-                DockFilter {
-                    label: "Filter",
-                    dot: filter::shows_dot(&user_filter.read()),
-                    onclick: move |()| filter_open.set(true),
+        // Filter, refresh and card details as the action dock, with From's chip on its left
+        // where the pile has sources (as on Add). Back is the header's arrow.
+        if let Some(source) = source {
+            div { class: "swipe-bottom-row",
+                div { class: "swipe-bottom-chips",
+                    span { class: "stat-chip stat-chip-p1 chip-row-label", "{add_cards::FROM}" }
+                    Chip {
+                        selected: true,
+                        onclick: move |_| next_source.call(()),
+                        "{source().label()}"
+                    }
                 }
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": "Refresh",
-                    onclick: move |_| refresh.call(()),
-                    DockIcon { path: REFRESH }
-                }
-                span { class: "action-dock-divider" }
-                DockEye { eye, disabled: !has_card }
+                {dock}
             }
+        } else {
+            {dock}
         }
         if let Some(card) = current {
             CardDetailsSheet {
@@ -1020,6 +1128,23 @@ mod tests {
         assert_eq!(
             SwipeMode::Commanders(Door::DeckCreation(Format::Oathbreaker)).noun(),
             "oathbreaker"
+        );
+    }
+
+    #[test]
+    fn only_collection_deals_owned_commanders_and_an_owned_flag_alone_builds() {
+        let mut filter = CardQueryBuilder::new();
+        filter.set_owned_only(true);
+        assert!(
+            !source_filter(Source::Search, &filter).owned_only(),
+            "Search drops a stray owned flag"
+        );
+        let owned = source_filter(Source::Collection, &CardQueryBuilder::new());
+        assert!(owned.owned_only());
+        let page = deal::next_page(Door::Suggested, &owned, &[], PAGE_SIZE).unwrap();
+        assert!(
+            page.filter.is_some_and(|q| q.owned_only()),
+            "Collection with no other filter still reaches the server narrowed"
         );
     }
 
