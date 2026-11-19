@@ -28,23 +28,26 @@ pub fn CardEditButtons(
 ) -> Element {
     rsx! {
         if let Some(handler) = on_qty_change {
-            button {
-                class: "card-action-btn",
-                onclick: move |evt| {
-                    evt.stop_propagation();
-                    handler.call(-1);
-                },
-                "-"
-            }
-            span { class: "card-action-count", "{qty}" }
-            button {
-                class: "card-action-btn",
-                disabled: !can_add_copy(qty),
-                onclick: move |evt| {
-                    evt.stop_propagation();
-                    handler.call(1);
-                },
-                "+"
+            // One box, so a full row wraps the stepper whole.
+            span { class: "card-action-stepper",
+                button {
+                    class: "card-action-btn",
+                    onclick: move |evt| {
+                        evt.stop_propagation();
+                        handler.call(-1);
+                    },
+                    "-"
+                }
+                span { class: "card-action-count", "{qty}" }
+                button {
+                    class: "card-action-btn",
+                    disabled: !can_add_copy(qty),
+                    onclick: move |evt| {
+                        evt.stop_propagation();
+                        handler.call(1);
+                    },
+                    "+"
+                }
             }
         }
         if let (Some(is_mvp), Some(handler)) = (mvp, on_toggle_mvp) {

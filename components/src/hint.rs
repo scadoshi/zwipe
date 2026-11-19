@@ -115,6 +115,7 @@ pub fn KeyGlyph(icon: KeyIcon) -> Element {
         KeyIcon::Meld => crate::MELD,
         KeyIcon::Star => crate::STAR,
         KeyIcon::Flag => crate::FLAG,
+        KeyIcon::Send => orangui::icons::SEND,
         KeyIcon::Undo => UNDO,
         KeyIcon::Eraser => ERASER,
         KeyIcon::Refresh => REFRESH,

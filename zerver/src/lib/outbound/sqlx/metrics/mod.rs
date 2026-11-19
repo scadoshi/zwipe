@@ -6,10 +6,12 @@ use std::num::TryFromIntError;
 use sqlx::query;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
+use zwipe_core::http::contracts::card::{HttpCardSwipes, HttpCommanderPicks};
 use zwipe_core::http::contracts::metrics::{
     AnonymousEventKind, CardSignalDelta, CommanderSelectDelta, HttpCrashReport, HttpUsageBatch,
 };
 
+use crate::domain::metrics::models::card_stats::{CardStats, MVP_VESTING_DAYS};
 use crate::domain::metrics::models::errors::MetricsError;
 use crate::domain::metrics::models::kinds::{AdminAction, AuditAction, EventKind};
 use crate::domain::metrics::models::lifetime_counters::LifetimeCounters;
@@ -32,6 +34,27 @@ fn add_tally(total: &mut i64, delta: i64) -> Result<(), MetricsError> {
     Ok(())
 }
 
+/// One card's summed Add-stack counts across a flush, for `card_swipe_signal`.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+struct CardTally {
+    shown: i64,
+    added: i64,
+    skipped: i64,
+    maybed: i64,
+    removed: i64,
+}
+
+impl CardTally {
+    /// Adds `signal`'s counts.
+    fn add(&mut self, signal: &CardSignalDelta) -> Result<(), MetricsError> {
+        add_tally(&mut self.shown, i64::from(signal.shown))?;
+        add_tally(&mut self.added, i64::from(signal.added))?;
+        add_tally(&mut self.skipped, i64::from(signal.skipped))?;
+        add_tally(&mut self.maybed, i64::from(signal.maybed))?;
+        add_tally(&mut self.removed, i64::from(signal.removed))
+    }
+}
+
 /// Converts a tally to the `INTEGER` a counter column holds.
 ///
 /// [`HttpUsageBatch::clamped`] keeps every tally far inside `i32`, so this
@@ -44,6 +67,13 @@ where
         MetricsError::Database(
             anyhow::Error::new(err).context("a usage tally overflows its INTEGER column"),
         )
+    })
+}
+
+/// Reads a counter column, never negative, as the count the wire carries.
+fn count(column: i64) -> Result<u64, MetricsError> {
+    u64::try_from(column).map_err(|err| {
+        MetricsError::Database(anyhow::Error::new(err).context("a counter column is negative"))
     })
 }
 
@@ -355,6 +385,40 @@ impl MetricsRepository for Postgres {
                 i64::from(sig.skipped),
                 i64::from(sig.maybed),
                 i64::from(sig.removed),
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(db)?;
+        }
+
+        // Every-format per-card signal: the same deltas from every deck the user owns, with or
+        // without a commander, summed per card and upserted in card order (the map's), like
+        // the pooled rows above. Pure aggregate, no user_id.
+        let mut per_card: BTreeMap<Uuid, CardTally> = BTreeMap::new();
+        for sig in signals
+            .iter()
+            .filter(|s| s.deck_id.is_some_and(|id| deck_ctx.contains_key(&id)))
+        {
+            per_card.entry(sig.card_oracle_id).or_default().add(sig)?;
+        }
+        for (card, tally) in &per_card {
+            query!(
+                r#"INSERT INTO card_swipe_signal
+                       (card_oracle_id, shown, added, skipped, maybed, removed, updated_at)
+                   VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                   ON CONFLICT (card_oracle_id) DO UPDATE SET
+                       shown      = card_swipe_signal.shown    + EXCLUDED.shown,
+                       added      = card_swipe_signal.added    + EXCLUDED.added,
+                       skipped    = card_swipe_signal.skipped  + EXCLUDED.skipped,
+                       maybed     = card_swipe_signal.maybed   + EXCLUDED.maybed,
+                       removed    = card_swipe_signal.removed  + EXCLUDED.removed,
+                       updated_at = NOW()"#,
+                card,
+                tally.shown,
+                tally.added,
+                tally.skipped,
+                tally.maybed,
+                tally.removed,
             )
             .execute(&mut *tx)
             .await
@@ -905,6 +969,72 @@ impl MetricsRepository for Postgres {
             cards_swiped: row.cards_swiped,
             searches: row.searches,
             decks_created: row.decks_created,
+        })
+    }
+
+    async fn card_stats(&self, oracle_id: Uuid) -> Result<CardStats, MetricsError> {
+        // Each count starts on an index: deck_cards by oracle id, scryfall_data by oracle id,
+        // and the two signal pools by their primary keys. Leading decks are matched by any
+        // printing of the card, since a deck stores the printing it leads with. The pools are
+        // read through scalar subqueries rather than outer joins, so the columns' recorded
+        // nullability doesn't depend on the plan the database picks.
+        let row = sqlx::query!(
+            r#"SELECT
+                   (SELECT COUNT(*) FROM deck_cards
+                     WHERE oracle_id = $1 AND board = 'deck') AS "in_decks!",
+                   (SELECT COUNT(*) FROM deck_cards
+                     WHERE oracle_id = $1 AND board = 'deck'
+                       AND mvp_at <= NOW() - make_interval(days => $2)) AS "mvp_decks!",
+                   (SELECT COUNT(*) FROM decks d
+                     WHERE EXISTS (SELECT 1 FROM scryfall_data sd
+                                    WHERE sd.oracle_id = $1
+                                      AND sd.id IN (d.commander_id, d.partner_commander_id))
+                   ) AS "decks_led!",
+                   (SELECT shown FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_shown?",
+                   (SELECT added FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_added?",
+                   (SELECT skipped FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_skipped?",
+                   (SELECT maybed FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_maybed?",
+                   (SELECT removed FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_removed?",
+                   (SELECT shown FROM commander_select_signal WHERE commander_oracle_id = $1) AS "pick_shown?",
+                   (SELECT selected FROM commander_select_signal WHERE commander_oracle_id = $1) AS "pick_selected?""#,
+            oracle_id,
+            MVP_VESTING_DAYS,
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(db)?;
+
+        let swipes = match (
+            row.swipe_shown,
+            row.swipe_added,
+            row.swipe_skipped,
+            row.swipe_maybed,
+            row.swipe_removed,
+        ) {
+            (Some(shown), Some(added), Some(skipped), Some(maybed), Some(removed)) => {
+                Some(HttpCardSwipes {
+                    shown: count(shown)?,
+                    added: count(added)?,
+                    skipped: count(skipped)?,
+                    maybed: count(maybed)?,
+                    removed: count(removed)?,
+                })
+            }
+            _ => None,
+        };
+        let commander_picks = match (row.pick_shown, row.pick_selected) {
+            (Some(shown), Some(selected)) => Some(HttpCommanderPicks {
+                shown: count(shown)?,
+                selected: count(selected)?,
+            }),
+            _ => None,
+        };
+        Ok(CardStats {
+            in_decks: count(row.in_decks)?,
+            mvp_decks: count(row.mvp_decks)?,
+            swipes,
+            decks_led: count(row.decks_led)?,
+            commander_picks,
         })
     }
 

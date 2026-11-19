@@ -67,20 +67,9 @@ button {
 
 /* The kit puts the stack in the screen's bottom-left corner, as far from
    the left edge as from the bottom (--corner-gap, as the dock's), the newest
-   at the bottom; nothing here moves it, over a dock or anywhere else.
-
-   While a toast is up over an open sheet with a dock, the sheet's content
-   ends above the toast band as well as the dock. The band's top is the
-   stack's inset plus a three-line toast (a connection error, about
-   6.75rem) and a gap, so a sheet sized to its content grows upward and a
-   scrolling one scrolls its last row clear. */
-body {
-    --toast-band-top: calc(var(--corner-gap) + 8rem);
-}
-
-body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-content {
-    padding-bottom: var(--toast-band-top);
-}
+   at the bottom; nothing here moves it, over a dock or anywhere else. A
+   toast sits in front of a sheet or a dock, and nothing under it makes
+   room for it. */
 
 @media (prefers-reduced-motion: reduce) {
     body .toast-container [role="alertdialog"] {
@@ -114,6 +103,25 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
 .screen > .screen-content {
     padding-top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
     padding-bottom: calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px));
+}
+
+/* An overlay screen that opens with a page header (a phone picker such as
+   Send to, the Oracle tag examples) holds that header in the flow at the
+   screen's top edge. The header pads the status bar's inset in its own
+   color, so its title and back arrow sit below the bar, and the content
+   under it keeps only the kit's 1rem. */
+.screen > .page-header {
+    padding-top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
+}
+
+.screen > .page-header ~ .screen-content {
+    padding-top: var(--space-4);
+}
+
+/* The corner buttons center on the title, below the inset. */
+.screen > .page-header .page-header-support,
+.screen > .page-header .page-header-corner {
+    top: calc(50% + env(safe-area-inset-top, 0px) / 2);
 }
 
 /* Width wrapper for the shared changelog (screen-content centers full-width

@@ -10,6 +10,7 @@ use crate::domain::card::oracle_tag::OracleTag;
 use crate::domain::card::oracle_tag_examples::OracleTagSlug;
 use crate::domain::card::scryfall_data::universe::UbFranchiseView;
 use crate::domain::card::search_card::card_filter::CardQuery;
+use crate::http::contracts::card::HttpCardStats;
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths;
 use crate::http::paths::{
@@ -101,6 +102,19 @@ impl Endpoint for GetPrintings {
     type Response = Vec<Card>;
     fn path(&self) -> Cow<'static, str> {
         Cow::Owned(paths::printings_route(self.0))
+    }
+}
+
+/// One card's public numbers by oracle id, for a reader with or without an account.
+#[derive(Debug)]
+pub struct GetCardStats(pub Uuid);
+impl Endpoint for GetCardStats {
+    const METHOD: Method = Method::Get;
+    const AUTH: bool = false;
+    type Request = ();
+    type Response = HttpCardStats;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(paths::card_stats_route(self.0))
     }
 }
 

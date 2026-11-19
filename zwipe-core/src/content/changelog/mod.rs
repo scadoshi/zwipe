@@ -57,6 +57,13 @@ pub const UPCOMING: &[Release] = &[Release {
         "Theme search highlights the theme Enter would pick as you type",
         "Enter or Go in the Format, Deck tags, Oracle tags and Send to searches picks the top match, highlighted as you type",
         "A card keeps the same art from one refresh to the next",
+        "On the web, Clone and Share stay off until the deck loads",
+        "On the web, Share stays open after Create link until the link is ready",
+        "On the web on Android, Esc during Create link no longer shows an error over a link that was made",
+        "After a dropped connection, Create deck and Clone open the new deck instead of showing an error",
+        "A change that went through before your connection dropped no longer shows an error",
+        "An unset land target shows your format's usual count, and + and - step from it",
+        "Send to is a paper-plane button",
     ],
 }];
 

@@ -1,7 +1,6 @@
 //! Route definitions mapping paths to handlers.
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use axum::Router;
 use axum::body::Body;
@@ -15,12 +14,13 @@ use tower_http::set_header::SetResponseHeaderLayer;
 
 use crate::domain::auth::models::access_token::JwtSecret;
 use crate::inbound::http::AppState;
-use crate::inbound::http::family_limit::{Allowance, FamilyLimitLayer};
+use crate::inbound::http::family_limit::FamilyLimitLayer;
 use crate::inbound::http::handlers::{
     auth, card, changelog, client, deck, deck_card, health, metrics, user,
 };
 use crate::inbound::http::limiter_purge::{LIMITER_PURGE_EVERY, purging};
 use crate::inbound::http::middleware::UserIdKeyExtractor;
+use crate::inbound::http::rate_limits::RateLimits;
 
 /// Largest crash report body accepted, in bytes. A report is about 2 KB of
 /// truncated panic text, and the route takes it unauthenticated.
@@ -156,130 +156,22 @@ fn private_no_store_layer() -> SetResponseHeaderLayer<HeaderValue> {
     clippy::too_many_lines,
     reason = "one router tree: each public limiter, then the routes it guards"
 )]
-pub fn public_routes() -> Router<AppState> {
-    // 5 req / 30s: tight limit, brute-force target
-    // IPv6 /64: a burst of 10, the same refill; a brute-force rate stays per network.
-    let login_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(6), 5),
-        Allowance::new(Duration::from_secs(6), 10),
-        stable_rate_limit,
-    );
-    // 5 req / 1hr: rarely needed legitimately
-    // IPv6 /64: a burst of 10, the same refill, for a household or office signing up together.
-    let register_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_mins(12), 5),
-        Allowance::new(Duration::from_mins(12), 10),
-        stable_rate_limit,
-    );
-    // 20 req / 1min: clients refresh on cold start
-    // IPv6 /64: double the burst and the rate, since every app on the network refreshes on
-    // cold start.
-    let refresh_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(3), 20),
-        Allowance::new(Duration::from_millis(1500), 40),
-        stable_rate_limit,
-    );
-    // 5 req / 1hr per IP: password reset is rare
-    // IPv6 /64: a burst of 10, the same refill.
-    let forgot_password_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_mins(12), 5),
-        Allowance::new(Duration::from_mins(12), 10),
-        stable_rate_limit,
-    );
-    // 10 req / 1hr per IP: verify-email, confirm-email-change, reset-password and its check
-    // IPv6 /64: a burst of 20, the same refill.
-    let verify_reset_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(360), 10),
-        Allowance::new(Duration::from_secs(360), 20),
-        stable_rate_limit,
-    );
-    // 60 req / min per IP: card metadata is public and CF-cached, but a tight
-    // limit guards the origin from someone bypassing CF to scrape directly.
-    // IPv6 /64: double the burst and the rate.
-    let public_card_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(1), 60),
-        Allowance::new(Duration::from_millis(500), 120),
-        stable_rate_limit,
-    );
-    // A burst of 10, then one every 3s per IP: each example page is a real card search, heavier
-    // than the catalog reads, and Cloudflare caches repeat pages for an hour.
-    // IPv6 /64: double the burst and the rate.
-    let public_examples_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(3), 10),
-        Allowance::new(Duration::from_millis(1500), 20),
-        stable_rate_limit,
-    );
-    // 30 req / 2s per IP: public marketing aggregates. CF cache absorbs most
-    // traffic; this guards origin if someone bypasses CF or warms many POPs.
-    // IPv6 /64: double the burst and the rate.
-    let public_marketing_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(2), 30),
-        Allowance::new(Duration::from_secs(1), 60),
-        stable_rate_limit,
-    );
-    // 30 req / 2s per IP: min-version gate poll. ~30-byte payload hit once a
-    // minute per app; modest cap guards origin without risking lockout noise.
-    // IPv6 /64: double the burst and the rate.
-    let public_client_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(2), 30),
-        Allowance::new(Duration::from_secs(1), 60),
-        stable_rate_limit,
-    );
-    // 30 req / 2s per IP: public changelog. Fetched once per app launch and
-    // Cloudflare edge-caches it, so origin traffic is tiny; this guards the
-    // origin if someone bypasses CF or warms many POPs.
-    // IPv6 /64: double the burst and the rate.
-    let public_changelog_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(2), 30),
-        Allowance::new(Duration::from_secs(1), 60),
-        stable_rate_limit,
-    );
-    // 10 req / min per IP: pre-auth funnel events. A legitimate session
-    // fires a handful ever (app opened, register viewed/submitted); this is
-    // an unauthenticated write, so keep the row-spam ceiling low.
-    // IPv6 /64: double the burst and the rate, one session per device.
-    let anonymous_event_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(6), 10),
-        Allowance::new(Duration::from_secs(3), 20),
-        stable_rate_limit,
-    );
-    // Burst 2, then 1 req / min per IP: crash reports. A legitimate client
-    // posts at most one per launch; this is an unauthenticated write that
-    // inserts a row per call, so it gets the strictest limiter (the crash_id
-    // upsert makes anything past it idempotent).
-    // IPv6 /64: double the burst and the rate, one report per device.
-    let crash_report_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(60), 2),
-        Allowance::new(Duration::from_secs(30), 4),
-        stable_rate_limit,
-    );
-    // 30 req / 2s per IP: public shared-deck reads. A page load fetches once
-    // and CF may cache briefly; this guards origin against token scanning.
-    // IPv6 /64: double the burst and the rate.
-    let public_share_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(2), 30),
-        Allowance::new(Duration::from_secs(1), 60),
-        stable_rate_limit,
-    );
-    // 30 req / minute per IP, burst 10: shared decks' preview images. A
-    // render costs ~100ms of CPU plus art fetches, so this sits inside the
-    // share routes' own limit; Cloudflare's edge serves repeat requests, so
-    // origin only sees a link's first unfurls.
-    // IPv6 /64: double the burst and the rate.
-    let share_preview_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(2), 10),
-        Allowance::new(Duration::from_secs(1), 20),
-        stable_rate_limit,
-    );
-    // 30 req / 2s per IP: health checks. Generous for frequent polling
-    // (manual curls, uptime monitors) while capping unauthenticated floods,
-    // notably /health/database which pings Postgres.
-    // IPv6 /64: double the burst and the rate.
-    let health_limit = FamilyLimitLayer::new(
-        Allowance::new(Duration::from_secs(2), 30),
-        Allowance::new(Duration::from_secs(1), 60),
-        stable_rate_limit,
-    );
+pub fn public_routes(limits: &RateLimits) -> Router<AppState> {
+    let login_limit = FamilyLimitLayer::new(limits.login, stable_rate_limit);
+    let register_limit = FamilyLimitLayer::new(limits.register, stable_rate_limit);
+    let refresh_limit = FamilyLimitLayer::new(limits.refresh, stable_rate_limit);
+    let forgot_password_limit = FamilyLimitLayer::new(limits.forgot_password, stable_rate_limit);
+    let verify_reset_limit = FamilyLimitLayer::new(limits.verify_reset, stable_rate_limit);
+    let public_card_limit = FamilyLimitLayer::new(limits.public_card, stable_rate_limit);
+    let public_examples_limit = FamilyLimitLayer::new(limits.public_examples, stable_rate_limit);
+    let public_marketing_limit = FamilyLimitLayer::new(limits.public_marketing, stable_rate_limit);
+    let public_client_limit = FamilyLimitLayer::new(limits.public_client, stable_rate_limit);
+    let public_changelog_limit = FamilyLimitLayer::new(limits.public_changelog, stable_rate_limit);
+    let anonymous_event_limit = FamilyLimitLayer::new(limits.anonymous_event, stable_rate_limit);
+    let crash_report_limit = FamilyLimitLayer::new(limits.crash_report, stable_rate_limit);
+    let public_share_limit = FamilyLimitLayer::new(limits.public_share, stable_rate_limit);
+    let share_preview_limit = FamilyLimitLayer::new(limits.share_preview, stable_rate_limit);
+    let health_limit = FamilyLimitLayer::new(limits.health, stable_rate_limit);
 
     Router::new()
         .route("/", get(health::root))
@@ -346,6 +238,7 @@ pub fn public_routes() -> Router<AppState> {
                         .route("/{scryfall_data_id}", get(card::get_card))
                         .route("/featured-flavor", get(card::get_featured_flavor))
                         .route("/{oracle_id}/printings", get(card::get_printings))
+                        .route("/{oracle_id}/stats", get(card::get_card_stats))
                         .route("/artists", get(card::get_artists))
                         .route("/types", get(card::get_card_types))
                         .route("/keywords", get(card::get_keywords))
@@ -424,75 +317,65 @@ pub fn public_routes() -> Router<AppState> {
     clippy::too_many_lines,
     reason = "one router tree: each per-user limiter, then the routes it guards"
 )]
-pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
-    // 500 req / 5min (~1.67/s avg): generous for swiping, keyed by user ID
+pub fn private_routes(jwt_secret: JwtSecret, limits: &RateLimits) -> Router<AppState> {
     let private_config = purging(
         GovernorConfigBuilder::default()
-            .period(Duration::from_millis(600))
-            .burst_size(500)
+            .period(limits.private.period)
+            .burst_size(limits.private.burst)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
         LIMITER_PURGE_EVERY,
     );
-    // burst 2, then 1 req/30min: account mutations are done once; 2 attempts covers typos
     let sensitive_config = purging(
         GovernorConfigBuilder::default()
-            .period(Duration::from_mins(30))
-            .burst_size(2)
+            .period(limits.sensitive.period)
+            .burst_size(limits.sensitive.burst)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
         LIMITER_PURGE_EVERY,
     );
-    // burst 20, then 1 req/10s: commander autocomplete needs headroom for fast typers
     let card_search_config = purging(
         GovernorConfigBuilder::default()
-            .period(Duration::from_secs(10))
-            .burst_size(20)
+            .period(limits.card_search.period)
+            .burst_size(limits.card_search.burst)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
         LIMITER_PURGE_EVERY,
     );
-    // burst 1, then 1 req/60s: resend verification: a fast multi-click sends
-    // one email, the rest get 429. Window matches the client cooldown timer.
     let resend_verification_config = purging(
         GovernorConfigBuilder::default()
-            .period(Duration::from_secs(60))
-            .burst_size(1)
+            .period(limits.resend_verification.period)
+            .burst_size(limits.resend_verification.burst)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
         LIMITER_PURGE_EVERY,
     );
-    // The same for a pending email change's link, on its own budget so one
-    // resend does not hold up the other.
     let resend_email_change_config = purging(
         GovernorConfigBuilder::default()
-            .period(Duration::from_secs(60))
-            .burst_size(1)
+            .period(limits.resend_email_change.period)
+            .burst_size(limits.resend_email_change.burst)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
         LIMITER_PURGE_EVERY,
     );
-    // 12 req/min: clients flush usage every ~30s; this gives ample headroom
     let metrics_usage_config = purging(
         GovernorConfigBuilder::default()
-            .period(Duration::from_secs(5))
-            .burst_size(12)
+            .period(limits.metrics_usage.period)
+            .burst_size(limits.metrics_usage.burst)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
         LIMITER_PURGE_EVERY,
     );
-    // burst 5, then 1 req/min: each import is a fetch from Archidekt made
-    // from this origin's address, so one user cannot spend its reputation.
     let archidekt_import_config = purging(
         GovernorConfigBuilder::default()
-            .period(Duration::from_secs(60))
-            .burst_size(5)
+            .period(limits.archidekt_import.period)
+            .burst_size(limits.archidekt_import.burst)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),

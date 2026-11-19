@@ -16,7 +16,7 @@ use zwipe_core::http::paths::{DECK_ROUTE, clone_deck_route, deck_profile_route, 
 mod common;
 
 use axum::http::StatusCode;
-use common::{TestApp, card, seed_cards};
+use common::{TestApp, card, seed_cards, wait_for_lock_waiters};
 use serde_json::json;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::helpers::Patch;
@@ -275,16 +275,18 @@ async fn deck_oracle_tags_round_trip(pool: sqlx::PgPool) {
     assert_eq!(cleared["oracle_tags"], json!([]));
 }
 
-/// Holds every deck insert until `hold` passes, so requests fired together
-/// all read the deck count before any of them writes.
-async fn hold_deck_inserts(pool: &sqlx::PgPool, hold: std::time::Duration) {
+/// Locks the decks table against inserts, then lets go once two requests are
+/// queued behind a lock, so requests fired together race for the last slot.
+async fn hold_deck_inserts(pool: &sqlx::PgPool) -> impl Future<Output = ()> {
     let mut tx = pool.begin().await.unwrap();
     sqlx::query("LOCK TABLE decks IN SHARE ROW EXCLUSIVE MODE")
         .execute(&mut *tx)
         .await
         .unwrap();
-    tokio::time::sleep(hold).await;
-    tx.commit().await.unwrap();
+    async move {
+        wait_for_lock_waiters(pool, 2).await;
+        tx.commit().await.unwrap();
+    }
 }
 
 /// Registers a verified user with 19 decks, one below the cap, and returns
@@ -322,10 +324,11 @@ async fn concurrent_creates_stop_at_the_deck_cap(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, uid, _) = user_one_below_the_cap(&app, "racer").await;
 
+    let hold = hold_deck_inserts(&pool).await;
     let ((first, _), (second, _), ()) = tokio::join!(
         app.post(DECK_ROUTE, json!({ "name": "Race A" }), Some(&token)),
         app.post(DECK_ROUTE, json!({ "name": "Race B" }), Some(&token)),
-        hold_deck_inserts(&pool, std::time::Duration::from_millis(300)),
+        hold,
     );
     assert_eq!(
         deck_count(&pool, &uid).await,
@@ -341,10 +344,11 @@ async fn concurrent_clones_stop_at_the_deck_cap(pool: sqlx::PgPool) {
     let (token, uid, source) = user_one_below_the_cap(&app, "cloneracer").await;
 
     let route = clone_deck_route(source);
+    let hold = hold_deck_inserts(&pool).await;
     let ((first, _), (second, _), ()) = tokio::join!(
         app.post(&route, json!({ "new_name": "Copy A" }), Some(&token)),
         app.post(&route, json!({ "new_name": "Copy B" }), Some(&token)),
-        hold_deck_inserts(&pool, std::time::Duration::from_millis(300)),
+        hold,
     );
     assert_eq!(
         deck_count(&pool, &uid).await,

@@ -35,6 +35,7 @@ use zwipe_ui::deck::view::DeckView;
 use zwipe_ui::screens::deck_view::{EDIT, LOAD_FAILED, MoreItem, delete_body};
 use zwipe_ui::stores::undo::UndoAction;
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen, component};
+use zwipe_ui::write_repeat::{Unconfirmed, Verdict, WriteKey};
 
 use self::cards_layer::use_cards_route;
 use self::dialogs::{DeckDialogsHost, use_deck_dialogs};
@@ -43,7 +44,7 @@ use self::sections::WarningFixes;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
-use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::authed::{answer_of, use_authed};
 use crate::inbound::chrome::media::use_wide;
 use crate::inbound::chrome::one_time_hint::{FirstDeckHintDialog, OneTimeHint, use_one_time_hint};
 use crate::inbound::router::Route;
@@ -81,6 +82,8 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
     // A fix lands even after the page goes; what it then changes here waits on this.
     let mounted = use_mounted();
     let usage = telemetry::use_usage();
+    // The session's writes whose answer was lost, so the warnings' Remove reads a repeat as done.
+    let unconfirmed: Option<Signal<Unconfirmed>> = try_use_context();
     let hint_open = use_one_time_hint(OneTimeHint::FirstDeck);
     let on_hint = use_callback(move |()| {
         let mut hint_open = hint_open;
@@ -244,6 +247,14 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                     }
                     None => Err(ClientError::Unauthorized("Session expired".to_owned())),
                 };
+                // A lost earlier try that removed it reads as removed.
+                let landed = unconfirmed.is_some_and(|mut unconfirmed| {
+                    unconfirmed
+                        .write()
+                        .settle(WriteKey::remove_card(deck_id, card), answer_of(&result))
+                        == Verdict::LandedEarlier
+                });
+                let result = if landed { Ok(()) } else { result };
                 match result {
                     Ok(()) => {
                         if let Some(undone) = undone {
@@ -281,6 +292,8 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
         .read()
         .as_ref()
         .map(|r| r.as_ref().cloned().map_err(|_| ()));
+    // Clone and Share wait for the deck: Clone's name and Share's link come from its profile.
+    let profile_loaded = matches!(loaded_profile, Some(Ok(_)));
     let clone_name = loaded_profile
         .as_ref()
         .and_then(|r| r.as_ref().ok())
@@ -323,6 +336,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                             rows,
                             dialogs,
                             cards_open: view.is_some(),
+                            profile_loaded,
                             on_cards,
                             // The deck's own actions, before the cart and Cards.
                             profile_dock: rsx! {
@@ -337,12 +351,14 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                                 button {
                                     class: "action-dock-btn",
                                     "aria-label": MoreItem::CloneDeck.short_label(),
+                                    disabled: !profile_loaded,
                                     onclick: move |_| clone_open.set(true),
                                     CloneIcon {}
                                 }
                                 button {
                                     class: "action-dock-btn",
                                     "aria-label": MoreItem::ShareDeck.short_label(),
+                                    disabled: !profile_loaded,
                                     onclick: move |_| share_open.set(true),
                                     ShareIcon {}
                                 }

@@ -45,3 +45,65 @@ fn no_sheet_moves_the_toast_stack_off_the_kit_s_corner() {
         }
     }
 }
+
+/// Every sheet the app and the web draw with, the kit's included.
+fn every_sheet() -> Vec<(&'static str, &'static str)> {
+    let kit = [
+        ("orangui COMPONENTS_CSS", components::COMPONENTS_CSS),
+        ("orangui APP_CSS", components::APP_CSS),
+        ("components SCREENS_CSS", components::SCREENS_CSS),
+        ("components MAGIC_CSS", components::MAGIC_CSS),
+        ("components FILTER_CSS", components::FILTER_CSS),
+        ("components DECK_PAGE_CSS", components::DECK_PAGE_CSS),
+    ];
+    SHEETS.into_iter().chain(kit).collect()
+}
+
+/// A toast floats in front of whatever is under it: no rule keys on a live toast to pad, size or
+/// move anything else out of its way, a sheet or a dock included.
+#[test]
+fn nothing_makes_room_for_a_toast() {
+    for (name, css) in every_sheet() {
+        assert!(
+            !css.contains("--toast-band-top"),
+            "{name} keeps a band for content to clear the toasts"
+        );
+        for block in css.split('}') {
+            let Some((selector, _)) = block.rsplit_once('{') else {
+                continue;
+            };
+            let selector = selector.trim();
+            assert!(
+                !selector.contains(":has(.toast-container"),
+                "{name}: `{selector}` changes other content while a toast is up"
+            );
+        }
+    }
+}
+
+/// The kit's toast sheet, as the web copies it.
+const TOAST: &str = include_str!("../../zwiper-web/assets/sheets/08-toast.css");
+
+/// Every `z-index` a sheet sets to a number.
+fn z_indexes(css: &str) -> impl Iterator<Item = i64> + '_ {
+    css.split("z-index:")
+        .skip(1)
+        .filter_map(|rest| rest.split(';').next()?.trim().parse().ok())
+}
+
+/// The stack stays in front of everything else: sheets, docks and dialogs.
+#[test]
+fn the_toast_stack_sits_in_front_of_every_sheet_and_dock() {
+    let stack = TOAST
+        .split_once(".toast-container {")
+        .and_then(|(_, body)| z_indexes(body.split('}').next()?).next())
+        .expect("the stack sets a z-index");
+    for (name, css) in every_sheet() {
+        for z in z_indexes(css) {
+            assert!(
+                z < stack,
+                "{name} sets z-index {z}, not under the toasts' {stack}"
+            );
+        }
+    }
+}
