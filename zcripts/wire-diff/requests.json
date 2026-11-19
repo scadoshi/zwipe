@@ -276,6 +276,64 @@
    "as": "tester"
   },
   {
+   "name": "collection summary, empty",
+   "method": "GET",
+   "route": "/api/collection/summary",
+   "path": "/api/collection/summary",
+   "as": "tester"
+  },
+  {
+   "name": "collection import",
+   "method": "POST",
+   "route": "/api/collection/import",
+   "path": "/api/collection/import",
+   "body": {
+    "csv": "Quantity,Name,Finish,Condition,Date Added,Language,Purchase Price,Tags,Edition Name,Edition Code,Multiverse Id,Scryfall ID,Collector Number\n1,Sol Ring,Normal,NM,,EN,,wire,x,x,,{{card}},1\n2,No Such Card,Normal,NM,,EN,,,x,x,,,\n",
+    "mode": "add"
+   },
+   "as": "tester"
+  },
+  {
+   "name": "collection page",
+   "method": "GET",
+   "route": "/api/collection",
+   "path": "/api/collection",
+   "as": "tester"
+  },
+  {
+   "name": "collection set card",
+   "method": "PUT",
+   "route": "/api/collection/cards",
+   "path": "/api/collection/cards",
+   "body": {
+    "scryfall_data_id": "{{card}}",
+    "finish": "foil",
+    "quantity": 2
+   },
+   "as": "tester"
+  },
+  {
+   "name": "collection summary",
+   "method": "GET",
+   "route": "/api/collection/summary",
+   "path": "/api/collection/summary",
+   "as": "tester"
+  },
+  {
+   "name": "owned printings",
+   "method": "GET",
+   "route": "/api/collection/printings/{oracle_id}",
+   "path": "/api/collection/printings/{{card_oracle}}",
+   "as": "tester"
+  },
+  {
+   "name": "collection export",
+   "method": "GET",
+   "route": "/api/collection/export",
+   "path": "/api/collection/export",
+   "as": "tester"
+  },
+  {
    "name": "user",
    "method": "GET",
    "route": "/api/user",
