@@ -29,7 +29,7 @@ async fn a_pool_with_jit_off_starts_each_connection_without_jit_in_utc() {
 }
 
 #[tokio::test]
-async fn a_pool_with_jit_on_keeps_the_server_s_jit_setting_in_utc() {
+async fn a_pool_that_keeps_jit_keeps_the_server_s_jit_setting_in_utc() {
     let plain = PgPoolOptions::new()
         .max_connections(1)
         .connect(&database_url())
@@ -37,7 +37,7 @@ async fn a_pool_with_jit_on_keeps_the_server_s_jit_setting_in_utc() {
         .unwrap();
     let server_default = show(&plain, "SHOW jit").await;
 
-    let db = Postgres::new(&database_url(), Jit::On).await.unwrap();
+    let db = Postgres::new(&database_url(), Jit::Keep).await.unwrap();
     assert_eq!(show(&db.pool, "SHOW jit").await, server_default);
     assert_eq!(show(&db.pool, "SHOW TimeZone").await, "UTC");
 }

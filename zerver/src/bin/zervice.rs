@@ -79,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
     } else {
         Writes::Keep
     };
-    let db = Postgres::new(&config.database_url, Jit::On)
+    let db = Postgres::new(&config.database_url, Jit::Keep)
         .await?
         .with_writes(writes);
     let card_service = card::services::Service::new(db.clone());

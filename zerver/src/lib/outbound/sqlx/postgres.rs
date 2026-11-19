@@ -75,7 +75,8 @@ impl IsConstraintViolation for sqlx::Error {
 
 // == config ==
 
-/// Whether a pool's connections let Postgres compile a query's plan (JIT).
+/// Whether a pool's connections may let Postgres compile a query's expressions to machine code
+/// (JIT).
 ///
 /// The request server turns it off: its queries are short, and on them JIT's compile time costs
 /// more than the run it speeds up. zervice keeps the server's setting for its long nightly
@@ -84,7 +85,7 @@ impl IsConstraintViolation for sqlx::Error {
 pub enum Jit {
     /// Keep the database server's own `jit` setting.
     #[default]
-    On,
+    Keep,
     /// `SET jit = off` on every connection.
     Off,
 }
@@ -126,7 +127,7 @@ impl PostgresPoolOptions {
                         use sqlx::Executor;
                         conn.execute("SET TIME ZONE 'UTC'").await?;
                         match jit {
-                            Jit::On => {}
+                            Jit::Keep => {}
                             Jit::Off => {
                                 conn.execute("SET jit = off").await?;
                             }

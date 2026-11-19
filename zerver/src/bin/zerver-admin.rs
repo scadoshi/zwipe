@@ -357,7 +357,7 @@ impl Services {
         let config = Config::from_env()?;
         let support = Email::new(&config.support_email_address)
             .context("SUPPORT_EMAIL_ADDRESS is not an email")?;
-        let db = Postgres::new(&config.database_url, Jit::On).await?;
+        let db = Postgres::new(&config.database_url, Jit::Keep).await?;
         let resend = Resend::new(config.resend_api_key, config.resend_from_email);
         let auth = auth::services::Service::new(
             db.clone(),
