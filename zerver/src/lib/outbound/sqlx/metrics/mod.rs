@@ -6,10 +6,12 @@ use std::num::TryFromIntError;
 use sqlx::query;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
+use zwipe_core::http::contracts::card::{HttpCardSwipes, HttpCommanderPicks};
 use zwipe_core::http::contracts::metrics::{
     AnonymousEventKind, CardSignalDelta, CommanderSelectDelta, HttpCrashReport, HttpUsageBatch,
 };
 
+use crate::domain::metrics::models::card_stats::{CardStats, MVP_VESTING_DAYS};
 use crate::domain::metrics::models::errors::MetricsError;
 use crate::domain::metrics::models::kinds::{AdminAction, AuditAction, EventKind};
 use crate::domain::metrics::models::lifetime_counters::LifetimeCounters;
@@ -65,6 +67,13 @@ where
         MetricsError::Database(
             anyhow::Error::new(err).context("a usage tally overflows its INTEGER column"),
         )
+    })
+}
+
+/// Reads a counter column, never negative, as the count the wire carries.
+fn count(column: i64) -> Result<u64, MetricsError> {
+    u64::try_from(column).map_err(|err| {
+        MetricsError::Database(anyhow::Error::new(err).context("a counter column is negative"))
     })
 }
 
@@ -960,6 +969,72 @@ impl MetricsRepository for Postgres {
             cards_swiped: row.cards_swiped,
             searches: row.searches,
             decks_created: row.decks_created,
+        })
+    }
+
+    async fn card_stats(&self, oracle_id: Uuid) -> Result<CardStats, MetricsError> {
+        // Each count starts on an index: deck_cards by oracle id, scryfall_data by oracle id,
+        // and the two signal pools by their primary keys. Leading decks are matched by any
+        // printing of the card, since a deck stores the printing it leads with. The pools are
+        // read through scalar subqueries rather than outer joins, so the columns' recorded
+        // nullability doesn't depend on the plan the database picks.
+        let row = sqlx::query!(
+            r#"SELECT
+                   (SELECT COUNT(*) FROM deck_cards
+                     WHERE oracle_id = $1 AND board = 'deck') AS "in_decks!",
+                   (SELECT COUNT(*) FROM deck_cards
+                     WHERE oracle_id = $1 AND board = 'deck'
+                       AND mvp_at <= NOW() - make_interval(days => $2)) AS "mvp_decks!",
+                   (SELECT COUNT(*) FROM decks d
+                     WHERE EXISTS (SELECT 1 FROM scryfall_data sd
+                                    WHERE sd.oracle_id = $1
+                                      AND sd.id IN (d.commander_id, d.partner_commander_id))
+                   ) AS "decks_led!",
+                   (SELECT shown FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_shown?",
+                   (SELECT added FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_added?",
+                   (SELECT skipped FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_skipped?",
+                   (SELECT maybed FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_maybed?",
+                   (SELECT removed FROM card_swipe_signal WHERE card_oracle_id = $1) AS "swipe_removed?",
+                   (SELECT shown FROM commander_select_signal WHERE commander_oracle_id = $1) AS "pick_shown?",
+                   (SELECT selected FROM commander_select_signal WHERE commander_oracle_id = $1) AS "pick_selected?""#,
+            oracle_id,
+            MVP_VESTING_DAYS,
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(db)?;
+
+        let swipes = match (
+            row.swipe_shown,
+            row.swipe_added,
+            row.swipe_skipped,
+            row.swipe_maybed,
+            row.swipe_removed,
+        ) {
+            (Some(shown), Some(added), Some(skipped), Some(maybed), Some(removed)) => {
+                Some(HttpCardSwipes {
+                    shown: count(shown)?,
+                    added: count(added)?,
+                    skipped: count(skipped)?,
+                    maybed: count(maybed)?,
+                    removed: count(removed)?,
+                })
+            }
+            _ => None,
+        };
+        let commander_picks = match (row.pick_shown, row.pick_selected) {
+            (Some(shown), Some(selected)) => Some(HttpCommanderPicks {
+                shown: count(shown)?,
+                selected: count(selected)?,
+            }),
+            _ => None,
+        };
+        Ok(CardStats {
+            in_decks: count(row.in_decks)?,
+            mvp_decks: count(row.mvp_decks)?,
+            swipes,
+            decks_led: count(row.decks_led)?,
+            commander_picks,
         })
     }
 

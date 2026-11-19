@@ -244,6 +244,7 @@ pub fn public_routes(limits: &RateLimits) -> Router<AppState> {
                         .route("/named/{name_slug}", get(card::get_named_cards))
                         .route("/featured-flavor", get(card::get_featured_flavor))
                         .route("/{oracle_id}/printings", get(card::get_printings))
+                        .route("/{oracle_id}/stats", get(card::get_card_stats))
                         .route("/artists", get(card::get_artists))
                         .route("/types", get(card::get_card_types))
                         .route("/keywords", get(card::get_keywords))

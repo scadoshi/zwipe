@@ -1,0 +1,87 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n                   (SELECT COUNT(*) FROM deck_cards\n                     WHERE oracle_id = $1 AND board = 'deck') AS \"in_decks!\",\n                   (SELECT COUNT(*) FROM deck_cards\n                     WHERE oracle_id = $1 AND board = 'deck'\n                       AND mvp_at <= NOW() - make_interval(days => $2)) AS \"mvp_decks!\",\n                   (SELECT COUNT(*) FROM decks d\n                     WHERE EXISTS (SELECT 1 FROM scryfall_data sd\n                                    WHERE sd.oracle_id = $1\n                                      AND sd.id IN (d.commander_id, d.partner_commander_id))\n                   ) AS \"decks_led!\",\n                   (SELECT shown FROM card_swipe_signal WHERE card_oracle_id = $1) AS \"swipe_shown?\",\n                   (SELECT added FROM card_swipe_signal WHERE card_oracle_id = $1) AS \"swipe_added?\",\n                   (SELECT skipped FROM card_swipe_signal WHERE card_oracle_id = $1) AS \"swipe_skipped?\",\n                   (SELECT maybed FROM card_swipe_signal WHERE card_oracle_id = $1) AS \"swipe_maybed?\",\n                   (SELECT removed FROM card_swipe_signal WHERE card_oracle_id = $1) AS \"swipe_removed?\",\n                   (SELECT shown FROM commander_select_signal WHERE commander_oracle_id = $1) AS \"pick_shown?\",\n                   (SELECT selected FROM commander_select_signal WHERE commander_oracle_id = $1) AS \"pick_selected?\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "in_decks!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "mvp_decks!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "decks_led!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "swipe_shown?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "swipe_added?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "swipe_skipped?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "swipe_maybed?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "swipe_removed?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "pick_shown?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "pick_selected?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "f2781e4167dbdb8280d71d80798d6bf3c7f0b0b709e9f2ba7820ab5d685ebf9f"
+}

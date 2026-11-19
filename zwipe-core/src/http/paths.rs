@@ -135,6 +135,11 @@ pub fn named_card_route(slug: &CardSlug) -> String {
 }
 
 #[must_use]
+pub fn card_stats_route(oracle_id: Uuid) -> String {
+    format!("{CARD_ROUTE}/{oracle_id}/stats")
+}
+
+#[must_use]
 pub fn oracle_tag_examples_route(slug: &OracleTagSlug) -> String {
     format!("{CARD_ROUTE}/oracle-tag/{slug}/examples")
 }
@@ -347,6 +352,7 @@ mod tests {
         assert_eq!(printings_route(a), format!("/api/card/{sa}/printings"));
         let name: CardSlug = "fire-ice".parse().unwrap();
         assert_eq!(named_card_route(&name), "/api/card/named/fire-ice");
+        assert_eq!(card_stats_route(a), format!("/api/card/{sa}/stats"));
         let slug: OracleTagSlug = "spot-removal".parse().unwrap();
         assert_eq!(
             oracle_tag_examples_route(&slug),

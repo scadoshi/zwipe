@@ -320,7 +320,13 @@ async fn an_ipv6_64_gets_twice_the_burst(pool: sqlx::PgPool) {
     for n in 1..=60_u32 {
         let peer = SocketAddr::new(format!("2001:db8:1:2::{n:x}").parse().unwrap(), 50001);
         let (status, _) = app
-            .send_from(peer, Method::POST, CARD_LOOKUP_ROUTE, Some(body.clone()), None)
+            .send_from(
+                peer,
+                Method::POST,
+                CARD_LOOKUP_ROUTE,
+                Some(body.clone()),
+                None,
+            )
             .await;
         if status == StatusCode::TOO_MANY_REQUESTS {
             break;
