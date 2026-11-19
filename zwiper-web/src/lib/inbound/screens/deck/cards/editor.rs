@@ -370,6 +370,12 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                     toast.info(message, ToastOptions::default().duration(TOAST_QUICK));
                 }
             };
+            let mut bursts = bursts;
+            // Only a quantity write can fail with an entry still on the log: a removal's entry
+            // is its own, and taps that cancel out leave none.
+            if !matches!(burst.write(), Write::Set(_)) {
+                bursts.write().settle(card_id, burst.logged);
+            }
             match burst.write() {
                 Write::Nothing => landed(),
                 Write::Delete => {
@@ -411,12 +417,15 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                             c.update_deck_card(deck_id, card_id, &request, &s).await
                         })
                         .await;
+                    let still_logged = bursts.write().settle(card_id, burst.logged);
                     if reply.is_ok() {
                         landed();
                         return;
                     }
                     put_back();
-                    deck_cards::take_burst_entry(&mut undo.write(), deck_id, card_id, &burst);
+                    if let Some(logged) = still_logged {
+                        logged.take(&mut undo.write(), deck_id, card_id);
+                    }
                     if mounted.get()
                         && let Ok(quantity) = Quantity::new(burst.baseline)
                         && let Some(entry) = entries
@@ -464,13 +473,8 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 .record_removal(deck_id, entry.card.scryfall_data.oracle_id);
             removed_rows.write().insert(card_id, entry.clone());
             if record {
-                let open = bursts.peek().open(card_id);
-                // The removal's entry puts back the copies from before the burst, so it stands
-                // for the burst's own entry too.
-                if let Some(burst) = open {
-                    deck_cards::take_burst_entry(&mut undo.write(), deck_id, card_id, &burst);
-                }
-                let baseline = open.map_or(current, |b| b.baseline);
+                let baseline = bursts.peek().baseline(card_id).unwrap_or(current);
+                bursts.write().forget(&mut undo.write(), deck_id, card_id);
                 undo.write().push(
                     deck_id,
                     UndoAction::Removed {
@@ -499,22 +503,20 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 entry.deck_card.quantity = quantity;
             }
             crossings(&before);
-            if record {
-                let name = before
-                    .iter()
-                    .find(|e| e.deck_card.scryfall_data_id == card_id)
-                    .map_or_default(|e| e.card.scryfall_data.name.clone());
-                bursts.peek().record_tap(
-                    &mut undo.write(),
-                    deck_id,
-                    card_id,
-                    &name,
-                    current,
-                    delta,
-                );
-            }
         }
-        let generation = bursts.write().tap(card_id, current, delta, record);
+        // A recorded tap that keeps the row goes on the undo log as the row changes; a removal
+        // recorded its own entry above.
+        let generation = if record && target >= 1 {
+            let name = before
+                .iter()
+                .find(|e| e.deck_card.scryfall_data_id == card_id)
+                .map_or_default(|e| e.card.scryfall_data.name.clone());
+            bursts
+                .write()
+                .record_tap(&mut undo.write(), deck_id, card_id, &name, current, delta)
+        } else {
+            bursts.write().tap(card_id, current, delta)
+        };
         spawn(async move {
             timer::sleep(QUANTITY_FLUSH).await;
             let Some(burst) = bursts.write().due(card_id, generation) else {
@@ -972,7 +974,15 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                     }
                 });
             }
-            UndoAction::QuantityChanged { card_id, net, .. } => {
+            UndoAction::QuantityChanged {
+                card_id,
+                net,
+                baseline,
+                ..
+            } => {
+                bursts
+                    .write()
+                    .unlog(card_id, deck_cards::Logged { net, baseline });
                 undo_retry.write().insert(card_id, (message, retry));
                 change_quantity.call((card_id, net.saturating_neg(), /* record */ false));
             }
