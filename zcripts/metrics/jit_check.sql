@@ -1,6 +1,6 @@
 -- JIT check: does Postgres spend more time compiling zerver's per-user queries than running them?
 --
--- For issue 631. Prints the server's JIT settings, then explains fetch_profiled_decks (the deck
+-- Prints the server's JIT settings, then explains fetch_profiled_decks (the deck
 -- read behind suggested commanders) for the user with the most decks, twice: as the server is
 -- configured, and with JIT off for this transaction only. If the first plan's JIT section shows
 -- hundreds of milliseconds while the second runs in a few, zerver pays the compile cost.
