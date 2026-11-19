@@ -107,6 +107,23 @@ test("an approval without a reason or an approver doesn't count", () => {
   assert.deepEqual(verdict.stale, []);
 });
 
+test("an empty path approves the whole reply, as a new route's status and body", () => {
+  const step = { name: "card stats", route: "/api/card/{oracle_id}/stats" };
+  const main = { status: 404, body: null };
+  const cand = { status: 200, body: { in_decks: 1 } };
+  const verdict = judge([{ step, diffs: diff(main, cand) }], [
+    { route: step.route, path: "", kind: "status", reason: "new route", approved_by: "composer" },
+    { route: step.route, path: "", kind: "type", reason: "new route", approved_by: "composer" },
+  ]);
+  assert.deepEqual(verdict.unapproved, []);
+  assert.deepEqual(verdict.incomplete, []);
+  assert.deepEqual(verdict.approved.map((d) => d.kind), ["status", "type"]);
+  const field = judge([{ step, diffs: [{ path: "/in_decks", kind: "added" }] }], [
+    { route: step.route, path: "", kind: "added", reason: "new route", approved_by: "composer" },
+  ]);
+  assert.equal(field.unapproved.length, 1, "the root approves only a difference at the root");
+});
+
 test("an approval for one field doesn't pass another on the same route", () => {
   const step = { name: "fetch user", route: "/api/user" };
   const verdict = judge([{ step, diffs: [{ path: "/email", kind: "removed" }] }], [
