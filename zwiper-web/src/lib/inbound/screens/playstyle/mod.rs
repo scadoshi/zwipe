@@ -24,7 +24,7 @@ use zwipe_ui::playstyle::StapleDeck;
 use zwipe_ui::shortcuts::ListLayout;
 use zwipe_ui::telemetry::vocabulary::Screen;
 
-pub use self::chips::{IdentityPips, ShowIdentityChips};
+pub use self::chips::IdentityPips;
 use self::profile::{BuilderProfileSections, ProfileSummary};
 use self::rows::StaplesPanel;
 pub use self::rows::SuggestionReasons;

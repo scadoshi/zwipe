@@ -4,6 +4,7 @@
 use dioxus::prelude::*;
 use dioxus_primitives::toast::use_toast;
 use zwipe_core::domain::card::Card;
+use zwipe_ui::commander::deal::Door;
 use zwipe_ui::deck::command_zone;
 use zwipe_ui::deck::form::Slot;
 
@@ -57,7 +58,7 @@ pub fn DeckFormOverlays(form: DeckForm) -> Element {
             SwipeSelect {
                 key: "{format.to_legality_key()}",
                 open: form.commander.swipe_open,
-                mode: SwipeMode::Commander(format),
+                mode: SwipeMode::Commanders(Door::DeckCreation(format)),
                 exclude_oracle_ids: Some(zone_ids.into()),
                 on_select: move |card: Card| pick(Slot::Commander, card),
                 on_close: move |()| close(Slot::Commander),
