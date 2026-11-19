@@ -168,6 +168,7 @@ const fn host_screen(route: &Router) -> Screen {
         Router::Account {} => Screen::Profile(ProfileScreen::Main),
         Router::Config {} => Screen::Profile(ProfileScreen::Settings),
         Router::Activity {} => Screen::Activity,
+        Router::Collection {} => Screen::Collection,
         Router::DeckList {} => Screen::Deck(DeckScreen::List),
         Router::CommanderMaybeboard {} => Screen::CommanderMaybeboard,
         Router::SuggestedCommanders {} => Screen::SuggestedCommanders,

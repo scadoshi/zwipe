@@ -31,6 +31,7 @@ use zwipe_ui::deck_cards::stacks::{CardsView, Reveal};
 use zwipe_ui::screens::collection_list::stacks::{self, Stack, StackCard};
 use zwipe_ui::screens::collection_list::{self, Action, Effect, RowKey, State, Status, row_tags};
 use zwipe_ui::shortcuts::ListLayout;
+use zwipe_ui::toast::{Toast, ToastKind};
 
 use crate::inbound::cards::card_row::{CardOverlays, CardRow};
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
@@ -144,7 +145,13 @@ impl Driver {
                     });
                 });
             }
-            Effect::Download { file_name, text } => browser::download(&file_name, &text),
+            Effect::Download { file_name, text } => {
+                browser::download(&file_name, &text);
+                raise(
+                    self.toast,
+                    &Toast::quick(ToastKind::Success, collection_list::EXPORTED),
+                );
+            }
             Effect::Toast(toast) => raise(self.toast, &toast),
         }
     }

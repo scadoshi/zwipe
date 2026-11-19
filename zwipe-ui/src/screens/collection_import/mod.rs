@@ -32,6 +32,12 @@ pub const FILE_PLACEHOLDER: &str = "Choose a .csv export";
 /// The file types the picker offers.
 pub const ACCEPT: &str = ".csv,text/csv";
 
+/// The label chip beside the paste field.
+pub const PASTE: &str = "Paste";
+
+/// The paste field while it is empty.
+pub const PASTE_PLACEHOLDER: &str = "Or paste the export's CSV";
+
 /// The line under the chips: which exports the import takes.
 pub const SOURCES: &str = "Takes a collection export from ManaBox or Archidekt.";
 
@@ -86,6 +92,10 @@ pub enum Action {
         /// The file's text.
         text: String,
     },
+    /// The paste field holds this text. It takes the picked file's place, and empty text leaves
+    /// nothing to send. Text whose request would pass the size cap is turned down with a toast
+    /// and clears the field.
+    Paste(String),
     /// A file past the size cap was picked; the client didn't read it. It clears the last pick.
     PickedTooBig,
     /// The browser couldn't read the picked file. It clears the last pick.
@@ -136,10 +146,11 @@ pub enum Effect {
     CollectionChanged,
 }
 
-/// The picked file, and its import's id in the picked mode.
+/// The picked file or the pasted text, and its import's id in the picked mode.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Picked {
-    name: String,
+    /// The file's name; `None` for pasted text.
+    name: Option<String>,
     text: String,
     request_id: Uuid,
 }
@@ -195,10 +206,26 @@ impl State {
                     return vec![Effect::Toast(Toast::normal(ToastKind::Error, TOO_BIG))];
                 }
                 self.file = Some(Picked {
-                    name,
+                    name: Some(name),
                     text,
                     request_id: Uuid::new_v4(),
                 });
+            }
+            Action::Paste(text) => {
+                if text.is_empty() {
+                    self.file = None;
+                } else if body_bytes(&text) > MAX_BODY_BYTES {
+                    self.file = None;
+                    return vec![Effect::Toast(Toast::normal(ToastKind::Error, TOO_BIG))];
+                } else if self.pasted() != text {
+                    // The same text again is the same import, so a server that ran it answers
+                    // it again.
+                    self.file = Some(Picked {
+                        name: None,
+                        text,
+                        request_id: Uuid::new_v4(),
+                    });
+                }
             }
             Action::PickedTooBig => {
                 self.file = None;
@@ -264,14 +291,25 @@ impl State {
         self.mode
     }
 
-    /// The picked file's name.
+    /// The picked file's name; `None` with nothing picked or with pasted text.
     #[must_use]
     pub fn file_name(&self) -> Option<&str> {
-        self.file.as_ref().map(|f| f.name.as_str())
+        self.file.as_ref().and_then(|f| f.name.as_deref())
     }
 
-    /// Whether Submit would send: a file is picked and no import is out. A finished import clears
-    /// the file, so each pick sends once.
+    /// The paste field's text: empty with nothing pasted or with a file picked.
+    #[must_use]
+    pub fn pasted(&self) -> &str {
+        match &self.file {
+            Some(Picked {
+                name: None, text, ..
+            }) => text,
+            Some(Picked { name: Some(_), .. }) | None => "",
+        }
+    }
+
+    /// Whether Submit would send: a file is picked or text pasted, and no import is out. A finished
+    /// import clears the file, so each pick sends once.
     #[must_use]
     pub fn can_submit(&self) -> bool {
         self.file.is_some() && self.phase != Phase::Importing

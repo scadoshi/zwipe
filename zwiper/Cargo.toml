@@ -46,7 +46,7 @@ jni = "0.21"
 # `outbound/keyring_entry.rs`.
 [target.'cfg(target_os = "ios")'.dependencies]
 objc2 = "0.6"
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSArray", "NSURL"] }
 keyring-core = "1.0"
 apple-native-keyring-store = { version = "1.0", features = ["protected"] }
 

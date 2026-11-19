@@ -294,3 +294,81 @@ fn a_new_pick_or_mode_is_a_new_import() {
         "picking the mode it already has changes nothing"
     );
 }
+
+const PASTED: &str = "Name,Set code,Quantity\nSol Ring,c21,1\n";
+
+#[test]
+fn pasted_text_sends_as_the_export_and_names_no_file() {
+    let mut state = State::new();
+    assert_eq!(state.update(Action::Paste(PASTED.into())), []);
+    assert_eq!(state.pasted(), PASTED);
+    assert_eq!(state.file_name(), None, "a paste is not a file");
+    assert!(state.can_submit());
+    let effects = state.update(Action::Submit);
+    let Some(Effect::ImportCollection { csv, .. }) = effects.first() else {
+        panic!("{effects:?}")
+    };
+    assert_eq!(csv, PASTED);
+}
+
+#[test]
+fn a_paste_and_a_file_replace_each_other() {
+    let mut state = State::new();
+    let _ = state.update(Action::Paste(PASTED.into()));
+    picked(&mut state);
+    assert_eq!(state.pasted(), "", "the file takes the paste's place");
+    assert_eq!(state.file_name(), Some("manabox.csv"));
+    let _ = state.update(Action::Paste(PASTED.into()));
+    assert_eq!(state.file_name(), None, "the paste takes the file's place");
+    assert_eq!(state.pasted(), PASTED);
+}
+
+#[test]
+fn clearing_the_paste_leaves_nothing_to_send() {
+    let mut state = State::new();
+    let _ = state.update(Action::Paste(PASTED.into()));
+    assert_eq!(state.update(Action::Paste(String::new())), []);
+    assert!(!state.can_submit());
+    assert_eq!(state.pasted(), "");
+}
+
+#[test]
+fn the_same_paste_again_keeps_its_import_id() {
+    let mut state = State::new();
+    let _ = state.update(Action::Paste(PASTED.into()));
+    let first = state.update(Action::Submit);
+    let ticket = sent(&first);
+    let _ = state.update(Action::Failed { ticket });
+    let _ = state.update(Action::Paste(PASTED.into()));
+    let again = state.update(Action::Submit);
+    let id = |effects: &[Effect]| match effects {
+        [Effect::ImportCollection { request_id, .. }] => *request_id,
+        other => panic!("{other:?}"),
+    };
+    assert_eq!(
+        id(&first),
+        id(&again),
+        "a server that ran it answers it again"
+    );
+    let _ = state.update(Action::Failed {
+        ticket: sent(&again),
+    });
+    let _ = state.update(Action::Paste(format!("{PASTED}Forest,zzz,1\n")));
+    assert_ne!(
+        id(&first),
+        id(&state.update(Action::Submit)),
+        "new text is a new import"
+    );
+}
+
+#[test]
+fn a_paste_past_the_cap_is_turned_down() {
+    let mut state = State::new();
+    let effects = state.update(Action::Paste("x".repeat(MAX_BODY_BYTES)));
+    assert_eq!(
+        effects,
+        [Effect::Toast(Toast::normal(ToastKind::Error, TOO_BIG))]
+    );
+    assert!(!state.can_submit());
+    assert_eq!(state.pasted(), "");
+}

@@ -19,6 +19,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::screens::account::LOG_OUT;
+use zwipe_ui::screens::collection_import;
 
 use crate::inbound::components::auth::signal_logout::SignalLogout;
 use crate::inbound::components::logout_dialog::LogoutDialog;
@@ -61,7 +62,12 @@ pub const fn section_of(route: &Router) -> Option<Section> {
         Router::Account {} => Some(Section::Account),
         Router::Config {} => Some(Section::Config),
         Router::About {} | Router::PrivacyPolicy {} => Some(Section::About),
-        Router::Login {} | Router::Register {} | Router::ForgotPassword {} => None,
+        // Collection is the app's and the web's own, not one of the shared menu's sections: its
+        // entry lights itself.
+        Router::Collection {}
+        | Router::Login {}
+        | Router::Register {}
+        | Router::ForgotPassword {} => None,
     }
 }
 
@@ -102,6 +108,14 @@ pub fn MenuLinks(open: Signal<bool>, route: Router) -> Element {
                     current: current == Some(section),
                     open,
                 }
+            }
+        }
+        li {
+            MenuEntry {
+                label: collection_import::TITLE,
+                to: Router::Collection {},
+                current: route == Router::Collection {},
+                open,
             }
         }
     }

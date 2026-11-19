@@ -15,7 +15,8 @@
 //! server refuses those values.
 //!
 //! The model holds the list and the edits; the client fetches, saves, runs the timers, draws the
-//! rows and saves the export's file, with [`EXPORTED`] as it starts. Import is its own model,
+//! rows and saves the export's file, raising [`EXPORTED`] once the file is saved where saving is
+//! the client's own act (a download) and nothing where the user finishes it (a share sheet). Import is its own model,
 //! [`super::collection_import`].
 
 pub mod stacks;
@@ -55,7 +56,7 @@ pub const MORE_FAILED: &str = "Couldn't load more cards";
 /// The toast when a row's write fails and its count goes back.
 pub const SAVE_FAILED: &str = "Couldn't save that change";
 
-/// The toast when the export's file starts saving.
+/// The toast once the export's file is saved, which a client whose save is its own act raises.
 pub const EXPORTED: &str = "Collection exported";
 
 /// The toast when the export fails.
@@ -247,7 +248,8 @@ pub enum Effect {
         /// The ticket to hand back.
         ticket: Ticket,
     },
-    /// Saves a file for the user.
+    /// Saves a file for the user. The model raises no toast for it: a client that saves the file
+    /// itself raises [`EXPORTED`] once it has.
     Download {
         /// Its name.
         file_name: String,
@@ -387,13 +389,10 @@ impl State {
                     return Vec::new();
                 }
                 self.exporting = None;
-                vec![
-                    Effect::Download {
-                        file_name: export.file_name,
-                        text: export.csv,
-                    },
-                    Effect::Toast(Toast::quick(ToastKind::Success, EXPORTED)),
-                ]
+                vec![Effect::Download {
+                    file_name: export.file_name,
+                    text: export.csv,
+                }]
             }
             Action::ExportFailed { ticket } => {
                 if self.exporting != Some(ticket) {
@@ -667,4 +666,20 @@ fn condition_short(condition: CardCondition) -> Option<&'static str> {
         CardCondition::Damaged => "DMG",
         CardCondition::Unknown => return None,
     })
+}
+
+/// What sets a row apart from the printing's other rows, for its line in a stack card's drawer:
+/// [`row_tags`] past the count, joined (`Foil LP`). A row with none of them, nonfoil with no
+/// condition in English, reads `Nonfoil`, and one whose finish this build doesn't know reads
+/// `Other finish`, so no line is a bare stepper.
+#[must_use]
+pub fn row_label(row: &Row) -> String {
+    let words: Vec<String> = row_tags(row).into_iter().skip(1).collect();
+    if !words.is_empty() {
+        return words.join(" ");
+    }
+    match row.key.finish {
+        Finish::Unknown => "Other finish".to_owned(),
+        Finish::Nonfoil | Finish::Foil | Finish::Etched => "Nonfoil".to_owned(),
+    }
 }
