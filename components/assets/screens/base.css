@@ -67,20 +67,9 @@ button {
 
 /* The kit puts the stack in the screen's bottom-left corner, as far from
    the left edge as from the bottom (--corner-gap, as the dock's), the newest
-   at the bottom; nothing here moves it, over a dock or anywhere else.
-
-   While a toast is up over an open sheet with a dock, the sheet's content
-   ends above the toast band as well as the dock. The band's top is the
-   stack's inset plus a three-line toast (a connection error, about
-   6.75rem) and a gap, so a sheet sized to its content grows upward and a
-   scrolling one scrolls its last row clear. */
-body {
-    --toast-band-top: calc(var(--corner-gap) + 8rem);
-}
-
-body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-content {
-    padding-bottom: var(--toast-band-top);
-}
+   at the bottom; nothing here moves it, over a dock or anywhere else. A
+   toast sits in front of a sheet or a dock, and nothing under it makes
+   room for it. */
 
 @media (prefers-reduced-motion: reduce) {
     body .toast-container [role="alertdialog"] {
