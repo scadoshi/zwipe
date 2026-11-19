@@ -61,6 +61,7 @@ impl Endpoint for GetCommanderSuggestions {
 pub struct DismissCommander(pub HttpDismissCommander);
 impl Endpoint for DismissCommander {
     const METHOD: Method = Method::Post;
+    const IDEMPOTENT: bool = true;
     type Request = HttpDismissCommander;
     type Response = ();
     fn path(&self) -> Cow<'static, str> {

@@ -31,8 +31,10 @@ impl ZwipeClient {
         endpoint: E,
         session: Option<&Session>,
     ) -> Result<E::Response, ClientError> {
-        let response = self.send(&endpoint, session, None).await?;
-        decode::<E>(response).await
+        once_more_if_lost(&endpoint, || async {
+            decode::<E>(self.send(&endpoint, session, None).await?).await
+        })
+        .await
     }
 
     /// [`Self::call`] that gives up after `timeout`, on every platform: the
@@ -49,8 +51,10 @@ impl ZwipeClient {
         session: Option<&Session>,
         timeout: Duration,
     ) -> Result<E::Response, ClientError> {
-        let response = self.send(&endpoint, session, Some(timeout)).await?;
-        decode::<E>(response).await
+        once_more_if_lost(&endpoint, || async {
+            decode::<E>(self.send(&endpoint, session, Some(timeout)).await?).await
+        })
+        .await
     }
 
     /// Sends `endpoint` like [`Self::call`] and answers with its success body
@@ -67,10 +71,13 @@ impl ZwipeClient {
         endpoint: E,
         session: Option<&Session>,
     ) -> Result<Dated<E::Response>, ClientError> {
-        let response = self.send(&endpoint, session, None).await?;
-        let made_at = made_at(response.headers(), Utc::now());
-        let value = decode::<E>(response).await?;
-        Ok(Dated { value, made_at })
+        once_more_if_lost(&endpoint, || async {
+            let response = self.send(&endpoint, session, None).await?;
+            let made_at = made_at(response.headers(), Utc::now());
+            let value = decode::<E>(response).await?;
+            Ok(Dated { value, made_at })
+        })
+        .await
     }
 
     /// Builds and sends `endpoint`'s request, giving up after `timeout`
@@ -162,6 +169,25 @@ async fn send_once_more_if_dropped(
 #[cfg(not(target_arch = "wasm32"))]
 fn dropped(e: &reqwest::Error) -> bool {
     (e.is_request() || e.is_connect()) && !e.is_timeout()
+}
+
+/// Runs `attempt`, and once more when `E` may be sent twice ([`Endpoint::IDEMPOTENT`]) and the
+/// first try's reply was lost: a [`ClientError::Network`] that isn't a timeout, as when the
+/// browser aborts a fetch in flight or a phone network drops the answer. A call past its own time
+/// limit goes once, so a slow server never waits twice as long.
+async fn once_more_if_lost<E, T, F, Fut>(_endpoint: &E, attempt: F) -> Result<T, ClientError>
+where
+    E: Endpoint,
+    F: Fn() -> Fut,
+    Fut: Future<Output = Result<T, ClientError>>,
+{
+    match attempt().await {
+        Err(ClientError::Network(error)) if E::IDEMPOTENT && !error.is_timeout() => {
+            tracing::warn!(%error, "reply lost; sending the call again");
+            attempt().await
+        }
+        result => result,
+    }
 }
 
 /// A response body with when the copy was made.
