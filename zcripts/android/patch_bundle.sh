@@ -15,6 +15,8 @@
 #   wry_activity.sh    missing -> UnsatisfiedLinkError in onCreate on every
 #                                 device: the stock activity calls tao 0.34's
 #                                 native names and the vendored tao is 0.37
+#   file_provider.sh   missing -> Collection's Export can't open the share
+#                                 sheet: no provider serves its .csv
 #
 # The manifest bug survived five releases partly because this was a checklist.
 # Call this one script instead; add new patches here rather than to the docs.
@@ -40,6 +42,9 @@ echo "== back navigation =="
 
 echo "== manifest (launchMode + screenOrientation + configChanges + allowBackup) =="
 "$HERE/manifest.sh" "$MAIN/AndroidManifest.xml"
+
+echo "== file provider (Export shares a real file) =="
+"$HERE/file_provider.sh" "$MAIN"
 
 echo "== WryActivity (tao 0.37 entry points) =="
 "$HERE/wry_activity.sh" "$MAIN/kotlin/dev/dioxus/main/WryActivity.kt"

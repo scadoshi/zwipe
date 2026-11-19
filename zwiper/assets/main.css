@@ -217,6 +217,13 @@ body {
     text-align: left;
 }
 
+/* Collection scrolls as one page, its Mode chips and line with it, as the web's does at a
+   phone's width; with nothing pinned above the scroll, its top needs no fade. */
+.import-scroll.collection-scroll:has(> .import-panels) {
+    -webkit-mask-image: none;
+    mask-image: none;
+}
+
 /* Collection's list under the import: the search row, then the list panel, a panel gap apart,
    at the import's width and gutter, clear of the dock at the end. The import above it gives up
    its own dock room. */

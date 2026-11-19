@@ -451,12 +451,13 @@ fn export_hands_the_file_to_the_client_once_at_a_time() {
             csv: "Name\nSol Ring\n".to_owned(),
         },
     });
-    let [Effect::Download { file_name, text }, Effect::Toast(toast)] = effects.as_slice() else {
-        panic!("the file, then the toast that it's saving: {effects:?}");
+    // The file alone: the client says it went once it has, since a share sheet opening is not
+    // a file saved.
+    let [Effect::Download { file_name, text }] = effects.as_slice() else {
+        panic!("the file alone: {effects:?}");
     };
     assert_eq!(file_name, "zwipe-collection.csv");
     assert_eq!(text, "Name\nSol Ring\n");
-    assert_eq!(toast.text, EXPORTED);
     assert!(!state.exporting());
 }
 
@@ -606,4 +607,19 @@ fn a_row_s_tags_lead_with_its_count_then_what_sets_it_apart() {
         ["2", "NM"],
         "nonfoil and English left out"
     );
+}
+
+#[test]
+fn every_row_s_drawer_label_says_what_sets_it_apart() {
+    let mut foil = row("Sol Ring", 3);
+    foil.finish = Finish::Foil;
+    foil.condition = Some(CardCondition::LightlyPlayed);
+    let mut bare = row("Sol Ring", 1);
+    bare.condition = None;
+    let mut unknown = row("Sol Ring", 1);
+    unknown.finish = Finish::Unknown;
+    unknown.condition = None;
+    let state = opened(vec![foil, row("Bolt", 2), bare, unknown], None);
+    let labels: Vec<String> = state.rows().iter().map(row_label).collect();
+    assert_eq!(labels, ["Foil LP", "NM", "Nonfoil", "Other finish"]);
 }

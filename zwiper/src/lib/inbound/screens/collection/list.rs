@@ -31,7 +31,9 @@ use zwipe_ui::deck_cards::stacks::{
     CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
 };
 use zwipe_ui::screens::collection_list::stacks::{self, Stack, StackCard};
-use zwipe_ui::screens::collection_list::{self, Action, Effect, RowKey, State, Status, row_tags};
+use zwipe_ui::screens::collection_list::{
+    self, Action, Effect, RowKey, State, Status, row_label, row_tags,
+};
 use zwipe_ui::toast::{Toast, ToastKind};
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
@@ -41,8 +43,7 @@ use crate::inbound::components::ui_toast;
 use crate::inbound::screens::deck::card::components::card_row::{
     CardRow, DeckFaces, OtagDescribe, OtagExamplesOpen,
 };
-use crate::outbound::cards_view_store;
-use crate::outbound::share::{self, ShareError};
+use crate::outbound::{cards_view_store, share};
 
 /// The list's header.
 const LIST_TITLE: &str = "Cards";
@@ -52,9 +53,6 @@ const SEARCH_ID: &str = "collection-search";
 
 /// The toast when the share sheet couldn't open.
 const SHARE_FAILED: &str = "Couldn't open the share sheet";
-
-/// The toast when the export is past what Android's share carries as text.
-const SHARE_TOO_BIG: &str = "Your collection is too big to share from here";
 
 /// The model and what its effects reach, `Copy` so handlers and tasks share it.
 #[derive(Clone, Copy)]
@@ -157,13 +155,7 @@ impl Driver {
             Effect::Download { file_name, text } => {
                 if let Err(e) = share::share_file(&file_name, &text) {
                     tracing::error!("collection export not shared: {e}");
-                    let words = match e {
-                        ShareError::TooBig => SHARE_TOO_BIG,
-                        ShareError::Unsupported
-                        | ShareError::NotMainThread
-                        | ShareError::Platform(_) => SHARE_FAILED,
-                    };
-                    ui_toast::raise(self.toast, Toast::normal(ToastKind::Error, words));
+                    ui_toast::raise(self.toast, Toast::normal(ToastKind::Error, SHARE_FAILED));
                 }
             }
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
@@ -448,8 +440,7 @@ fn sections(stacks: &[Stack]) -> Vec<(DeckSection, Vec<RowInfo>)> {
 }
 
 /// The open stack card's drawer: the card's details with Image and Send to in its foot, above
-/// them a line for each of its rows with that row's finish, condition and language and its copies
-/// stepper. Mounted, closed, on the first card before any tap, so it slides in and out; nothing
+/// them a line for each of its rows with that row's label and its copies stepper. Mounted, closed, on the first card before any tap, so it slides in and out; nothing
 /// while no card is listed.
 #[component]
 fn CollectionStackDrawer(
@@ -484,10 +475,7 @@ fn CollectionStackDrawer(
     let footer = rsx! {
         for row in shown.rows {
             div { key: "{row.key.id()}", class: "card-action-row",
-                // The first tag is the copies, which the stepper shows.
-                for tag in row_tags(&row).into_iter().skip(1) {
-                    span { class: "card-row-stat", "{tag}" }
-                }
+                span { class: "card-row-stat", {row_label(&row)} }
                 CardEditButtons {
                     qty: row.copies,
                     on_qty_change: row.editable.then(|| {

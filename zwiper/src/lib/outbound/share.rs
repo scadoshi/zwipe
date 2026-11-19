@@ -1,30 +1,30 @@
 //! Hands a text file to the OS share sheet.
 //!
-//! On iOS the file is written to the app's temporary directory and shared as that file through a
-//! `UIActivityViewController`, so Save to Files, Mail and AirDrop keep its name. On Android it goes
-//! out as an `ACTION_SEND` chooser with the text itself as `EXTRA_TEXT` and the name as
-//! `EXTRA_SUBJECT`: sharing a file there takes a `FileProvider`, which the app doesn't declare. Other
+//! The file is written into the app's own storage and shared as a file, so Save to Files, Drive,
+//! Mail and the rest receive a `.csv` under its name, however big. On iOS it goes in the temporary
+//! directory and out through a `UIActivityViewController`. On Android it goes in `cache/shared/`,
+//! which the app's `FileProvider` serves (declared by `zcripts/android/file_provider.sh`), and out
+//! through an `ACTION_SEND` chooser carrying its `content://` URI with a read grant. Other
 //! platforms have no share sheet.
 
 use std::error::Error;
 use std::fmt;
+#[cfg(any(target_os = "android", test))]
+use std::path::{Path, PathBuf};
 
-/// The largest text Android's share carries. An intent's extras cross a Binder transaction capped
-/// near 1 MiB for the whole process, and a Java string is two bytes a character, so half that
-/// leaves room for the rest of the intent.
-#[cfg_attr(
-    not(any(target_os = "android", test)),
-    expect(dead_code, reason = "only Android shares the text itself")
-)]
-const MAX_SHARED_TEXT_BYTES: usize = 400 * 1024;
+/// The `FileProvider`'s authority past the application id; the manifest patch declares the same.
+#[cfg(any(target_os = "android", test))]
+const AUTHORITY_SUFFIX: &str = ".fileprovider";
+
+/// The directory under the app's cache the `FileProvider` serves, and the only one.
+#[cfg(any(target_os = "android", test))]
+const SHARED_DIR: &str = "shared";
 
 /// Why [`share_file`] couldn't open the share sheet.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShareError {
     /// The platform has no share sheet.
     Unsupported,
-    /// The text is past what the platform's share can carry.
-    TooBig,
     /// Called off the main thread, where `UIKit` must run.
     NotMainThread,
     /// The platform refused or failed, with its own message.
@@ -35,7 +35,6 @@ impl fmt::Display for ShareError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Unsupported => write!(f, "no share sheet on this platform"),
-            Self::TooBig => write!(f, "too big to share"),
             Self::NotMainThread => write!(f, "the share sheet opens only from the main thread"),
             Self::Platform(message) => write!(f, "could not share: {message}"),
         }
@@ -48,26 +47,17 @@ impl Error for ShareError {}
 ///
 /// # Errors
 ///
-/// [`ShareError`] when the sheet couldn't open: no share sheet on this platform, text past
-/// Android's cap, or the platform's own failure.
+/// [`ShareError`] when the sheet couldn't open: no share sheet on this platform, or the
+/// platform's own failure.
 pub fn share_file(file_name: &str, text: &str) -> Result<(), ShareError> {
     platform::share(file_name, text)
 }
 
-/// Whether Android's share can carry `text`: at most [`MAX_SHARED_TEXT_BYTES`].
-#[cfg_attr(
-    not(any(target_os = "android", test)),
-    expect(dead_code, reason = "only Android shares the text itself")
-)]
-fn fits_android(text: &str) -> bool {
-    text.len() <= MAX_SHARED_TEXT_BYTES
-}
-
 /// The name a shared file is written under: `file_name` with every path separator and leading dot
-/// gone, so it stays inside the temporary directory; `collection.csv` when nothing is left.
+/// gone, so it stays inside its directory; `collection.csv` when nothing is left.
 #[cfg_attr(
-    not(any(target_os = "ios", test)),
-    expect(dead_code, reason = "only iOS writes the file")
+    not(any(target_os = "ios", target_os = "android", test)),
+    expect(dead_code, reason = "only the mobile platforms write the file")
 )]
 fn safe_file_name(file_name: &str) -> String {
     let cleaned: String = file_name
@@ -80,6 +70,13 @@ fn safe_file_name(file_name: &str) -> String {
     } else {
         trimmed.to_owned()
     }
+}
+
+/// Where Android writes a shared file named `file_name`: under `cache` in [`SHARED_DIR`], the
+/// directory the `FileProvider` serves.
+#[cfg(any(target_os = "android", test))]
+fn shared_path(cache: &Path, file_name: &str) -> PathBuf {
+    cache.join(SHARED_DIR).join(safe_file_name(file_name))
 }
 
 #[cfg(target_os = "ios")]
@@ -182,24 +179,26 @@ mod platform {
 
 #[cfg(target_os = "android")]
 mod platform {
+    use std::fs;
+    use std::path::PathBuf;
+
     use jni::JNIEnv;
-    use jni::objects::JObject;
+    use jni::objects::{JClass, JObject, JValue};
 
     use super::ShareError;
 
-    /// Local references `share` creates: the action, the type, the intent, the two extra keys and
-    /// their values, the chooser, the `Activity` class and what `putExtra` and `addFlags` return.
-    /// A hint to the VM, not a cap.
-    const LOCAL_FRAME_CAPACITY: i32 = 16;
+    /// Local references `share` creates, the class loader and the intents among them. A hint to
+    /// the VM, not a cap.
+    const LOCAL_FRAME_CAPACITY: i32 = 32;
 
     /// `Intent.FLAG_ACTIVITY_NEW_TASK`, which `startActivity` requires when the context is not an
     /// `Activity`.
     const FLAG_ACTIVITY_NEW_TASK: i32 = 0x1000_0000;
 
+    /// `Intent.FLAG_GRANT_READ_URI_PERMISSION`: the app the user picks may read the file.
+    const FLAG_GRANT_READ_URI_PERMISSION: i32 = 0x0000_0001;
+
     pub(super) fn share(file_name: &str, text: &str) -> Result<(), ShareError> {
-        if !super::fits_android(text) {
-            return Err(ShareError::TooBig);
-        }
         let ctx = ndk_context::android_context();
         // SAFETY: ndk-context guarantees a valid JavaVM and Context jobject for the running app.
         let vm =
@@ -216,11 +215,17 @@ mod platform {
         {
             tracing::error!("could not clear a java exception: {e}");
         }
-        result.map_err(|e| platform_error(&e))
+        result
     }
 
     fn platform_error(e: &jni::errors::Error) -> ShareError {
         ShareError::Platform(e.to_string())
+    }
+
+    impl From<jni::errors::Error> for ShareError {
+        fn from(e: jni::errors::Error) -> Self {
+            platform_error(&e)
+        }
     }
 
     fn fire(
@@ -228,69 +233,169 @@ mod platform {
         context: &JObject<'_>,
         file_name: &str,
         text: &str,
-    ) -> jni::errors::Result<()> {
-        env.with_local_frame(LOCAL_FRAME_CAPACITY, |env| -> jni::errors::Result<()> {
-            // Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain");
-            let action_send = env
-                .get_static_field(
-                    "android/content/Intent",
-                    "ACTION_SEND",
-                    "Ljava/lang/String;",
-                )?
-                .l()?;
-            let send = env.new_object(
-                "android/content/Intent",
-                "(Ljava/lang/String;)V",
-                &[(&action_send).into()],
-            )?;
-            let mime = env.new_string("text/plain")?;
-            env.call_method(
-                &send,
-                "setType",
-                "(Ljava/lang/String;)Landroid/content/Intent;",
-                &[(&mime).into()],
-            )?;
-            for (field, value) in [("EXTRA_TEXT", text), ("EXTRA_SUBJECT", file_name)] {
-                let key = env
-                    .get_static_field("android/content/Intent", field, "Ljava/lang/String;")?
-                    .l()?;
-                let value = env.new_string(value)?;
-                env.call_method(
-                    &send,
-                    "putExtra",
-                    "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
-                    &[(&key).into(), (&value).into()],
-                )?;
-            }
-
-            // Intent chooser = Intent.createChooser(send, null);
-            let no_title = JObject::null();
-            let chooser = env
-                .call_static_method(
-                    "android/content/Intent",
-                    "createChooser",
-                    "(Landroid/content/Intent;Ljava/lang/CharSequence;)Landroid/content/Intent;",
-                    &[(&send).into(), (&no_title).into()],
-                )?
-                .l()?;
-
-            // An Application context can start an activity only into a new task.
-            if !env.is_instance_of(context, "android/app/Activity")? {
-                env.call_method(
-                    &chooser,
-                    "addFlags",
-                    "(I)Landroid/content/Intent;",
-                    &[FLAG_ACTIVITY_NEW_TASK.into()],
-                )?;
-            }
-            env.call_method(
-                context,
-                "startActivity",
-                "(Landroid/content/Intent;)V",
-                &[(&chooser).into()],
-            )?;
+    ) -> Result<(), ShareError> {
+        env.with_local_frame(LOCAL_FRAME_CAPACITY, |env| -> Result<(), ShareError> {
+            let path = write_shared(env, context, file_name, text)?;
+            let uri = content_uri(env, context, &path)?;
+            open_chooser(env, context, &uri, &super::safe_file_name(file_name))?;
             Ok(())
         })
+    }
+
+    /// Writes `text` into the shared directory under the app's cache and returns its path.
+    fn write_shared(
+        env: &mut JNIEnv<'_>,
+        context: &JObject<'_>,
+        file_name: &str,
+        text: &str,
+    ) -> Result<PathBuf, ShareError> {
+        // String cache = context.getCacheDir().getAbsolutePath();
+        let cache_dir = env
+            .call_method(context, "getCacheDir", "()Ljava/io/File;", &[])?
+            .l()?;
+        let cache = env
+            .call_method(&cache_dir, "getAbsolutePath", "()Ljava/lang/String;", &[])?
+            .l()?;
+        let cache: String = env.get_string(&cache.into())?.into();
+        let path = super::shared_path(std::path::Path::new(&cache), file_name);
+        if let Some(dir) = path.parent() {
+            fs::create_dir_all(dir).map_err(|e| ShareError::Platform(e.to_string()))?;
+        }
+        fs::write(&path, text).map_err(|e| ShareError::Platform(e.to_string()))?;
+        Ok(path)
+    }
+
+    /// The `FileProvider`'s `content://` URI for `path`. The class is the app's own (androidx),
+    /// which a native thread's `FindClass` can't see, so it loads through the context's class
+    /// loader.
+    fn content_uri<'local>(
+        env: &mut JNIEnv<'local>,
+        context: &JObject<'_>,
+        path: &std::path::Path,
+    ) -> jni::errors::Result<JObject<'local>> {
+        let loader = env
+            .call_method(context, "getClassLoader", "()Ljava/lang/ClassLoader;", &[])?
+            .l()?;
+        let name = env.new_string("androidx.core.content.FileProvider")?;
+        let provider: JClass<'_> = env
+            .call_method(
+                &loader,
+                "loadClass",
+                "(Ljava/lang/String;)Ljava/lang/Class;",
+                &[(&name).into()],
+            )?
+            .l()?
+            .into();
+        // String authority = context.getPackageName() + ".fileprovider";
+        let package = env
+            .call_method(context, "getPackageName", "()Ljava/lang/String;", &[])?
+            .l()?;
+        let package: String = env.get_string(&package.into())?.into();
+        let authority = env.new_string(format!("{package}{}", super::AUTHORITY_SUFFIX))?;
+        let path = env.new_string(path.to_string_lossy())?;
+        let file = env.new_object("java/io/File", "(Ljava/lang/String;)V", &[(&path).into()])?;
+        env.call_static_method(
+            &provider,
+            "getUriForFile",
+            "(Landroid/content/Context;Ljava/lang/String;Ljava/io/File;)Landroid/net/Uri;",
+            &[context.into(), (&authority).into(), (&file).into()],
+        )?
+        .l()
+    }
+
+    /// Starts the chooser for an `ACTION_SEND` of `uri` as `text/csv`, named `file_name`, with a
+    /// read grant for the app picked.
+    fn open_chooser(
+        env: &mut JNIEnv<'_>,
+        context: &JObject<'_>,
+        uri: &JObject<'_>,
+        file_name: &str,
+    ) -> jni::errors::Result<()> {
+        let intent_class = "android/content/Intent";
+        let action_send = env
+            .get_static_field(intent_class, "ACTION_SEND", "Ljava/lang/String;")?
+            .l()?;
+        let send = env.new_object(
+            intent_class,
+            "(Ljava/lang/String;)V",
+            &[(&action_send).into()],
+        )?;
+        let mime = env.new_string("text/csv")?;
+        env.call_method(
+            &send,
+            "setType",
+            "(Ljava/lang/String;)Landroid/content/Intent;",
+            &[(&mime).into()],
+        )?;
+        let stream = env
+            .get_static_field(intent_class, "EXTRA_STREAM", "Ljava/lang/String;")?
+            .l()?;
+        env.call_method(
+            &send,
+            "putExtra",
+            "(Ljava/lang/String;Landroid/os/Parcelable;)Landroid/content/Intent;",
+            &[(&stream).into(), uri.into()],
+        )?;
+        let subject = env
+            .get_static_field(intent_class, "EXTRA_SUBJECT", "Ljava/lang/String;")?
+            .l()?;
+        let name = env.new_string(file_name)?;
+        env.call_method(
+            &send,
+            "putExtra",
+            "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
+            &[(&subject).into(), (&name).into()],
+        )?;
+        // The grant reaches the picked app through the intent's clip data.
+        let clip = env
+            .call_static_method(
+                "android/content/ClipData",
+                "newRawUri",
+                "(Ljava/lang/CharSequence;Landroid/net/Uri;)Landroid/content/ClipData;",
+                &[(&name).into(), uri.into()],
+            )?
+            .l()?;
+        env.call_method(
+            &send,
+            "setClipData",
+            "(Landroid/content/ClipData;)V",
+            &[(&clip).into()],
+        )?;
+        env.call_method(
+            &send,
+            "addFlags",
+            "(I)Landroid/content/Intent;",
+            &[JValue::Int(FLAG_GRANT_READ_URI_PERMISSION)],
+        )?;
+
+        // Intent chooser = Intent.createChooser(send, null);
+        let no_title = JObject::null();
+        let chooser = env
+            .call_static_method(
+                intent_class,
+                "createChooser",
+                "(Landroid/content/Intent;Ljava/lang/CharSequence;)Landroid/content/Intent;",
+                &[(&send).into(), (&no_title).into()],
+            )?
+            .l()?;
+        let mut flags = FLAG_GRANT_READ_URI_PERMISSION;
+        // An Application context can start an activity only into a new task.
+        if !env.is_instance_of(context, "android/app/Activity")? {
+            flags |= FLAG_ACTIVITY_NEW_TASK;
+        }
+        env.call_method(
+            &chooser,
+            "addFlags",
+            "(I)Landroid/content/Intent;",
+            &[JValue::Int(flags)],
+        )?;
+        env.call_method(
+            context,
+            "startActivity",
+            "(Landroid/content/Intent;)V",
+            &[(&chooser).into()],
+        )?;
+        Ok(())
     }
 }
 
@@ -319,8 +424,31 @@ mod tests {
     }
 
     #[test]
-    fn android_carries_text_up_to_its_cap() {
-        assert!(fits_android(&"x".repeat(MAX_SHARED_TEXT_BYTES)));
-        assert!(!fits_android(&"x".repeat(MAX_SHARED_TEXT_BYTES + 1)));
+    fn a_shared_file_lands_in_the_directory_the_provider_serves() {
+        let path = shared_path(Path::new("/data/user/0/app/cache"), "zwipe-collection.csv");
+        assert_eq!(
+            path,
+            Path::new("/data/user/0/app/cache/shared/zwipe-collection.csv")
+        );
+        assert_eq!(
+            shared_path(Path::new("/c"), "../x.csv"),
+            Path::new("/c/shared/x.csv"),
+            "the name can't climb out"
+        );
+    }
+
+    #[test]
+    fn the_manifest_patch_serves_what_android_shares() {
+        let script = include_str!("../../../../zcripts/android/file_provider.sh");
+        assert!(
+            script.contains(&format!("${{applicationId}}{AUTHORITY_SUFFIX}")),
+            "the provider's authority"
+        );
+        assert!(
+            script.contains(&format!(
+                "<cache-path name=\"{SHARED_DIR}\" path=\"{SHARED_DIR}/\""
+            )),
+            "the directory it serves"
+        );
     }
 }

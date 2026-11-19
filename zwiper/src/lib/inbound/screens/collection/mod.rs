@@ -2,8 +2,9 @@
 //! text, adding it to the collection or replacing the collection with it, then what landed and the
 //! rows that didn't. The collection's own list follows, `CollectionList`.
 //!
-//! Laid out as deck Import is: the Mode chips and their line pinned on top, the File and Paste
-//! panel, the results under it, and the import as the dock's checkmark. A replace asks first.
+//! Laid out as the web's Collection is at a phone's width: one column that scrolls as a page, the
+//! Mode chips and their line, the File and Paste panel, the results, then the list, with the
+//! import as the dock's checkmark. A replace asks first.
 //!
 //! What the screen knows and does is `zwipe_ui::screens::collection_import`; this file draws its
 //! state and performs its effects.
@@ -228,21 +229,21 @@ pub fn Collection() -> Element {
                 back: move |()| back_handler::back_or(driver.navigator, Router::Home {}),
             }
             div { class: "screen-content content-enter",
-                div { class: "import-controls",
-                    div { class: "chip-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", {collection_import::MODE} }
-                        for (label, value) in [("Add", ImportMode::Add), ("Replace", ImportMode::Replace)] {
-                            Chip {
-                                key: "{label}",
-                                selected: mode == value,
-                                onclick: move |_| driver.dispatch(Action::PickMode(value)),
-                                "{label}"
+                div { class: "import-scroll collection-scroll",
+                    div { class: "import-controls",
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", {collection_import::MODE} }
+                            for (label, value) in [("Add", ImportMode::Add), ("Replace", ImportMode::Replace)] {
+                                Chip {
+                                    key: "{label}",
+                                    selected: mode == value,
+                                    onclick: move |_| driver.dispatch(Action::PickMode(value)),
+                                    "{label}"
+                                }
                             }
                         }
+                        p { class: "text-muted text-sm import-hint", "{explainer}" }
                     }
-                    p { class: "text-muted text-sm import-hint", "{explainer}" }
-                }
-                div { class: "import-scroll",
                     div { class: "container-sm import-panels collection-import",
                         div { class: "form-panel",
                             div { class: "form-panel-fields",
