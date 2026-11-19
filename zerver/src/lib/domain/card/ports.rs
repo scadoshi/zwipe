@@ -13,11 +13,13 @@ use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::card::slug::CardSlug;
+use zwipe_core::http::contracts::card::HttpCardLookup;
 
 use crate::domain::card::models::printing_removal::{
     Printing, References, RemovalCounts, RemovalMode, RemovalPlan, RemovalReport, Survivors,
 };
-use crate::domain::card::models::search_card::error::SearchCardsError;
+use crate::domain::card::models::search_card::error::{LookupCardsError, SearchCardsError};
 use crate::domain::card::models::zervice_metrics::{SyncedCards, ZerviceMetrics};
 use crate::domain::card::models::zervice_step::StepRecord;
 use crate::domain::card::requests::create_card::CreateCardError;
@@ -238,6 +240,14 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn fetch_printings(
         &self,
         oracle_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
+
+    /// Returns every card whose name, or front face's name, folds to `slug`, one printing each,
+    /// the one search shows: a full-name match before a front face, playable cards before
+    /// tokens and art cards, then by name. Empty when no card has that slug.
+    fn fetch_named_cards(
+        &self,
+        slug: &CardSlug,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// Retrieves complete cards by oracle ids, at most one card per oracle,
@@ -577,6 +587,14 @@ pub trait CardService: Clone + Send + Sync + 'static {
         oracle_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
+    /// Returns every card whose name, or front face's name, folds to `slug`, one printing each,
+    /// the one search shows: a full-name match before a front face, playable cards before
+    /// tokens and art cards, then by name. Empty when no card has that slug.
+    fn fetch_named_cards(
+        &self,
+        slug: &CardSlug,
+    ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
+
     /// Searches for complete cards matching filter criteria. Applies the
     /// user's Universes Beyond setting, same as the deck-aware serve and
     /// commander select (the plain search backs the deck form's typed
@@ -665,4 +683,14 @@ pub trait CardService: Clone + Send + Sync + 'static {
         &self,
         names: &[String],
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
+
+    /// Runs a card lookup: a query the server builds from the lookup's name and chips, read as
+    /// the filter's chips are, answering at most
+    /// [`LOOKUP_LIMIT`](zwipe_core::domain::card::models::lookup::LOOKUP_LIMIT) cards, one per card. With
+    /// `user_id` the user's Universes Beyond setting applies; without one nothing is excluded.
+    fn lookup_cards(
+        &self,
+        lookup: &HttpCardLookup,
+        user_id: Option<uuid::Uuid>,
+    ) -> impl Future<Output = Result<Vec<Card>, LookupCardsError>> + Send;
 }

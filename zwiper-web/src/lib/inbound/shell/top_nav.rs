@@ -11,6 +11,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::logo;
 
 use crate::inbound::app::EscBack;
+use crate::inbound::cards::card_search::NavSearch;
 use crate::inbound::chrome::leave_guard::LeaveDialog;
 use crate::inbound::router::Route;
 use crate::inbound::shell::deck_opener::DeckOpener;
@@ -132,6 +133,7 @@ pub fn Shell() -> Element {
                     brand: rsx! {
                         NavMark { open }
                         BackButton { back: Back::of(&route), page, open }
+                        NavSearch {}
                     },
                     persistent: rsx! {
                         NavTitle { page }
@@ -182,6 +184,7 @@ pub fn PublicNav() -> Element {
                 brand: rsx! {
                     NavMark { open }
                     BackButton { back: Back::of(&route), page, open }
+                    NavSearch {}
                 },
                 persistent: rsx! {
                     NavTitle { page }

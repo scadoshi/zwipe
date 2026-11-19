@@ -9,6 +9,7 @@
 use uuid::Uuid;
 
 use crate::domain::site::APP_BASE;
+use crate::domain::slug;
 
 /// The longest a slug runs, in characters, before it is cut at a dash where it can be.
 pub const SLUG_MAX: usize = 60;
@@ -17,26 +18,11 @@ pub const SLUG_MAX: usize = 60;
 pub const SLUG_FALLBACK: &str = "deck";
 
 /// The URL slug for a deck called `name`: lower case, common accented Latin letters folded to
-/// ASCII, every other run of characters one dash, no dash at either end, at most [`SLUG_MAX`]
-/// characters, and [`SLUG_FALLBACK`] when nothing is left.
+/// ASCII, every other run of characters one dash, no dash at either end (the fold a card's slug
+/// shares), at most [`SLUG_MAX`] characters, and [`SLUG_FALLBACK`] when nothing is left.
 #[must_use]
 pub fn deck_slug(name: &str) -> String {
-    let mut slug = String::with_capacity(name.len());
-    // A dash waits until the next kept character, so runs collapse and the
-    // ends stay clean.
-    let mut dash = false;
-    for c in name.chars().flat_map(char::to_lowercase) {
-        let folded = fold(c);
-        if folded.is_empty() {
-            dash = !slug.is_empty();
-            continue;
-        }
-        if dash {
-            slug.push('-');
-            dash = false;
-        }
-        slug.push_str(folded);
-    }
+    let slug = slug::slugify(name);
     let cut = cap(&slug);
     if cut.is_empty() {
         SLUG_FALLBACK.to_owned()
@@ -56,38 +42,6 @@ fn cap(slug: &str) -> &str {
         .rfind('-')
         .map_or(head, |dash| head.get(..dash).unwrap_or(head));
     at_word.trim_end_matches('-')
-}
-
-/// What `c`, already lower case, adds to a slug: itself for an ASCII letter or digit, the ASCII
-/// letters of a common accented Latin letter, and nothing for anything else (a separator).
-fn fold(c: char) -> &'static str {
-    const ASCII: &str = "abcdefghijklmnopqrstuvwxyz0123456789";
-    if c.is_ascii_alphanumeric() {
-        let at = ASCII.find(c).unwrap_or(0);
-        return ASCII.get(at..at.saturating_add(1)).unwrap_or("");
-    }
-    match c {
-        'à' | 'á' | 'â' | 'ã' | 'ä' | 'å' | 'ā' | 'ă' | 'ą' => "a",
-        'ç' | 'ć' | 'č' => "c",
-        'ď' | 'đ' | 'ð' => "d",
-        'è' | 'é' | 'ê' | 'ë' | 'ē' | 'ė' | 'ę' | 'ě' => "e",
-        'ğ' => "g",
-        'ì' | 'í' | 'î' | 'ï' | 'ī' | 'į' | 'ı' => "i",
-        'ł' | 'ľ' => "l",
-        'ñ' | 'ń' | 'ň' => "n",
-        'ò' | 'ó' | 'ô' | 'õ' | 'ö' | 'ø' | 'ō' | 'ő' => "o",
-        'ř' => "r",
-        'ś' | 'š' | 'ş' => "s",
-        'ť' | 'ţ' => "t",
-        'ù' | 'ú' | 'û' | 'ü' | 'ū' | 'ů' | 'ű' | 'ų' => "u",
-        'ý' | 'ÿ' => "y",
-        'ź' | 'ż' | 'ž' => "z",
-        'ß' => "ss",
-        'æ' => "ae",
-        'œ' => "oe",
-        'þ' => "th",
-        _ => "",
-    }
 }
 
 /// `segment` percent-encoded for one URL path segment: ASCII letters, digits and `-._~` stay,
@@ -168,6 +122,29 @@ mod tests {
         // A single word longer than the cap is cut at the cap.
         let word = deck_slug(&"a".repeat(100));
         assert_eq!(word.len(), SLUG_MAX);
+    }
+
+    #[test]
+    fn deck_slugs_stay_as_they_were() {
+        for (name, slug) in [
+            ("Lim-Dûl's Vault", "lim-dul-s-vault"),
+            ("Æther Vial Tribal", "aether-vial-tribal"),
+            ("Borrowing 100,000 Arrows", "borrowing-100-000-arrows"),
+            ("Circle of Protection: Red", "circle-of-protection-red"),
+            ("Fire // Ice", "fire-ice"),
+            ("Þórr's Hammer", "thorr-s-hammer"),
+            ("_____", SLUG_FALLBACK),
+            (
+                "Ünder the Sea — Merfolk & Friends",
+                "under-the-sea-merfolk-friends",
+            ),
+            (
+                "Delver of Secrets // Insectile Aberration and the Long Tempo Shell",
+                "delver-of-secrets-insectile-aberration-and-the-long-tempo",
+            ),
+        ] {
+            assert_eq!(deck_slug(name), slug, "{name}");
+        }
     }
 
     #[test]

@@ -3859,3 +3859,294 @@ footer.site-footer .site-footer-note {
         opacity: 0;
     }
 }
+
+/* ---- Card search ----
+   The card search bar (CardSearchBar): the wide nav's box, and Home's Card
+   search panel on a phone. The field draws its own look, so zwipe.net, which
+   loads no app sheet, draws it the same. */
+
+/* Under .card-search, so the kit's .input, which loads after this sheet in
+   the apps, gives way. */
+.card-search .card-search-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 2rem;
+    margin: 0;
+    padding: 0 var(--space-2);
+    text-align: left;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--ink-text-muted, var(--text-muted));
+    border-radius: 0.4rem;
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.875rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.card-search .card-search-input:focus {
+    outline: none;
+    background-color: var(--border-muted);
+    border-color: var(--accent-primary);
+}
+
+.card-search .card-search-input::placeholder {
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
+/* On a touch screen the field reads at 16px, under which iOS zooms the page
+   into it as it takes focus. */
+@media (pointer: coarse) {
+    .card-search .card-search-input {
+        font-size: 1rem;
+    }
+}
+
+.card-search .input-clear-wrap {
+    margin-bottom: 0;
+}
+
+.card-search .input-clear-btn {
+    height: 2rem;
+}
+
+.card-search-results {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-1);
+}
+
+.card-search-in-panel > .card-search-results {
+    margin-top: var(--space-2);
+}
+
+.card-search-chip {
+    font-family: inherit;
+    line-height: inherit;
+    cursor: pointer;
+    animation: card-search-chip-in 0.25s ease-out both;
+}
+
+/* The match the arrow keys light, or the only one, which Enter opens. */
+.card-search-lit {
+    border-color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+@keyframes card-search-chip-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* The panel is as tall as its bar: Home's panels' 9rem floor would leave a
+   band under it. */
+.home-card-search {
+    min-height: 0;
+}
+
+.home-card-search-body {
+    padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+/* The nav's box rests at 120px beside the logo. It gives up its width before
+   the nav's links wrap, down to the icon alone, and the field inside it grows
+   on focus to the width the nav measures for it (--card-search-grown) over
+   the links, without moving them. */
+.card-search-nav {
+    position: relative;
+    z-index: 5;
+    flex: 0 1000 120px;
+    min-width: 2rem;
+    height: 2rem;
+    align-self: center;
+    /* Half the nav's gap from the item before it, so the box fits the
+       narrowest unfolded nav. */
+    margin-left: calc(-1 * var(--space-4));
+    container-type: inline-size;
+}
+
+/* The nav's links take their one-row width as their basis, so the box, which
+   shrinks a thousand times faster, gives up its room before they wrap. */
+nav:has(> .card-search-nav) > .nav-panel {
+    flex: 1 1 auto;
+}
+
+/* Width is the one thing that animates: a scaled field would stretch its
+   corners, its border and the text in it. The field sits over the nav, so
+   nothing else lays out again. */
+.card-search-field {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: width 120ms ease-in;
+}
+
+.card-search-nav:focus-within .card-search-field {
+    width: var(--card-search-grown, 320px);
+    transition: width 180ms ease-out;
+}
+
+.card-search-nav .input-clear-wrap {
+    height: 100%;
+}
+
+.card-search-nav .card-search-input {
+    padding-left: var(--space-6);
+}
+
+.card-search-icon {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: var(--space-2);
+    width: 0.95rem;
+    height: 0.95rem;
+    transform: translateY(-50%);
+    fill: none;
+    stroke: var(--ink-text-muted, var(--text-muted));
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+}
+
+/* Where the nav leaves the box less than its rest width, it rests as the
+   icon alone. */
+@container (max-width: 119px) {
+    .card-search-nav:not(:focus-within) .card-search-input {
+        padding: 0;
+        color: transparent;
+    }
+
+    .card-search-nav:not(:focus-within) .card-search-input::placeholder {
+        color: transparent;
+    }
+
+    .card-search-nav:not(:focus-within) .card-search-icon {
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .card-search-nav:not(:focus-within) .input-clear-btn {
+        display: none;
+    }
+}
+
+/* The chips drop from the box while it has focus, and go a little faster
+   than they came. */
+.card-search-drop {
+    position: absolute;
+    top: calc(100% + var(--space-2));
+    left: 0;
+    box-sizing: border-box;
+    width: max(var(--card-search-grown, 320px), 32rem);
+    max-width: calc(100vw - 2 * var(--space-4));
+    justify-content: flex-start;
+    padding: var(--space-2);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-muted);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    transform: translateY(-4px);
+    visibility: hidden;
+    transition:
+        opacity 110ms ease-in,
+        transform 110ms ease-in,
+        visibility 0s linear 110ms;
+}
+
+.card-search-nav:focus-within .card-search-drop {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    transition:
+        opacity 160ms ease-out,
+        transform 160ms ease-out;
+}
+
+/* The links the grown box lies over fade while it has focus. */
+nav:has(.card-search-nav) .nav-links {
+    transition: opacity 150ms ease-out;
+}
+
+nav.card-search-covers:has(.card-search-nav:focus-within) .nav-links {
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card-search-field,
+    .card-search-nav:focus-within .card-search-field,
+    .card-search-drop,
+    .card-search-nav:focus-within .card-search-drop,
+    nav:has(.card-search-nav) .nav-links {
+        transition: none;
+    }
+
+    .card-search-chip {
+        animation: none;
+    }
+}
+
+/* ---- Card results grid ----
+   Whole cards under a heading (CardResultsGrid): the several cards a name
+   leads to, and the card search's results. */
+
+.card-list-title {
+    text-align: center;
+}
+
+/* Its own grid, so the app, which loads no deck page sheet, lays it out
+   too; two columns on a phone, each about half the screen, as the deck's
+   stacks are. Under .deck-stacks, so the deck page's own grid, which loads
+   after this sheet on the web, gives way. */
+.deck-stacks.card-list-results {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(12.5rem, 15rem));
+    gap: var(--space-2) var(--space-4);
+    align-items: start;
+    justify-content: center;
+}
+
+@media (max-width: 599px) {
+    .deck-stacks.card-list-results {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-2);
+    }
+}
+
+/* The grid while its cards load: the heading's bar, centered at its line's
+   height, and each card ghost filling its cell as the card will. */
+.card-list-title-ghost {
+    width: 14rem;
+    height: 1.6rem;
+    margin: var(--space-1) auto;
+}
+
+.card-list-results .skeleton-stack {
+    padding: 0;
+}
+
+.card-list-results .skeleton-image {
+    width: 100%;
+    border-radius: 0.75rem;
+}
+
+/* ---- Card stats ----
+   The card page's stats widgets (CardStatsWidget), in the Oracle tags
+   table's grammar. */
+
+.card-stats-table {
+    row-gap: var(--space-2);
+    padding: var(--space-3);
+}

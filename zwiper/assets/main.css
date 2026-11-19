@@ -364,3 +364,78 @@ body {
         animation-duration: 1ms;
     }
 }
+
+/* ---- Card page ----
+   The card page and the card search's results (screens/card), the web's
+   card page at phone width: one column, the card over its details and its
+   stats widgets, room left under them for the action dock. */
+.card-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4) calc(var(--space-4) + var(--space-7));
+    box-sizing: border-box;
+}
+
+/* The page scrolls as one: nothing in its column shrinks to fit the screen,
+   and the details panel, which elsewhere scrolls its body inside a bounded
+   host, shows whole. */
+.screen-content.card-page {
+    overflow-y: auto;
+}
+
+.card-page > * {
+    flex-shrink: 0;
+}
+
+.card-page > .card-details-panel {
+    overflow: visible;
+}
+
+.card-page > .card-details-panel > .panel-body {
+    overflow-y: visible;
+}
+
+.card-page-image {
+    width: 100%;
+    max-width: 20rem;
+}
+
+.card-page-image img {
+    width: 100%;
+    height: auto;
+}
+
+.card-page > .card-details-panel {
+    width: 100%;
+    max-width: 20rem;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.card-page-stats {
+    width: 100%;
+    max-width: 20rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.card-page-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    box-sizing: border-box;
+}
+
+.card-page-message {
+    text-align: center;
+    padding: var(--space-5) 0;
+}
+
+/* Home's Card search panel: the bar spans the panel inside its gutters. */
+.home-card-search .card-search {
+    width: 100%;
+}

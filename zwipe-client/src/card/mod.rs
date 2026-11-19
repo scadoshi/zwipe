@@ -21,6 +21,8 @@ pub mod fetch_keyword_reminders;
 pub mod fetch_keywords;
 /// Fetch all available languages.
 pub mod fetch_languages;
+/// Fetch every card by its name's slug, with no account.
+pub mod fetch_named_cards;
 /// Fetch one page of an oracle tag's example cards, with no account.
 pub mod fetch_oracle_tag_examples;
 /// Fetch the oracle tag catalog.
@@ -33,6 +35,8 @@ pub mod fetch_printings;
 pub mod fetch_sets;
 /// Fetch the Universes Beyond franchise catalog.
 pub mod fetch_ub_franchises;
+/// Look cards up by name for the card search, signed in or out.
+pub mod lookup_cards;
 /// Search cards with filters.
 pub mod search_cards;
 /// Search commander candidates (popularity-ordered, banded, wildcarded).

@@ -540,6 +540,19 @@ mod tests {
     }
 
     #[test]
+    fn a_name_matches_with_one_space_where_punctuation_stood_between_words() {
+        let cards = vec![make_card("Fire // Ice"), make_card("Forest")];
+        for typed in ["fire ice", "fire // ice", "fire  ice"] {
+            let filter = CardQueryBuilder::with_name_contains(typed)
+                .build_criteria()
+                .unwrap();
+            let result = Cards::from(cards.clone()).matching(&filter);
+            assert_eq!(result.len(), 1, "{typed:?}");
+            assert_eq!(result[0].scryfall_data.name, "Fire // Ice", "{typed:?}");
+        }
+    }
+
+    #[test]
     fn test_name_contains_ignores_commas() {
         let cards = vec![make_card("Satya, Aetherflux Genius"), make_card("Forest")];
         let filter = CardQueryBuilder::with_name_contains("satya aetherflux genius")

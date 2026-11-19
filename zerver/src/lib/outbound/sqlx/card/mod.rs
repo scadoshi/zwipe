@@ -19,10 +19,12 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::search_card::card_filter;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::criteria::PLAYABLE_LAYOUTS;
 use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
+use zwipe_core::domain::card::slug::CardSlug;
 use zwipe_core::domain::deck::Format;
 use zwipe_core::domain::deck::requests::import_deck_cards;
 use zwipe_core::domain::deck::tag_profile::{PROFILE_EXCLUDED_TAG_PREFIX, PROFILE_TAG_LIMIT};
@@ -223,6 +225,10 @@ const TIEBREAK: &str = ", latest_cards.id";
 const PRINTING_TIEBREAK: &str = "substring(sd.collector_number FROM '^[0-9]+')::numeric NULLS LAST, \
                                  sd.collector_number, sd.id";
 
+/// The most cards one name slug answers: well above the largest real collision, which is all
+/// tokens, so it cuts nothing real and keeps a public, cached answer small.
+const NAMED_CARDS_LIMIT: i64 = 50;
+
 /// Base ranking for the commander-select ordering: decks-helmed popularity
 /// first (`commander_popularity`, written by the synergy worker), then
 /// `edhrec_rank` as the fallback for commanders the table doesn't cover, then
@@ -245,9 +251,10 @@ const BEST_MATCH_POPULARITY: &str = "LEAST(latest_cards.edhrec_rank, \
 const VERY_POPULAR: i64 = 300;
 
 /// A name folded for a best match's word check: hyphens break words ("The Ur-Dragon" holds the
-/// word "Dragon"), then the rest of the punctuation goes, as the name filter strips it.
-const WORDS_NAME: &str =
-    "regexp_replace(regexp_replace(f_unaccent(name), '-', ' ', 'g'), '[^a-zA-Z0-9 ]', '', 'g')";
+/// word "Dragon"), then the rest of the punctuation goes and each run of spaces is one, as the
+/// name filter folds it.
+const WORDS_NAME: &str = "regexp_replace(regexp_replace(regexp_replace(f_unaccent(name), '-', ' ', 'g'), \
+     '[^a-zA-Z0-9 ]', '', 'g'), ' {2,}', ' ', 'g')";
 
 /// The popularity join, aliased so it exposes only `pop_decks`, never a bare
 /// `name`/`oracle_id`/`decks`, which would collide with `latest_cards` and the
@@ -653,9 +660,11 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         // Fold accents, then strip punctuation, from DB columns for accent- and
         // punctuation-insensitive text search. The query values are already
-        // folded and stripped the same way by CardQueryBuilder setters.
-        const STRIP_NAME: &str =
-            "regexp_replace(f_unaccent(name), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+        // folded and stripped the same way by CardQueryBuilder setters. A name
+        // also makes each run of spaces one, as its query value does here, so
+        // "fire ice" finds Fire // Ice.
+        const STRIP_NAME: &str = "regexp_replace(regexp_replace(f_unaccent(name), '[^a-zA-Z0-9 ]', '', 'g'), \
+             ' {2,}', ' ', 'g') ILIKE ";
         const STRIP_TYPE: &str =
             "regexp_replace(f_unaccent(type_line), '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
         const STRIP_ORACLE: &str =
@@ -868,12 +877,15 @@ impl CardRepository for MyPostgres {
             sep.push("latest_cards.layout NOT IN ('token', 'double_faced_token', 'emblem')");
         }
 
-        if let Some(query_string) = &criteria.name_contains() {
+        if let Some(query_string) = criteria.name_contains().map(card_filter::collapse_spaces) {
             sep.push(STRIP_NAME);
             sep.push_bind_unseparated(format!("%{query_string}%"));
         }
 
-        if let Some(query_string) = &criteria.name_not_contains() {
+        if let Some(query_string) = criteria
+            .name_not_contains()
+            .map(card_filter::collapse_spaces)
+        {
             sep.push("NOT (");
             sep.push_unseparated(STRIP_NAME);
             sep.push_bind_unseparated(format!("%{query_string}%"));
@@ -1565,12 +1577,13 @@ impl CardRepository for MyPostgres {
             // "bolt" offers Lightning Bolt and "ring" Sol Ring; a match inside
             // a word never lifts.
             let push_tiers = |qb: &mut QueryBuilder<sqlx::Postgres>, lift: bool| {
-                let Some(query_string) = criteria.name_contains() else {
+                let Some(query_string) = criteria.name_contains().map(card_filter::collapse_spaces)
+                else {
                     return;
                 };
                 qb.push("CASE");
                 let tiers = [
-                    query_string.to_owned(),
+                    query_string.clone(),
                     format!("{query_string} %"),
                     format!("{query_string}%"),
                     format!("% {query_string}%"),
@@ -1860,6 +1873,37 @@ impl CardRepository for MyPostgres {
         let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
+    }
+
+    async fn fetch_named_cards(&self, slug: &CardSlug) -> Result<Vec<Card>, GetCardError> {
+        // One row per card from latest_cards, so each is the printing search shows. A card
+        // matches by its full name on any printing, else by its front face; playable is the
+        // search's own playable filter.
+        let db_rows: Vec<DatabaseScryfallData> = query_as(
+            "SELECT lc.* FROM ( \
+                 SELECT oracle_id, bool_or(name_slug = $1) AS full_match FROM scryfall_data \
+                 WHERE name_slug = $1 OR front_slug = $1 GROUP BY oracle_id \
+             ) named JOIN latest_cards lc ON lc.oracle_id = named.oracle_id \
+             ORDER BY named.full_match DESC, (lc.layout = ANY($2)) DESC, lc.name, lc.id \
+             LIMIT $3",
+        )
+        .bind(slug.as_str())
+        .bind(PLAYABLE_LAYOUTS)
+        .bind(NAMED_CARDS_LIMIT)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| GetScryfallDataError::Database(e.into()))?;
+        let scryfall_data: Vec<ScryfallData> = db_rows
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(GetScryfallDataError::Database)?;
+        if scryfall_data.is_empty() {
+            return Ok(vec![]);
+        }
+        let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
+        let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
+        Ok(card_profiles.sleeve(scryfall_data))
     }
 
     async fn fetch_latest_cards_by_oracle_ids(

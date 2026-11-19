@@ -54,10 +54,13 @@ mod card_group;
 mod card_icon_button;
 mod card_list_fold;
 mod card_proxy;
+mod card_results_grid;
 mod card_role_chips;
 mod card_row;
+mod card_search;
 mod card_skeleton;
 mod card_stack;
+mod card_stats_widget;
 mod changelog;
 mod charts;
 mod color_bars;
@@ -131,14 +134,20 @@ pub use card_filter::{CardFilterPanel, DictionarySlot, OPEN_SECTION_SCROLL_JS, o
 pub use card_group::{CardGroup, TailPlace, group_tail};
 pub use card_icon_button::{
     CardIconButton, FLAG, FLAG_LABEL, FlagButton, FlagMark, IMAGE_ICON, IMAGE_LABEL, ImageButton,
-    MELD, STAR, StarButton, StarMark, UNFLAG_LABEL,
+    MELD, STAR, StarButton, StarMark, UNFLAG_LABEL, USER_PLUS,
 };
 pub use card_list_fold::CardListFold;
 pub use card_proxy::{CardProxy, FIT_JS as CARD_PROXY_FIT_JS, ProxyFace, use_card_proxy_fit};
+pub use card_results_grid::{CardResultsGrid, CardResultsGridGhost};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
+pub use card_search::{
+    CardSearch, CardSearchBar, CardSearchPanel, NAV_GROWN_PX, SEARCH_ICON, SearchHost, SearchPlace,
+    use_card_search,
+};
 pub use card_skeleton::CardSkeleton;
 pub use card_stack::{CardStack, StackCard};
+pub use card_stats_widget::CardStatsWidget;
 pub use changelog::{
     Changelog, ChangelogCollapseAll, ChangelogFilters, ChangelogReleases, Filter as ChangelogFilter,
 };

@@ -15,8 +15,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use chrono::{DateTime, Utc};
 use components::icons::DockIcon;
 use components::{
-    CartButton, HomeColors, HomeDecks, IMAGE_ICON, ImageButton, LoadFailed, StoreDialog,
-    ThemeConfig,
+    CardSearchPanel, CartButton, HomeColors, HomeDecks, IMAGE_ICON, ImageButton, LoadFailed,
+    StoreDialog, ThemeConfig,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -38,6 +38,7 @@ use zwipe_ui::telemetry::vocabulary::Screen;
 use self::hero::HomeHeroScoped;
 use crate::domain::counts::CachedCounts;
 use crate::inbound::caches::{CachedDecks, CachedMyCounts, CachedPlayStyle};
+use crate::inbound::cards::card_search::use_web_search;
 use crate::inbound::cards::image_preview::ImagePreview;
 use crate::inbound::chrome::authed::{Authed, use_authed};
 use crate::inbound::chrome::ghost::{GhostText, GhostWords};
@@ -390,6 +391,7 @@ fn route(destination: Destination) -> Route {
 /// hour's card has expired, the featured flavor, as the model asks.
 #[component]
 pub fn Home() -> Element {
+    let search = use_web_search();
     telemetry::use_telemetry_screen(Screen::Home);
     let session: Signal<Option<Session>> = use_context();
     let caches = Caches {
@@ -457,6 +459,14 @@ pub fn Home() -> Element {
             },
             div { class: "screen-content home-content web-home",
                 div { class: "web-page web-home-page",
+                    // Where the nav folds, Home's panel holds the card search; above the fold the
+                    // nav's box does.
+                    CardSearchPanel {
+                        model: search.model(),
+                        on_action: Callback::new(move |action| search.dispatch(action)),
+                        input_id: "home-card-search",
+                        class: "web-nav-narrow",
+                    }
                     div { class: "web-hero",
                         HomeHeroScoped {
                             figures,

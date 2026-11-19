@@ -203,17 +203,33 @@ fn themes_key_js() -> String {
 /// groups, in the hint's key style, on orangui's [`ShortcutsSheet`](orangui::ShortcutsSheet),
 /// which sits above every screen, closes from its `Got it`, takes focus as it opens, keeps Tab
 /// inside and gives focus back as it closes. The hint key's row shows only while the newest page
-/// has a hint for `?` to open.
+/// has a hint for `?` to open, and the card search's `/` only while a card search box shows.
 #[component]
 pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
     let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
     let hints = try_use_context::<PageHints>();
+    // Whether a card search box shows for `/`, asked of the page each time the sheet opens.
+    let mut card_search = use_signal(|| false);
+    use_effect(move || {
+        if open() {
+            spawn(async move {
+                let shown = document::eval(crate::card_search::ANY_SHOWN_JS)
+                    .join::<bool>()
+                    .await
+                    .unwrap_or(false);
+                card_search.set(shown);
+            });
+        }
+    });
     // No screen offering the sheet (the one that did has gone): nothing to list.
     let Some(mut screen) = offered.and_then(|stack| stack.read().last().cloned()) else {
         return rsx! {};
     };
     if !newest_has_hint(hints) {
         screen.groups = shortcuts::without_hint(screen.groups);
+    }
+    if !card_search() {
+        screen.groups = shortcuts::without_card_search(screen.groups);
     }
     rsx! {
         orangui::ShortcutsSheet { open, note: screen.note.map(str::to_owned),

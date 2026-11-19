@@ -3,10 +3,12 @@
 pub mod card_profile;
 pub mod card_role;
 pub mod keyword;
+pub mod lookup;
 pub mod oracle_tag;
 pub mod oracle_tag_examples;
 pub mod scryfall_data;
 pub mod search_card;
+pub mod slug;
 pub mod synergy;
 
 use card_profile::CardProfile;

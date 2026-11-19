@@ -6,12 +6,18 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::card_role::{self, CardRole};
+use zwipe_core::domain::card::models::lookup::{CardTypeWord, LOOKUP_LIMIT};
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
+use zwipe_core::domain::card::slug::CardSlug;
+use zwipe_core::http::contracts::card::HttpCardLookup;
 
 use crate::domain::card::models::printing_removal::{self, RemovalMode, RemovalReport};
-use crate::domain::card::models::search_card::error::SearchCardsError;
+use crate::domain::card::models::search_card::error::{LookupCardsError, SearchCardsError};
 use crate::domain::card::models::zervice_metrics::{self, SyncedCards, ZerviceMetrics};
 use crate::domain::card::models::zervice_step::StepRecord;
 use crate::domain::card::ports::{CardRepository, CardService};
@@ -242,6 +248,10 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.fetch_printings(oracle_id).await
     }
 
+    async fn fetch_named_cards(&self, slug: &CardSlug) -> Result<Vec<Card>, GetCardError> {
+        self.repo.fetch_named_cards(slug).await
+    }
+
     async fn search_cards(
         &self,
         request: &CardQuery,
@@ -336,4 +346,52 @@ impl<R: CardRepository> CardService for Service<R> {
     ) -> Result<Vec<Card>, SearchCardsError> {
         self.repo.find_cards_by_exact_names(names).await
     }
+
+    async fn lookup_cards(
+        &self,
+        lookup: &HttpCardLookup,
+        user_id: Option<Uuid>,
+    ) -> Result<Vec<Card>, LookupCardsError> {
+        let query = lookup_query(lookup)?;
+        // Signed out, nothing is excluded; a failed settings read degrades to the same.
+        let (exclude_universes_beyond, universes_beyond_exception_set_names) = match user_id {
+            Some(user_id) => self
+                .repo
+                .fetch_universes_beyond_settings(user_id)
+                .await
+                .unwrap_or_default(),
+            None => Default::default(),
+        };
+        Ok(self
+            .repo
+            .search_cards_deck_aware(
+                &query,
+                crate::domain::card::ports::DeckServeContext {
+                    exclude_universes_beyond,
+                    universes_beyond_exception_set_names,
+                    ..Default::default()
+                },
+            )
+            .await?)
+    }
+}
+
+/// The query a lookup runs, its chips read as the filter's are by default: a type line holding
+/// any of the types, a color identity equal to the colors, and any of the roles. At most
+/// [`LOOKUP_LIMIT`] cards, best match first: the whole name, then a name whose first word is
+/// the name typed, then one that starts with it, then one with a word that does, then the rest,
+/// each tier by popularity.
+fn lookup_query(lookup: &HttpCardLookup) -> Result<CardQuery, InvalidCardCriteria> {
+    let mut builder = CardQueryBuilder::new();
+    builder
+        .set_name_contains(lookup.name().as_str())
+        .set_type_line_contains_any(lookup.types().iter().map(CardTypeWord::as_str))
+        .set_card_roles_contains_any(lookup.card_roles().iter().map(ToString::to_string))
+        .set_sort(CardSortKey::BestMatch)
+        .set_limit(LOOKUP_LIMIT);
+    // No colors leaves identity open; an empty set would mean colorless.
+    if !lookup.colors().is_empty() {
+        builder.set_color_identity_equals(lookup.colors().iter().copied().collect());
+    }
+    builder.build()
 }

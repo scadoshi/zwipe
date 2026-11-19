@@ -18,7 +18,7 @@ use zwipe_core::http::paths::{
     card_route, card_stats_route, clear_deck_suppressions_route, clone_deck_route,
     create_deck_card_route, deck_profile_route, deck_route, deck_tokens_route,
     delete_deck_card_route, delete_deck_route, import_archidekt_deck_route,
-    import_deck_cards_route, oracle_tag_examples_route, printings_route,
+    import_deck_cards_route, named_card_route, oracle_tag_examples_route, printings_route,
     remove_commander_maybeboard_card_route, search_deck_cards_route, share_deck_route,
     shared_deck_route, skip_deck_card_route, undismiss_commander_route, unskip_deck_card_route,
     update_deck_card_route, update_deck_route,
@@ -130,6 +130,16 @@ async fn every_id_carrying_route_matches_the_contract(pool: sqlx::PgPool) {
     for (method, path) in authed {
         assert_contract_route(&app, method, &path, true).await;
     }
+
+    // The lookup by name answers 200 with no token and no such card; were it unrouted, the path
+    // would fall to `/api/card/{id}` and fail the uuid parse with 422.
+    let named = named_card_route(&"no-such-card".parse().unwrap());
+    let (status, body) = app.send(HttpMethod::GET, &named, None, None).await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "GET {named} should be public: {body}"
+    );
 
     // Public id routes answer 404 or an empty 200 for a nil id, which is the handler talking
     // rather than the router, so they only get the weak check.

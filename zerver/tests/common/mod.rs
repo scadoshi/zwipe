@@ -47,6 +47,7 @@ use zwipe::inbound::http::{AppState, build_router_with};
 pub(crate) const TEST_ORIGIN: &str = "https://app.zwipe.net";
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::card::scryfall_data::rarity::Rarity;
+use zwipe_core::domain::card::slug::{card_slug, front_slug};
 
 pub(crate) const TEST_JWT_SECRET: &str = "test-jwt-secret-that-is-at-least-32-characters-long";
 
@@ -805,7 +806,7 @@ pub(crate) async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
              highres_image, image_status, oversized, prices, promo, rarity, related_uris, \
              released_at, reprint, scryfall_set_uri, set_name, set_search_uri, set_type, \
              set_uri, set, set_id, story_spotlight, textless, variation, security_stamp, \
-             all_parts) ",
+             all_parts, name_slug, front_slug) ",
         );
         qb.push_values(cards.iter(), |mut b, c| {
             let prices = match &c.eur {
@@ -871,7 +872,9 @@ pub(crate) async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
                 .push_bind(false) // textless
                 .push_bind(false) // variation
                 .push_bind(c.security_stamp.clone())
-                .push_bind(c.all_parts.clone());
+                .push_bind(c.all_parts.clone())
+                .push_bind(card_slug(&c.name).map(String::from))
+                .push_bind(front_slug(&c.name).map(String::from));
         });
         qb.build().execute(pool).await.unwrap();
 

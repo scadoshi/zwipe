@@ -10,14 +10,15 @@ use crate::domain::card::oracle_tag::OracleTag;
 use crate::domain::card::oracle_tag_examples::OracleTagSlug;
 use crate::domain::card::scryfall_data::universe::UbFranchiseView;
 use crate::domain::card::search_card::card_filter::CardQuery;
-use crate::http::contracts::card::HttpCardStats;
+use crate::domain::card::slug::CardSlug;
+use crate::http::contracts::card::{HttpCardLookup, HttpCardStats};
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths;
 use crate::http::paths::{
-    FEATURED_FLAVOR_ROUTE, GET_ARTISTS_ROUTE, GET_CARD_ROLES_ROUTE, GET_CARD_TYPES_ROUTE,
-    GET_KEYWORD_REMINDERS_ROUTE, GET_KEYWORDS_ROUTE, GET_LANGUAGES_ROUTE, GET_ORACLE_TAGS_ROUTE,
-    GET_ORACLE_WORDS_ROUTE, GET_SETS_ROUTE, GET_UB_FRANCHISES_ROUTE, SEARCH_CARDS_ROUTE,
-    SEARCH_COMMANDERS_ROUTE,
+    CARD_LOOKUP_ROUTE, FEATURED_FLAVOR_ROUTE, GET_ARTISTS_ROUTE, GET_CARD_ROLES_ROUTE,
+    GET_CARD_TYPES_ROUTE, GET_KEYWORD_REMINDERS_ROUTE, GET_KEYWORDS_ROUTE, GET_LANGUAGES_ROUTE,
+    GET_ORACLE_TAGS_ROUTE, GET_ORACLE_WORDS_ROUTE, GET_SETS_ROUTE, GET_UB_FRANCHISES_ROUTE,
+    SEARCH_CARDS_ROUTE, SEARCH_COMMANDERS_ROUTE,
 };
 
 /// Builds an unauthed GET returning `$resp` from a fixed path.
@@ -105,6 +106,19 @@ impl Endpoint for GetPrintings {
     }
 }
 
+/// Every card whose name, or front face's name, folds to one slug, for a reader with no account.
+#[derive(Debug)]
+pub struct GetNamedCards(pub CardSlug);
+impl Endpoint for GetNamedCards {
+    const METHOD: Method = Method::Get;
+    const AUTH: bool = false;
+    type Request = ();
+    type Response = Vec<Card>;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(paths::named_card_route(&self.0))
+    }
+}
+
 /// One card's public numbers by oracle id, for a reader with or without an account.
 #[derive(Debug)]
 pub struct GetCardStats(pub Uuid);
@@ -149,6 +163,24 @@ impl Endpoint for SearchCards {
     type Response = Vec<Card>;
     fn path(&self) -> Cow<'static, str> {
         Cow::Borrowed(SEARCH_CARDS_ROUTE)
+    }
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
+    }
+}
+
+/// The card lookup: a narrow search a signed-out caller may make. A token, when sent, applies the
+/// user's Universes Beyond setting.
+#[derive(Debug)]
+pub struct LookupCards(pub HttpCardLookup);
+impl Endpoint for LookupCards {
+    const METHOD: Method = Method::Post;
+    const AUTH: bool = false;
+    const AUTH_OPTIONAL: bool = true;
+    type Request = HttpCardLookup;
+    type Response = Vec<Card>;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(CARD_LOOKUP_ROUTE)
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.0)

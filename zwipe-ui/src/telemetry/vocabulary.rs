@@ -43,6 +43,7 @@ pub mod screen {
     pub const PROFILE_SETTINGS: &str = "profile_preferences";
     pub const SUGGESTED_COMMANDERS: &str = "suggested_commanders";
     pub const ACTIVITY: &str = "activity";
+    pub const CARD: &str = "card";
 }
 
 /// Typed screen identity: the same closed vocabulary as
@@ -73,6 +74,8 @@ pub enum Screen {
     SuggestedCommanders,
     /// The Activity screen.
     Activity,
+    /// The card screen, one card or the cards that share a name.
+    Card,
 }
 
 /// `screens/auth/` members.
@@ -148,6 +151,7 @@ impl Screen {
             Self::Profile(ProfileScreen::Settings) => screen::PROFILE_SETTINGS,
             Self::SuggestedCommanders => screen::SUGGESTED_COMMANDERS,
             Self::Activity => screen::ACTIVITY,
+            Self::Card => screen::CARD,
         }
     }
 }
@@ -202,6 +206,7 @@ mod tests {
             Screen::Profile(ProfileScreen::Settings),
             Screen::SuggestedCommanders,
             Screen::Activity,
+            Screen::Card,
         ];
         let mut mapped: Vec<&str> = variants.iter().map(|v| v.as_str()).collect();
         mapped.sort_unstable();
@@ -230,6 +235,7 @@ mod tests {
             screen::PROFILE_SETTINGS,
             screen::SUGGESTED_COMMANDERS,
             screen::ACTIVITY,
+            screen::CARD,
         ];
         constants.sort_unstable();
         assert_eq!(mapped, constants);

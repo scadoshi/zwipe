@@ -19,7 +19,8 @@ impl ZwipeClient {
     ///
     /// `session` is required when `E::AUTH`; passing `None` there is a bug in
     /// the caller, so it fails as an unauthorized error rather than sending an
-    /// anonymous request the server would reject anyway.
+    /// anonymous request the server would reject anyway. When `E::AUTH_OPTIONAL`
+    /// the token goes only with a session held.
     ///
     /// # Errors
     ///
@@ -82,7 +83,7 @@ impl ZwipeClient {
 
     /// Builds and sends `endpoint`'s request, giving up after `timeout`
     /// when one is set.
-    async fn send<E: Endpoint>(
+    pub(crate) async fn send<E: Endpoint>(
         &self,
         endpoint: &E,
         session: Option<&Session>,
@@ -104,6 +105,10 @@ impl ZwipeClient {
             let Some(session) = session else {
                 return Err(ClientError::Unauthorized("not logged in".to_string()));
             };
+            request = request.bearer_auth(session.access_token.value.as_str());
+        } else if E::AUTH_OPTIONAL
+            && let Some(session) = session
+        {
             request = request.bearer_auth(session.access_token.value.as_str());
         }
 
@@ -234,11 +239,26 @@ async fn hold_for_skeleton_audit(method: Method) {
 )]
 async fn hold_for_skeleton_audit(_method: Method) {}
 
+/// A response's `Retry-After` in whole seconds, as the server's rate limiters send it; `None`
+/// when it is missing or an HTTP date.
+pub(crate) fn retry_after(headers: &HeaderMap) -> Option<Duration> {
+    headers
+        .get(reqwest::header::RETRY_AFTER)?
+        .to_str()
+        .ok()?
+        .trim()
+        .parse::<u64>()
+        .ok()
+        .map(Duration::from_secs)
+}
+
 /// Splits the response into success and failure, and turns a success body into
 /// `E::Response`. Any 2xx is success: several endpoints answer 200 or 204 for
 /// the same call, and no caller branches on which. An empty body reads as
 /// `null` so those can declare `type Response = ()`.
-async fn decode<E: Endpoint>(response: reqwest::Response) -> Result<E::Response, ClientError> {
+pub(crate) async fn decode<E: Endpoint>(
+    response: reqwest::Response,
+) -> Result<E::Response, ClientError> {
     let status = response.status();
     if !status.is_success() {
         let message = response.text().await?;

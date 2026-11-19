@@ -2,6 +2,14 @@
 //!
 //! Defines all client-side routes and maps them to their corresponding screen components.
 
+// Routable's derive builds each `String` field's parse error variant from an
+// `Infallible`, and rustc reads that constructor as an unreachable call. The
+// derive's items sit beside the enum, so only a module-level expect reaches them.
+#![expect(
+    unreachable_code,
+    reason = "Routable's derive wraps String fields' Infallible parse errors"
+)]
+
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_ui::deck::view::DeckView;
@@ -14,6 +22,8 @@ use crate::inbound::screens::activity::Activity;
 use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
+use crate::inbound::screens::card::search::Search;
+use crate::inbound::screens::card::{CardNamed, CardPrinting};
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::deck::card::add::Add as AddDeckCard;
 use crate::inbound::screens::deck::card::remove::Remove as RemoveDeckCard;
@@ -72,6 +82,18 @@ pub enum Router {
     /// Appearance and card settings: theme, app icon, Universes Beyond.
     #[route("/config")]
     Config {},
+
+    /// A card by its name's slug: the card when one playable card has the
+    /// name, else every card with it.
+    #[route("/card/:slug")]
+    CardNamed { slug: String },
+    /// One printing of a card.
+    #[route("/card/:slug/:id")]
+    CardPrinting { slug: String, id: Uuid },
+    /// Every card the card search matches for `q`, from Enter with several
+    /// matches.
+    #[route("/search?:q")]
+    Search { q: String },
 
     /// Activity: how the user picks, from their swipes, reached from the
     /// Home counters.
