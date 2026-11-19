@@ -95,7 +95,8 @@ pub fn CardOverlaysHost(
 /// The deck cards view adds the editing actions: the quantity stepper
 /// (`on_qty_change`), the board moves (`on_move_to` from `current_board`)
 /// and the MVP star (`mvp`, `on_toggle_mvp`), with prices in
-/// `price_currency`.
+/// `price_currency`. A list holding one printing in several rows keys each
+/// by `row_key`, and `send_to` adds Send to to the opened row.
 #[component]
 pub fn CardRow(
     card: Card,
@@ -113,10 +114,13 @@ pub fn CardRow(
     #[props(default)] on_printing: Option<EventHandler<Card>>,
     #[props(default)] face: Option<usize>,
     #[props(default)] on_face_change: Option<EventHandler<usize>>,
+    #[props(default)] row_key: Option<Uuid>,
+    #[props(default)] send_to: bool,
 ) -> Element {
     let overlays = try_use_context::<CardOverlays>();
     let mut own_face = use_signal(|| 0usize);
-    let card_id = card.scryfall_data.id;
+    // The row's key: its `data-row` for the keyboard, and what its face is kept under.
+    let card_id = row_key.unwrap_or(card.scryfall_data.id);
     // A row with no face of its own shows the screen's, when it keeps them,
     // so the `v` key and its stack turn the same face.
     let row_faces = try_use_context::<RowFaces>();
@@ -146,6 +150,8 @@ pub fn CardRow(
                 card,
                 qty,
                 expanded_card,
+                row_key,
+                send_to,
                 show_art,
                 on_image,
                 on_face_change: move |f: usize| {
@@ -173,5 +179,40 @@ pub fn CardRow(
                 on_examples,
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use components::{SEND_TO_ACTION, SendTo};
+
+    use super::*;
+
+    const CARD_JSON: &str = include_str!("../../../../../zwipe-ui/src/test_support/card.json");
+
+    /// An opened row asking for Send to, under the signed-in screens' [`SendTo`].
+    fn opened_row_with_send_to() -> Element {
+        let card: Card = serde_json::from_str(CARD_JSON).unwrap();
+        let open = Uuid::from_u128(9);
+        use_context_provider(|| SendTo {
+            open: Signal::new(false),
+            card: Signal::new(None),
+        });
+        let expanded_card = use_signal(|| Some(open));
+        rsx! {
+            CardRow { card, qty: 1, expanded_card, row_key: open, send_to: true }
+        }
+    }
+
+    /// A row that asks for Send to (the collection's, as the deck's) shows its button once open.
+    #[test]
+    fn a_row_asking_for_send_to_shows_it() {
+        let mut dom = VirtualDom::new(opened_row_with_send_to);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(
+            html.contains(&format!(r#"data-action="{SEND_TO_ACTION}""#)),
+            "{html}"
+        );
     }
 }

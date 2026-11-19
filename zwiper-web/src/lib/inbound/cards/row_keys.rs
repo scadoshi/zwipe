@@ -96,6 +96,24 @@ pub(crate) fn use_card_row_keys_and(
     sheet: ShortcutsScreen,
     screen_keys: Option<Callback<String>>,
 ) {
+    let rows = use_memo(move || {
+        cards()
+            .into_iter()
+            .map(|card| (card.scryfall_data.id, card))
+            .collect::<Vec<_>>()
+    });
+    use_keyed_row_keys(rows, expanded_card, sheet, screen_keys);
+}
+
+/// [`use_card_row_keys_and`] on a screen whose rows are keyed apart from their cards (one
+/// printing in several rows): `rows` holds each row's key and its card, `expanded_card` holds a
+/// row key, and each row's `data-row` is its key.
+pub(crate) fn use_keyed_row_keys(
+    rows: Memo<Vec<(Uuid, Card)>>,
+    expanded_card: Signal<Option<Uuid>>,
+    sheet: ShortcutsScreen,
+    screen_keys: Option<Callback<String>>,
+) {
     let overlays = try_use_context::<CardOverlays>();
     let details = try_use_context::<StackDetails>();
     let faces = try_use_context::<RowFaces>();
@@ -125,12 +143,7 @@ pub(crate) fn use_card_row_keys_and(
                 let Some((stacks, id)) = hovered.or(open_stack).or(open_row) else {
                     return;
                 };
-                let Some(card) = cards
-                    .peek()
-                    .iter()
-                    .find(|c| c.scryfall_data.id == id)
-                    .cloned()
-                else {
+                let Some(card) = card_for(&rows.peek(), id) else {
                     return;
                 };
                 let face = faces.map_or(0, |f| f.of(id));
@@ -171,6 +184,13 @@ pub(crate) fn use_card_row_keys_and(
             });
         }),
     );
+}
+
+/// The card of the row keyed `id` in `rows`, each a row's key and its card.
+fn card_for(rows: &[(Uuid, Card)], id: Uuid) -> Option<Card> {
+    rows.iter()
+        .find(|(key, _)| *key == id)
+        .map(|(_, c)| c.clone())
 }
 
 #[cfg(test)]
@@ -239,5 +259,28 @@ mod tests {
             }
             assert!(!listed.contains(&"f"), "these screens have no filter");
         }
+    }
+
+    /// A list holding one printing in two rows (a collection's foil and nonfoil) keys them
+    /// apart; a key acts on the row its key names, not on the first row of that printing.
+    #[test]
+    fn a_key_finds_the_row_its_key_names() {
+        let card: Card = serde_json::from_str(include_str!(
+            "../../../../../zwipe-ui/src/test_support/card.json"
+        ))
+        .unwrap();
+        let mut foil = card.clone();
+        foil.scryfall_data.name = "the foil row".to_owned();
+        let (plain_key, foil_key) = (Uuid::from_u128(1), Uuid::from_u128(2));
+        let rows = vec![(plain_key, card.clone()), (foil_key, foil)];
+        assert_eq!(
+            card_for(&rows, foil_key).map(|c| c.scryfall_data.name),
+            Some("the foil row".to_owned())
+        );
+        assert_eq!(
+            card_for(&rows, card.scryfall_data.id),
+            None,
+            "a keyed row isn't found by its printing"
+        );
     }
 }

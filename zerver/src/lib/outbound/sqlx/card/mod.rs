@@ -1543,6 +1543,7 @@ impl CardRepository for MyPostgres {
             mvp_card_roles,
             exclude_universes_beyond,
             universes_beyond_exception_set_names,
+            owner,
         } = context;
         // WHERE clauses read the predicate fields; LIMIT/OFFSET/ORDER BY read
         // the query config: the CardCriteria/CardQuery split, mirrored here.
@@ -1765,6 +1766,15 @@ impl CardRepository for MyPostgres {
                  AND dcs.suppressed_at > now() - make_interval(days => CASE dcs.source \
                  WHEN 'removal' THEN {REMOVAL_TTL_DAYS} ELSE {SKIP_TTL_DAYS} END))"
             ));
+        }
+
+        // "In my collection": a card the searching user holds any printing of, by
+        // oracle id (collection_cards_owned serves it as an index-only probe). With
+        // no owner the bound NULL matches nothing, so the flag never widens a search.
+        if request.owned_only() {
+            sep.push("EXISTS (SELECT 1 FROM collection_cards cc WHERE cc.user_id = ");
+            sep.push_bind_unseparated(owner);
+            sep.push_unseparated(" AND cc.oracle_id = latest_cards.oracle_id)");
         }
 
         // Synergy ON: constrain to the commander's synergy pool (membership).
@@ -2527,6 +2537,7 @@ impl CardRepository for MyPostgres {
                     commander_seed: Some(seed),
                     exclude_universes_beyond,
                     universes_beyond_exception_set_names,
+                    owner: Some(user_id),
                     ..Default::default()
                 },
             )

@@ -4,6 +4,7 @@ pub mod auth;
 pub mod card;
 pub mod changelog;
 pub mod client;
+pub mod collection;
 pub mod deck;
 pub mod deck_card;
 pub mod health;

@@ -24,6 +24,7 @@ use crate::add::{self, AddDeck};
 use crate::deck_signals::{self, Crossing, Level};
 use crate::filter::{self, AddContext};
 use crate::generation::{Generation, Ticket};
+use crate::screens::card_filter::OwnedChip;
 use crate::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, Direction, MAX_CARDS_IN_STACK, MaybeboardAction,
     NO_CARDS_LEFT, NO_CARDS_MATCH, STACK_WARNING_EVERY, StackAction,
@@ -232,6 +233,9 @@ impl UndoClaim {
 /// What a user does on Add cards, and each reply the client hands back.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
+    /// Whether the Filter sheet offers "In my collection", as the collection summary says. A
+    /// change while the Search filter holds the flag runs the search again with it.
+    OffersOwned(bool),
     /// Opens the screen for `deck_id`, offering the hint once per visit. `filter` is the Search filter the client remembered for this deck, and `parked` the stack it parked here last, which resumes when its filter still matches.
     Load {
         /// The deck being built.
@@ -632,6 +636,9 @@ pub struct State {
     waiting: Vec<(Ticket, Pending)>,
     generation: Generation,
     hint: HintOffer,
+    /// Whether the Filter sheet offers "In my collection"; until it does, a saved flag is never
+    /// sent.
+    owned_chip: OwnedChip,
 }
 
 impl State {
@@ -650,6 +657,21 @@ impl State {
         let ran_out_by = matches!(action, Action::Swipe(_) | Action::Searched { .. });
         let before = self.pile();
         let mut effects = match action {
+            Action::OffersOwned(offered) => {
+                let chip = OwnedChip::from_offered(offered);
+                if chip == self.owned_chip {
+                    return Vec::new();
+                }
+                self.owned_chip = chip;
+                let matters = self.filter.owned_only()
+                    && self.source == Source::Search
+                    && self.deck.is_some();
+                if matters {
+                    self.fresh_search()
+                } else {
+                    Vec::new()
+                }
+            }
             Action::Load {
                 deck_id,
                 filter,
@@ -798,6 +820,15 @@ impl State {
     }
 
     /// Starts a new stack from the top with the live filter, the swiped cards kept behind it for undo. On Search, once the deck is in, a filter Add would not serve asks for one instead.
+    /// The Search filter as it goes to the server: normalized, with "In my collection" dropped
+    /// unless the sheet offers it.
+    fn sent(&self) -> CardQueryBuilder {
+        crate::screens::card_filter::as_sent(
+            &add::normalized(&self.filter),
+            self.owned_chip.is_offered(),
+        )
+    }
+
     fn fresh_search(&mut self) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
@@ -823,7 +854,7 @@ impl State {
             )));
             return effects;
         }
-        let Ok(query) = add::normalized(&self.filter).build() else {
+        let Ok(query) = self.sent().build() else {
             // Nothing to search on, as with no deck format and no filter:
             // once the deck is in, say so on the ghost and in a toast rather
             // than leave a blank ghost.
@@ -1386,14 +1417,14 @@ impl State {
         if self.run.loading_more {
             return Vec::new();
         }
-        let normalized = add::normalized(&self.filter);
-        let Ok(query) = normalized.build() else {
+        let sent = self.sent();
+        let Ok(query) = sent.build() else {
             return Vec::new();
         };
         self.run.loading_more = true;
         let ticket = self.wait(Pending::Page {
             epoch,
-            synergy: normalized.synergy(),
+            synergy: sent.synergy(),
         });
         vec![Effect::LoadMore {
             ticket,
@@ -1593,7 +1624,7 @@ impl State {
             let ticket = self.wait(Pending::Maybeboard);
             return vec![Effect::RefreshMaybeboard { ticket, deck_id }];
         }
-        let Ok(query) = add::normalized(&self.filter).build() else {
+        let Ok(query) = self.sent().build() else {
             return vec![quick(ToastKind::Warning, FILTER_EMPTY)];
         };
         let ticket = self.wait(Pending::Search {

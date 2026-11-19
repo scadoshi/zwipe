@@ -180,6 +180,10 @@ fn App() -> Element {
     // Above the router too: the deck view's Back reads what Home or the deck
     // list recorded before it mounted.
     DeckOpener::use_provider();
+    // Whether the user has a collection, read by the server-searched filter sheets.
+    use_context_provider(|| {
+        zwiper::inbound::components::collection::CollectionCache(Signal::new(None))
+    });
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Style {

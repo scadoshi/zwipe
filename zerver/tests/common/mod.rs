@@ -148,7 +148,8 @@ impl TestApp {
         let health_service = health::services::Service::new(db.clone());
         let card_service = card::services::Service::new(db.clone());
         let deck_service = deck::services::Service::new(db.clone(), db.clone());
-        let metrics_service = metrics::services::Service::new(db);
+        let metrics_service = metrics::services::Service::new(db.clone());
+        let collection_service = zwipe::domain::collection::services::Service::new(db);
 
         let state = AppState {
             auth_service: Arc::new(auth_service),
@@ -157,6 +158,7 @@ impl TestApp {
             card_service: Arc::new(card_service),
             deck_service: Arc::new(deck_service),
             metrics_service: Arc::new(metrics_service),
+            collection_service: Arc::new(collection_service),
             last_active_cache: Arc::new(DashMap::new()),
             featured_flavor: Arc::new(zwipe::inbound::http::cache::TtlSlot::new()),
             min_client_version: Arc::from("0.0.0"),

@@ -19,6 +19,7 @@ use crate::inbound::screens::activity::Activity;
 use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
+use crate::inbound::screens::collection::Collection;
 use crate::inbound::screens::commander_maybeboard::CommanderMaybeboard;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::deck::cards::add::AddDeckCard;
@@ -112,6 +113,9 @@ pub enum Route {
         /// Commanders saved for later from commander search.
         #[route("/maybeboard")]
         CommanderMaybeboard {},
+        /// The user's card collection: importing an export into it.
+        #[route("/collection")]
+        Collection {},
         /// What the user builds, with suggested commanders.
         #[route("/playstyle")]
         Playstyle {},
@@ -262,6 +266,7 @@ mod tests {
             (Route::Activity {}, "/activity".to_string()),
             (Route::DeckList {}, "/decks".to_string()),
             (Route::CommanderMaybeboard {}, "/maybeboard".to_string()),
+            (Route::Collection {}, "/collection".to_string()),
             (Route::Playstyle {}, "/playstyle".to_string()),
             (Route::CreateDeck {}, "/decks/new".to_string()),
             (

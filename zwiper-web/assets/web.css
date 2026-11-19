@@ -2494,6 +2494,27 @@ body {
 
 /* ---- Import, Export ---- */
 
+/* Collection's file field: the File chip, then the field filling the rest of the row, on one
+   line at every width; a long file name ends in an ellipsis. */
+.collection-file {
+    flex-wrap: nowrap;
+}
+
+.collection-file > label.input {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The file input is hidden; its keyboard focus rings the field it opens. */
+.collection-file > input[type="file"]:focus-visible + label.input {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
 @media (min-width: 900px) {
     /* Import and Export run the column's width: the controls, then the
        input or the decklist, then Import's results under it. The phone's
@@ -2547,6 +2568,11 @@ body {
     .web-export-body textarea,
     .web-export-body .skeleton-export-textarea {
         min-height: calc(100vh - 26rem) !important;
+    }
+
+    /* Collection's file field stops at a field's width. */
+    .collection-file > label.input {
+        max-width: var(--web-field-max);
     }
 }
 
@@ -2621,6 +2647,46 @@ body {
     .web-export > .import-scroll {
         -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
         mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+    }
+}
+
+/* Collection's list under the import: the search row, then the list panel,
+   a panel gap apart, the column's full width. */
+.collection-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* The list panel runs the column's width, as Commander maybeboard's does. */
+.collection-list > .card-group {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+@media (min-width: 900px) {
+    /* The search field stops at a field's width, as the file field does. */
+    .collection-list > .chip-row .input-clear-wrap {
+        flex: 0 1 var(--web-field-max);
+        width: var(--web-field-max);
+        max-width: 100%;
+    }
+}
+
+/* Below the breakpoint the list, not the import above it, clears the
+   floating dock. */
+@media (max-width: 899px) {
+    .web-import-body.container-sm:has(+ .collection-list) {
+        padding-bottom: 0;
+    }
+
+    .collection-list {
+        padding: 0 var(--space-4) 6rem;
     }
 }
 

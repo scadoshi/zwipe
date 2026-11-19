@@ -569,6 +569,7 @@ where
             mvp_card_roles: &mvp_card_roles,
             exclude_universes_beyond,
             universes_beyond_exception_set_names,
+            owner: Some(request.user_id),
             ..Default::default()
         };
         let mut cards = self

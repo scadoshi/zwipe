@@ -6,17 +6,18 @@ use axum::Router;
 use axum::body::Body;
 use axum::extract::DefaultBodyLimit;
 use axum::http::{HeaderMap, HeaderValue, Response, StatusCode, header};
-use axum::routing::{delete, get, patch, post};
+use axum::routing::{delete, get, patch, post, put};
 use tower_governor::GovernorLayer;
 use tower_governor::errors::GovernorError;
 use tower_governor::governor::GovernorConfigBuilder;
 use tower_http::set_header::SetResponseHeaderLayer;
+use zwipe_core::domain::collection::limits::MAX_BODY_BYTES;
 
 use crate::domain::auth::models::access_token::JwtSecret;
 use crate::inbound::http::AppState;
 use crate::inbound::http::family_limit::FamilyLimitLayer;
 use crate::inbound::http::handlers::{
-    auth, card, changelog, client, deck, deck_card, health, metrics, user,
+    auth, card, changelog, client, collection, deck, deck_card, health, metrics, user,
 };
 use crate::inbound::http::limiter_purge::{LIMITER_PURGE_EVERY, purging};
 use crate::inbound::http::middleware::UserIdKeyExtractor;
@@ -381,7 +382,6 @@ pub fn private_routes(jwt_secret: JwtSecret, limits: &RateLimits) -> Router<AppS
             .expect("rate limit config: burst_size and period must be non-zero"),
         LIMITER_PURGE_EVERY,
     );
-
     Router::new()
         .nest(
             "/api",
@@ -405,6 +405,16 @@ pub fn private_routes(jwt_secret: JwtSecret, limits: &RateLimits) -> Router<AppS
                                     .error_handler(unauthorized_on_missing_key),
                             ),
                         ),
+                )
+                // The collection's reads and one-row edits ride the private limits; its import,
+                // with its own body cap and limits, is in collection_routes.
+                .nest(
+                    "/collection",
+                    Router::new()
+                        .route("/", get(collection::collection_page))
+                        .route("/cards", put(collection::set_collection_card))
+                        .route("/summary", get(collection::collection_summary))
+                        .route("/printings/{oracle_id}", get(collection::owned_printings)),
                 )
                 .nest(
                     "/user",
@@ -555,6 +565,69 @@ pub fn private_routes(jwt_secret: JwtSecret, limits: &RateLimits) -> Router<AppS
                                 ),
                         ),
                 ),
+        )
+        .layer(GovernorLayer::new(private_config).error_handler(unauthorized_on_missing_key))
+        .layer(private_no_store_layer())
+}
+
+/// The collection routes. They take bodies up to [`MAX_BODY_BYTES`], so they sit outside the
+/// 2 MiB cap the other routes share and carry their own; the private routes' per-account limit
+/// and no-store header apply here too.
+///
+/// # Panics
+///
+/// Never in practice: a governor config only fails to build on a zero period or burst, and every
+/// one here is a non-zero constant.
+#[expect(
+    clippy::expect_used,
+    reason = "every governor config has a non-zero period and burst, so finish never returns None"
+)]
+pub fn collection_routes(jwt_secret: JwtSecret, limits: &RateLimits) -> Router<AppState> {
+    // Its own bucket on purpose, at the private routes' numbers: an import's calls never spend
+    // the account's budget for the rest of the app, and the import's own limits below are far
+    // tighter.
+    let private_config = purging(
+        GovernorConfigBuilder::default()
+            .period(limits.private.period)
+            .burst_size(limits.private.burst)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
+    );
+    let collection_import_user_config = purging(
+        GovernorConfigBuilder::default()
+            .period(limits.collection_import_user.period)
+            .burst_size(limits.collection_import_user.burst)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret))
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+        LIMITER_PURGE_EVERY,
+    );
+    let collection_import_limit =
+        FamilyLimitLayer::new(limits.collection_import, stable_rate_limit);
+
+    Router::new()
+        .nest(
+            "/api/collection",
+            Router::new()
+                .route(
+                    "/import",
+                    post(collection::import_collection).layer(
+                        GovernorLayer::new(Arc::clone(&collection_import_user_config))
+                            .error_handler(unauthorized_on_missing_key),
+                    ),
+                )
+                // The export reads the whole collection, so it shares the import's limits.
+                .route(
+                    "/export",
+                    get(collection::export_collection).layer(
+                        GovernorLayer::new(collection_import_user_config)
+                            .error_handler(unauthorized_on_missing_key),
+                    ),
+                )
+                .layer(DefaultBodyLimit::max(MAX_BODY_BYTES))
+                .layer(collection_import_limit),
         )
         .layer(GovernorLayer::new(private_config).error_handler(unauthorized_on_missing_key))
         .layer(private_no_store_layer())

@@ -7,6 +7,8 @@ pub mod account;
 pub mod activity;
 pub mod add_cards;
 pub mod card_filter;
+pub mod collection_import;
+pub mod collection_list;
 pub mod commander_maybeboard;
 pub mod config;
 pub mod deck_cards;

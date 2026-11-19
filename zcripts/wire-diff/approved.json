@@ -1,4 +1,16 @@
 [
   { "route": "/api/commander/deal", "path": "", "kind": "status", "reason": "new signed-in route, the commander deal (additive; main has no such route)", "approved_by": "composer" },
-  { "route": "/api/commander/deal", "path": "", "kind": "type", "reason": "new signed-in route, the commander deal: main's 404 has no body", "approved_by": "composer" }
+  { "route": "/api/commander/deal", "path": "", "kind": "type", "reason": "new signed-in route, the commander deal: main's 404 has no body", "approved_by": "composer" },
+  { "route": "/api/collection/summary", "path": "", "kind": "status", "reason": "new private route, collection summary (additive; main has no such route)", "approved_by": "composer" },
+  { "route": "/api/collection/summary", "path": "", "kind": "type", "reason": "new private route, collection summary: main's 404 has no body", "approved_by": "composer" },
+  { "route": "/api/collection/import", "path": "", "kind": "status", "reason": "new private route, collection import (additive; main has no such route)", "approved_by": "composer" },
+  { "route": "/api/collection/import", "path": "", "kind": "type", "reason": "new private route, collection import: main's 404 has no body", "approved_by": "composer" },
+  { "route": "/api/collection", "path": "", "kind": "status", "reason": "new private route, collection page (additive; main has no such route)", "approved_by": "composer" },
+  { "route": "/api/collection", "path": "", "kind": "type", "reason": "new private route, collection page: main's 404 has no body", "approved_by": "composer" },
+  { "route": "/api/collection/cards", "path": "", "kind": "status", "reason": "new private route, collection set card (additive; main has no such route)", "approved_by": "composer" },
+  { "route": "/api/collection/cards", "path": "", "kind": "type", "reason": "new private route, collection set card: main's 404 has no body", "approved_by": "composer" },
+  { "route": "/api/collection/printings/{oracle_id}", "path": "", "kind": "status", "reason": "new private route, owned printings (additive; main has no such route)", "approved_by": "composer" },
+  { "route": "/api/collection/printings/{oracle_id}", "path": "", "kind": "type", "reason": "new private route, owned printings: main's 404 has no body", "approved_by": "composer" },
+  { "route": "/api/collection/export", "path": "", "kind": "status", "reason": "new private route, collection export (additive; main has no such route)", "approved_by": "composer" },
+  { "route": "/api/collection/export", "path": "", "kind": "type", "reason": "new private route, collection export: main's 404 has no body", "approved_by": "composer" }
 ]

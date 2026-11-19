@@ -799,6 +799,14 @@ impl CardQueryBuilder {
         self
     }
 
+    /// Keeps only cards the user has a printing of in their collection ("In my
+    /// collection"). Unlike synergy, this is a filter the user picked: it makes
+    /// the filter active, and clearing the filter turns it off.
+    pub fn set_owned_only(&mut self, owned_only: bool) -> &mut Self {
+        self.owned_only = owned_only;
+        self
+    }
+
     // == Exclude Filter Setters ==
 
     /// Sets name not-contains filter (punctuation-insensitive). Empty strings = None.

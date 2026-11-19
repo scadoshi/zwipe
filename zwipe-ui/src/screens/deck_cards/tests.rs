@@ -2630,3 +2630,11 @@ fn patches(effects: &[Effect]) -> Vec<&Effect> {
         .filter(|e| matches!(e, Effect::PatchCard { .. }))
         .collect()
 }
+
+#[test]
+fn quick_add_searches_everything_never_only_the_collection() {
+    assert!(
+        !quick_add_query("sol ring").owned_only(),
+        "a typed name is an explicit lookup; In my collection only narrows the pile"
+    );
+}

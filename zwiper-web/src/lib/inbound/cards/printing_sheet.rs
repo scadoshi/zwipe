@@ -1,9 +1,10 @@
 //! The printing sheet: components' sheet over the session's printings fetch, with the web's toasts.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use components::{
-    PrintingSheet as SharedPrintingSheet, PrintingsFetch, PrintingsSource, TOAST_QUICK,
+    OwnedPrintingsSource, PrintingSheet as SharedPrintingSheet, PrintingsFetch, PrintingsSource,
+    TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -14,6 +15,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_ui::telemetry::vocabulary::component;
 
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::collection::use_offers_owned;
 
 /// The printings of `card`, opening on the one shown, fetched for the signed-in session. With an
 /// `on_save`, the sheet picks: Select or Enter hands it the showing printing and toasts
@@ -78,4 +80,45 @@ pub(crate) fn use_printings_source() {
         });
     });
     use_context_provider(|| PrintingsSource { results, request });
+
+    // The user's owned printings, fetched only when they have a collection, quietly: a failure
+    // leaves Only mine unoffered rather than toasting over the sheet.
+    let offers_owned = use_offers_owned();
+    let mut owned: Signal<HashMap<Uuid, HashSet<Uuid>>> = use_signal(HashMap::new);
+    // The card asked for before the summary said there is a collection, sent once it does.
+    let mut waiting: Signal<Option<Uuid>> = use_signal(|| None);
+    let fetch_owned = use_callback(move |oracle_id: Uuid| {
+        if owned.peek().contains_key(&oracle_id) {
+            return;
+        }
+        spawn(async move {
+            let fetched = authed
+                .run_quiet("load_owned_printings", |c, s| async move {
+                    c.fetch_owned_printings(oracle_id, &s).await
+                })
+                .await;
+            if let Some(cards) = fetched {
+                let ids = cards.into_iter().map(|c| c.scryfall_data.id).collect();
+                owned.write().insert(oracle_id, ids);
+            }
+        });
+    });
+    let request_owned = use_callback(move |oracle_id: Uuid| {
+        if *offers_owned.peek() {
+            fetch_owned.call(oracle_id);
+        } else {
+            waiting.set(Some(oracle_id));
+        }
+    });
+    use_effect(move || {
+        if offers_owned()
+            && let Some(oracle_id) = waiting.write().take()
+        {
+            fetch_owned.call(oracle_id);
+        }
+    });
+    use_context_provider(|| OwnedPrintingsSource {
+        results: owned,
+        request: request_owned,
+    });
 }

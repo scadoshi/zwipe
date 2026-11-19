@@ -143,6 +143,7 @@ async fn main() -> anyhow::Result<()> {
                             ("removed", applied.removed),
                             ("moved_deck_cards", applied.remapped_deck_cards),
                             ("moved_slots", applied.remapped_slots),
+                            ("moved_collection_cards", applied.remapped_collection_cards),
                             ("applied", u64::from(report.counts.is_some())),
                         ],
                     )

@@ -7,8 +7,8 @@ use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use zwipe::config::Config;
-use zwipe::domain::{auth, card, deck, health, metrics, user};
-use zwipe::inbound::http::{HttpServer, HttpServerConfig};
+use zwipe::domain::{auth, card, collection, deck, health, metrics, user};
+use zwipe::inbound::http::{HttpServer, HttpServerConfig, Services};
 use zwipe::outbound::resend::Resend;
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::logo;
@@ -72,26 +72,21 @@ async fn run() -> anyhow::Result<()> {
         config.web_base_url.clone(),
         config.support_email_address,
     );
-    let user_service = user::services::Service::new(db.clone());
-    let health_service = health::services::Service::new(db.clone());
-    let card_service = card::services::Service::new(db.clone());
-    let deck_service = deck::services::Service::new(db.clone(), db.clone());
-    let metrics_service = metrics::services::Service::new(db.clone());
     let server_config = HttpServerConfig {
         bind_address: &config.bind_address,
         allowed_origins: config.allowed_origins,
         min_client_version: config.min_client_version,
         web_base_url: config.web_base_url,
     };
-    let http_server = HttpServer::new(
-        auth_service,
-        user_service,
-        health_service,
-        card_service,
-        deck_service,
-        metrics_service,
-        server_config,
-    )
-    .await?;
+    let services = Services {
+        auth: auth_service,
+        users: user::services::Service::new(db.clone()),
+        health: health::services::Service::new(db.clone()),
+        cards: card::services::Service::new(db.clone()),
+        decks: deck::services::Service::new(db.clone(), db.clone()),
+        metrics: metrics::services::Service::new(db.clone()),
+        collections: collection::services::Service::new(db.clone()),
+    };
+    let http_server = HttpServer::new(services, server_config).await?;
     http_server.run().await
 }
