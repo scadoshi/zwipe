@@ -24,7 +24,7 @@ use crate::add::{self, AddDeck};
 use crate::deck_signals::{self, Crossing, Level};
 use crate::filter::{self, AddContext};
 use crate::generation::{Generation, Ticket};
-use crate::screens::card_filter::OwnedChip;
+use crate::pile_source::Holdings;
 use crate::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, Direction, MAX_CARDS_IN_STACK, MaybeboardAction,
     NO_CARDS_LEFT, NO_CARDS_MATCH, STACK_WARNING_EVERY, StackAction,
@@ -202,8 +202,8 @@ impl UndoClaim {
 /// What a user does on Add cards, and each reply the client hands back.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
-    /// Whether the Filter sheet offers "In my collection", as the collection summary says. A
-    /// change while the Search filter holds the flag runs the search again with it.
+    /// Whether the user has a collection, as the collection summary says, so From offers
+    /// Collection. Losing it while on Collection falls back to Search.
     OffersOwned(bool),
     /// Opens the screen for `deck_id`, offering the hint once per visit. `filter` is the Search filter the client remembered for this deck, and `parked` the stack it parked here last, which resumes when its filter still matches.
     Load {
@@ -605,9 +605,9 @@ pub struct State {
     waiting: Vec<(Ticket, Pending)>,
     generation: Generation,
     hint: HintOffer,
-    /// Whether the Filter sheet offers "In my collection"; until it does, a saved flag is never
-    /// sent.
-    owned_chip: OwnedChip,
+    /// Whether the user has a collection; until a summary says so, Collection is neither offered
+    /// nor sent.
+    holdings: Holdings,
 }
 
 impl State {
@@ -627,11 +627,11 @@ impl State {
         let before = self.pile();
         let mut effects = match action {
             Action::OffersOwned(offered) => {
-                let chip = OwnedChip::from_offered(offered);
-                if chip == self.owned_chip {
+                let holdings = Holdings::from_has_collection(offered);
+                if holdings == self.holdings {
                     return Vec::new();
                 }
-                self.owned_chip = chip;
+                self.holdings = holdings;
                 if !offered && self.source == Source::Collection {
                     return self.pick_source(Source::Search, None);
                 }
@@ -789,7 +789,7 @@ impl State {
     /// Collection while the user has a collection, never on Search.
     fn sent(&self) -> CardQueryBuilder {
         let mut sent = add::normalized(&self.filter);
-        sent.set_owned_only(self.source.owned_only() && self.owned_chip.is_offered());
+        sent.set_owned_only(self.source.owned_only() && self.holdings.has_collection());
         sent
     }
 

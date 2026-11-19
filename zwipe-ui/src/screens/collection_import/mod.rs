@@ -132,7 +132,7 @@ pub enum Effect {
     /// Raises this toast.
     Toast(Toast),
     /// The collection changed: the client drops what it kept of it (the summary that decides
-    /// whether "In my collection" shows), so the next screen that needs it asks again.
+    /// whether From offers Collection), so the next screen that needs it asks again.
     CollectionChanged,
 }
 

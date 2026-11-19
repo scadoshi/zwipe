@@ -17,6 +17,35 @@ pub enum Source {
     Collection,
 }
 
+/// Whether the user has a collection, as the collection summary says, which decides whether
+/// [`Source::Collection`] is on offer.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Holdings {
+    /// No summary yet, a failed one, an older server, or an empty collection.
+    #[default]
+    Unknown,
+    /// The collection holds something.
+    Held,
+}
+
+impl Holdings {
+    /// The holdings for whether the user `has_collection`.
+    #[must_use]
+    pub const fn from_has_collection(has_collection: bool) -> Self {
+        if has_collection {
+            Self::Held
+        } else {
+            Self::Unknown
+        }
+    }
+
+    /// Whether the user has a collection.
+    #[must_use]
+    pub const fn has_collection(self) -> bool {
+        matches!(self, Self::Held)
+    }
+}
+
 impl Source {
     /// Every source, in the order the chip cycles through them.
     pub const ALL: [Self; 3] = [Self::Search, Self::Maybeboard, Self::Collection];

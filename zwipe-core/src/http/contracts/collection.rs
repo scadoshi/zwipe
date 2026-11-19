@@ -29,7 +29,7 @@ pub struct HttpImportCollection {
     pub request_id: Option<Uuid>,
 }
 
-/// What the caller's collection holds. A client offers "In my collection" only when it holds
+/// What the caller's collection holds. A client offers From Collection only when it holds
 /// something, and only a server with the owned filter answers this route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HttpCollectionSummary {

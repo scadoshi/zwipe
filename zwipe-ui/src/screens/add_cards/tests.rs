@@ -1645,7 +1645,7 @@ fn search_query_of(effects: &[Effect]) -> Option<CardQuery> {
 }
 
 #[test]
-fn search_never_sends_in_my_collection_even_from_a_saved_filter() {
+fn search_never_sends_owned_only_even_from_a_saved_filter() {
     let built = commander_deck(&["Sol Ring"]);
     let mut saved = CardQueryBuilder::default();
     saved.set_name_contains("sol").set_owned_only(true);

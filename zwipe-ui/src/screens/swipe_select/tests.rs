@@ -900,7 +900,7 @@ fn tymnas_partner_pile_deals_only_plain_partners() {
 }
 
 #[test]
-fn a_saved_in_my_collection_filters_only_once_the_chip_is_offered() {
+fn a_saved_owned_flag_never_filters_the_search() {
     let mut saved = CardQueryBuilder::new();
     saved.set_owned_only(true);
     let mut state = State::default();
@@ -912,19 +912,6 @@ fn a_saved_in_my_collection_filters_only_once_the_chip_is_offered() {
     });
     assert!(
         !search_of(&effects).1.owned_only(),
-        "no chip offered yet: the hidden flag never filters"
+        "owned cards are From Collection, never a filter"
     );
-    let effects = state.update(Action::OffersOwned(true));
-    assert!(
-        search_of(&effects).1.owned_only(),
-        "the chip showing deals again with the saved choice"
-    );
-    assert_eq!(state.update(Action::OffersOwned(true)), Vec::new());
-}
-
-#[test]
-fn the_summary_landing_never_re_deals_a_pile_with_no_collection_filter() {
-    let mut state = State::default();
-    let _ = state.update(open(Mode::Commander(Format::Commander)));
-    assert_eq!(state.update(Action::OffersOwned(true)), Vec::new());
 }

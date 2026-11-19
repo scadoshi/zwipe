@@ -132,7 +132,7 @@ pub struct CachedDecks {
 ///   `Signal<Option<CachedDecks>>` and `Signal<Option<FlavorCard>>` (the
 ///   featured flavor card, held until the top of the next hour), empty.
 /// - [`CollectionCache`](crate::inbound::collection::CollectionCache), empty until a
-///   server-searched screen asks whether to offer "In my collection".
+///   swipe screen asks whether From offers Collection.
 pub fn use_root_caches() {
     let counts: Signal<Option<CachedCounts>> =
         use_signal(|| CountsStore::browser().load().map(CachedCounts::restored));

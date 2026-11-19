@@ -29,53 +29,21 @@ pub const APPLY: &str = "Apply";
 /// The button that stages the host's default filter.
 pub const RESET: &str = "Reset";
 
-/// The chip that keeps only cards with a printing in the user's collection.
-pub const IN_MY_COLLECTION: &str = "In my collection";
-
-/// The label of the row that holds [`IN_MY_COLLECTION`].
-pub const COLLECTION: &str = "Collection";
-
-/// Whether a server-searched sheet offers [`IN_MY_COLLECTION`]: only once the server has
-/// answered the collection summary, and only when the collection holds something. `None` (no
+/// Whether the user has a collection, so the From chip offers Collection: only once the server
+/// has answered the collection summary, and only when the collection holds something. `None` (no
 /// reply yet, a failed one, or an older server without the route) never offers it, so a new
-/// client never lights a filter an older server would ignore.
+/// client never asks for owned cards an older server would ignore.
 #[must_use]
 pub fn offers_owned(summary: Option<&HttpCollectionSummary>) -> bool {
     summary.is_some_and(|summary| summary.printings > 0)
 }
 
-/// Whether a server-searched sheet offers [`IN_MY_COLLECTION`], as a model keeps it.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum OwnedChip {
-    /// Not offered: no summary yet, a failed one, an older server, or an empty collection.
-    #[default]
-    Hidden,
-    /// Offered: the user has a collection.
-    Offered,
-}
-
-impl OwnedChip {
-    /// The chip for whether it is offered.
-    #[must_use]
-    pub const fn from_offered(offered: bool) -> Self {
-        if offered { Self::Offered } else { Self::Hidden }
-    }
-
-    /// Whether the chip is offered.
-    #[must_use]
-    pub const fn is_offered(self) -> bool {
-        matches!(self, Self::Offered)
-    }
-}
-
-/// The filter a host sends to the server: `filter` with [`IN_MY_COLLECTION`] dropped unless the
-/// host's sheet offers it, so a flag the user can't see or turn off never narrows a search.
+/// `filter` with its owned-only flag off. Owned cards are a swipe screen's From Collection, never
+/// a filter, so a flag a filter saved earlier never narrows a search or a sheet's draft.
 #[must_use]
-pub fn as_sent(filter: &CardQueryBuilder, offered: bool) -> CardQueryBuilder {
+pub fn without_owned(filter: &CardQueryBuilder) -> CardQueryBuilder {
     let mut sent = filter.clone();
-    if !offered {
-        sent.set_owned_only(false);
-    }
+    sent.set_owned_only(false);
     sent
 }
 

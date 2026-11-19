@@ -238,7 +238,7 @@ pub enum Effect {
         set: HttpSetCollectionCard,
     },
     /// The collection changed: the client drops what it kept of it (the summary that decides
-    /// whether "In my collection" shows).
+    /// whether From offers Collection).
     CollectionChanged,
     /// Fetches the export; answers with [`Action::Exported`] or [`Action::ExportFailed`]
     /// carrying `ticket`.

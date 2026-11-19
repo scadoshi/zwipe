@@ -1138,8 +1138,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             AddSource::Maybeboard => None,
         },
         // The maybeboard source filters in memory, so only the search source offers it.
-        // Owned cards are From's Collection, not a filter chip.
-        show_owned: false,
         ..SheetConfig::default()
     };
     let panel_key = format!("{at:?}-{}-{}", deck.read().is_some(), ctx.lands_at_target);

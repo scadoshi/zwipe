@@ -33,7 +33,7 @@ impl Endpoint for ImportCollection {
 }
 
 /// How many cards and printings the caller's collection holds. Only a server with the owned
-/// filter answers it, so a client offers "In my collection" only after a reply.
+/// filter answers it, so a client offers From Collection only after a reply.
 #[derive(Debug)]
 pub struct GetCollectionSummary;
 impl Endpoint for GetCollectionSummary {

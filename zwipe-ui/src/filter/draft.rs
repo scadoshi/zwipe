@@ -36,9 +36,6 @@ pub enum ResetRule {
 pub struct SheetConfig {
     /// Whether the Format section shows.
     pub show_format: bool,
-    /// Whether "In my collection" shows: only where the server runs the search (an in-memory
-    /// filter can't read the collection), and only once the server has said the user has one.
-    pub show_owned: bool,
     /// Whether Apply refuses an empty draft over an empty filter, as Add's
     /// search does, since an empty filter would serve every card.
     pub validate: bool,
@@ -94,12 +91,11 @@ pub struct FilterDraft {
 }
 
 impl FilterDraft {
-    /// The draft over `filter`. Without [`SheetConfig::show_owned`] "In my collection" opens off,
-    /// in the draft and in what it is compared with, so a flag the sheet can't show is never
-    /// applied back or reported as an edit.
+    /// The draft over `filter`. A saved owned-only flag opens off, in the draft and in what it is
+    /// compared with, so a flag the sheet can't show is never applied back or reported as an edit.
     #[must_use]
     pub fn new(filter: &CardQueryBuilder, config: SheetConfig) -> Self {
-        let shown = crate::screens::card_filter::as_sent(filter, config.show_owned);
+        let shown = crate::screens::card_filter::without_owned(filter);
         Self {
             draft: shown.clone(),
             snapshot: shown,
@@ -127,18 +123,6 @@ impl FilterDraft {
             fetch,
         };
         (Self::new(filter, config), opened)
-    }
-
-    /// Whether the draft has "In my collection" on.
-    #[must_use]
-    pub fn owned_only(&self) -> bool {
-        self.draft.owned_only()
-    }
-
-    /// Turns "In my collection" on or off in the draft.
-    pub fn toggle_owned(&mut self) {
-        let on = self.draft.owned_only();
-        self.draft.set_owned_only(!on);
     }
 
     /// The filter that was applied when the sheet opened.
@@ -313,48 +297,15 @@ mod tests {
     }
 
     #[test]
-    fn in_my_collection_toggles_in_the_draft_applies_and_resets() {
-        assert!(!SheetConfig::default().show_owned, "hosts opt in");
-        let chip = SheetConfig {
-            show_owned: true,
-            ..search(false)
-        };
-        let mut draft = FilterDraft::new(&CardQueryBuilder::default(), chip.clone());
-        assert!(!draft.owned_only());
-        draft.toggle_owned();
-        assert!(draft.owned_only());
-        assert!(!draft.unchanged(), "the toggle is an edit Apply can take");
-        let ApplyOutcome::Applied { filter, .. } = draft.apply() else {
-            panic!("applies");
-        };
-        assert!(filter.owned_only());
-
-        let mut draft = FilterDraft::new(&filter, chip.clone());
-        draft.toggle_owned();
-        assert!(!draft.owned_only(), "a second tap turns it off");
-        let mut draft = FilterDraft::new(&filter, chip);
-        let _ = draft.reset();
-        assert!(!draft.owned_only(), "Reset clears it like any filter");
-    }
-
-    #[test]
-    fn a_sheet_without_the_chip_opens_with_in_my_collection_off() {
+    fn a_saved_owned_flag_opens_off_and_is_no_edit() {
         let mut saved = CardQueryBuilder::default();
         saved.set_owned_only(true);
-        let hidden = FilterDraft::new(&saved, search(false));
-        assert!(!hidden.owned_only(), "no chip: the draft has it off");
+        let draft = FilterDraft::new(&saved, search(false));
+        assert!(!draft.draft.owned_only(), "the draft has it off");
         assert!(
-            hidden.unchanged(),
+            draft.unchanged(),
             "and that is not an edit to apply or warn about"
         );
-        let shown = FilterDraft::new(
-            &saved,
-            SheetConfig {
-                show_owned: true,
-                ..search(false)
-            },
-        );
-        assert!(shown.owned_only(), "with the chip it opens as saved");
     }
 
     #[test]

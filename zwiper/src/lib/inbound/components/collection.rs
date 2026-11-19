@@ -1,5 +1,5 @@
 //! What the signed-in user's collection holds, fetched once per user and kept above the router,
-//! so a server-searched filter sheet knows whether to offer "In my collection".
+//! so a swipe screen knows whether From offers Collection.
 
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -23,7 +23,7 @@ pub struct CachedCollection {
 #[derive(Debug, Clone, Copy)]
 pub struct CollectionCache(pub Signal<Option<CachedCollection>>);
 
-/// Whether this screen's filter sheet offers "In my collection". Fetches the summary once per
+/// Whether From offers Collection on this screen. Fetches the summary once per
 /// signed-in user, as a background probe that only logs a failure, the way Swipe select's
 /// searches do: until a reply arrives, and on a failure or an older server, the answer is no.
 pub fn use_offers_owned() -> Memo<bool> {

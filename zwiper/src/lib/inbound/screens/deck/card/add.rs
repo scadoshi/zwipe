@@ -621,7 +621,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         hint_open: use_signal(|| false),
         said: use_signal(|| None),
     };
-    // The model sends a saved "In my collection" only while the sheet offers it.
+    // From offers Collection only while the user has a collection.
     use_effect(move || driver.dispatch(Action::OffersOwned(offers_owned())));
 
     // Load runs in the first render so the hint opens with the screen.
@@ -932,8 +932,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // Apply there (e.g. right after Reset) must commit, not warn.
                 validate_before_apply: validates_apply,
                 deck_format: sheet_deck_format,
-                // Owned cards are From's Collection, not a filter chip.
-                show_owned: false,
                 on_clear: move |()| {
                     let draft = filter_builder.peek().clone();
                     driver.dispatch(Action::ResetFilter(draft));

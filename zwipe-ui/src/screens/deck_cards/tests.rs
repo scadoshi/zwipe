@@ -2635,6 +2635,6 @@ fn patches(effects: &[Effect]) -> Vec<&Effect> {
 fn quick_add_searches_everything_never_only_the_collection() {
     assert!(
         !quick_add_query("sol ring").owned_only(),
-        "a typed name is an explicit lookup; In my collection only narrows the pile"
+        "a typed name is an explicit lookup; From Collection only narrows the pile"
     );
 }

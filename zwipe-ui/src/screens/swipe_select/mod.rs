@@ -22,7 +22,6 @@ use crate::commander::swipe_select;
 use crate::deck::form;
 use crate::generation::{Generation, Ticket};
 use crate::playstyle;
-use crate::screens::card_filter::OwnedChip;
 use crate::stack::{CardStack, Direction, NO_CARDS_LEFT, StackAction};
 use crate::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
 use crate::toast::{Line, Toast, ToastKind, keep_one};
@@ -172,9 +171,6 @@ pub enum Action {
     },
     /// The filter sheet applied `filter`: the pile is dealt again from the top.
     Filter(CardQueryBuilder),
-    /// Whether the Filter sheet offers "In my collection", as the collection summary says. A
-    /// change while the filter holds the flag deals a search again with it.
-    OffersOwned(bool),
     /// Refresh: the pile is dealt again from the top with `filter`.
     Refresh(CardQueryBuilder),
     /// The host's suggested pile changed while the overlay is open: the cards already swiped stay behind the top one and the new pile deals after them.
@@ -358,9 +354,6 @@ pub struct State {
     waiting: Vec<(Ticket, Pending)>,
     generation: Generation,
     hint: HintOffer,
-    /// Whether the Filter sheet offers "In my collection"; until it does, a saved flag is never
-    /// sent.
-    owned_chip: OwnedChip,
 }
 
 impl State {
@@ -400,22 +393,6 @@ impl State {
             Action::Filter(filter) => {
                 self.filter = filter;
                 self.deal()
-            }
-            Action::OffersOwned(offered) => {
-                let chip = OwnedChip::from_offered(offered);
-                if chip == self.owned_chip {
-                    return Vec::new();
-                }
-                self.owned_chip = chip;
-                let searching = self
-                    .mode
-                    .as_ref()
-                    .is_some_and(|mode| *mode != Mode::Suggested);
-                if searching && self.filter.owned_only() {
-                    self.deal()
-                } else {
-                    Vec::new()
-                }
             }
             Action::Refresh(filter) => {
                 self.filter = filter;
@@ -709,8 +686,7 @@ impl State {
 
     /// The search for `mode` from `offset`: the filter with the mode's constraint, no tokens and one page. No sort is pinned, so a sortless filter gets the server's popularity order.
     fn query(&self, mode: &Mode, offset: u32) -> Option<CardQuery> {
-        let mut builder =
-            crate::screens::card_filter::as_sent(&self.filter, self.owned_chip.is_offered());
+        let mut builder = crate::screens::card_filter::without_owned(&self.filter);
         mode.apply(&mut builder);
         builder.set_is_token(false);
         builder.set_limit(PAGE_SIZE);

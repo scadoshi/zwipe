@@ -17,7 +17,6 @@ fn config(show_format: bool, validate: bool, reset: ResetRule) -> SheetConfig {
         reset,
         sources: Sources::default(),
         deck_format: None,
-        show_owned: false,
     }
 }
 
@@ -557,7 +556,7 @@ fn the_copy_matches_the_app() {
 }
 
 #[test]
-fn in_my_collection_is_offered_only_after_a_summary_with_something_in_it() {
+fn collection_is_offered_only_after_a_summary_with_something_in_it() {
     use zwipe_core::http::contracts::collection::HttpCollectionSummary;
     assert!(
         !offers_owned(None),
@@ -573,18 +572,16 @@ fn in_my_collection_is_offered_only_after_a_summary_with_something_in_it() {
         printings: 1,
     };
     assert!(offers_owned(Some(&some)));
-    assert_eq!(IN_MY_COLLECTION, "In my collection");
 }
 
 #[test]
-fn a_hidden_in_my_collection_never_reaches_the_server() {
+fn a_saved_owned_flag_never_reaches_the_server() {
     let mut saved = CardQueryBuilder::default();
     saved
         .set_name_contains("elf".to_owned())
         .set_owned_only(true);
-    assert!(as_sent(&saved, true).owned_only(), "offered: sent as set");
-    let sent = as_sent(&saved, false);
-    assert!(!sent.owned_only(), "not offered: dropped");
+    let sent = without_owned(&saved);
+    assert!(!sent.owned_only(), "dropped");
     assert_eq!(
         sent.name_contains(),
         Some("elf"),

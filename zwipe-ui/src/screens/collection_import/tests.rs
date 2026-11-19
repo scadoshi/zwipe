@@ -234,7 +234,7 @@ fn a_landed_import_says_the_collection_changed_and_a_failed_one_does_not() {
     });
     assert!(
         landed.contains(&Effect::CollectionChanged),
-        "the In my collection chip reads the new collection: {landed:?}"
+        "From Collection reads the new collection: {landed:?}"
     );
 }
 
