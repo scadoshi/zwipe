@@ -1,5 +1,5 @@
 //! A card's quantity stepper wraps as one: when its row runs out of room, `-`, the count and `+`
-//! move to the next line together, never split across two.
+//! move to the next line together, never split across two, and read as one control.
 
 #![expect(
     clippy::unwrap_used,
@@ -41,9 +41,21 @@ fn the_stepper_s_three_parts_sit_in_one_box() {
 }
 
 #[test]
-fn the_box_wraps_whole_and_keeps_the_row_s_gap() {
+fn the_box_wraps_whole_with_its_parts_4px_apart() {
     let box_rule = rule(components::MAGIC_CSS, ".card-action-stepper");
-    for want in ["display: inline-flex;", "flex: none;", "gap: inherit;"] {
+    for want in [
+        "display: inline-flex;",
+        "flex: none;",
+        "gap: var(--space-1);",
+    ] {
         assert!(box_rule.contains(want), "{want} in {box_rule}");
     }
+}
+
+#[test]
+fn a_touch_screen_adds_no_margin_around_the_count() {
+    assert!(
+        !components::SCREENS_CSS.contains(".card-action-count"),
+        "the count keeps only its own width"
+    );
 }

@@ -270,10 +270,11 @@ fn TagRows(
 /// the face's stats, then the host's `footer` in its own section. Under a
 /// rule, the action bar holds Flip for a multi-faced card, Meld for a meld
 /// half when the host provides a [`MeldSource`](crate::MeldSource), Image when
-/// the card has art and `on_image` is given, then the host's `actions` in the
-/// same row, and the host's `action_rows` under it. A multi-faced card shows
-/// one face at a time behind Flip; a meld half shows its melded card while
-/// Meld is on.
+/// the card has art and `on_image` is given, then the host's `actions`, all in
+/// one `card-action-group`, with the host's `action_end` after the group at
+/// the end of the line on a phone, and the host's `action_rows` under it. A
+/// multi-faced card shows one face at a time behind Flip; a meld half shows
+/// its melded card while Meld is on.
 #[component]
 pub fn CardDetails(
     card: Card,
@@ -292,15 +293,19 @@ pub fn CardDetails(
     /// their own.
     #[props(default)]
     face: Option<usize>,
-    /// Whether `actions` or `action_rows` carry any buttons, so the bar
-    /// renders to hold them. (A slot can't be introspected.)
+    /// Whether `actions`, `action_end` or `action_rows` carry any buttons, so
+    /// the bar renders to hold them. (A slot can't be introspected.)
     #[props(default)]
     has_actions: bool,
-    /// Host buttons in the bar's row after Flip and Image (the quantity
-    /// stepper, Printing, Star), built as `card-action-btn`s.
+    /// Host icon buttons in the bar's group after Flip and Image (Send to,
+    /// Star, Flag), built as `card-action-btn card-action-icon`s.
     #[props(default)]
     actions: Option<Element>,
-    /// Host rows under the bar's row (the board moves), each a
+    /// Host controls after the group, at the end of its line on a phone (the
+    /// quantity stepper).
+    #[props(default)]
+    action_end: Option<Element>,
+    /// Host rows under the bar's row (the word buttons' block), each a
     /// `card-action-row`.
     #[props(default)]
     action_rows: Option<Element>,
@@ -364,17 +369,20 @@ pub fn CardDetails(
         if show_bar {
             hr { class: "card-row-rule card-row-rule-muted" }
             div { class: "card-row-actions",
-                div { class: "card-action-row",
-                    if show_flip_btn {
-                        FlipButton { face_idx, current: cur, face_count, on_face_change }
+                div { class: "card-action-row card-action-split",
+                    span { class: "card-action-group",
+                        if show_flip_btn {
+                            FlipButton { face_idx, current: cur, face_count, on_face_change }
+                        }
+                        if show_meld {
+                            MeldButton { meld }
+                        }
+                        if let (true, Some(handler)) = (show_image, on_image) {
+                            ImageButton { on_click: handler }
+                        }
+                        {actions}
                     }
-                    if show_meld {
-                        MeldButton { meld }
-                    }
-                    if let (true, Some(handler)) = (show_image, on_image) {
-                        ImageButton { on_click: handler }
-                    }
-                    {actions}
+                    {action_end}
                 }
                 {action_rows}
             }

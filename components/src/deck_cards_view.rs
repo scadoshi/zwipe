@@ -994,17 +994,15 @@ pub fn DeckStackDrawer(
     } = row_actions(actions, card_id, kind, board);
     let footer = on_move.map(|on_move_to| {
         rsx! {
-            // Plain action rows, as the panel's own foot lays out Printings, so
-            // every row starts at the same left edge.
-            div { class: "card-action-row",
-                CardEditButtons {
-                    qty,
-                    on_qty_change: on_qty,
-                    mvp,
-                    on_toggle_mvp: on_star,
-                    flagged,
-                    on_toggle_flag: on_flag,
-                }
+            // The row's own two action rows, which start at the left edge the
+            // panel's foot lays Printings out on.
+            CardEditButtons {
+                qty,
+                on_qty_change: on_qty,
+                mvp,
+                on_toggle_mvp: on_star,
+                flagged,
+                on_toggle_flag: on_flag,
             }
             CardBoardMoves { current_board: board, on_move_to }
         }
