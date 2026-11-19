@@ -187,8 +187,20 @@ pub fn CollectionList(imports: ReadSignal<u32>) -> Element {
     });
     // The screen holds the overlays, the hover preview and the copy cap, outside its content.
     let hover_stack: HoverStack = use_context();
-    let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
+    let mut expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
+    // List or Stacks, as last left here.
+    let view = use_signal(|| CardsViewStore::collection().load());
+    let shown_stacks = use_memo(move || stacks::stacks(driver.model.read().rows()));
+    // The keys act on the List's rows by row id, and on the stacks' cards by printing id, the id
+    // a hovered stack card names.
     let keyed = use_memo(move || -> Vec<(Uuid, Card)> {
+        if view() == CardsView::Stacks {
+            return shown_stacks()
+                .into_iter()
+                .flat_map(|s| s.cards)
+                .map(|c| (c.card.scryfall_data.id, c.card))
+                .collect();
+        }
         driver
             .model
             .read()
@@ -204,15 +216,12 @@ pub fn CollectionList(imports: ReadSignal<u32>) -> Element {
         None,
     );
 
-    // List or Stacks, as last left here.
-    let view = use_signal(|| CardsViewStore::collection().load());
     let pointer = use_pointer();
     let touch = !pointer();
     let RowFaces(faces) = use_context();
     let group_buy = use_group_buy();
     let collapsed = use_signal(HashSet::new);
     let details = use_stack_details(use_signal(Reveal::default), use_signal(|| false));
-    let shown_stacks = use_memo(move || stacks::stacks(driver.model.read().rows()));
     let listed = use_memo(move || -> Vec<Uuid> {
         shown_stacks()
             .iter()
@@ -264,6 +273,7 @@ pub fn CollectionList(imports: ReadSignal<u32>) -> Element {
                 on_change: move |choice: CardsView| {
                     CardsViewStore::collection().save(choice);
                     details.dismiss();
+                    expanded_card.set(None);
                 },
             }
             if status == Status::Loading && stacks_on {
@@ -385,9 +395,9 @@ fn sections(stacks: &[Stack]) -> Vec<(DeckSection, Vec<RowInfo>)> {
 }
 
 /// The open stack card's drawer, the deck page's: the card's details with Image, Printings and
-/// Send to in its foot, above them a line for each of its rows with that row's finish, condition and language and
-/// its copies stepper. Mounted, closed, on the first card before any click, so it slides in and
-/// out; nothing while no card is listed.
+/// Send to in its foot, above them a line for each of its rows with that row's finish, condition
+/// and language and its copies stepper. Mounted, closed, on the first card before any click, so
+/// it slides in and out; nothing while no card is listed.
 #[component]
 fn CollectionStackDrawer(
     cards: Vec<StackCard>,
@@ -427,6 +437,7 @@ fn CollectionStackDrawer(
     let footer = rsx! {
         for row in shown.rows {
             div { key: "{row.key.id()}", class: "card-action-row",
+                // The first tag is the copies, which the stepper shows.
                 for tag in row_tags(&row).into_iter().skip(1) {
                     span { class: "card-row-stat", "{tag}" }
                 }
