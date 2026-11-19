@@ -281,6 +281,37 @@
    "path": "/api/card/{{commander_oracle}}/stats"
   },
   {
+   "name": "card lookup, signed out",
+   "method": "POST",
+   "route": "/api/card/lookup",
+   "path": "/api/card/lookup",
+   "body": {
+    "name": "Sol Ring"
+   }
+  },
+  {
+   "name": "card lookup with chips",
+   "method": "POST",
+   "route": "/api/card/lookup",
+   "path": "/api/card/lookup",
+   "body": {
+    "name": "goblin",
+    "types": [
+     "Creature"
+    ],
+    "colors": [
+     "R"
+    ]
+   },
+   "as": "tester"
+  },
+  {
+   "name": "named cards, signed out",
+   "method": "GET",
+   "route": "/api/card/named/{name_slug}",
+   "path": "/api/card/named/sol-ring"
+  },
+  {
    "name": "oracle tag examples",
    "method": "GET",
    "route": "/api/card/oracle-tag/{slug}/examples",
