@@ -117,7 +117,7 @@ pub const COLLECTION_DONE: &str = "That's every card from your collection for th
 
 /// The line under [`COLLECTION_DONE`].
 pub const COLLECTION_DONE_DETAIL: &str =
-    "Skips come back after a week, or sooner with Clear skips in the deck's Danger zone panel";
+    "It deals owned cards that fit this deck and weren't skipped this week";
 
 /// The toast when the Synergy toggle turns synergy on.
 pub const SYNERGY_ON: &str = "Synergy on";
