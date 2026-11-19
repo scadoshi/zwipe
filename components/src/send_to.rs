@@ -66,7 +66,8 @@ pub fn SendToButton(card: Card) -> Element {
     }
 }
 
-/// The Send to sheet, open while `open`: the board chips, Main by default and then the last one
+/// The Send to sheet, open while `open`, a drawer at every width (a small choice that leaves
+/// the page in view): the board chips, Main by default and then the last one
 /// picked, the search, and `decks` (`None` while they load) less `current`, the deck the user is
 /// on. A tap on a deck calls `on_send` with it and the board.
 #[component]
@@ -112,6 +113,7 @@ pub fn SendToSheet(
             title: TITLE,
             search_id: SEARCH_ID,
             search_key: false,
+            every_width: true,
             on_back: move |()| {
                 let mut open = open;
                 open.set(false);

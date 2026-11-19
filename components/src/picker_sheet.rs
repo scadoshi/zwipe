@@ -1,6 +1,6 @@
 //! The picker: a sheet of choices with a search field, a drawer beside the page on a wide
-//! window and a screen over it on a narrow one or the phone. The deck form's Format, Tags and
-//! Oracle tags pickers and Send to are built on it.
+//! window and a screen over it on a narrow one or the phone, or a drawer at every width. The
+//! deck form's Format, Tags and Oracle tags pickers and Send to are built on it.
 
 use dioxus::prelude::*;
 
@@ -18,10 +18,11 @@ pub const PICKER_DRAWER_PX: u32 = 600;
 /// keyboard.
 const SCREEN_ENTRY: &str = ".picker-screen.show .page-header-support";
 
-/// The picker, open on `open`. From [`PICKER_DRAWER_PX`] it is a [`DrawerSheet`] at every
-/// width, sliding in from the right, its title bar's × and a backdrop tap calling `on_back`.
-/// Narrower it is a screen over the page: it fades in with no slide, and its header's back arrow
-/// calls `on_back`. With `on_save`, the dock's checkmark calls it and stays off while
+/// The picker, open on `open`. From [`PICKER_DRAWER_PX`], or at any width with `every_width`,
+/// it is a [`DrawerSheet`] at every width, sliding in from the right, its title bar's × and a
+/// backdrop tap calling `on_back`; below the kit's breakpoint that drawer floats along the right
+/// edge under the header, as the card details do. Narrower without `every_width` it is a screen
+/// over the page: it fades in with no slide, and its header's back arrow calls `on_back`. With `on_save`, the dock's checkmark calls it and stays off while
 /// `unchanged`; without it the picker has no dock, for a picker whose choice acts on the tap.
 /// With `hint_open`, the title bar's `?` sets it. The body mounts while open (and, as a drawer,
 /// through the slide out), so its keys stop answering once the picker is gone; with
@@ -38,10 +39,12 @@ pub fn PickerSheet(
     #[props(default)] on_save: Option<EventHandler<()>>,
     #[props(default = true)] search_key: bool,
     #[props(default)] layer: Option<u32>,
+    #[props(default)] every_width: bool,
     children: Element,
 ) -> Element {
-    let wide = use_min_width(PICKER_DRAWER_PX);
-    let as_screen = use_memo(move || open() && !wide());
+    let min_width = use_min_width(PICKER_DRAWER_PX);
+    let drawer = use_memo(move || every_width || min_width());
+    let as_screen = use_memo(move || open() && !drawer());
     use_sheet_focus(as_screen.into(), SCREEN_ENTRY);
     let save = on_save.map(|on_save| {
         rsx! {
@@ -55,7 +58,7 @@ pub fn PickerSheet(
         }
     });
     let on_hint = hint_open.map(|mut hint_open| Callback::new(move |()| hint_open.set(true)));
-    if !wide() {
+    if !drawer() {
         let shown = open();
         return rsx! {
             div {
