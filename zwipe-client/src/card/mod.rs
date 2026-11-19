@@ -11,6 +11,8 @@ pub mod fetch_artists;
 pub mod fetch_card;
 /// Fetch the card-role catalog (slug, display name, short name).
 pub mod fetch_card_roles;
+/// Fetch a card's public numbers by oracle ID.
+pub mod fetch_card_stats;
 /// Fetch all card types (creature, instant, etc.).
 pub mod fetch_card_types;
 /// Fetch the served keyword-reminder catalog.
