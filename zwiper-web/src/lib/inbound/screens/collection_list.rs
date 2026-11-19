@@ -139,8 +139,11 @@ impl Driver {
 }
 
 /// Collection's list: the search row, then the rows under the `Cards` header with Export.
+///
+/// `imports` counts the imports that landed on this visit; each one reads the list again from
+/// its first page.
 #[component]
-pub fn CollectionList() -> Element {
+pub fn CollectionList(imports: ReadSignal<u32>) -> Element {
     // Opening asks for the first page; the effects run once the model is in place.
     let mut opening = Vec::new();
     let model = use_signal(|| {
@@ -157,6 +160,14 @@ pub fn CollectionList() -> Element {
     use_hook(move || {
         for effect in opening {
             driver.perform(effect);
+        }
+    });
+    let mut imports_seen = use_signal(|| imports.peek().to_owned());
+    use_effect(move || {
+        let landed = imports();
+        if landed != *imports_seen.peek() {
+            imports_seen.set(landed);
+            driver.dispatch(Action::Imported);
         }
     });
     // The collection holds up to 9,999 copies of a printing; a deck's 99 doesn't apply.

@@ -39,6 +39,8 @@ struct Driver {
     toast: Toasts,
     /// What the root keeps of the collection, dropped when an import lands.
     collection: CollectionCache,
+    /// How many imports have landed on this visit; the list reads its rows again on each.
+    imports: Signal<u32>,
 }
 
 impl Driver {
@@ -85,6 +87,10 @@ impl Driver {
             Effect::CollectionChanged => {
                 let CollectionCache(mut cache) = self.collection;
                 cache.set(None);
+                // The list only compares counts, so wrapping keeps it reading a change.
+                let mut imports = self.imports;
+                let next = imports.peek().wrapping_add(1);
+                imports.set(next);
             }
         }
     }
@@ -100,6 +106,7 @@ pub fn Collection() -> Element {
         authed: use_authed(),
         toast: use_toast(),
         collection: use_context(),
+        imports: use_signal(|| 0),
     };
     let confirm = use_callback(move |()| driver.dispatch(Action::ConfirmReplace));
 
@@ -201,7 +208,7 @@ pub fn Collection() -> Element {
                             }
                         }
                     }
-                    CollectionList {}
+                    CollectionList { imports: driver.imports }
                 }
             }
             div { class: "action-dock action-dock-right",

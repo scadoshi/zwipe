@@ -159,6 +159,8 @@ pub enum Action {
     NearEnd,
     /// Retry after the first page failed.
     Retry,
+    /// An import changed the collection under the list: reads it again from the first page.
+    Imported,
     /// The search box now holds this text.
     Type(String),
     /// A search's wait is over; the [`Effect::SearchAfter`] ticket.
@@ -335,7 +337,7 @@ impl State {
     /// Takes one action and answers with what the client should do.
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         match action {
-            Action::Open => self.restart(),
+            Action::Open | Action::Imported => self.restart(),
             Action::PageLoaded { ticket, page } => {
                 if self.page_out != Some(ticket) {
                     return Vec::new();

@@ -101,6 +101,51 @@ fn an_empty_collection_points_to_import() {
     assert_eq!(state.status(), Status::Empty);
 }
 
+/// An import on the same screen changes the collection under the list, so the list reads it again
+/// from the first page for the search it holds.
+#[test]
+fn an_import_reloads_the_list_from_the_first_page() {
+    let mut state = opened(Vec::new(), None);
+    assert_eq!(state.status(), Status::Empty);
+    let effects = state.update(Action::Imported);
+    let [
+        Effect::FetchPage {
+            ticket,
+            after: None,
+            search,
+        },
+    ] = effects.as_slice()
+    else {
+        panic!("{effects:?}");
+    };
+    assert!(search.is_empty());
+    assert_eq!(state.status(), Status::Loading);
+    let _ = state.update(Action::PageLoaded {
+        ticket: *ticket,
+        page: Box::new(page(vec![row("Sol Ring", 4)], 79, None)),
+    });
+    assert_eq!(state.status(), Status::List);
+    assert_eq!(state.total(), 79);
+}
+
+/// A page the list asked for before the import holds the collection as it was, so it doesn't land.
+#[test]
+fn a_page_from_before_an_import_is_dropped() {
+    let mut state = opened(vec![row("Sol Ring", 1)], Some("a1"));
+    let effects = state.update(Action::NearEnd);
+    let [Effect::FetchPage { ticket: old, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let old = *old;
+    let _ = state.update(Action::Imported);
+    let _ = state.update(Action::PageLoaded {
+        ticket: old,
+        page: Box::new(page(vec![row("Old", 1)], 9, None)),
+    });
+    assert_eq!(state.rows().len(), 0, "the page from before doesn't land");
+    assert_eq!(state.status(), Status::Loading);
+}
+
 #[test]
 fn the_first_page_failing_offers_retry() {
     let mut state = State::new();
