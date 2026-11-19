@@ -7,7 +7,9 @@ name: Deploy web
 # CLOUDFLARE_ACCOUNT_ID.
 #
 # The tests and the release build run side by side; the upload waits on both,
-# so a deploy takes the longer of the two, not their sum.
+# so a deploy takes the longer of the two, not their sum. It also waits on
+# Deploy zerver when the same commit started one, so the web never goes live
+# ahead of a server that failed to deploy.
 on:
   push:
     branches: [main]
@@ -106,8 +108,53 @@ jobs:
           path: target/dx/zwiper-web/release/web/public
           retention-days: 1
 
+  # A push that changes the server and the web starts both deploys at once,
+  # and the web build is the faster one. This waits on Deploy zerver's run for
+  # the same commit and fails unless it succeeds. A commit with no zerver run
+  # (its paths filter skipped it) passes after a short grace, since both runs
+  # are created by the same push.
+  zerver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: read
+    steps:
+      - name: Wait for Deploy zerver on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          latest() {
+            gh run list -R "$GITHUB_REPOSITORY" -w deploy-zerver.yml -c "$GITHUB_SHA" -L 1 \
+              --json status,conclusion,url -q '.[0] // empty | [.status, .conclusion, .url] | join("|")'
+          }
+          run=""
+          for _ in 1 2 3; do
+            run=$(latest)
+            [ -n "$run" ] && break
+            sleep 10
+          done
+          if [ -z "$run" ]; then
+            echo "no Deploy zerver run for $GITHUB_SHA; the web deploys on its own"
+            exit 0
+          fi
+          while :; do
+            IFS='|' read -r status conclusion url <<<"$run"
+            if [ "$status" = completed ]; then
+              if [ "$conclusion" = success ]; then
+                echo "Deploy zerver succeeded: $url"
+                exit 0
+              fi
+              echo "::error::Deploy zerver ended '$conclusion' for this commit, so the web stays on its current build: $url"
+              exit 1
+            fi
+            echo "Deploy zerver is $status: $url"
+            sleep 30
+            run=$(latest)
+          done
+
   deploy:
-    needs: [test, build]
+    needs: [test, build, zerver]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
