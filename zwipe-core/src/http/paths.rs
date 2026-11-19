@@ -12,6 +12,8 @@
 use uuid::Uuid;
 
 use crate::domain::card::oracle_tag_examples::OracleTagSlug;
+use crate::domain::collection::{CollectionCursor, CollectionPageSize, CollectionSearch};
+use crate::domain::share_link::encode_segment;
 use crate::http::endpoint::Method;
 
 // == health ==
@@ -94,6 +96,19 @@ pub const GET_DECK_TAGS_ROUTE: &str = "/api/deck/tags";
 /// The user's deck count and color map.
 pub const PLAYSTYLE_ROUTE: &str = "/api/deck/playstyle";
 
+// == collection ==
+
+/// Imports a collection export.
+pub const IMPORT_COLLECTION_ROUTE: &str = "/api/collection/import";
+/// How many cards and printings the caller's collection holds.
+pub const COLLECTION_SUMMARY_ROUTE: &str = "/api/collection/summary";
+/// One page of the caller's collection; [`collection_page_route`] adds the query.
+pub const COLLECTION_ROUTE: &str = "/api/collection";
+/// Gives one row of the caller's collection its copies.
+pub const COLLECTION_CARDS_ROUTE: &str = "/api/collection/cards";
+/// The caller's collection as a ManaBox export.
+pub const EXPORT_COLLECTION_ROUTE: &str = "/api/collection/export";
+
 // == suggested commanders ==
 
 /// Ranked commander suggestions; the `limit` query caps how many.
@@ -163,6 +178,46 @@ pub fn clone_deck_route(source_deck_id: Uuid) -> String {
 #[must_use]
 pub fn share_deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/share")
+}
+
+/// The page of the caller's collection after the cursor `after` (from the start without one),
+/// `limit` rows long, of the rows whose card names hold `name` (every row when it is empty):
+/// [`COLLECTION_ROUTE`] with its query, the search percent-encoded.
+#[must_use]
+pub fn collection_page_route(
+    name: &CollectionSearch,
+    after: Option<&CollectionCursor>,
+    limit: CollectionPageSize,
+) -> String {
+    format!(
+        "{COLLECTION_ROUTE}?{}",
+        collection_page_query(name, after, limit)
+    )
+}
+
+/// [`collection_page_route`]'s query, without the `?`, for an endpoint that sends its query
+/// apart from its path.
+#[must_use]
+pub fn collection_page_query(
+    name: &CollectionSearch,
+    after: Option<&CollectionCursor>,
+    limit: CollectionPageSize,
+) -> String {
+    let mut parts = Vec::new();
+    if !name.is_empty() {
+        parts.push(format!("name={}", encode_segment(name.as_str())));
+    }
+    if let Some(after) = after {
+        parts.push(format!("after={}", after.as_str()));
+    }
+    parts.push(format!("limit={}", limit.get()));
+    parts.join("&")
+}
+
+/// The printings of the card `oracle_id` that the caller's collection holds.
+#[must_use]
+pub fn collection_printings_route(oracle_id: Uuid) -> String {
+    format!("/api/collection/printings/{oracle_id}")
 }
 
 #[must_use]
@@ -271,6 +326,10 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Patch, CHANGE_PASSWORD_ROUTE, true),
     (Method::Patch, CHANGE_USERNAME_ROUTE, true),
     (Method::Delete, CLEAR_COMMANDER_MAYBEBOARD_ROUTE, true),
+    (Method::Get, COLLECTION_SUMMARY_ROUTE, true),
+    (Method::Get, COLLECTION_ROUTE, true),
+    (Method::Put, COLLECTION_CARDS_ROUTE, true),
+    (Method::Get, EXPORT_COLLECTION_ROUTE, true),
     (Method::Post, COMMANDER_DISMISSALS_ROUTE, true),
     (Method::Delete, COMMANDER_DISMISSALS_ROUTE, true),
     (Method::Get, COMMANDER_SUGGESTIONS_ROUTE, true),
@@ -335,6 +394,18 @@ mod tests {
 
         assert_eq!(card_route(a), format!("/api/card/{sa}"));
         assert_eq!(printings_route(a), format!("/api/card/{sa}/printings"));
+        let every = CollectionSearch::default();
+        let page = CollectionPageSize::default();
+        assert_eq!(
+            collection_page_route(&every, None, page),
+            "/api/collection?limit=50"
+        );
+        let search = CollectionSearch::new("Lim-Dûl's & co").unwrap();
+        let after = CollectionCursor::new("0a1b").unwrap();
+        assert_eq!(
+            collection_page_route(&search, Some(&after), page),
+            "/api/collection?name=Lim-D%C3%BBl%27s%20%26%20co&after=0a1b&limit=50"
+        );
         let slug: OracleTagSlug = "spot-removal".parse().unwrap();
         assert_eq!(
             oracle_tag_examples_route(&slug),

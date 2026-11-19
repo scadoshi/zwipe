@@ -33,17 +33,17 @@ fn previews_on_hover(open: Option<Uuid>) -> bool {
 /// when it is open.
 fn toggle(
     mut expanded_card: Signal<Option<Uuid>>,
-    card_id: Uuid,
+    row_key: Uuid,
     hover_stack: Option<HoverStack>,
     held: &HeldEntry,
 ) {
-    if expanded_card() == Some(card_id) {
+    if expanded_card() == Some(row_key) {
         expanded_card.set(None);
     } else {
         if let (Some(stack), Some(id)) = (hover_stack, held.take()) {
             stack.leave(id);
         }
-        expanded_card.set(Some(card_id));
+        expanded_card.set(Some(row_key));
     }
 }
 
@@ -133,11 +133,16 @@ pub fn CardRow(
     /// (default) keeps the plain qty.
     #[props(default)]
     qty_tags: Vec<String>,
+    /// What the row opens and shuts by in `expanded_card`, for a list that holds one printing in
+    /// more than one row (a collection's foil and nonfoil copies). Left out, the card's id.
+    #[props(default)]
+    row_key: Option<Uuid>,
 ) -> Element {
     let card_id = card.scryfall_data.id;
+    let row_key = row_key.unwrap_or(card_id);
     // A memo, so the other rows sharing `expanded_card` render again only
     // when their own open state flips.
-    let is_expanded = use_memo(use_reactive!(|card_id| expanded_card() == Some(card_id)))();
+    let is_expanded = use_memo(use_reactive!(|row_key| expanded_card() == Some(row_key)))();
     // The card details' crossfade, installed the first time the row opens, so its flip or meld
     // eases on every screen that shows rows.
     let swap_installed: Rc<Cell<bool>> = use_hook(|| Rc::new(Cell::new(false)));
@@ -270,7 +275,7 @@ pub fn CardRow(
 
     rsx! {
         div {
-            key: "{card_id}",
+            key: "{row_key}",
             class: if is_expanded { "card-row expanded" } else { "card-row" },
 
             div {
@@ -299,11 +304,11 @@ pub fn CardRow(
                 tabindex: "0",
                 "aria-expanded": "{is_expanded}",
                 "aria-label": label,
-                onclick: move |_| toggle(expanded_card, card_id, hover_stack, &held_on_click),
+                onclick: move |_| toggle(expanded_card, row_key, hover_stack, &held_on_click),
                 onkeydown: move |evt: KeyboardEvent| {
                     if evt.key() == Key::Enter || evt.key() == Key::Character(" ".into()) {
                         evt.prevent_default();
-                        toggle(expanded_card, card_id, hover_stack, &held_on_key);
+                        toggle(expanded_card, row_key, hover_stack, &held_on_key);
                     }
                 },
                 if let Some(url) = art_url {
@@ -426,5 +431,33 @@ mod tests {
             !previews_on_hover(open) && !previews_on_hover(other),
             "any open row, the hovered one or another, holds it back"
         );
+    }
+
+    const CARD_JSON: &str = include_str!("../../zwipe-ui/src/test_support/card.json");
+
+    /// Two rows of one printing, keyed apart, with the second's key open.
+    fn two_rows_of_one_printing() -> Element {
+        let card: Card = serde_json::from_str(CARD_JSON).unwrap();
+        let open = Uuid::from_u128(2);
+        let expanded_card = use_signal(|| Some(open));
+        rsx! {
+            CardRow { card: card.clone(), qty: 1, expanded_card, row_key: Uuid::from_u128(1) }
+            CardRow { card, qty: 2, expanded_card, row_key: open }
+        }
+    }
+
+    /// Rows of one printing (a foil and a nonfoil row in a collection) open and shut on their own
+    /// keys, not together on the card's id.
+    #[test]
+    fn rows_of_one_printing_open_by_their_own_keys() {
+        let mut dom = VirtualDom::new(two_rows_of_one_printing);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert_eq!(
+            html.matches(r#"class="card-row expanded""#).count(),
+            1,
+            "{html}"
+        );
+        assert_eq!(html.matches(r#"class="card-row""#).count(), 1, "{html}");
     }
 }

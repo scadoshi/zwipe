@@ -42,6 +42,7 @@ pub(crate) use zwipe_ui::screens::swipe_select::{Mode as SwipeMode, SuggestedPil
 use zwipe_ui::stack;
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::collection::use_offers_owned;
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
@@ -282,6 +283,7 @@ pub(crate) fn SwipeSelect(
 ) -> Element {
     // OS back gesture closes this overlay before touching the router.
     let layer = use_overlay_back(open);
+    let offers_owned = use_offers_owned();
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let driver = Driver {
         model: use_signal(State::new),
@@ -296,6 +298,8 @@ pub(crate) fn SwipeSelect(
         on_close,
         said: use_signal(|| None),
     };
+    // The model sends a saved "In my collection" only while the sheet offers it.
+    use_effect(move || driver.dispatch(Action::OffersOwned(offers_owned())));
     let hint_open = driver.hint_open;
     let entering = driver.entering;
 
@@ -560,6 +564,8 @@ pub(crate) fn SwipeSelect(
                     open: filters_overlay_open,
                     show_format_filter: false,
                     show_active_indicators: true,
+                    // The pile is the server's commander search, which reads the collection.
+                    show_owned: offers_owned(),
                     on_clear: move |()| clear_filter(),
                 }
 

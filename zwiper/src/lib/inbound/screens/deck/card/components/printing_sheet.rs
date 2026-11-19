@@ -5,17 +5,19 @@
 //! index, and performs its effects.
 
 use components::{
-    BottomSheet, CoverFlow, DockAction, FaceTurn, LoadFailed, PrintingChips, PrintingChipsGhost,
-    PrintingFaceButton, TOAST_NORMAL, ToastOptions, Toasts, icons, use_opening_face,
-    use_printing_face, use_toast,
+    BottomSheet, Chip, CoverFlow, DockAction, FaceTurn, LoadFailed, PrintingChips,
+    PrintingChipsGhost, PrintingFaceButton, TOAST_NORMAL, ToastOptions, Toasts, icons,
+    use_opening_face, use_printing_face, use_toast,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_ui::screens::printing_sheet::{self as model, Action, Effect, Mode, State, Status};
 
 use super::flippable_card_image::FlippableCardImage;
+use crate::inbound::components::collection::use_offers_owned;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
 use crate::inbound::components::ui_toast;
@@ -130,9 +132,32 @@ pub(crate) fn PrintingSheet(
         usage_buffer: use_context(),
     };
     let index = driver.index;
+    let offers_owned = use_offers_owned();
+    let session: Signal<Option<Session>> = use_context();
 
     let current_scryfall_id = card.scryfall_data.id;
     let oracle_id = card.scryfall_data.oracle_id;
+
+    // With a collection, the owned printings of this card come in beside the full list, so
+    // Only mine can narrow it. Without one nothing is fetched and the chip never shows.
+    use_effect(move || {
+        if !open() || !offers_owned() {
+            return;
+        }
+        let (Some(oracle_id), Some(signed_in)) = (oracle_id, session.peek().clone()) else {
+            return;
+        };
+        let client = driver.client;
+        spawn(async move {
+            match client().fetch_owned_printings(oracle_id, &signed_in).await {
+                Ok(owned) => driver.dispatch(Action::OwnedLoaded {
+                    oracle_id,
+                    owned: owned.into_iter().map(|c| c.scryfall_data.id).collect(),
+                }),
+                Err(e) => tracing::warn!("owned printings not fetched: {e}"),
+            }
+        });
+    });
 
     // Fetch printings when the sheet opens; the model reuses the last fetch
     // when it was for this oracle_id.
@@ -147,7 +172,7 @@ pub(crate) fn PrintingSheet(
     });
 
     let current_idx = index();
-    let (status, printings, visible_card, can_save, shows_save) = {
+    let (status, printings, visible_card, can_save, shows_save, offers_mine, only_mine) = {
         let sheet = driver.model.read();
         (
             sheet.status(),
@@ -155,6 +180,8 @@ pub(crate) fn PrintingSheet(
             sheet.visible(current_idx).cloned(),
             sheet.can_save(current_idx),
             sheet.shows_save(),
+            sheet.offers_only_mine(),
+            sheet.only_mine(),
         )
     };
     let printings_count = printings.len();
@@ -176,6 +203,15 @@ pub(crate) fn PrintingSheet(
                 on_dismiss: move |()| driver.dispatch(Action::Dismiss { at: current_idx }),
 
                 div { class: "printing-sheet-body",
+                    if offers_mine && status != Status::Loading {
+                        div { class: "keyword-chips printing-only-mine",
+                            Chip {
+                                selected: only_mine,
+                                onclick: move |_| driver.dispatch(Action::OnlyMine { on: !only_mine, at: current_idx }),
+                                "{model::ONLY_MINE}"
+                            }
+                        }
+                    }
                     if status == Status::Failed {
                         LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Retry) }
                     } else if matches!(status, Status::Loading | Status::Several) {

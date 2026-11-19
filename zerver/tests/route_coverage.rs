@@ -15,12 +15,13 @@ use uuid::Uuid;
 use zwipe_core::http::endpoint::Method;
 use zwipe_core::http::paths::{
     COOKIE_LOGOUT_ROUTE, FEATURED_FLAVOR_ROUTE, FIXED_ROUTES, add_commander_maybeboard_card_route,
-    card_route, clear_deck_suppressions_route, clone_deck_route, create_deck_card_route,
-    deck_profile_route, deck_route, deck_tokens_route, delete_deck_card_route, delete_deck_route,
-    import_archidekt_deck_route, import_deck_cards_route, oracle_tag_examples_route,
-    printings_route, remove_commander_maybeboard_card_route, search_deck_cards_route,
-    share_deck_route, shared_deck_route, skip_deck_card_route, undismiss_commander_route,
-    unskip_deck_card_route, update_deck_card_route, update_deck_route,
+    card_route, clear_deck_suppressions_route, clone_deck_route, collection_printings_route,
+    create_deck_card_route, deck_profile_route, deck_route, deck_tokens_route,
+    delete_deck_card_route, delete_deck_route, import_archidekt_deck_route,
+    import_deck_cards_route, oracle_tag_examples_route, printings_route,
+    remove_commander_maybeboard_card_route, search_deck_cards_route, share_deck_route,
+    shared_deck_route, skip_deck_card_route, undismiss_commander_route, unskip_deck_card_route,
+    update_deck_card_route, update_deck_route,
 };
 
 fn http_method(method: Method) -> HttpMethod {
@@ -125,6 +126,7 @@ async fn every_id_carrying_route_matches_the_contract(pool: sqlx::PgPool) {
         (Method::Patch, update_deck_card_route(id, id)),
         (Method::Delete, delete_deck_card_route(id, id)),
         (Method::Post, import_deck_cards_route(id)),
+        (Method::Get, collection_printings_route(id)),
     ];
     for (method, path) in authed {
         assert_contract_route(&app, method, &path, true).await;

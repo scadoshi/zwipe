@@ -430,6 +430,12 @@ impl CardQueryBuilder {
         self.include_skipped
     }
 
+    /// Whether the search keeps only cards the user has a printing of in their collection.
+    #[must_use]
+    pub fn owned_only(&self) -> bool {
+        self.owned_only
+    }
+
     /// Returns the deck-aware synergy membership flag.
     #[must_use]
     pub fn synergy(&self) -> bool {

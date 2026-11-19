@@ -2,7 +2,7 @@
 //!
 //! Handlers name these aliases, so no sqlx type reaches the HTTP layer.
 
-use crate::domain::{auth, card, deck, health, metrics, user};
+use crate::domain::{auth, card, collection, deck, health, metrics, user};
 use crate::outbound::sqlx::postgres::Postgres;
 
 /// Registration, login, sessions and account changes.
@@ -17,3 +17,5 @@ pub type Cards = card::services::Service<Postgres>;
 pub type Decks = deck::services::Service<Postgres, Postgres>;
 /// Usage events, crash reports and counters.
 pub type Metrics = metrics::services::Service<Postgres>;
+/// Collections and their imports.
+pub type Collections = collection::services::Service<Postgres>;

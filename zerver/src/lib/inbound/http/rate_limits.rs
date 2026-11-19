@@ -105,6 +105,11 @@ pub struct RateLimits {
     ///
     /// IPv6 /64: double the burst and the rate.
     pub health: PerFamily,
+    /// Burst 3, then 1 per 20s per IP: a collection import or export reads or writes a whole
+    /// collection, up to 50,000 rows in one transaction.
+    ///
+    /// IPv6 /64: double the burst and the rate.
+    pub collection_import: PerFamily,
     /// 500 req / 5min (~1.67/s avg): generous for swiping, keyed by user ID
     pub private: Limit,
     /// burst 2, then 1 req/30min: account mutations are done once; 2 attempts covers typos
@@ -122,6 +127,8 @@ pub struct RateLimits {
     /// burst 5, then 1 req/min: each import is a fetch from Archidekt made
     /// from this origin's address, so one user cannot spend its reputation.
     pub archidekt_import: Limit,
+    /// The same burst 3, then 1 per 20s, per account: the import and export share it.
+    pub collection_import_user: Limit,
 }
 
 /// `burst` requests at once, then one more each `period`.
@@ -197,6 +204,10 @@ impl Default for RateLimits {
                 limit(Duration::from_secs(2), 30),
                 limit(Duration::from_secs(1), 60),
             ),
+            collection_import: pair(
+                limit(Duration::from_secs(20), 3),
+                limit(Duration::from_secs(10), 6),
+            ),
             private: limit(Duration::from_millis(600), 500),
             sensitive: limit(Duration::from_mins(30), 2),
             card_search: limit(Duration::from_secs(10), 20),
@@ -204,6 +215,7 @@ impl Default for RateLimits {
             resend_email_change: limit(Duration::from_secs(60), 1),
             metrics_usage: limit(Duration::from_secs(5), 12),
             archidekt_import: limit(Duration::from_secs(60), 5),
+            collection_import_user: limit(Duration::from_secs(20), 3),
         }
     }
 }
@@ -274,6 +286,10 @@ impl RateLimits {
                 ipv4: every(self.health.ipv4),
                 ipv6: every(self.health.ipv6),
             },
+            collection_import: PerFamily {
+                ipv4: every(self.collection_import.ipv4),
+                ipv6: every(self.collection_import.ipv6),
+            },
             private: every(self.private),
             sensitive: every(self.sensitive),
             card_search: every(self.card_search),
@@ -281,6 +297,7 @@ impl RateLimits {
             resend_email_change: every(self.resend_email_change),
             metrics_usage: every(self.metrics_usage),
             archidekt_import: every(self.archidekt_import),
+            collection_import_user: every(self.collection_import_user),
         }
     }
 }
@@ -465,6 +482,18 @@ mod tests {
                 Duration::from_secs(1),
                 60,
             ),
+            (
+                "collection_import ipv4",
+                limits.collection_import.ipv4,
+                Duration::from_secs(20),
+                3,
+            ),
+            (
+                "collection_import ipv6",
+                limits.collection_import.ipv6,
+                Duration::from_secs(10),
+                6,
+            ),
             ("private", limits.private, Duration::from_millis(600), 500),
             ("sensitive", limits.sensitive, Duration::from_mins(30), 2),
             (
@@ -496,6 +525,12 @@ mod tests {
                 limits.archidekt_import,
                 Duration::from_secs(60),
                 5,
+            ),
+            (
+                "collection_import_user",
+                limits.collection_import_user,
+                Duration::from_secs(20),
+                3,
             ),
         ];
         for (name, limit, period, burst) in pinned {

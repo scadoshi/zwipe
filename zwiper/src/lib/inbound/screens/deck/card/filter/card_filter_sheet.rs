@@ -1,5 +1,5 @@
 use components::icons::{self};
-use components::{BottomSheet, DockAction, Toasts, use_toast};
+use components::{BottomSheet, Chip, DockAction, Toasts, use_toast};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -146,6 +146,10 @@ pub(crate) fn CardFilterSheet(
     /// is the default rather than a filter.
     #[props(default)]
     deck_format: Option<Format>,
+    /// Whether "In my collection" shows: only on a screen whose results come from the server's
+    /// search, and only once the user has a collection.
+    #[props(default = false)]
+    show_owned: bool,
     on_clear: Option<EventHandler>,
 ) -> Element {
     let filter_builder: Signal<CardQueryBuilder> = use_context();
@@ -187,6 +191,7 @@ pub(crate) fn CardFilterSheet(
                     show_format: show_format_filter,
                     validate: validate_before_apply,
                     deck_format,
+                    show_owned,
                     ..SheetConfig::default()
                 }),
                 notice: ResetNotice::Toast,
@@ -249,6 +254,21 @@ pub(crate) fn CardFilterSheet(
                 // collapsed on reopen. The modal stays in the DOM (hidden via
                 // CSS) and Dioxus won't remount on a key change alone, so this
                 // conditional render is what actually resets the accordion.
+                if open() && show_owned {
+                    div { class: "keyword-chips card-filter-owned",
+                        span { class: "stat-chip stat-chip-p1 chip-row-label", "{card_filter::COLLECTION}" }
+                        Chip {
+                            selected: filter_builder.read().owned_only(),
+                            onclick: move |_| {
+                                let mut edited = filter_builder.peek().clone();
+                                let on = edited.owned_only();
+                                edited.set_owned_only(!on);
+                                driver.dispatch(Action::Edit(Box::new(edited)));
+                            },
+                            "{card_filter::IN_MY_COLLECTION}"
+                        }
+                    }
+                }
                 if open() {
                 Accordion {
                     id: "filter-accordion",
