@@ -72,7 +72,7 @@ fn nothing_makes_room_for_a_toast() {
             let Some((selector, _)) = block.rsplit_once('{') else {
                 continue;
             };
-            let selector = selector.lines().last().unwrap_or_default().trim();
+            let selector = selector.trim();
             assert!(
                 !selector.contains(":has(.toast-container"),
                 "{name}: `{selector}` changes other content while a toast is up"
