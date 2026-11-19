@@ -44,6 +44,10 @@ const NAV_ROOM_MIN_PX: u32 = 240;
 /// panel below it.
 const FOCUS_SHOWN_JS: &str = "[...document.querySelectorAll('.card-search-input')].find((el) => el.offsetParent !== null)?.focus();";
 
+/// Answers whether any card search box shows on the page for `/` to focus, the test
+/// [`FOCUS_SHOWN_JS`] focuses by.
+pub(crate) const ANY_SHOWN_JS: &str = "return [...document.querySelectorAll('.card-search-input')].some((el) => el.offsetParent !== null);";
+
 /// Where the bar sits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SearchPlace {

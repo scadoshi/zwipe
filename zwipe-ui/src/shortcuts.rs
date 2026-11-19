@@ -227,10 +227,22 @@ pub fn everywhere_groups() -> Vec<SheetGroup> {
 /// does nothing. A group left with no rows goes too.
 #[must_use]
 pub fn without_hint(groups: Vec<SheetGroup>) -> Vec<SheetGroup> {
+    without_row(groups, HINT_ROW)
+}
+
+/// `groups` with the card search's row ([`CARD_SEARCH_ROW`]) taken out, for a page where no card
+/// search box shows for `/` to focus. A group left with no rows goes too.
+#[must_use]
+pub fn without_card_search(groups: Vec<SheetGroup>) -> Vec<SheetGroup> {
+    without_row(groups, CARD_SEARCH_ROW)
+}
+
+/// `groups` with every `gone` row taken out, and any group that leaves empty.
+fn without_row(groups: Vec<SheetGroup>, gone: SheetRow) -> Vec<SheetGroup> {
     groups
         .into_iter()
         .map(|group| {
-            let rows = group.rows.into_iter().filter(|row| *row != HINT_ROW);
+            let rows = group.rows.into_iter().filter(|row| *row != gone);
             SheetGroup::new(group.title, rows)
         })
         .filter(|group| !group.rows.is_empty())
@@ -674,6 +686,25 @@ mod tests {
         assert!(
             rows_of(&everywhere_groups()).contains(&CARD_SEARCH_ROW),
             "/ says it searches cards"
+        );
+    }
+
+    #[test]
+    fn a_page_with_no_card_search_showing_loses_only_the_slash_row() {
+        let groups = without_card_search(everywhere_groups());
+        assert!(!rows_of(&groups).contains(&CARD_SEARCH_ROW), "{groups:?}");
+        assert_eq!(
+            outline(&groups),
+            vec![
+                ("Navigation", vec!["gg", "Shift+G", "j", "k"]),
+                ("Page", vec!["t", "?", "Shift+H", "Esc"]),
+                ("In themes", vec!["↑", "h", "gg", "Enter"]),
+            ]
+        );
+        assert!(
+            rows_of(&without_card_search(deck_cards_groups(Editable::Yes)))
+                .contains(&FILTER_NAME_ROW),
+            "a screen's own / stays"
         );
     }
 
