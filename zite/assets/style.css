@@ -1345,3 +1345,34 @@ html.js:not(.splash-skip).splash-over .splash {
         transform: none;
     }
 }
+
+/* ---- Card search ----
+   The nav's box above the nav's fold, Home's Card search panel below it,
+   never both. */
+@media (max-width: 60rem) {
+    nav .card-search-nav {
+        display: none;
+    }
+}
+
+@media (min-width: 60.01rem) {
+    .site-card-search {
+        display: none;
+    }
+}
+
+/* The × beside the box in the apps' clear red, which their filter sheet
+   gives every field's ×. */
+.card-search .input-clear-btn {
+    color: var(--ink-color-error, var(--color-error));
+    border-color: var(--color-error);
+}
+
+/* The panel keeps the hero's side inset, 1rem above it. */
+.site-card-search {
+    padding: var(--space-4) var(--space-5) var(--space-2);
+}
+
+.site-card-search .card-search {
+    width: 100%;
+}

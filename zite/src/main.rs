@@ -18,6 +18,8 @@ use route::Route;
 // them from crate root. Debug builds resolve the URLs to the local dev servers.
 pub use zwipe_core::domain::site::{API_BASE, APP_BASE, DISCORD_URL, SUPPORT_EMAIL, WEB_BASE};
 
+use crate::components::NavCardSearch;
+
 const STYLE: Asset = asset!("/assets/style.css");
 /// The kit's input rules the card filter's sheet draws with, which zite
 /// otherwise does not load.
@@ -361,6 +363,7 @@ pub fn Nav() -> Element {
                         Decode { text: Z_LOGO, hover: hovering }
                     }
                 }
+                NavCardSearch {}
             },
             persistent: rsx! {
                 for cta in STORES {
