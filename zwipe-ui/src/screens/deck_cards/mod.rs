@@ -29,7 +29,7 @@ use crate::card::default_printing;
 use crate::deck::command_zone::Slot;
 use crate::deck::copies;
 use crate::deck_cards::keys::{RowInfo, RowKind};
-use crate::deck_cards::{self, Boards, Display, Write, Zone};
+use crate::deck_cards::{self, Boards, Display, Logged, Write, Zone};
 use crate::deck_signals::{self, Crossing, Level};
 use crate::generation::{Generation, Ticket};
 use crate::stores::undo::{UndoAction, create_board_field};
@@ -622,6 +622,15 @@ pub enum Effect {
         /// The card's printing id.
         card_id: Uuid,
     },
+    /// Takes the newest [`UndoAction::QuantityChanged`] entry for this card with this `net` and `baseline` off the undo log: a burst's entry that a later tap replaces, or whose write failed.
+    ForgetQuantityChange {
+        /// The card's printing id.
+        card_id: Uuid,
+        /// The entry's net change in copies.
+        net: i32,
+        /// The entry's copies before the burst.
+        baseline: i32,
+    },
     /// Clears the client's filter.
     ClearFilter,
     /// Bumps the client's filter counter: the filter sheet's sections reset their typed searches, and the client hands the filter back in with [`Action::Filter`].
@@ -657,8 +666,17 @@ struct Burst {
     delta: i32,
     /// The newest tap's debounce.
     ticket: Ticket,
-    /// Whether the newest tap records undo; undo-driven taps do not.
-    record: bool,
+    /// The burst's entry on the undo log, put there as its recorded taps change the row, so Undo reaches the burst before its write does. `None` for an undo's own taps, or once Undo took the entry or the taps cancelled out.
+    logged: Option<Logged>,
+}
+
+/// The effect that takes `logged`, `card_id`'s burst entry, off the undo log.
+fn forget(logged: Logged, card_id: Uuid) -> Effect {
+    Effect::ForgetQuantityChange {
+        card_id,
+        net: logged.net,
+        baseline: logged.baseline,
+    }
 }
 
 impl Burst {
@@ -681,12 +699,11 @@ enum Pending {
         removed: Option<Box<DeckEntry>>,
         baseline: i32,
     },
-    /// A burst's quantity write.
+    /// A burst's quantity write. `logged` is the burst's undo entry, taken back off if the write fails.
     Quantity {
         card_id: Uuid,
-        delta: i32,
         baseline: i32,
-        record: bool,
+        logged: Option<Logged>,
     },
     Move {
         card_id: Uuid,
@@ -1178,14 +1195,20 @@ impl State {
                 vec![Effect::ForgetRemoval { card_id }, Effect::Refilter]
             }
             Pending::Quantity {
-                card_id, baseline, ..
+                card_id,
+                baseline,
+                logged,
             } => {
                 if let Some(entry) = self.entry_mut(card_id)
                     && let Ok(quantity) = Quantity::new(baseline)
                 {
                     entry.deck_card.quantity = quantity;
                 }
-                vec![Effect::Refilter]
+                logged
+                    .map(|logged| forget(logged, card_id))
+                    .into_iter()
+                    .chain([Effect::Refilter])
+                    .collect()
             }
             Pending::Move {
                 card_id,
@@ -1388,23 +1411,6 @@ impl State {
 
     fn patched(&mut self, ticket: Ticket, deck_card: &DeckCard) -> Vec<Effect> {
         match self.settle(ticket) {
-            Some(Pending::Quantity {
-                card_id,
-                delta,
-                baseline,
-                record: true,
-            }) => self
-                .entry(card_id)
-                .map(|entry| {
-                    Effect::RecordUndo(Box::new(UndoAction::QuantityChanged {
-                        card_id,
-                        card_name: entry.card.scryfall_data.name.clone(),
-                        net: delta,
-                        baseline,
-                    }))
-                })
-                .into_iter()
-                .collect(),
             Some(Pending::Mvp {
                 card_id,
                 before,
@@ -1495,7 +1501,29 @@ impl State {
         ]
     }
 
-    /// A quantity tap: the row changes at once and the card's burst re-arms its debounce. `record` is false for undo's inverse tap, which records no entry.
+    /// Undo took `entry`, `card_id`'s burst entry, off the log: the burst holding it, open or on its way to the server, no longer has an entry to take back.
+    fn unlog(&mut self, card_id: Uuid, entry: Logged) {
+        let taken = Some(entry);
+        for burst in &mut self.bursts {
+            if burst.card_id == card_id && burst.logged == taken {
+                burst.logged = None;
+            }
+        }
+        for (_, pending) in &mut self.waiting {
+            if let Pending::Quantity {
+                card_id: id,
+                logged,
+                ..
+            } = pending
+                && *id == card_id
+                && *logged == taken
+            {
+                *logged = None;
+            }
+        }
+    }
+
+    /// A quantity tap: the row changes at once, the tap goes on the undo log as its burst's entry, and the card's burst re-arms its debounce. `record` is false for undo's inverse tap, which records no entry.
     fn tap(&mut self, card_id: Uuid, delta: i32, record: bool) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
@@ -1518,6 +1546,16 @@ impl State {
         let before_lands = deck_signals::land_count(&self.entries);
         let before_price = self.total_price();
         let mut effects = Vec::new();
+        let open_logged = burst_at
+            .and_then(|at| self.bursts.get(at))
+            .and_then(|b| b.logged);
+        // A recorded tap replaces its burst's entry: a removal's entry stands for the whole
+        // burst, and any other tap folds into one entry for the burst.
+        let mut logged = open_logged;
+        if record && let Some(old) = open_logged {
+            effects.push(forget(old, card_id));
+            logged = None;
+        }
 
         if target < 1 {
             let removed = self.entry(card_id).cloned();
@@ -1551,6 +1589,15 @@ impl State {
             {
                 entry.deck_card.quantity = quantity;
             }
+            if record {
+                logged = Logged::after_tap(open_logged, current, delta);
+                if let Some(entry) = logged {
+                    let name = self
+                        .entry(card_id)
+                        .map_or_default(|e| e.card.scryfall_data.name.clone());
+                    effects.push(Effect::RecordUndo(Box::new(entry.entry(card_id, &name))));
+                }
+            }
             effects.push(Effect::Refilter);
             effects.extend(self.crossings(before_lands, before_price));
         }
@@ -1559,14 +1606,14 @@ impl State {
         if let Some(burst) = burst_at.and_then(|at| self.bursts.get_mut(at)) {
             burst.delta = folded;
             burst.ticket = ticket;
-            burst.record = record;
+            burst.logged = logged;
         } else {
             self.bursts.push(Burst {
                 card_id,
                 baseline: current,
                 delta: folded,
                 ticket,
-                record,
+                logged,
             });
         }
         effects.push(Effect::Debounce {
@@ -1641,9 +1688,8 @@ impl State {
         } else {
             let ticket = self.request(Pending::Quantity {
                 card_id,
-                delta: burst.delta,
                 baseline: burst.baseline,
-                record: burst.record,
+                logged: burst.logged,
             });
             vec![Effect::PatchCard {
                 ticket,
@@ -1954,9 +2000,16 @@ impl State {
             UndoAction::Removed { entry, baseline } => {
                 vec![Effect::Refilter, self.re_add(deck_id, *entry, baseline)]
             }
-            UndoAction::QuantityChanged { card_id, net, .. } => net
-                .checked_neg()
-                .map_or_default(|inverse| self.tap(card_id, inverse, false)),
+            UndoAction::QuantityChanged {
+                card_id,
+                net,
+                baseline,
+                ..
+            } => {
+                self.unlog(card_id, Logged { net, baseline });
+                net.checked_neg()
+                    .map_or_default(|inverse| self.tap(card_id, inverse, false))
+            }
             UndoAction::MovedBoard {
                 card_id,
                 from,
