@@ -2,7 +2,7 @@
 //!
 //! Each test gets a fresh, migrated, isolated database via `#[sqlx::test]`
 //! (requires `DATABASE_URL` in the env: `set -a; source zerver/.env`). We build
-//! the real Axum router with [`build_router`] over that pool + a capturing fake
+//! the real Axum router with [`build_router_with`] over that pool + a capturing fake
 //! email sender, and drive it in-process with `tower::ServiceExt::oneshot`: no
 //! socket, full middleware stack.
 
@@ -33,13 +33,15 @@ use http_body_util::BodyExt;
 use serde_json::{Value, json};
 use sqlx::types::Json;
 use sqlx::{PgPool, QueryBuilder};
+use tokio_util::task::TaskTracker;
 use tower::ServiceExt; // oneshot
 use uuid::Uuid;
 use zwipe::domain::auth::models::access_token::JwtSecret;
 use zwipe::domain::email::models::{SendEmail, SendEmailError};
 use zwipe::domain::email::ports::{EmailSender, SendEmailFuture};
 use zwipe::domain::{auth, card, deck, health, metrics, user};
-use zwipe::inbound::http::{AppState, build_router};
+use zwipe::inbound::http::rate_limits::RateLimits;
+use zwipe::inbound::http::{AppState, build_router_with};
 
 /// The one origin the test router allows, for the browser's cookie routes.
 pub(crate) const TEST_ORIGIN: &str = "https://app.zwipe.net";
@@ -76,22 +78,6 @@ impl FakeEmailSender {
             .map(|e| e.html_body.clone())
     }
 
-    /// Waits for at least `count` captured emails, for sends that run in the
-    /// background after the response. Panics after two seconds.
-    pub(crate) async fn wait_for(&self, count: usize) {
-        for _ in 0..200 {
-            if self.count() >= count {
-                break;
-            }
-            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
-        }
-        assert!(
-            self.count() >= count,
-            "expected {count} emails, got {}",
-            self.count()
-        );
-    }
-
     /// Number of emails captured so far.
     pub(crate) fn count(&self) -> usize {
         self.sent.lock().unwrap().len()
@@ -126,11 +112,23 @@ pub(crate) struct TestApp {
     pub(crate) router: axum::Router,
     pub(crate) pool: PgPool,
     pub(crate) emails: FakeEmailSender,
+    /// The auth service's emails sent off the request path.
+    background_sends: TaskTracker,
     fake_ip: SocketAddr,
 }
 
 impl TestApp {
+    /// The app with the server's bursts on periods long enough that no bucket refills while a
+    /// test runs, so a test that spends a burst sees the same answer however slow the run.
     pub(crate) fn new(pool: PgPool) -> Self {
+        Self::with_limits(
+            pool,
+            &RateLimits::default().with_every_period(std::time::Duration::from_secs(3600)),
+        )
+    }
+
+    /// The app with its rate limiters' buckets set by `limits`.
+    pub(crate) fn with_limits(pool: PgPool, limits: &RateLimits) -> Self {
         let db = Postgres::from_pool(pool.clone());
         let emails = FakeEmailSender::default();
         let jwt_secret = JwtSecret::new(TEST_JWT_SECRET).unwrap();
@@ -146,6 +144,7 @@ impl TestApp {
             "http://localhost".to_string(),
             "support@test.local".to_string(),
         );
+        let background_sends = auth_service.background_sends().clone();
         let user_service = user::services::Service::new(db.clone());
         let health_service = health::services::Service::new(db.clone());
         let card_service = card::services::Service::new(db.clone());
@@ -169,10 +168,11 @@ impl TestApp {
             )),
         };
 
-        let router = build_router(
+        let router = build_router_with(
             state,
             jwt_secret,
             vec![axum::http::HeaderValue::from_static(TEST_ORIGIN)],
+            limits,
         );
 
         let n = IP_COUNTER.fetch_add(1, Ordering::Relaxed);
@@ -186,8 +186,27 @@ impl TestApp {
             router,
             pool,
             emails,
+            background_sends,
             fake_ip,
         }
+    }
+
+    /// Waits until every email the requests so far sent off the request path has finished, so
+    /// the captured count is final.
+    pub(crate) async fn settle_emails(&self) {
+        self.background_sends.close();
+        self.background_sends.wait().await;
+        self.background_sends.reopen();
+    }
+
+    /// Waits for the background sends to finish, then checks at least `count` emails went out.
+    pub(crate) async fn wait_for_emails(&self, count: usize) {
+        self.settle_emails().await;
+        assert!(
+            self.emails.count() >= count,
+            "expected {count} emails, got {}",
+            self.emails.count()
+        );
     }
 
     pub(crate) async fn send(
@@ -307,12 +326,22 @@ impl TestApp {
         method: Method,
         path: &str,
     ) -> (StatusCode, header::HeaderMap, axum::body::Bytes) {
+        self.send_bytes_from(self.fake_ip, method, path).await
+    }
+
+    /// `send_bytes` from a chosen peer address, for tests about per-address limits.
+    pub(crate) async fn send_bytes_from(
+        &self,
+        peer: SocketAddr,
+        method: Method,
+        path: &str,
+    ) -> (StatusCode, header::HeaderMap, axum::body::Bytes) {
         let mut request = Request::builder()
             .method(method)
             .uri(path)
             .body(Body::empty())
             .unwrap();
-        request.extensions_mut().insert(ConnectInfo(self.fake_ip));
+        request.extensions_mut().insert(ConnectInfo(peer));
         let response = self.router.clone().oneshot(request).await.unwrap();
         let status = response.status();
         let headers = response.headers().clone();
@@ -403,7 +432,7 @@ impl TestApp {
         });
         let (status, v) = self.post("/api/auth/register", body, None).await;
         assert_eq!(status, StatusCode::ACCEPTED, "register failed: {v}");
-        self.emails.wait_for(emails_before + 1).await;
+        self.wait_for_emails(emails_before + 1).await;
 
         let n = IP_COUNTER.fetch_add(1, Ordering::Relaxed);
         let o = n.to_be_bytes();
@@ -739,6 +768,30 @@ impl CardFixture {
 /// refresh the `latest_cards` / `card_signal_rollup` materialized views (both
 /// start empty; the views must be refreshed before any card query, even with
 /// zero rows, or Postgres errors that they are unpopulated).
+/// Waits until `count` backends in this test's database are waiting on a lock,
+/// so a test that holds a lock knows the requests it races have queued behind
+/// it before it lets go. Panics after 30 seconds.
+pub(crate) async fn wait_for_lock_waiters(pool: &PgPool, count: i64) {
+    let mut waiting = 0;
+    for _ in 0..1200 {
+        waiting = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pg_stat_activity \
+             WHERE datname = current_database() AND wait_event_type = 'Lock'",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        if waiting >= count {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+    }
+    assert!(
+        waiting >= count,
+        "{waiting} of {count} requests queued behind the held lock"
+    );
+}
+
 pub(crate) async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
     if !cards.is_empty() {
         let released = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();

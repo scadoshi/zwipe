@@ -1,8 +1,11 @@
 //! HTTP layer: Axum server, error mapping, middleware, and route definitions.
 
 pub mod cache;
+pub mod family_limit;
 pub mod handlers;
+pub mod limiter_purge;
 pub mod middleware;
+pub mod rate_limits;
 pub mod routes;
 pub mod share_preview;
 pub mod swipe_cap;
@@ -18,6 +21,7 @@ use axum::response::{IntoResponse, Response};
 use dashmap::DashMap;
 use thiserror::Error;
 use tokio::net;
+use tokio_util::task::TaskTracker;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::CorsLayer;
@@ -29,6 +33,7 @@ use zwipe_core::http::paths::CHANGELOG_ROUTE;
 
 use crate::domain::auth::access_token::JwtSecret;
 use crate::domain::auth::ports::AuthService;
+use crate::inbound::http::rate_limits::RateLimits;
 use crate::wiring::{Auth, Cards, Decks, Health, Metrics, Users};
 
 // == error ==
@@ -225,6 +230,8 @@ pub struct AppState {
 pub struct HttpServer {
     router: axum::Router,
     listener: net::TcpListener,
+    /// The auth service's emails sent off the request path, which a shutdown lets finish.
+    background_sends: TaskTracker,
 }
 
 /// Assembles the full Axum router (routes + the middleware stack) from
@@ -234,6 +241,16 @@ pub fn build_router(
     state: AppState,
     jwt_secret: JwtSecret,
     allowed_origins: Vec<HeaderValue>,
+) -> axum::Router {
+    build_router_with(state, jwt_secret, allowed_origins, &RateLimits::default())
+}
+
+/// [`build_router`] with its rate limiters' buckets set by `limits`.
+pub fn build_router_with(
+    state: AppState,
+    jwt_secret: JwtSecret,
+    allowed_origins: Vec<HeaderValue>,
+    limits: &RateLimits,
 ) -> axum::Router {
     // RequestId is set by SetRequestIdLayer before TraceLayer fires, so it's
     // available as a request extension when we build the span.
@@ -265,12 +282,12 @@ pub fn build_router(
         .merge(
             // last-active layer wraps private routes only: it peeks the Bearer
             // token, so it must sit where every request carries one
-            routes::private_routes(jwt_secret).layer(axum::middleware::from_fn_with_state(
+            routes::private_routes(jwt_secret, limits).layer(axum::middleware::from_fn_with_state(
                 state.clone(),
                 middleware::track_last_active,
             )),
         )
-        .merge(routes::public_routes())
+        .merge(routes::public_routes(limits))
         .layer(axum::Extension(cookie_origins))
         .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .layer(TimeoutLayer::with_status_code(
@@ -323,6 +340,7 @@ impl HttpServer {
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
         let jwt_secret = auth_service.jwt_secret().clone();
+        let background_sends = auth_service.background_sends().clone();
         let state = AppState {
             auth_service: Arc::new(auth_service),
             user_service: Arc::new(user_service),
@@ -346,10 +364,16 @@ impl HttpServer {
             .await
             .with_context(|| format!("failed to listen on {}", config.bind_address))?;
 
-        Ok(Self { router, listener })
+        Ok(Self {
+            router,
+            listener,
+            background_sends,
+        })
     }
 
-    /// Starts serving HTTP requests.
+    /// Starts serving HTTP requests. On a shutdown signal it stops taking requests, lets the
+    /// ones in flight finish, then gives the emails still sending up to five seconds before it
+    /// returns.
     ///
     /// # Errors
     ///
@@ -365,6 +389,7 @@ impl HttpServer {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .context("received error from running server")?;
+        drain_background_sends(&self.background_sends, SEND_DRAIN).await;
         Ok(())
     }
 }
@@ -372,6 +397,23 @@ impl HttpServer {
 /// Resolves when the process receives either SIGINT (Ctrl-C, dev) or SIGTERM
 /// (systemd `stop`, container orchestrators). `axum::serve` uses this to stop
 /// accepting connections and drain in-flight requests before exiting.
+/// How long a shutdown waits for emails still sending once the last request is answered: long
+/// enough for a send to Resend, short of the time a deploy gives the old process to stop.
+const SEND_DRAIN: Duration = Duration::from_secs(5);
+
+/// Lets the sends `sends` tracks finish, for at most `limit`, and answers how many were still
+/// going when it stopped waiting. No new send starts after the server stops, so closing the
+/// tracker only marks that the wait can end once the last one does. Returns at once with none.
+async fn drain_background_sends(sends: &TaskTracker, limit: Duration) -> usize {
+    sends.close();
+    if tokio::time::timeout(limit, sends.wait()).await.is_err() {
+        let left = sends.len();
+        tracing::warn!(left, "shutdown: emails still sending were stopped");
+        return left;
+    }
+    0
+}
+
 async fn shutdown_signal() {
     let ctrl_c = async {
         let _ = tokio::signal::ctrl_c().await;
@@ -395,9 +437,55 @@ async fn shutdown_signal() {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::{AtomicBool, Ordering};
+
     use http_body_util::BodyExt;
 
     use super::*;
+
+    #[tokio::test(start_paused = true)]
+    async fn a_send_in_flight_at_shutdown_finishes_before_the_server_exits() {
+        let sends = TaskTracker::new();
+        let sent = Arc::new(AtomicBool::new(false));
+        let flag = Arc::clone(&sent);
+        sends.spawn(async move {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            flag.store(true, Ordering::SeqCst);
+        });
+        let started = tokio::time::Instant::now();
+
+        let left = drain_background_sends(&sends, SEND_DRAIN).await;
+
+        assert!(sent.load(Ordering::SeqCst), "the send finished");
+        assert_eq!(left, 0);
+        assert_eq!(
+            started.elapsed(),
+            Duration::from_secs(1),
+            "no longer than the send"
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn an_idle_shutdown_does_not_wait() {
+        let started = tokio::time::Instant::now();
+
+        let left = drain_background_sends(&TaskTracker::new(), SEND_DRAIN).await;
+
+        assert_eq!(left, 0);
+        assert_eq!(started.elapsed(), Duration::ZERO);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_send_past_the_limit_is_left_behind_at_the_limit() {
+        let sends = TaskTracker::new();
+        sends.spawn(tokio::time::sleep(Duration::from_secs(60)));
+        let started = tokio::time::Instant::now();
+
+        let left = drain_background_sends(&sends, SEND_DRAIN).await;
+
+        assert_eq!(left, 1, "the stuck send is reported");
+        assert_eq!(started.elapsed(), SEND_DRAIN);
+    }
 
     async fn body_of(error: ApiError) -> (StatusCode, String) {
         let response = error.into_response();

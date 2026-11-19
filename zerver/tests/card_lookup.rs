@@ -13,6 +13,8 @@
 
 mod common;
 
+use std::net::SocketAddr;
+
 use axum::http::{Method, StatusCode, header};
 use common::{TestApp, card, seed_cards};
 use serde_json::{Value, json};
@@ -306,6 +308,33 @@ async fn no_answer_is_cached_since_a_signed_in_one_follows_the_user_s_setting(po
             "{status}"
         );
     }
+}
+
+/// An IPv6 client counts by its /64, which a household shares, so it gets twice IPv4's burst.
+#[sqlx::test]
+async fn an_ipv6_64_gets_twice_the_burst(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    seed_cards(&pool, &[card("Lightning Bolt").mono("R")]).await;
+    let body = json!({ "name": "bolt" });
+    let mut passed = 0_u32;
+    for n in 1..=60_u32 {
+        let peer = SocketAddr::new(format!("2001:db8:1:2::{n:x}").parse().unwrap(), 50001);
+        let (status, _) = app
+            .send_from(
+                peer,
+                Method::POST,
+                CARD_LOOKUP_ROUTE,
+                Some(body.clone()),
+                None,
+            )
+            .await;
+        if status == StatusCode::TOO_MANY_REQUESTS {
+            break;
+        }
+        assert_eq!(status, StatusCode::OK, "request {n}");
+        passed = n;
+    }
+    assert_eq!(passed, 40, "twice IPv4's 20, one bucket for the whole /64");
 }
 
 /// A browser reads a 429's `Retry-After` only when CORS exposes it, so the web's search can wait

@@ -52,6 +52,7 @@ use zwipe_ui::stores::undo;
 use zwipe_ui::stores::undo::UndoAction;
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 use zwipe_ui::timing::{LOAD_MORE_AT, PILE_REVEAL_FALLBACK};
+use zwipe_ui::write_repeat::{self, WriteKey, Written};
 
 use super::{OneLine, SwipeDetails};
 use crate::inbound::card_filter::CardFilterPanel;
@@ -506,15 +507,26 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, board_name);
         in_flight.write().begin(card_id);
         let op = if maybe { "add_maybeboard" } else { "add_card" };
+        let sent = request.clone();
         spawn_forever(async move {
             let reply = authed
-                .run(op, |c, s| async move {
-                    c.create_deck_card(deck_id, &request, &s).await
-                })
+                .run_add(
+                    op,
+                    WriteKey::add(deck_id, card_id),
+                    deck_id,
+                    &sent,
+                    |c, s| async move { c.create_deck_card(deck_id, &request, &s).await },
+                )
                 .await;
             let outcome = in_flight.write().finish(card_id);
-            let Some(deck_card) = reply else {
-                return;
+            let deck_card = match reply {
+                Written::Done(deck_card) => deck_card,
+                // A lost earlier try added it: the deck holds the row that request made.
+                Written::LandedEarlier => match write_repeat::landed_deck_card(deck_id, &sent) {
+                    Some(deck_card) => deck_card,
+                    None => return,
+                },
+                Written::Failed => return,
             };
             if outcome == AddOutcome::Undo {
                 authed
@@ -810,7 +822,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     d.in_deck.insert(oracle_id);
                 }
             }
-            mb_stack.write().remove_current();
+            mb_stack.write().remove_current_wrapping();
             let mut line = OneLine::default();
             line.confirm_as(
                 Tone::Success,

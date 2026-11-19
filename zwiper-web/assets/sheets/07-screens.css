@@ -2519,11 +2519,6 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
   specific - settings
 =========================== */
 
-/* On top of the shared app.css .pref-row. */
-.pref-row {
-    margin-bottom: var(--space-2);
-}
-
 /* Universes Beyond sheet: grayed franchise chips until the hide toggle is on,
    and short explanatory notes under the title and section label. */
 .ub-chips-disabled {
@@ -2638,6 +2633,18 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
     padding: 0;
 }
 
+/* A choice in a picker's grid; its chip lays out as if unwrapped. */
+.picker-choice {
+    display: contents;
+}
+
+/* The choice Enter in the search acts on, while the search has focus: a chip's hover. The
+   web's pickers sit in a picker body, the app's full-screen ones in a tag screen. */
+:is(.picker-body, .tag-screen):has(.chip-row > .input:focus, .chip-row .input-clear-wrap > .input:focus) .enter-target > .chip {
+    color: var(--ink-accent-primary, var(--accent-primary));
+    border-color: var(--accent-primary);
+}
+
 .picker-body {
     display: flex;
     flex-direction: column;
@@ -2676,6 +2683,12 @@ body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-conte
 .tag-controls > .chip-row,
 .tag-controls > .chip-row > .input {
     margin-bottom: 0;
+}
+
+/* Send to's boards row sits as far above its Search row as the Search row
+   sits above the deck chips. */
+.tag-controls > .send-to-boards {
+    margin-bottom: var(--space-2);
 }
 
 /* The count as a chip at the row's end. */

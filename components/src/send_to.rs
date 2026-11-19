@@ -12,7 +12,10 @@ use zwipe_ui::send_to::{
     self, BOARDS, LOADING, NO_DECKS, NO_MATCH, SEARCH_PLACEHOLDER, TITLE, Target,
 };
 
-use crate::{Chip, PickerSearch, PickerSheet, use_overlay_back_action, use_picker_search};
+use crate::{
+    CardIconButton, Chip, PickerChoice, PickerSearch, PickerSheet, use_overlay_back_action,
+    use_picker_search,
+};
 
 /// The open Send to: whether the sheet is open, and the card it sends. Provided by the client
 /// above its signed-in screens.
@@ -45,22 +48,20 @@ const SEARCH_ID: &str = "send-to-search";
 /// The button's `data-action`.
 pub const SEND_TO_ACTION: &str = "send-to";
 
-/// The Send to button for `card`, in a row of the card's actions. Draws nothing where the
-/// client has not provided [`SendTo`].
+/// The Send to button for `card`, in a row of the card's actions: the kit's paper plane, named
+/// [`TITLE`] for a screen reader and a tooltip. Draws nothing where the client has not provided
+/// [`SendTo`].
 #[component]
 pub fn SendToButton(card: Card) -> Element {
     let Some(send_to) = try_use_context::<SendTo>() else {
         return rsx! {};
     };
     rsx! {
-        button {
-            class: "card-action-btn",
-            "data-action": SEND_TO_ACTION,
-            onclick: move |evt| {
-                evt.stop_propagation();
-                send_to.open_for(card.clone());
-            },
-            {TITLE}
+        CardIconButton {
+            label: TITLE,
+            path: orangui::icons::SEND,
+            action: SEND_TO_ACTION,
+            on_click: move |()| send_to.open_for(card.clone()),
         }
     }
 }
@@ -87,6 +88,18 @@ pub fn SendToSheet(
     let shown = decks
         .as_deref()
         .map(|decks| send_to::targets(decks, current, &query()));
+    // The list, its highlight and Enter all read the search through the same rules.
+    let target = decks
+        .as_deref()
+        .and_then(|decks| send_to::target_on_enter(decks, current, &query()));
+    let target_id = target.as_ref().map(|t| t.id);
+    // Enter sends to the first deck for the search as typed, which can be ahead of the list.
+    let all_decks = decks.unwrap_or_default();
+    let send_target = move |typed: String| {
+        if let Some(target) = send_to::target_on_enter(&all_decks, current, &typed) {
+            on_send.call((target, board()));
+        }
+    };
     let empty_line = if query().trim().is_empty() {
         NO_DECKS
     } else {
@@ -115,7 +128,12 @@ pub fn SendToSheet(
                         }
                     }
                 }
-                PickerSearch { id: SEARCH_ID, placeholder: SEARCH_PLACEHOLDER, query }
+                PickerSearch {
+                    id: SEARCH_ID,
+                    placeholder: SEARCH_PLACEHOLDER,
+                    query,
+                    on_enter: send_target,
+                }
             }
             div { class: "tag-grid send-to-decks",
                 match shown {
@@ -127,14 +145,15 @@ pub fn SendToSheet(
                     },
                     Some(shown) => rsx! {
                         for target in shown {
-                            Chip {
-                                key: "{target.id}",
-                                selected: false,
-                                onclick: {
-                                    let target = target.clone();
-                                    move |_| on_send.call((target.clone(), board()))
-                                },
-                                "{target.name}"
+                            PickerChoice { key: "{target.id}", target: target_id == Some(target.id),
+                                Chip {
+                                    selected: false,
+                                    onclick: {
+                                        let target = target.clone();
+                                        move |_| on_send.call((target.clone(), board()))
+                                    },
+                                    "{target.name}"
+                                }
                             }
                         }
                     },

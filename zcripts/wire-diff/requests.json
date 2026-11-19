@@ -1,0 +1,871 @@
+{
+ "steps": [
+  {
+   "name": "health",
+   "method": "GET",
+   "route": "/health",
+   "path": "/health"
+  },
+  {
+   "name": "min client version",
+   "method": "GET",
+   "route": "/api/client/min-version",
+   "path": "/api/client/min-version"
+  },
+  {
+   "name": "changelog",
+   "method": "GET",
+   "route": "/api/changelog",
+   "path": "/api/changelog",
+   "shape": true
+  },
+  {
+   "name": "public metrics",
+   "method": "GET",
+   "route": "/api/marketing/stats",
+   "path": "/api/marketing/stats"
+  },
+  {
+   "name": "catalog types",
+   "method": "GET",
+   "route": "/api/card/types",
+   "path": "/api/card/types"
+  },
+  {
+   "name": "catalog sets",
+   "method": "GET",
+   "route": "/api/card/sets",
+   "path": "/api/card/sets"
+  },
+  {
+   "name": "catalog artists",
+   "method": "GET",
+   "route": "/api/card/artists",
+   "path": "/api/card/artists"
+  },
+  {
+   "name": "catalog keywords",
+   "method": "GET",
+   "route": "/api/card/keywords",
+   "path": "/api/card/keywords"
+  },
+  {
+   "name": "catalog keyword-reminders",
+   "method": "GET",
+   "route": "/api/card/keyword-reminders",
+   "path": "/api/card/keyword-reminders"
+  },
+  {
+   "name": "catalog oracle-words",
+   "method": "GET",
+   "route": "/api/card/oracle-words",
+   "path": "/api/card/oracle-words"
+  },
+  {
+   "name": "catalog roles",
+   "method": "GET",
+   "route": "/api/card/roles",
+   "path": "/api/card/roles"
+  },
+  {
+   "name": "catalog ub-franchises",
+   "method": "GET",
+   "route": "/api/card/ub-franchises",
+   "path": "/api/card/ub-franchises"
+  },
+  {
+   "name": "catalog languages",
+   "method": "GET",
+   "route": "/api/card/languages",
+   "path": "/api/card/languages"
+  },
+  {
+   "name": "catalog oracle tags",
+   "method": "GET",
+   "route": "/api/card/oracle-tags",
+   "path": "/api/card/oracle-tags",
+   "capture": {
+    "otag": "/0/slug"
+   }
+  },
+  {
+   "name": "featured flavor",
+   "method": "GET",
+   "route": "/api/card/featured-flavor",
+   "path": "/api/card/featured-flavor"
+  },
+  {
+   "name": "anonymous event",
+   "method": "POST",
+   "route": "/api/metrics/anonymous",
+   "path": "/api/metrics/anonymous",
+   "body": {
+    "session_id": "00000000-0000-0000-0000-00000000d1ff",
+    "kind": "app_opened"
+   }
+  },
+  {
+   "name": "crash report",
+   "method": "POST",
+   "route": "/api/metrics/crash",
+   "path": "/api/metrics/crash",
+   "body": {
+    "crash_id": "00000000-0000-0000-0000-00000000c4a5",
+    "client_version": "1.23.1",
+    "platform": "android",
+    "message": "wire-diff",
+    "occurred_at": "2026-11-18T00:00:00Z"
+   }
+  },
+  {
+   "name": "verify email, bad token",
+   "method": "POST",
+   "route": "/api/auth/verify-email",
+   "path": "/api/auth/verify-email",
+   "body": {
+    "token": "not-a-token"
+   }
+  },
+  {
+   "name": "confirm email change, bad token",
+   "method": "POST",
+   "route": "/api/auth/confirm-email-change",
+   "path": "/api/auth/confirm-email-change",
+   "body": {
+    "token": "not-a-token"
+   }
+  },
+  {
+   "name": "check reset token, bad token",
+   "method": "POST",
+   "route": "/api/auth/reset-password/check",
+   "path": "/api/auth/reset-password/check",
+   "body": {
+    "token": "not-a-token"
+   }
+  },
+  {
+   "name": "reset password, bad token",
+   "method": "POST",
+   "route": "/api/auth/reset-password",
+   "path": "/api/auth/reset-password",
+   "body": {
+    "token": "not-a-token",
+    "new_password": "Wire.Diff.Pass.1"
+   }
+  },
+  {
+   "name": "forgot password",
+   "method": "POST",
+   "route": "/api/auth/forgot-password",
+   "path": "/api/auth/forgot-password",
+   "body": {
+    "email": "nobody@localhost.test"
+   }
+  },
+  {
+   "name": "log in, wrong password",
+   "method": "POST",
+   "route": "/api/auth/login",
+   "path": "/api/auth/login",
+   "body": {
+    "identifier": "seed_tester",
+    "password": "wrong"
+   }
+  },
+  {
+   "name": "log in seed_tester",
+   "method": "POST",
+   "route": "/api/auth/login",
+   "path": "/api/auth/login",
+   "body": {
+    "identifier": "seed_tester",
+    "password": "Seedling.Local.42"
+   },
+   "login": "tester",
+   "token": "/access_token/value",
+   "capture": {
+    "tester_id": "/user/id",
+    "tester_refresh": "/refresh_token/value"
+   }
+  },
+  {
+   "name": "refresh session",
+   "method": "POST",
+   "route": "/api/auth/refresh",
+   "path": "/api/auth/refresh",
+   "body": {
+    "user_id": "{{tester_id}}",
+    "refresh_token": "{{tester_refresh}}"
+   },
+   "login": "tester",
+   "token": "/access_token/value"
+  },
+  {
+   "name": "cookie log in seed_unverified",
+   "method": "POST",
+   "route": "/api/auth/cookie/login",
+   "path": "/api/auth/cookie/login",
+   "body": {
+    "identifier": "seed_unverified",
+    "password": "Seedling.Local.42"
+   },
+   "login": "unverified",
+   "token": "/access_token/value"
+  },
+  {
+   "name": "cookie refresh",
+   "method": "POST",
+   "route": "/api/auth/cookie/refresh",
+   "path": "/api/auth/cookie/refresh",
+   "as": "unverified",
+   "body": {}
+  },
+  {
+   "name": "search cards",
+   "method": "POST",
+   "route": "/api/card/search",
+   "path": "/api/card/search",
+   "body": {
+    "name_contains": "Sol Ring"
+   },
+   "capture": {
+    "card": "/0/scryfall_data/id",
+    "card_oracle": "/0/scryfall_data/oracle_id"
+   },
+   "as": "tester",
+   "sort": [
+    {
+     "path": "",
+     "by": "/scryfall_data/id"
+    }
+   ]
+  },
+  {
+   "name": "search commanders",
+   "method": "POST",
+   "route": "/api/card/search/commanders",
+   "path": "/api/card/search/commanders",
+   "body": {
+    "name_contains": "Krenko"
+   },
+   "capture": {
+    "commander_oracle": "/0/scryfall_data/oracle_id"
+   },
+   "as": "tester"
+  },
+  {
+   "name": "card",
+   "method": "GET",
+   "route": "/api/card/{scryfall_data_id}",
+   "path": "/api/card/{{card}}",
+   "as": "tester"
+  },
+  {
+   "name": "printings",
+   "method": "GET",
+   "route": "/api/card/{oracle_id}/printings",
+   "path": "/api/card/{{card_oracle}}/printings",
+   "as": "tester"
+  },
+  {
+   "name": "card stats, signed out",
+   "method": "GET",
+   "route": "/api/card/{oracle_id}/stats",
+   "path": "/api/card/{{card_oracle}}/stats"
+  },
+  {
+   "name": "commander stats, signed out",
+   "method": "GET",
+   "route": "/api/card/{oracle_id}/stats",
+   "path": "/api/card/{{commander_oracle}}/stats"
+  },
+  {
+   "name": "card lookup, signed out",
+   "method": "POST",
+   "route": "/api/card/lookup",
+   "path": "/api/card/lookup",
+   "body": {
+    "name": "Sol Ring"
+   }
+  },
+  {
+   "name": "card lookup with chips",
+   "method": "POST",
+   "route": "/api/card/lookup",
+   "path": "/api/card/lookup",
+   "body": {
+    "name": "goblin",
+    "types": [
+     "Creature"
+    ],
+    "colors": [
+     "R"
+    ]
+   },
+   "as": "tester"
+  },
+  {
+   "name": "named cards, signed out",
+   "method": "GET",
+   "route": "/api/card/named/{name_slug}",
+   "path": "/api/card/named/sol-ring"
+  },
+  {
+   "name": "oracle tag examples",
+   "method": "GET",
+   "route": "/api/card/oracle-tag/{slug}/examples",
+   "path": "/api/card/oracle-tag/{{otag}}/examples",
+   "as": "tester"
+  },
+  {
+   "name": "user",
+   "method": "GET",
+   "route": "/api/user",
+   "path": "/api/user",
+   "as": "tester"
+  },
+  {
+   "name": "settings",
+   "method": "GET",
+   "route": "/api/user/settings",
+   "path": "/api/user/settings",
+   "as": "tester"
+  },
+  {
+   "name": "my metrics",
+   "method": "GET",
+   "route": "/api/user/metrics",
+   "path": "/api/user/metrics",
+   "as": "tester"
+  },
+  {
+   "name": "activity",
+   "method": "GET",
+   "route": "/api/user/activity",
+   "path": "/api/user/activity",
+   "as": "tester"
+  },
+  {
+   "name": "playstyle",
+   "method": "GET",
+   "route": "/api/deck/playstyle",
+   "path": "/api/deck/playstyle",
+   "as": "tester"
+  },
+  {
+   "name": "commander suggestions",
+   "method": "GET",
+   "route": "/api/commander/suggestions",
+   "path": "/api/commander/suggestions",
+   "as": "tester"
+  },
+  {
+   "name": "deck tags",
+   "method": "GET",
+   "route": "/api/deck/tags",
+   "path": "/api/deck/tags",
+   "as": "tester"
+  },
+  {
+   "name": "commander maybeboard",
+   "method": "GET",
+   "route": "/api/user/commander-maybeboard",
+   "path": "/api/user/commander-maybeboard",
+   "as": "tester"
+  },
+  {
+   "name": "deck list",
+   "method": "GET",
+   "route": "/api/deck",
+   "path": "/api/deck",
+   "as": "tester",
+   "capture": {
+    "deck": "/0/id",
+    "deck2": "/1/id"
+   }
+  },
+  {
+   "name": "deck",
+   "method": "GET",
+   "route": "/api/deck/{deck_id}",
+   "path": "/api/deck/{{deck}}",
+   "as": "tester",
+   "capture": {
+    "deck_card": "/entries/0/deck_card/scryfall_data_id"
+   }
+  },
+  {
+   "name": "deck profile",
+   "method": "GET",
+   "route": "/api/deck/profile/{deck_id}",
+   "path": "/api/deck/profile/{{deck}}",
+   "as": "tester"
+  },
+  {
+   "name": "deck tokens",
+   "method": "GET",
+   "route": "/api/deck/{deck_id}/tokens",
+   "path": "/api/deck/{{deck}}/tokens",
+   "as": "tester"
+  },
+  {
+   "name": "search deck cards",
+   "method": "POST",
+   "route": "/api/deck/{deck_id}/card/search",
+   "path": "/api/deck/{{deck}}/card/search",
+   "as": "tester",
+   "body": {}
+  },
+  {
+   "name": "unverified deck list",
+   "method": "GET",
+   "route": "/api/deck",
+   "path": "/api/deck",
+   "as": "unverified"
+  },
+  {
+   "name": "settings patch",
+   "method": "PATCH",
+   "route": "/api/user/settings",
+   "path": "/api/user/settings",
+   "as": "tester",
+   "body": {
+    "exclude_universes_beyond": true
+   }
+  },
+  {
+   "name": "hint shown",
+   "method": "PATCH",
+   "route": "/api/user/hint",
+   "path": "/api/user/hint",
+   "as": "tester",
+   "body": {
+    "hint": "add_swipes"
+   }
+  },
+  {
+   "name": "record usage",
+   "method": "POST",
+   "route": "/api/metrics/usage",
+   "path": "/api/metrics/usage",
+   "as": "tester",
+   "body": {
+    "swipes_right": 1,
+    "swipes_left": 0,
+    "swipes_up": 0,
+    "swipes_down": 0,
+    "searches": 1
+   }
+  },
+  {
+   "name": "create deck",
+   "method": "POST",
+   "route": "/api/deck",
+   "path": "/api/deck",
+   "as": "tester",
+   "body": {
+    "name": "Wire Diff",
+    "format": "commander"
+   },
+   "capture": {
+    "new_deck": "/id"
+   },
+   "mask": [
+    "/created_at",
+    "/id",
+    "/updated_at"
+   ]
+  },
+  {
+   "name": "rename deck",
+   "method": "PATCH",
+   "route": "/api/deck/{deck_id}",
+   "path": "/api/deck/{{new_deck}}",
+   "as": "tester",
+   "body": {
+    "name": "Wire Diff Two"
+   },
+   "mask": [
+    "/created_at",
+    "/id",
+    "/updated_at"
+   ]
+  },
+  {
+   "name": "add card",
+   "method": "POST",
+   "route": "/api/deck/{deck_id}/card",
+   "path": "/api/deck/{{new_deck}}/card",
+   "as": "tester",
+   "body": {
+    "scryfall_data_id": "{{card}}",
+    "oracle_id": "{{card_oracle}}",
+    "quantity": 1
+   },
+   "mask": [
+    "/deck_id"
+   ]
+  },
+  {
+   "name": "raise card",
+   "method": "PATCH",
+   "route": "/api/deck/{deck_id}/card/{scryfall_data_id}",
+   "path": "/api/deck/{{new_deck}}/card/{{card}}",
+   "as": "tester",
+   "body": {
+    "quantity": 2
+   },
+   "mask": [
+    "/deck_id"
+   ]
+  },
+  {
+   "name": "flag card",
+   "method": "PATCH",
+   "route": "/api/deck/{deck_id}/card/{scryfall_data_id}",
+   "path": "/api/deck/{{new_deck}}/card/{{card}}",
+   "as": "tester",
+   "body": {
+    "flagged": true
+   },
+   "mask": [
+    "/deck_id"
+   ]
+  },
+  {
+   "name": "move card",
+   "method": "PATCH",
+   "route": "/api/deck/{deck_id}/card/{scryfall_data_id}",
+   "path": "/api/deck/{{new_deck}}/card/{{card}}",
+   "as": "tester",
+   "body": {
+    "board": "maybeboard"
+   },
+   "mask": [
+    "/deck_id"
+   ]
+  },
+  {
+   "name": "import text",
+   "method": "POST",
+   "route": "/api/deck/{deck_id}/card/import",
+   "path": "/api/deck/{{new_deck}}/card/import",
+   "as": "tester",
+   "body": {
+    "text": "1 Sol Ring\n1 Not A Real Card Name"
+   }
+  },
+  {
+   "name": "skip card",
+   "method": "POST",
+   "route": "/api/deck/{deck_id}/suppressions",
+   "path": "/api/deck/{{new_deck}}/suppressions",
+   "as": "tester",
+   "body": {
+    "oracle_id": "{{card_oracle}}"
+   }
+  },
+  {
+   "name": "unskip card",
+   "method": "DELETE",
+   "route": "/api/deck/{deck_id}/suppressions/{oracle_id}",
+   "path": "/api/deck/{{new_deck}}/suppressions/{{card_oracle}}",
+   "as": "tester"
+  },
+  {
+   "name": "clear suppressions",
+   "method": "DELETE",
+   "route": "/api/deck/{deck_id}/suppressions",
+   "path": "/api/deck/{{new_deck}}/suppressions",
+   "as": "tester"
+  },
+  {
+   "name": "share deck",
+   "method": "POST",
+   "route": "/api/deck/{deck_id}/share",
+   "path": "/api/deck/{{new_deck}}/share",
+   "as": "tester",
+   "body": {},
+   "capture": {
+    "share": "/share_token"
+   },
+   "mask": [
+    "/share_token"
+   ]
+  },
+  {
+   "name": "shared deck",
+   "method": "GET",
+   "route": "/api/share/deck/{token}",
+   "path": "/api/share/deck/{{share}}",
+   "mask": [
+    "/created_at",
+    "/entries/*/deck_card/deck_id",
+    "/updated_at"
+   ]
+  },
+  {
+   "name": "unshare deck",
+   "method": "DELETE",
+   "route": "/api/deck/{deck_id}/share",
+   "path": "/api/deck/{{new_deck}}/share",
+   "as": "tester"
+  },
+  {
+   "name": "clone deck",
+   "method": "POST",
+   "route": "/api/deck/{deck_id}/clone",
+   "path": "/api/deck/{{new_deck}}/clone",
+   "as": "tester",
+   "body": {
+    "new_name": "Wire Diff Copy"
+   },
+   "capture": {
+    "clone": "/deck_id"
+   },
+   "mask": [
+    "/deck_id"
+   ]
+  },
+  {
+   "name": "delete card (undo)",
+   "method": "DELETE",
+   "route": "/api/deck/{deck_id}/card/{scryfall_data_id}",
+   "path": "/api/deck/{{new_deck}}/card/{{card}}",
+   "as": "tester",
+   "query": "?undo=true"
+  },
+  {
+   "name": "add card again",
+   "method": "POST",
+   "route": "/api/deck/{deck_id}/card",
+   "path": "/api/deck/{{new_deck}}/card",
+   "as": "tester",
+   "body": {
+    "scryfall_data_id": "{{card}}",
+    "oracle_id": "{{card_oracle}}",
+    "quantity": 1
+   },
+   "mask": [
+    "/deck_id"
+   ]
+  },
+  {
+   "name": "delete card",
+   "method": "DELETE",
+   "route": "/api/deck/{deck_id}/card/{scryfall_data_id}",
+   "path": "/api/deck/{{new_deck}}/card/{{card}}",
+   "as": "tester"
+  },
+  {
+   "name": "delete clone",
+   "method": "DELETE",
+   "route": "/api/deck/{deck_id}",
+   "path": "/api/deck/{{clone}}",
+   "as": "tester"
+  },
+  {
+   "name": "delete deck",
+   "method": "DELETE",
+   "route": "/api/deck/{deck_id}",
+   "path": "/api/deck/{{new_deck}}",
+   "as": "tester"
+  },
+  {
+   "name": "dismiss commander",
+   "method": "POST",
+   "route": "/api/commander/suggestions/dismissals",
+   "path": "/api/commander/suggestions/dismissals",
+   "as": "tester",
+   "body": {
+    "oracle_id": "{{commander_oracle}}"
+   }
+  },
+  {
+   "name": "undismiss commander",
+   "method": "DELETE",
+   "route": "/api/commander/suggestions/dismissals/{oracle_id}",
+   "path": "/api/commander/suggestions/dismissals/{{commander_oracle}}",
+   "as": "tester"
+  },
+  {
+   "name": "clear dismissals",
+   "method": "DELETE",
+   "route": "/api/commander/suggestions/dismissals",
+   "path": "/api/commander/suggestions/dismissals",
+   "as": "tester"
+  },
+  {
+   "name": "maybeboard add",
+   "method": "POST",
+   "route": "/api/user/commander-maybeboard/{oracle_id}",
+   "path": "/api/user/commander-maybeboard/{{commander_oracle}}",
+   "as": "tester"
+  },
+  {
+   "name": "maybeboard remove",
+   "method": "DELETE",
+   "route": "/api/user/commander-maybeboard/{oracle_id}",
+   "path": "/api/user/commander-maybeboard/{{commander_oracle}}",
+   "as": "tester"
+  },
+  {
+   "name": "maybeboard clear",
+   "method": "DELETE",
+   "route": "/api/user/commander-maybeboard",
+   "path": "/api/user/commander-maybeboard",
+   "as": "tester"
+  },
+  {
+   "name": "register",
+   "method": "POST",
+   "route": "/api/auth/register",
+   "path": "/api/auth/register",
+   "body": {
+    "username": "wirecheck",
+    "email": "wirecheck@localhost.test",
+    "password": "Wire.Diff.Pass.1"
+   }
+  },
+  {
+   "name": "register a second",
+   "method": "POST",
+   "route": "/api/auth/register",
+   "path": "/api/auth/register",
+   "body": {
+    "username": "wirecheck_b",
+    "email": "wirecheck_b@localhost.test",
+    "password": "Wire.Diff.Pass.1"
+   }
+  },
+  {
+   "name": "log in wirecheck",
+   "method": "POST",
+   "route": "/api/auth/login",
+   "path": "/api/auth/login",
+   "body": {
+    "identifier": "wirecheck",
+    "password": "Wire.Diff.Pass.1"
+   },
+   "login": "fresh",
+   "token": "/access_token/value",
+   "mask": [
+    "/user/created_at",
+    "/user/id",
+    "/user/updated_at"
+   ]
+  },
+  {
+   "name": "log in wirecheck_b",
+   "method": "POST",
+   "route": "/api/auth/login",
+   "path": "/api/auth/login",
+   "body": {
+    "identifier": "wirecheck_b",
+    "password": "Wire.Diff.Pass.1"
+   },
+   "login": "fresh_b",
+   "token": "/access_token/value",
+   "mask": [
+    "/user/created_at",
+    "/user/id",
+    "/user/updated_at"
+   ]
+  },
+  {
+   "name": "resend verification",
+   "method": "POST",
+   "route": "/api/auth/resend-verification",
+   "path": "/api/auth/resend-verification",
+   "as": "fresh",
+   "body": {}
+  },
+  {
+   "name": "change username",
+   "method": "PATCH",
+   "route": "/api/user/change-username",
+   "path": "/api/user/change-username",
+   "as": "fresh",
+   "body": {
+    "new_username": "wirecheck2",
+    "password": "Wire.Diff.Pass.1"
+   },
+   "mask": [
+    "/created_at",
+    "/id",
+    "/updated_at"
+   ]
+  },
+  {
+   "name": "change email",
+   "method": "PATCH",
+   "route": "/api/user/change-email",
+   "path": "/api/user/change-email",
+   "as": "fresh",
+   "body": {
+    "email": "wirecheck2@localhost.test",
+    "password": "Wire.Diff.Pass.1"
+   },
+   "mask": [
+    "/created_at",
+    "/id",
+    "/pending_email_expires_at",
+    "/updated_at"
+   ]
+  },
+  {
+   "name": "resend email change",
+   "method": "POST",
+   "route": "/api/auth/resend-email-change",
+   "path": "/api/auth/resend-email-change",
+   "as": "fresh",
+   "body": {}
+  },
+  {
+   "name": "cancel email change",
+   "method": "POST",
+   "route": "/api/auth/cancel-email-change",
+   "path": "/api/auth/cancel-email-change",
+   "as": "fresh",
+   "body": {}
+  },
+  {
+   "name": "change password",
+   "method": "PATCH",
+   "route": "/api/user/change-password",
+   "path": "/api/user/change-password",
+   "as": "fresh_b",
+   "body": {
+    "current_password": "Wire.Diff.Pass.1",
+    "new_password": "Wire.Diff.Pass.2"
+   }
+  },
+  {
+   "name": "delete user",
+   "method": "DELETE",
+   "route": "/api/user/delete-user",
+   "path": "/api/user/delete-user",
+   "as": "fresh_b",
+   "body": {
+    "password": "Wire.Diff.Pass.2"
+   }
+  },
+  {
+   "name": "cookie log out",
+   "method": "POST",
+   "route": "/api/auth/cookie/logout",
+   "path": "/api/auth/cookie/logout",
+   "as": "unverified",
+   "body": {}
+  },
+  {
+   "name": "log out",
+   "method": "POST",
+   "route": "/api/auth/logout",
+   "path": "/api/auth/logout",
+   "as": "tester",
+   "body": {}
+  }
+ ]
+}

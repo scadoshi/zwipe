@@ -6,7 +6,7 @@
 //! printing, star, move-to-board); a read-only page like a shared deck
 //! passes only what it supports (e.g. `on_image`). Every action is an
 //! `Option`; `None` simply omits the control. Under a screen's
-//! [`HoverStack`] a collapsed row shows a mouse its card's image there.
+//! [`HoverStack`] a row shows a mouse its card's image there while no row is open.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -22,6 +22,12 @@ use crate::card_actions::{CardBoardMoves, CardEditButtons};
 use crate::hover_stack::{HeldEntry, HoverStack};
 use crate::meld::use_meld;
 use crate::{CardDetails, CardProxy, drawer_swap};
+
+/// Whether hovering a row shows its preview, with `open` the row whose detail is open: only
+/// while no row is open, since the preview covers an open row's text.
+fn previews_on_hover(open: Option<Uuid>) -> bool {
+    open.is_none()
+}
 
 /// Opens the row's detail, letting go of its hover preview, or shuts it
 /// when it is open.
@@ -140,8 +146,8 @@ pub fn CardRow(
             drawer_swap::install();
         }
     }));
-    // The screen's hover preview: a collapsed row shows the face it shows
-    // while the cursor is on it, and lets go on leave, expand or unmount.
+    // The screen's hover preview: a row shows the face it shows while the cursor is on it and
+    // no row is open, and lets go on leave, expand or unmount.
     let hover_stack = try_use_context::<HoverStack>();
     let held: HeldEntry = use_hook(|| Rc::new(Cell::new(None)));
     let shown_face: Rc<Cell<usize>> = use_hook(|| Rc::new(Cell::new(0)));
@@ -271,7 +277,7 @@ pub fn CardRow(
                 class: "card-row-compact",
                 onmouseenter: move |_| {
                     if let Some(stack) = hover_stack
-                        && expanded_card() != Some(card_id)
+                        && previews_on_hover(expanded_card())
                         && let Some(url) = sd_on_enter.shown_face_image_url(if melded { 0 } else { face.unwrap_or_else(|| face_on_enter.get()) }, ImageSize::Normal)
                         && let Some(stale) = held_on_enter.replace(Some(stack.enter(url.to_string(), sd_on_enter.name.clone())))
                     {
@@ -389,6 +395,9 @@ pub fn CardRow(
                                     }
                                 }
                             }
+                            if send_to {
+                                crate::SendToButton { card: card.clone() }
+                            }
                             CardEditButtons { qty, on_qty_change, mvp, on_toggle_mvp, flagged, on_toggle_flag }
                             {extra_actions}
                     },
@@ -396,16 +405,26 @@ pub fn CardRow(
                         if let Some(handler) = on_move_to {
                             CardBoardMoves { current_board, on_move_to: handler }
                         }
-                        if send_to {
-                            div { class: "card-action-row",
-                                crate::SendToButton { card: card.clone() }
-                            }
-                        }
                     },
                 }
                 hr { class: "card-row-rule card-row-rule-bottom" }
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_hover_shows_no_preview_while_any_row_is_open() {
+        let (open, other) = (Some(Uuid::from_u128(1)), Some(Uuid::from_u128(2)));
+        assert!(previews_on_hover(None), "nothing open: the preview shows");
+        assert!(
+            !previews_on_hover(open) && !previews_on_hover(other),
+            "any open row, the hovered one or another, holds it back"
+        );
     }
 }

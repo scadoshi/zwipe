@@ -17,9 +17,12 @@ use zwipe_core::http::paths::{
 };
 mod common;
 
+use std::time::Duration;
+
 use axum::http::StatusCode;
 use common::TestApp;
 use serde_json::json;
+use zwipe::inbound::http::rate_limits::RateLimits;
 use zwipe_core::domain::auth::models::session::MAXIMUM_SESSION_COUNT;
 
 #[sqlx::test]
@@ -222,15 +225,19 @@ async fn lockout_is_per_address(pool: sqlx::PgPool) {
 
     use axum::http::Method;
 
-    let app = TestApp::new(pool);
+    // One login past the five wrong ones, so the locked address's last try reaches the lockout
+    // instead of a 429.
+    let mut limits = RateLimits::default().with_every_period(Duration::from_secs(3600));
+    limits.login.ipv4.burst = 6;
+    let app = TestApp::with_limits(pool, &limits);
     let _ = app.register("victim").await;
     let attacker = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(203, 0, 113, 5)), 50001);
     let owner = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(198, 51, 100, 7)), 50002);
     let wrong = json!({ "identifier": "victim", "password": "WrongPass123!" });
     let right = json!({ "identifier": "victim", "password": "TestPass123!" });
 
-    // Five wrong passwords from one address: exactly the login limiter's
-    // burst, so every one reaches the service and counts.
+    // Five wrong passwords from one address, all inside the login burst, so
+    // every one reaches the service and counts.
     for n in 1..=5 {
         let (status, _) = app
             .send_from(
@@ -252,9 +259,7 @@ async fn lockout_is_per_address(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "owner logs in: {body}");
 
     // The guessing address is locked even with the right password, and gets
-    // the same answer as a wrong one. Wait out the limiter's burst first so
-    // the reply is the lockout's, not a 429.
-    tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+    // the same answer as a wrong one.
     // (Error bodies are plain text, so only the status is checked.)
     let (status, _) = app
         .send_from(attacker, Method::POST, LOGIN_ROUTE, Some(right), None)
@@ -263,6 +268,81 @@ async fn lockout_is_per_address(pool: sqlx::PgPool) {
         status,
         StatusCode::UNAUTHORIZED,
         "locked address gets the wrong-password answer"
+    );
+}
+
+#[sqlx::test]
+async fn an_ipv6_client_moving_inside_its_64_stays_locked_out(pool: sqlx::PgPool) {
+    use std::net::{IpAddr, SocketAddr};
+
+    use axum::http::Method;
+
+    let app = TestApp::new(pool);
+    let _ = app.register("victim").await;
+    let from = |ip: &str| SocketAddr::new(ip.parse::<IpAddr>().unwrap(), 50001);
+    let wrong = json!({ "identifier": "victim", "password": "WrongPass123!" });
+    let right = json!({ "identifier": "victim", "password": "TestPass123!" });
+
+    // Five wrong passwords, each from a new address in one /64: one client to the limiter and
+    // the lockout, so each counts toward the lock.
+    for n in 1..=5 {
+        let (status, _) = app
+            .send_from(
+                from(&format!("2001:db8:1:2::{n}")),
+                Method::POST,
+                LOGIN_ROUTE,
+                Some(wrong.clone()),
+                None,
+            )
+            .await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "wrong password {n}");
+    }
+
+    // A sixth address in that /64 is the same client: inside the /64's larger limiter burst, it
+    // reaches the lockout, which five failures have shut, so the right password is refused.
+    let (status, _) = app
+        .send_from(
+            from("2001:db8:1:2::99"),
+            Method::POST,
+            LOGIN_ROUTE,
+            Some(right.clone()),
+            None,
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "the /64 shares one lockout"
+    );
+
+    // The next /64 is another client: the owner there logs in.
+    let (status, body) = app
+        .send_from(
+            from("2001:db8:1:3::1"),
+            Method::POST,
+            LOGIN_ROUTE,
+            Some(right.clone()),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "another /64 logs in: {body}");
+
+    // Once the limiter's burst refills, the /64 is still locked: the right password gets the
+    // wrong-password answer from any address in it.
+    tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+    let (status, _) = app
+        .send_from(
+            from("2001:db8:1:2:abcd::7"),
+            Method::POST,
+            LOGIN_ROUTE,
+            Some(right),
+            None,
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "the /64 stays locked from a new address"
     );
 }
 

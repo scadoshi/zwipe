@@ -26,6 +26,7 @@ use zwipe_ui::screens::remove_cards::{
 };
 use zwipe_ui::stack;
 use zwipe_ui::stores::undo as shared_undo;
+use zwipe_ui::write_repeat::WriteKey;
 
 use super::components::card_info::{CardDetailsSheet, CardSkeleton};
 use super::components::filter_store::{FilterScope, FilterStore};
@@ -117,11 +118,15 @@ impl Driver {
                 card_id,
             } => {
                 spawn(async move {
+                    // A lost earlier try that removed it reads as removed.
                     let reply = authed
-                        .run("remove_card", |c, s| async move {
-                            c.delete_deck_card(deck_id, card_id, &s).await
-                        })
-                        .await;
+                        .run_write(
+                            "remove_card",
+                            WriteKey::remove_card(deck_id, card_id),
+                            |c, s| async move { c.delete_deck_card(deck_id, card_id, &s).await },
+                        )
+                        .await
+                        .or_landed(|| ());
                     self.dispatch(match reply {
                         Some(()) => Action::Landed { ticket },
                         None => Action::Failed { ticket },

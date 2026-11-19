@@ -73,15 +73,29 @@ async fn authed_route_without_token_is_401(pool: sqlx::PgPool) {
 
 /// Argon2 runs on the blocking pool: two logins at once both succeed, and a
 /// ticker on the same task keeps ticking while they hash, which it can't if
-/// the hashing holds the runtime thread.
+/// the hashing holds the runtime thread. The bound is half of one hash timed
+/// in the same run, so a slow machine slows both sides alike.
 #[sqlx::test]
 async fn concurrent_logins_leave_the_runtime_free(pool: sqlx::PgPool) {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::time::{Duration, Instant};
 
-    let app = TestApp::new(pool);
+    use zwipe::domain::auth::models::password::HashedPassword;
+
+    let app = TestApp::new(pool.clone());
     app.register("hasher1").await;
     app.register("hasher2").await;
+
+    let stored: String =
+        sqlx::query_scalar("SELECT password_hash FROM users WHERE username = 'hasher1'")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    let hash = HashedPassword::new(&stored).unwrap();
+    let started = Instant::now();
+    assert!(hash.verify("TestPass123!").unwrap());
+    let one_hash = started.elapsed();
+    let bound = one_hash.checked_div(2).unwrap();
 
     let done = AtomicBool::new(false);
     let ticker = async {
@@ -114,8 +128,8 @@ async fn concurrent_logins_leave_the_runtime_free(pool: sqlx::PgPool) {
     assert_eq!(first, StatusCode::OK, "first login: {first_body}");
     assert_eq!(second, StatusCode::OK, "second login: {second_body}");
     assert!(
-        longest < Duration::from_millis(150),
-        "the runtime stalled for {longest:?} during the logins"
+        longest < bound,
+        "the runtime stalled for {longest:?} during the logins; one hash takes {one_hash:?}"
     );
 }
 

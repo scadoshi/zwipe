@@ -214,6 +214,16 @@ const SUGGESTION_TAG_LIMIT: i64 = 5;
 /// again restarts the clock.
 const DISMISSAL_TTL_DAYS: i32 = 7;
 
+/// The last key of every order the card search builds: the printing id, so cards tied on every
+/// other key come back in one fixed order, on any copy of the database and under any plan.
+const TIEBREAK: &str = ", latest_cards.id";
+
+/// The order of a card's printings tied on every other key, as `latest_cards` breaks the tie:
+/// the collector number's leading digits as a number (99 before 100), then the whole number as
+/// text, then the id.
+const PRINTING_TIEBREAK: &str = "substring(sd.collector_number FROM '^[0-9]+')::numeric NULLS LAST, \
+                                 sd.collector_number, sd.id";
+
 /// The most cards one name slug answers: well above the largest real collision, which is all
 /// tokens, so it cuts nothing real and keeps a public, cached answer small.
 const NAMED_CARDS_LIMIT: i64 = 50;
@@ -318,7 +328,7 @@ impl MyPostgres {
         if unfit.is_empty() {
             return Ok(cards);
         }
-        let db_rows: Vec<DatabaseScryfallData> = query_as(
+        let sql = format!(
             "SELECT DISTINCT ON (sd.oracle_id) sd.* FROM scryfall_data sd \
              JOIN card_profiles cp ON sd.id = cp.scryfall_data_id \
              WHERE sd.oracle_id = ANY($1) \
@@ -328,13 +338,15 @@ impl MyPostgres {
                       COALESCE(sd.content_warning, false), \
                       (sd.lang IS DISTINCT FROM 'en'), \
                       (sd.layout = 'reversible_card'), \
-                      sd.released_at DESC, sd.collector_number, sd.id",
-        )
-        .bind(&unfit)
-        .bind(wanted.set_names)
-        .bind(wanted.promo)
-        .fetch_all(&self.pool)
-        .await?;
+                      sd.released_at DESC, {PRINTING_TIEBREAK}"
+        );
+        // Built from string constants only; every value is bound.
+        let db_rows: Vec<DatabaseScryfallData> = query_as(sqlx::AssertSqlSafe(sql))
+            .bind(&unfit)
+            .bind(wanted.set_names)
+            .bind(wanted.promo)
+            .fetch_all(&self.pool)
+            .await?;
         let mut swaps: HashMap<uuid::Uuid, ScryfallData> = HashMap::new();
         for row in db_rows {
             let printing =
@@ -1632,6 +1644,7 @@ impl CardRepository for MyPostgres {
             if matches!(order_by, CardSortKey::EdhrecRank | CardSortKey::BestMatch) {
                 qb.push(", name ASC");
             }
+            qb.push(TIEBREAK);
         } else if wildcard_serving {
             // Close the pool CTE and take two slices of it:
             //   band slice: the normal banded page, WILDCARD_SLOTS narrower.
@@ -1654,18 +1667,18 @@ impl CardRepository for MyPostgres {
             let window = WildcardWindow::new(request.limit(), request.offset());
             qb.push(format!(
                 ") SELECT * FROM ((SELECT *, 0 AS slice FROM pool \
-                 ORDER BY pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC LIMIT "
+                 ORDER BY pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC, id LIMIT "
             ));
             qb.push_bind(window.band_limit);
             qb.push(" OFFSET ");
             qb.push_bind(window.band_offset);
             qb.push(format!(
                 ") UNION ALL (SELECT *, 1 AS slice FROM pool WHERE rn > {DEEP_POOL_FLOOR} \
-                 ORDER BY pool_returned, pool_shown ASC, shuffle LIMIT {WILDCARD_SLOTS} OFFSET "
+                 ORDER BY pool_returned, pool_shown ASC, shuffle, id LIMIT {WILDCARD_SLOTS} OFFSET "
             ));
             qb.push_bind(window.deep_offset);
             qb.push(format!(
-                ")) AS combined ORDER BY slice ASC, pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC"
+                ")) AS combined ORDER BY slice ASC, pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC, id"
             ));
         } else if let Some(scores) = synergy_scores {
             // Default synergy ordering: band shuffle over (base + signal).
@@ -1700,6 +1713,7 @@ impl CardRepository for MyPostgres {
                 push_score(&mut qb, scores);
                 qb.push(" DESC, name ASC");
             }
+            qb.push(TIEBREAK);
         } else if popularity_ordering {
             // Commander-select without a wildcard (WILDCARD_SLOTS = 0): band
             // shuffle over the decks-helmed popularity base, same machinery as
@@ -1712,12 +1726,18 @@ impl CardRepository for MyPostgres {
                 qb.push("hashtext(COALESCE(latest_cards.oracle_id::text, '') || ");
                 qb.push_bind(seed);
                 qb.push("), latest_cards.name ASC");
+                qb.push(TIEBREAK);
             }
         } else if let Some(d) = returned_deck {
             // No sort and no synergy data (cold cache): the pool is otherwise
             // unordered, but returning cards still come after the rest.
             qb.push(" ORDER BY ");
             push_returned(&mut qb, d);
+            qb.push(TIEBREAK);
+        } else {
+            // No sort, no synergy and no deck: the printing id alone, so a page is the same
+            // page on every search.
+            qb.push(" ORDER BY latest_cards.id");
         }
 
         // The wildcard CTE carries per-slice LIMIT/OFFSET above.
@@ -2206,7 +2226,7 @@ impl CardRepository for MyPostgres {
              WHERE sd.oracle_id = ANY($1) AND LOWER(sd.set) = ANY($2) \
                AND {IMPORTABLE_PRINTING} \
              ORDER BY (sd.lang IS DISTINCT FROM 'en'), sd.digital, sd.promo, \
-                      sd.collector_number, sd.id"
+                      {PRINTING_TIEBREAK}"
         );
         // Built from string constants only; every value is bound.
         let db_rows: Vec<DatabaseScryfallData> = query_as(sqlx::AssertSqlSafe(sql))

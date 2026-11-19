@@ -998,10 +998,11 @@ i.ms.ms-cost.ms-gp {
         position: relative;
     }
 
+    /* The reach starts inside the 1px border, so it adds that back. */
     .card-action-btn::before {
         content: "";
         position: absolute;
-        inset: -0.375rem;
+        inset: calc(-0.375rem - 1px);
     }
 
     .card-action-row {
@@ -1015,6 +1016,15 @@ i.ms.ms-cost.ms-gp {
         /* The action reach's 0.375rem, so its reach stays inside a clipping row; off the scale. */
         margin-bottom: 0.375rem;
     }
+}
+
+/* The quantity stepper: `-`, the count and `+` wrap to the next line
+   together, spaced as the row spaces its buttons. */
+.card-action-stepper {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: inherit;
 }
 
 .card-action-count {
@@ -2229,10 +2239,12 @@ html.keyboard-up .web-dock-pair {
             visibility 0s linear 0s;
     }
 
-    /* A modal's own dock, above the drawer (an Oracle tag's examples opened
-       from the filter's dictionary), stays, and so does the Printings sheet's
-       (Flip or Meld beside Select) when it opens from the drawer. */
-    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *) {
+    /* A modal's own dock, above the drawer, stays: a nested screen's (an
+       Oracle tag's examples opened from the filter's dictionary) and a large
+       modal's wherever it mounts (the examples opened from the deck form's
+       Oracle tags picker, outside any page screen). So does the Printings
+       sheet's (Flip or Meld beside Select) when it opens from the drawer. */
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *, .web-large-modal *) {
         transform: translateY(calc(100% + 2rem));
         opacity: 0;
         visibility: hidden;
@@ -2246,7 +2258,7 @@ html.keyboard-up .web-dock-pair {
 }
 
 @media (min-width: 60rem) and (prefers-reduced-motion: reduce) {
-    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *) {
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *, .web-large-modal *) {
         transform: none;
     }
 }
@@ -3789,7 +3801,7 @@ footer.site-footer .site-footer-note {
     }
 
     .action-dock:not(.sheet-dock),
-    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *) {
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *, .web-large-modal *) {
         transition: none;
     }
 

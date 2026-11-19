@@ -66,15 +66,29 @@ impl<V: Clone> TtlSlot<V> {
         Fut: Future<Output = Result<(V, Instant), E>>,
         E: std::fmt::Display,
     {
-        {
-            let read = self.slot.read().await;
-            if let Some((expires_at, value)) = read.as_ref()
-                && *expires_at > Instant::now()
-            {
-                return Ok(value.clone());
-            }
+        if let Some(value) = self.fresh().await {
+            return Ok(value);
         }
+        self.refresh_locked(refresh).await
+    }
 
+    /// The stored value while its deadline is in the future, read under the read lock.
+    async fn fresh(&self) -> Option<V> {
+        let read = self.slot.read().await;
+        read.as_ref()
+            .filter(|(expires_at, _)| *expires_at > Instant::now())
+            .map(|(_, value)| value.clone())
+    }
+
+    /// The rebuild under the write lock, for a caller that found the slot expired: serves the
+    /// value another caller rebuilt while this one waited for the lock, else runs `refresh`
+    /// with [`get_or_refresh`](Self::get_or_refresh)'s stale grace.
+    async fn refresh_locked<F, Fut, E>(&self, refresh: F) -> Result<V, E>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<(V, Instant), E>>,
+        E: std::fmt::Display,
+    {
         let mut write = self.slot.write().await;
         // Double-check: another caller may have refreshed while we waited.
         if let Some((expires_at, value)) = write.as_ref()
@@ -160,7 +174,9 @@ mod tests {
         assert_eq!(error.unwrap_err(), "db down");
     }
 
-    #[tokio::test]
+    // Paused time ends the rebuild's sleep only once the runtime has nothing else to run, so
+    // every other caller is already waiting on the slot when it finishes.
+    #[tokio::test(start_paused = true)]
     async fn single_flight_on_concurrent_expiry() {
         let slot = std::sync::Arc::new(TtlSlot::new());
         let calls = std::sync::Arc::new(AtomicU32::new(0));
@@ -172,7 +188,7 @@ mod tests {
                     let value: Result<i32, String> = slot
                         .get_or_refresh(|| async {
                             calls.fetch_add(1, Ordering::SeqCst);
-                            // Hold the rebuild briefly so the herd piles up.
+                            // Hold the rebuild until the herd has piled up.
                             tokio::time::sleep(Duration::from_millis(20)).await;
                             Ok((42, far()))
                         })
@@ -185,6 +201,35 @@ mod tests {
             assert_eq!(task.await.unwrap(), 42);
         }
         assert_eq!(calls.load(Ordering::SeqCst), 1);
+    }
+
+    /// Two callers both find the slot expired before either takes the write lock; the first
+    /// rebuilds, and the second, taking the lock after it, serves that value without
+    /// rebuilding again. Each step runs in turn, so the interleaving is the same on any runtime.
+    #[tokio::test]
+    async fn a_caller_that_saw_the_slot_expired_serves_the_value_rebuilt_while_it_waited() {
+        let slot = TtlSlot::new();
+        let _: Result<i32, String> = slot
+            .get_or_refresh(|| async { Ok((1, Instant::now())) })
+            .await;
+        assert_eq!(
+            slot.fresh().await,
+            None,
+            "the first caller finds it expired"
+        );
+        assert_eq!(slot.fresh().await, None, "and so does the second");
+        let calls = AtomicU32::new(0);
+        let rebuild = || async {
+            calls.fetch_add(1, Ordering::SeqCst);
+            Ok::<_, String>((42, far()))
+        };
+        assert_eq!(slot.refresh_locked(rebuild).await.unwrap(), 42);
+        assert_eq!(slot.refresh_locked(rebuild).await.unwrap(), 42);
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            1,
+            "the second caller rebuilt a value already fresh"
+        );
     }
 
     #[tokio::test]

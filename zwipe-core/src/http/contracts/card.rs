@@ -1,5 +1,5 @@
-//! Card request bodies, and a card's public numbers: the response of
-//! `GET /api/card/{oracle_id}/stats`.
+//! Card request and response bodies: the signed-out lookup's body, `POST /api/card/lookup`, and
+//! a card's public numbers, the answer of `GET /api/card/{oracle_id}/stats`.
 
 use std::collections::BTreeSet;
 

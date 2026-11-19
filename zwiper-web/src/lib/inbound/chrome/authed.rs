@@ -12,11 +12,15 @@ use chrono::Utc;
 use components::TOAST_NORMAL;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
+use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::DeckCard;
+use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 use zwipe_ui::telemetry::SharedUsageBuffer;
 use zwipe_ui::telemetry::vocabulary::component;
 use zwipe_ui::toast::RepeatGate;
+use zwipe_ui::write_repeat::{self, Answer, Unconfirmed, Verdict, WriteKey, Written};
 
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::telemetry;
@@ -31,6 +35,8 @@ pub struct Authed {
     usage: Signal<SharedUsageBuffer>,
     screen: &'static str,
     component: &'static str,
+    /// The session's writes whose answer was lost, kept above the screens; `None` outside them.
+    unconfirmed: Option<Signal<Unconfirmed>>,
 }
 
 impl fmt::Debug for Authed {
@@ -54,6 +60,7 @@ pub fn use_authed() -> Authed {
         usage: telemetry::use_usage(),
         screen: telemetry::screen_name(),
         component: component::NONE,
+        unconfirmed: try_use_context(),
     }
 }
 
@@ -153,6 +160,82 @@ impl Authed {
             .inspect_err(|e| self.report(op, e, report))
     }
 
+    /// Runs a write `f` that acts on `key`, as [`run`](Self::run) does, except that the answer a
+    /// repeat gives once an earlier, lost try landed (an add's 409, a card removal's 422, a deck deletion's 404) reads as
+    /// [`Written::LandedEarlier`] with no error toast. A network error is remembered for the
+    /// session, so the next try of the same write can tell.
+    pub async fn run_write<T, Fut>(
+        &self,
+        op: &'static str,
+        key: WriteKey,
+        f: impl FnOnce(ZwipeClient, Session) -> Fut,
+    ) -> Written<T>
+    where
+        Fut: Future<Output = Result<T, ClientError>>,
+    {
+        let result = self.execute(op, Report::Quiet, f).await;
+        match (self.settle(key, &result), result) {
+            (Verdict::LandedEarlier, _) => Written::LandedEarlier,
+            (Verdict::Done | Verdict::Failed, Ok(value)) => Written::Done(value),
+            (Verdict::Done | Verdict::Failed, Err(e)) => {
+                self.toast_error(&e);
+                Written::Failed
+            }
+        }
+    }
+
+    /// [`run_write`](Self::run_write) for an add of `sent` to `deck_id`, which also rechecks a
+    /// first try whose answer was lost: it reads the deck back, and the sent printing on the sent
+    /// board there is the add landing, answered as [`Written::Done`] with the server's row and no
+    /// error toast. Not there, or the read failing, keeps the network error, and the add stays
+    /// remembered as lost, so a repeat's 409 still reads as landed.
+    pub async fn run_add<Fut>(
+        &self,
+        op: &'static str,
+        key: WriteKey,
+        deck_id: Uuid,
+        sent: &HttpCreateDeckCard,
+        f: impl FnOnce(ZwipeClient, Session) -> Fut,
+    ) -> Written<DeckCard>
+    where
+        Fut: Future<Output = Result<DeckCard, ClientError>>,
+    {
+        let result = self.execute(op, Report::Quiet, f).await;
+        match (self.settle(key, &result), result) {
+            (Verdict::LandedEarlier, _) => Written::LandedEarlier,
+            (Verdict::Done | Verdict::Failed, Ok(row)) => Written::Done(row),
+            (Verdict::Done | Verdict::Failed, Err(e)) => {
+                if matches!(e, ClientError::Network(_)) {
+                    let read = self
+                        .execute("recheck_add", Report::Quiet, |c, s| async move {
+                            c.fetch_deck(deck_id, &s).await
+                        })
+                        .await;
+                    if let Some(row) = read
+                        .ok()
+                        .and_then(|deck| write_repeat::landed_in(&deck, sent))
+                    {
+                        let _ = self.settle(key, &Ok::<(), ClientError>(()));
+                        return Written::Done(row);
+                    }
+                }
+                self.toast_error(&e);
+                Written::Failed
+            }
+        }
+    }
+
+    /// How a write on `key` that ended in `result` reads once a lost earlier try is counted, for
+    /// a caller that makes its own failure message; [`run_write`](Self::run_write) uses it.
+    pub fn settle<T>(&self, key: WriteKey, result: &Result<T, ClientError>) -> Verdict {
+        let answer = answer_of(result);
+        match self.unconfirmed {
+            Some(mut unconfirmed) => unconfirmed.write().settle(key, answer),
+            None if result.is_ok() => Verdict::Done,
+            None => Verdict::Failed,
+        }
+    }
+
     /// This handle with its failures reported under `component`.
     #[must_use]
     pub fn in_component(mut self, component: &'static str) -> Self {
@@ -166,12 +249,27 @@ impl Authed {
             .peek()
             .report_error(self.screen, self.component, op, &telemetry::failure(e));
         if report == Report::Toast {
-            let message = e.to_user_message();
-            if admit_error_toast(&message) {
-                self.toast
-                    .error(message, ToastOptions::default().duration(TOAST_NORMAL));
-            }
+            self.toast_error(e);
         }
+    }
+
+    /// Raises the error toast for `e`, unless one saying the same is up.
+    fn toast_error(&self, e: &ClientError) {
+        let message = e.to_user_message();
+        if admit_error_toast(&message) {
+            self.toast
+                .error(message, ToastOptions::default().duration(TOAST_NORMAL));
+        }
+    }
+}
+
+/// How a write's `result` ended, for [`Unconfirmed::settle`]: a call made outside [`Authed`]
+/// settles through it too.
+pub(crate) fn answer_of<T>(result: &Result<T, ClientError>) -> Answer {
+    match result {
+        Ok(_) => Answer::Done,
+        Err(ClientError::Network(_)) => Answer::Network,
+        Err(e) => e.status().map_or(Answer::Failed, Answer::Status),
     }
 }
 

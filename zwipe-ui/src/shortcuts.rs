@@ -454,7 +454,7 @@ pub fn card_read_rows() -> [SheetRow; 4] {
 pub const SEND_TO_KEY: &str = "P";
 
 /// The sheet's row for [`SEND_TO_KEY`].
-pub const SEND_TO_ROW: SheetRow = (&["Shift+P"], "Send to");
+pub const SEND_TO_ROW: SheetRow = (&["Shift+P"], "[[send]] Send to");
 
 /// [`card_read_rows`] with [`SEND_TO_ROW`] beside Printings, for a screen whose card details
 /// offer Send to.
@@ -527,6 +527,14 @@ pub fn examples_rows() -> [SheetRow; 4] {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_send_to_row_shows_the_button_s_paper_plane() {
+        assert_eq!(
+            row_parts(SEND_TO_ROW.1),
+            [RowPart::Icon(KeyIcon::Send), RowPart::Text(" Send to")]
+        );
+    }
 
     #[test]
     fn a_row_reads_its_icons_as_icons_and_its_words_as_words() {

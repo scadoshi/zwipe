@@ -21,7 +21,7 @@ use zwipe_core::http::paths::{
 mod common;
 
 use axum::http::StatusCode;
-use common::{TestApp, card, seed_cards};
+use common::{TestApp, card, seed_cards, wait_for_lock_waiters};
 use serde_json::json;
 
 /// Creates a verified user + a commander deck, returns `(token, deck_id)`.
@@ -493,16 +493,16 @@ async fn concurrent_stars_stop_at_the_mvp_cap(pool: sqlx::PgPool) {
         assert_eq!(status, StatusCode::OK, "star: {body}");
     }
 
-    // Hold the deck card rows so both requests count the stars before
-    // either writes.
+    // Hold the deck card rows until both requests are queued behind a lock,
+    // so they race for the stars.
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query("SELECT 1 FROM deck_cards WHERE deck_id = $1 FOR UPDATE")
+        .bind(deck_id)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
     let hold = async {
-        let mut tx = pool.begin().await.unwrap();
-        sqlx::query("SELECT 1 FROM deck_cards WHERE deck_id = $1 FOR UPDATE")
-            .bind(deck_id)
-            .execute(&mut *tx)
-            .await
-            .unwrap();
-        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        wait_for_lock_waiters(&pool, 2).await;
         tx.commit().await.unwrap();
     };
     let star = json!({ "mvp": true });

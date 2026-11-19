@@ -21,6 +21,7 @@ use zwipe_ui::generation::Generation;
 use zwipe_ui::screens::deck_cards;
 use zwipe_ui::stores::undo::UndoAction;
 use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
+use zwipe_ui::write_repeat::{self, WriteKey, Written};
 
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::chrome::authed::use_authed;
@@ -122,13 +123,24 @@ pub(crate) fn QuickAdd(
             };
             let id = card.scryfall_data.id;
             let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
-            let Some(deck_card) = authed
-                .run("quick_add_card", |c, s| async move {
-                    c.create_deck_card(deck_id, &request, &s).await
-                })
-                .await
-            else {
-                return;
+            let sent = request.clone();
+            let reply = authed
+                .run_add(
+                    "quick_add_card",
+                    WriteKey::add(deck_id, id),
+                    deck_id,
+                    &sent,
+                    |c, s| async move { c.create_deck_card(deck_id, &request, &s).await },
+                )
+                .await;
+            let deck_card = match reply {
+                Written::Done(deck_card) => deck_card,
+                // A lost earlier try added it: the deck holds the row that request made.
+                Written::LandedEarlier => match write_repeat::landed_deck_card(deck_id, &sent) {
+                    Some(deck_card) => deck_card,
+                    None => return,
+                },
+                Written::Failed => return,
             };
             let card_name = card.scryfall_data.name.clone();
             if mounted.get() {

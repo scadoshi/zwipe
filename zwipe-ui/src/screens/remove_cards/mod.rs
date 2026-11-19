@@ -711,7 +711,7 @@ impl State {
                 mvp_at,
                 flagged,
             });
-            self.stack.remove_current();
+            self.stack.remove_current_wrapping();
             return vec![Effect::Confirm(Toast::quick(ToastKind::Success, REMOVED))];
         }
         let entry = self.entry(card_id).cloned();
@@ -746,7 +746,7 @@ impl State {
         ];
         let (lands, price) = (self.land_count(), self.price());
         self.entries.retain(|e| e.card.scryfall_data.id != card_id);
-        self.stack.remove_current();
+        self.stack.remove_current_wrapping();
         effects.extend(self.crossings(lands, price));
         effects
     }
@@ -810,7 +810,7 @@ impl State {
                 entry.deck_card.mvp_at = None;
             }
         }
-        self.stack.remove_current();
+        self.stack.remove_current_wrapping();
         effects.extend(self.crossings(lands, price));
         effects
     }

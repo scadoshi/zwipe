@@ -80,6 +80,9 @@ pub struct CreateDeckProfile {
     pub user_id: Uuid,
     /// Whether the requesting user's email is verified.
     pub email_verified: bool,
+    /// The id the client picked for the new deck. A repeat sends the same one and answers the
+    /// deck the first request made. `None` = the server picks one.
+    pub id: Option<Uuid>,
 }
 
 impl CreateDeckProfile {
@@ -105,6 +108,7 @@ impl CreateDeckProfile {
             land_target: None,
             price_target: None,
             price_target_currency: None,
+            id: None,
         }
     }
 }
@@ -127,9 +131,17 @@ pub struct CreateDeckProfileBuilder {
     land_target: Option<i32>,
     price_target: Option<f64>,
     price_target_currency: Option<PriceCurrency>,
+    id: Option<Uuid>,
 }
 
 impl CreateDeckProfileBuilder {
+    /// Sets the id the client picked for the new deck.
+    #[must_use]
+    pub fn id(mut self, id: Option<Uuid>) -> Self {
+        self.id = id;
+        self
+    }
+
     /// Sets the commander card ID.
     #[must_use]
     pub fn commander_id(mut self, id: Option<Uuid>) -> Self {
@@ -269,6 +281,7 @@ impl CreateDeckProfileBuilder {
             price_target_currency: self.price_target_currency,
             user_id: self.user_id,
             email_verified: self.email_verified,
+            id: self.id,
         })
     }
 }

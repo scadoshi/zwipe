@@ -126,6 +126,8 @@ pub fn App() -> Element {
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
     use_context_provider(|| LoginPrefill(Signal::new(None)));
+    // The session's writes whose answer was lost, for every screen's run_write.
+    use_context_provider(|| Signal::new(zwipe_ui::write_repeat::Unconfirmed::default()));
     // The `?` buttons post here and the HintHost draws the topic.
     use_context_provider(|| Signal::new(None::<HintTopic>));
     // The splash plays once a tab session. While it plays the gate is
@@ -335,16 +337,23 @@ fn back_after_escape<T>(closed: bool, back: Option<T>) -> Option<T> {
 /// leaves the field; anywhere else it sends `true` to the root, which closes
 /// the top overlay unless it is the deck's Cards layer ([`EscKeeps`]), or,
 /// with nothing to close on a deck's Add, Remove or Edit, goes back as the
-/// screen's Back button does. Enter with nothing focused submits the page's form panel when it has
-/// exactly one, as Enter in one of its fields does.
+/// screen's Back button does. Enter with nothing focused submits the page's form when it has exactly
+/// one, a form in a panel or the deck form around its panels, and no picker, sheet or modal is
+/// open over it, as Enter in one of its fields does.
 ///
 /// Escape is marked taken, so no later listener closes the same overlay
-/// again, and sends once the key's dispatch is over, so a dialog the close
-/// opens (a picker asking before it discards) draws after the kit's
-/// listener has passed on this same key and doesn't take it as a dismiss.
+/// again. With a dialog open it is taken too: a help closing over a sheet
+/// hands focus back to the sheet within the same key, and the kit's sheet
+/// Esc would close the sheet as well. The root's send waits until the key's
+/// dispatch is over, so a dialog the close opens (a picker asking before it
+/// discards) draws after the kit's listener has passed on this same key and
+/// doesn't take it as a dismiss.
 const KEYS_JS: &str = r#"
 document.addEventListener('keydown', (e) => {
-    if (document.querySelector('.alert-dialog[data-state="open"]')) return;
+    if (document.querySelector('.alert-dialog[data-state="open"]')) {
+        if (e.key === 'Escape') e.preventDefault();
+        return;
+    }
     const focus = document.activeElement;
     const inField = focus && focus.closest('input, textarea, select, [contenteditable="true"]');
     if (e.key === 'Escape') {
@@ -358,9 +367,9 @@ document.addEventListener('keydown', (e) => {
     }
     const onControl = focus && (focus.tagName === 'BUTTON' || focus.tagName === 'A');
     if (e.key === 'Enter' && !e.isComposing && !onControl && !inField) {
-        const forms = Array.from(document.querySelectorAll('.web-form-panel form'))
+        const forms = Array.from(document.querySelectorAll('.web-form-panel form, form:has(.web-form-panel)'))
             .filter((form) => form.offsetParent !== null);
-        if (forms.length === 1 && !document.querySelector('.bottom-sheet.show')) {
+        if (forms.length === 1 && !document.querySelector('.alert-dialog[data-state="open"], .bottom-sheet.show, .screen.web-large-modal, .swipe-select-screen.show')) {
             e.preventDefault();
             forms[0].requestSubmit();
         }
@@ -477,6 +486,51 @@ mod tests {
         assert!(
             KEYS_JS.contains("if (e.key === 'Escape') {\n        e.preventDefault();"),
             "{KEYS_JS}"
+        );
+    }
+
+    #[test]
+    fn esc_that_closes_a_help_over_a_sheet_leaves_the_sheet_open() {
+        // The help closes and hands focus back to the sheet within the same key, so the kit's
+        // sheet Esc, which skips a taken key, would otherwise close the sheet too.
+        let guard = KEYS_JS
+            .split("if (document.querySelector('.alert-dialog[data-state=\"open\"]')) {")
+            .nth(1)
+            .and_then(|rest| rest.split("return;").next())
+            .unwrap_or_default();
+        assert!(
+            guard.contains("if (e.key === 'Escape') e.preventDefault();"),
+            "with a dialog open, Escape is marked taken before the root steps aside: {KEYS_JS}"
+        );
+    }
+
+    #[test]
+    fn enter_with_nothing_focused_finds_the_deck_form_around_its_panels() {
+        let fields = include_str!("screens/deck/form/fields.rs");
+        let deck_form = fields
+            .split_once("form {\n            class: \"container-sm web-deck-form\",")
+            .map_or("", |(_, rest)| rest);
+        assert!(
+            deck_form.contains("div { class: \"web-form-panel\","),
+            "the deck form holds its panels, where every other form sits in one"
+        );
+        assert!(
+            KEYS_JS.contains(
+                "document.querySelectorAll('.web-form-panel form, form:has(.web-form-panel)')"
+            ),
+            "a form in a panel and a form around panels: {KEYS_JS}"
+        );
+    }
+
+    #[test]
+    fn enter_with_nothing_focused_waits_while_any_picker_or_sheet_is_open() {
+        // A phone-width picker is a screen over the deck form, which stays laid out behind it.
+        let modals = components::keys::MODAL_SELECTORS.join(", ");
+        assert!(
+            KEYS_JS.contains(&format!(
+                "if (forms.length === 1 && !document.querySelector('{modals}')) {{"
+            )),
+            "{modals}: {KEYS_JS}"
         );
     }
 

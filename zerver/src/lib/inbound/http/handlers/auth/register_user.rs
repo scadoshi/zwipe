@@ -46,7 +46,7 @@ impl From<CreateSessionError> for ApiError {
         match value {
             CreateSessionError::Database(e) => e.to_500(),
             CreateSessionError::GetUserError(GetUserError::NotFound) => {
-                Self::Unauthorized("invalid credentials".to_string())
+                Self::Unauthorized(messages::INVALID_CREDENTIALS.to_string())
             }
             CreateSessionError::GetUserError(e) => ApiError::from(e),
             CreateSessionError::EnforceSessionMaximumError(e) => ApiError::from(e),
