@@ -225,8 +225,9 @@ body {
 /* The floating controls a scroll screen holds stop above the footer as it
    scrolls in (magic.css's footer rise): the action docks, the swipes' dock
    pair and a swipe screen's bottom row, but not the ones inside them, a
-   sheet or an overlay screen. The docked details panel shrinks from its
-   foot by as much, so it keeps ending above the docks. */
+   sheet or an overlay screen. The docked details panel and the card page's
+   stats column shrink from their foot by as much, so they keep ending above
+   the docks. */
 @supports (animation-timeline: view()) {
     .web-scroll-screen :is(.action-dock, .web-dock-pair, .swipe-bottom-row):not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *) {
         animation: footer-rise linear both;
@@ -235,7 +236,8 @@ body {
     }
 
     @media (min-width: 900px) {
-        .web-scroll-screen .web-swipe-details {
+        .web-scroll-screen .web-swipe-details,
+        .web-scroll-screen .web-card-stats {
             animation: web-dock-panel-rise linear both;
             animation-timeline: --site-footer;
             animation-range: entry 0px entry 100vh;
@@ -2069,7 +2071,7 @@ body {
         animation-name: web-swipe-body-in;
     }
 
-    :is(.web-main .web-cards-swipe.screen-content, .web-swipe-select-body, .web-examples-body) > :not(.web-swipe-details, .web-examples-details) {
+    :is(.web-main .web-cards-swipe.screen-content, .web-swipe-select-body, .web-examples-body) > :not(.web-swipe-details, .web-examples-details, .web-card-stats) {
         animation: content-enter 0.3s ease-out both;
     }
 
@@ -3016,6 +3018,15 @@ body {
         z-index: 40;
         width: var(--web-dock-panel-width);
         max-width: none;
+        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        box-sizing: border-box;
+    }
+
+    /* Each widget keeps its height; the column scrolls instead. */
+    .web-card-stats > * {
+        flex-shrink: 0;
     }
 
     .web-card-list {
