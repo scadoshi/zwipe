@@ -74,6 +74,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Card pages, one for every card with its image, details, prices, tags, stats and printings, open without logging in",
         "Card search opens a card or a page of matches from the nav, the search button in the header on a phone, and zwipe.net",
         "On a phone, Send to opens as a side drawer instead of covering the screen",
+        "Send to a deck that already has the card says so right away",
     ],
 }];
 
