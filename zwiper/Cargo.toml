@@ -30,9 +30,17 @@ keyring = { version = "4" }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 uuid = { workspace = true }
-tokio = { workspace = true }
 rand = { workspace = true }
 dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "02801f27e4b3e30606e5c77e435c9d955c708eb3", version = "0.0.1", default-features = false }
+
+# The timers, locks and channels the screens run on. Native builds keep the workspace's full
+# tokio; a web build takes only what the code uses, since tokio's `net` pulls in mio, which has no
+# wasm32 build.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+tokio = { version = "1.47.1", default-features = false, features = ["macros", "rt", "sync", "time"] }
 
 # Android-only: keyring has no Android backend, so we persist the session to a
 # file in the app's private internal storage, reached via JNI (Context.getFilesDir()).

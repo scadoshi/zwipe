@@ -79,6 +79,7 @@ jobs:
         with:
           toolchain: stable
           components: clippy
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       # zwiper's default (mobile) feature builds against webkit/GTK on Linux.
       # Cached by package list, so a hit restores the files without apt-get
@@ -92,6 +93,9 @@ jobs:
         run: cargo +nightly fmt --check
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
+      # zwiper's web build: a native-only dependency or cfg slip breaks only this target.
+      - name: Clippy (zwiper, wasm32)
+        run: cargo clippy -p zwiper --target wasm32-unknown-unknown --no-default-features --features web -- -D warnings
       # Broken intra-doc links and other rustdoc warnings fail the way clippy's do.
       - name: Docs
         run: cargo doc --workspace --no-deps --lib
