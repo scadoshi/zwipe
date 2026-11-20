@@ -2,6 +2,8 @@
 pub mod helpers;
 /// Removing the printings Scryfall deleted: the pure plan zervice applies.
 pub mod printing_removal;
+/// The checks a Scryfall pull passes before zervice writes any of it.
+pub mod scryfall_pull;
 /// Card search error types.
 pub mod search_card;
 

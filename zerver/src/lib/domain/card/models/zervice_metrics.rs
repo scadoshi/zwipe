@@ -9,6 +9,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::domain::card::models::scryfall_pull::RefusedPull;
+
 /// A finished card sync: its metrics, and the id of every printing the bulk file listed, which
 /// the printing removal diffs the database against.
 #[derive(Debug, Clone)]
@@ -17,6 +19,9 @@ pub struct SyncedCards {
     pub metrics: ZerviceMetrics,
     /// Every printing id in the complete bulk file.
     pub printing_ids: HashSet<Uuid>,
+    /// Set when the file's prices collapsed: its cards loaded, each stored printing with its
+    /// stored prices.
+    pub kept_prices: Option<RefusedPull>,
 }
 
 /// Share of the intended cards a sync must upsert to count as a partial success.

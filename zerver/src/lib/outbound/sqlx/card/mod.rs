@@ -19,6 +19,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::scryfall_data::prices::Prices;
 use zwipe_core::domain::card::search_card::card_filter;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -36,6 +37,7 @@ use crate::domain::card::models::helpers::SleeveCardProfile;
 use crate::domain::card::models::printing_removal::{
     Printing, References, RemovalCounts, RemovalPlan, Survivors,
 };
+use crate::domain::card::models::scryfall_pull::{CatalogCounts, ScryfallLoad};
 use crate::domain::card::models::search_card::error::SearchCardsError;
 use crate::domain::card::models::zervice_metrics::ZerviceMetrics;
 use crate::domain::card::models::zervice_step::{StepOutcome, StepRecord};
@@ -60,6 +62,8 @@ use crate::domain::deck::models::deck::commander_suggestions::{
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::commander_scoring::SCORE_COMMANDER_SUGGESTIONS_SQL;
 use crate::outbound::sqlx::card::helpers::oracle_tag_groups::{self, RoleMembershipBinds};
+use crate::outbound::sqlx::card::helpers::rebuild_guard::{self, Column};
+use crate::outbound::sqlx::card::helpers::scryfall_loads;
 use crate::outbound::sqlx::card::helpers::upsert_card::{
     BatchDeltaUpsertWithTx, BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
 };
@@ -1292,13 +1296,51 @@ impl CardRepository for MyPostgres {
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         zervice_metrics: &mut ZerviceMetrics,
+        load: Option<&ScryfallLoad>,
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut tx = self.pool.begin().await?;
         let cards = multiple_scryfall_data
             .batch_delta_upsert_with_tx(&mut tx, batch_size, zervice_metrics)
             .await?;
+        if let Some(load) = load {
+            scryfall_loads::record_load(&mut tx, load)
+                .await
+                .map_err(CreateCardError::Database)?;
+        }
         self.finish(tx).await?;
         Ok(cards)
+    }
+
+    async fn fetch_stored_prices(
+        &self,
+        ids: &[uuid::Uuid],
+    ) -> anyhow::Result<std::collections::HashMap<uuid::Uuid, Prices>> {
+        let rows: Vec<(uuid::Uuid, sqlx::types::Json<Prices>)> =
+            sqlx::query_as("SELECT id, prices FROM scryfall_data WHERE id = ANY($1)")
+                .bind(ids)
+                .fetch_all(&self.pool)
+                .await
+                .context("failed to read the stored prices")?;
+        Ok(rows
+            .into_iter()
+            .map(|(id, prices)| (id, prices.0))
+            .collect())
+    }
+
+    async fn fetch_catalog_counts(&self) -> anyhow::Result<CatalogCounts> {
+        let (printings, cards, priced): (i64, i64, i64) = sqlx::query_as(
+            "SELECT count(*), count(DISTINCT oracle_id), count(*) FILTER (WHERE prices->>'usd' IS NOT NULL)
+             FROM scryfall_data",
+        )
+        .fetch_one(&self.pool)
+        .await
+        .context("failed to count the stored catalog")?;
+        let count = |n: i64| u64::try_from(n).unwrap_or_default();
+        Ok(CatalogCounts {
+            printings: count(printings),
+            cards: count(cards),
+            priced: count(priced),
+        })
     }
 
     /// Persists a completed sync run to `zervice_metrics`.
@@ -1326,6 +1368,14 @@ impl CardRepository for MyPostgres {
         // A dry run records no sync row, so a preview never reads as a real night.
         self.finish(tx).await?;
         Ok(zervice_metrics)
+    }
+
+    async fn fetch_scryfall_load(
+        &self,
+        kind: &str,
+    ) -> anyhow::Result<Option<chrono::DateTime<chrono::Utc>>> {
+        let mut conn = self.pool.acquire().await?;
+        scryfall_loads::fetch_load(&mut conn, kind).await
     }
 
     async fn record_zervice_step(&self, record: &StepRecord) -> anyhow::Result<()> {
@@ -1448,11 +1498,13 @@ impl CardRepository for MyPostgres {
     async fn sync_oracle_tags(
         &self,
         tags: &[crate::inbound::external::scryfall::oracle_tag::OracleTag],
+        load: Option<&ScryfallLoad>,
     ) -> anyhow::Result<(usize, usize)> {
         let mut tx = self.pool.begin().await?;
-        let counts =
-            crate::outbound::sqlx::card::helpers::oracle_tags::sync_oracle_tags(&mut tx, tags)
-                .await?;
+        let counts = crate::outbound::sqlx::card::helpers::oracle_tags::sync_oracle_tags(
+            &mut tx, tags, load,
+        )
+        .await?;
         self.finish(tx).await?;
         Ok(counts)
     }
@@ -1461,6 +1513,7 @@ impl CardRepository for MyPostgres {
         // Aggregate oracle tags per oracle_id once, then fan out to every printing's
         // card_profile. LEFT JOIN so cards that lost all tags reset to '[]'.
         let mut tx = self.pool.begin().await?;
+        let before = rebuild_guard::before(&mut tx, Column::OracleTags).await?;
         let result = sqlx::query(
             "WITH oracle_agg AS (
                  SELECT oracle_id, jsonb_agg(oracle_tag ORDER BY oracle_tag) AS tags
@@ -1476,6 +1529,7 @@ impl CardRepository for MyPostgres {
         .execute(&mut *tx)
         .await
         .context("failed to refresh card_profiles.oracle_tags projection")?;
+        rebuild_guard::after(&mut tx, Column::OracleTags, before).await?;
         self.finish(tx).await?;
         Ok(result.rows_affected())
     }
@@ -2902,16 +2956,20 @@ impl CardRepository for MyPostgres {
 
     async fn derive_oracle_tag_categories(&self) -> anyhow::Result<u64> {
         let mut tx = self.pool.begin().await?;
+        let before = rebuild_guard::before(&mut tx, Column::CardRoles).await?;
         let rows =
             crate::outbound::sqlx::card::helpers::derive_categories::derive_categories(&mut tx)
                 .await?;
+        rebuild_guard::after(&mut tx, Column::CardRoles, before).await?;
         self.finish(tx).await?;
         Ok(rows)
     }
 
     async fn refresh_oracle_tag_groups(&self) -> anyhow::Result<u64> {
         let mut tx = self.pool.begin().await?;
+        let before = rebuild_guard::before(&mut tx, Column::TagGroups).await?;
         let rows = oracle_tag_groups::refresh_oracle_tag_groups(&mut tx).await?;
+        rebuild_guard::after(&mut tx, Column::TagGroups, before).await?;
         self.finish(tx).await?;
         Ok(rows)
     }
