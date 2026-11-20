@@ -71,7 +71,7 @@ pub fn CommanderMaybeboard() -> Element {
     // The saved commanders, which the Maybeboard list loads and edits, and the suggestions.
     let mut saved: Signal<Vec<Card>> = use_signal(Vec::new);
     let board = use_board(saved);
-    let suggestions = use_suggestions(Some(filter));
+    let suggestions = use_suggestions(filter);
     let mut held = suggestions.entries;
 
     // Every card on the screen, which the card keys act on.

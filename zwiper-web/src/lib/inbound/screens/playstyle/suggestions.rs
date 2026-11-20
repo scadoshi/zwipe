@@ -1,10 +1,9 @@
 //! The suggested commanders, which the Commanders screen lists:
-//! [`use_suggestions`] loads and edits the list, [`SuggestedFold`] draws it
-//! with its Swipe and its rows, and [`SuggestedOverlays`] holds its Clear
-//! skips dialog and its Swipe select. The same load carries the builder
-//! profile Playstyle draws, which reads it through [`use_held`] alone.
-
-use std::collections::HashSet;
+//! [`use_suggestions`] deals the list a page at a time from the merged
+//! commander ranking under the screen's filter and edits it, [`SuggestedFold`]
+//! draws it with its Swipe and its rows, and [`SuggestedOverlays`] holds its
+//! Clear skips dialog and its Swipe select. [`use_held`] loads the builder
+//! profile Playstyle draws and the deck count the reasons count against.
 
 use components::{
     AlertDialog, Button, ButtonVariant, CardListFold, DialogAction, TOAST_LONG, TOAST_QUICK,
@@ -15,81 +14,48 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::colors::{self, Color};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
-use zwipe_core::http::contracts::suggestions::{HttpBuilderProfile, HttpCommanderSuggestion};
+use zwipe_core::http::contracts::suggestions::{
+    HttpBuilderProfile, HttpCommanderSuggestion, RankedBy,
+};
+use zwipe_ui::commander::deal::{self, Door, LIST_PAGE};
 use zwipe_ui::generation::Generation;
-use zwipe_ui::playstyle::{HELD_SIZE, LIST_SIZE, of_identity, shown, suggested_empty_line};
 
-use super::chips::ShowIdentityChips;
 use super::rows::SuggestionRow;
 use crate::inbound::caches::CreateDeckSeed;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
+use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::router::Route;
 
-/// A suggestion's colors, the identity the Show chips read.
-fn suggestion_colors(suggestion: &HttpCommanderSuggestion) -> &[Color] {
-    &suggestion.card.scryfall_data.color_identity
-}
-
-/// `suggestions` the applied `filter` keeps, in their order. An empty filter, or one that
-/// doesn't build, keeps them all.
-fn passing(
-    suggestions: Vec<HttpCommanderSuggestion>,
-    filter: &CardQueryBuilder,
-) -> Vec<HttpCommanderSuggestion> {
-    if filter.is_empty() {
-        return suggestions;
-    }
-    let Ok(criteria) = filter.build_criteria() else {
-        return suggestions;
-    };
-    let cards = Cards::from(
-        suggestions
-            .iter()
-            .map(|s| s.card.clone())
-            .collect::<Vec<Card>>(),
-    );
-    let kept: HashSet<Uuid> = Vec::<Card>::from(cards.matching(&criteria))
-        .iter()
-        .map(|c| c.scryfall_data.id)
-        .collect();
-    suggestions
-        .into_iter()
-        .filter(|s| kept.contains(&s.card.scryfall_data.id))
-        .collect()
-}
+/// What [`use_held`] asks the suggestions route for: no list, only the profile and deck count,
+/// since the list deals from the merged ranking.
+const HELD_LIMIT: u32 = 0;
 
 /// The suggested commanders list: its load state, its Show chip, what it shows and what its
 /// rows, Swipe and Clear skips do. Cheap to copy; every field is a signal or a callback.
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) struct Suggestions {
-    /// The held ranking, 100 deep.
+    /// The rows dealt so far, best fit first: the first page, then each Show more's.
     pub(crate) entries: Signal<Vec<HttpCommanderSuggestion>>,
-    /// The user's deck count, which the reasons count against; 0 before the first load.
+    /// What the ranking is built from, once a page has landed.
+    pub(crate) ranked_by: Signal<Option<RankedBy>>,
+    /// Whether the ranking has no more rows to deal.
+    pub(crate) exhausted: Signal<bool>,
+    /// The user's deck count, which the reasons count against; 0 before it loads.
     pub(crate) deck_count: Signal<u32>,
-    /// The builder profile the same load carries, for Playstyle's own sections.
-    pub(crate) profile: Signal<Option<HttpBuilderProfile>>,
-    /// Whether the first load is still out.
+    /// Whether the first page is still out.
     pub(crate) is_loading: Signal<bool>,
-    /// Whether a load failed with nothing to show.
+    /// Whether a page failed with nothing to show.
     pub(crate) load_failed: Signal<bool>,
-    /// The Show chip in effect, `None` being All.
-    pub(crate) active_identity: Signal<Option<Vec<Color>>>,
-    /// The Show row's chips: the identities in the held list plus the chosen one.
-    pub(crate) identities: Memo<Vec<Vec<Color>>>,
-    /// The held list narrowed by the Show chip and the screen's filter.
-    pub(crate) filtered: Memo<Vec<HttpCommanderSuggestion>>,
-    /// The user's decks, for the create gate and Staples' deck chips; `None` until loaded.
+    /// The user's decks, for the create gate; `None` until loaded.
     pub(crate) deck_profiles: Signal<Option<Vec<DeckProfile>>>,
+    filter: Signal<CardQueryBuilder>,
     swipe_open: Signal<bool>,
     clear_open: Signal<bool>,
-    pile: Memo<SuggestedPile>,
+    show_more: Callback<()>,
     create_with: Callback<Card>,
     on_maybe: Callback<Uuid>,
     on_dismiss: Callback<Uuid>,
@@ -106,7 +72,6 @@ impl Suggestions {
 /// The held ranking's load: what it holds and the tickets that keep an old reply from landing.
 #[derive(Clone, Copy)]
 pub(crate) struct Held {
-    entries: Signal<Vec<HttpCommanderSuggestion>>,
     /// The user's deck count; 0 before the first load.
     pub(crate) deck_count: Signal<u32>,
     /// The builder profile the load carries.
@@ -121,21 +86,11 @@ pub(crate) struct Held {
     load_out: Signal<bool>,
 }
 
-impl Held {
-    /// Drops any load still out and fetches again. Silent while rows show.
-    fn refetch(mut self) {
-        self.loads.write().next_ticket();
-        let tick = *self.reload.peek();
-        self.reload.set(tick.wrapping_add(1));
-    }
-}
-
-/// Loads the held ranking, 100 deep, again on every [`Held::refetch`]. Each load takes a ticket
-/// and only the newest one's reply lands.
+/// Loads the builder profile and deck count from the suggestions route, again on every
+/// [`Held::refetch`]. Each load takes a ticket and only the newest one's reply lands.
 pub(crate) fn use_held() -> Held {
     let authed = use_authed();
     let load = Held {
-        entries: use_signal(Vec::new),
         deck_count: use_signal(|| 0u32),
         profile: use_signal(|| None),
         is_loading: use_signal(|| true),
@@ -145,7 +100,6 @@ pub(crate) fn use_held() -> Held {
         load_out: use_signal(|| false),
     };
     let Held {
-        mut entries,
         mut deck_count,
         mut profile,
         mut is_loading,
@@ -161,7 +115,7 @@ pub(crate) fn use_held() -> Held {
         spawn(async move {
             let reply = authed
                 .try_run("load_suggestions", |c, s| async move {
-                    c.commander_suggestions(HELD_SIZE, &s).await
+                    c.commander_suggestions(HELD_LIMIT, &s).await
                 })
                 .await;
             if !loads.peek().is_current(ticket) {
@@ -172,10 +126,9 @@ pub(crate) fn use_held() -> Held {
                 Ok(found) => {
                     deck_count.set(found.deck_count);
                     profile.set(found.profile);
-                    entries.set(found.suggestions);
                     load_failed.set(false);
                 }
-                Err(_) => load_failed.set(entries.peek().is_empty()),
+                Err(_) => load_failed.set(profile.peek().is_none()),
             }
             is_loading.set(false);
         });
@@ -230,10 +183,10 @@ fn use_create_gate() -> (Signal<Option<Vec<DeckProfile>>>, Callback<Card>) {
 }
 
 /// A row's Maybeboard and Remove, which drop it through `drop_row`, and Clear skips, which
-/// refetches through `load`.
+/// deals the list again through `redeal`.
 fn use_writes(
     drop_row: Callback<Uuid>,
-    load: Held,
+    redeal: Callback<()>,
 ) -> (Callback<Uuid>, Callback<Uuid>, Callback<()>) {
     let toast = use_toast();
     // A save or skip lands even after the screen goes; its row update waits on this.
@@ -295,7 +248,7 @@ fn use_writes(
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
                 if mounted.get() {
-                    load.refetch();
+                    redeal.call(());
                 }
             }
         });
@@ -303,84 +256,164 @@ fn use_writes(
     (on_maybe, on_dismiss, clear_dismissals)
 }
 
-/// Loads the suggested commanders and holds what their list does, narrowed by `filter` where a
-/// screen filters them. The list refetches when Swipe select closes, after a drop leaves the
-/// filtered list short and after Clear skips; a refetch with rows showing keeps them. A dropped
-/// row restarts a load still out, since its reply predates the drop.
-pub(crate) fn use_suggestions(filter: Option<Signal<CardQueryBuilder>>) -> Suggestions {
+/// The Suggested list's pages: what [`use_deal_pages`] holds and what deals more.
+#[derive(Clone, Copy)]
+struct DealPages {
+    entries: Signal<Vec<HttpCommanderSuggestion>>,
+    ranked_by: Signal<Option<RankedBy>>,
+    exhausted: Signal<bool>,
+    is_loading: Signal<bool>,
+    load_failed: Signal<bool>,
+    redeal: Callback<()>,
+    show_more: Callback<()>,
+}
+
+/// Deals the first page under `filter` on mount, on a filter change and on every redeal, and the
+/// next page on Show more, leaving out what the list already holds.
+fn use_deal_pages(filter: Signal<CardQueryBuilder>) -> DealPages {
+    let authed = use_authed();
+    let mut entries: Signal<Vec<HttpCommanderSuggestion>> = use_signal(Vec::new);
+    let mut ranked_by: Signal<Option<RankedBy>> = use_signal(|| None);
+    let mut exhausted = use_signal(|| false);
+    let mut is_loading = use_signal(|| true);
+    let mut load_failed = use_signal(|| false);
+    let mut more_out = use_signal(|| false);
+    let mut tickets = use_signal(Generation::default);
+    let mut redeals = use_signal(|| 0u32);
+
+    // The first page, on mount, on a filter change and on every redeal.
+    use_effect(move || {
+        let applied = filter();
+        let _tick = redeals();
+        let ticket = tickets.write().next_ticket();
+        more_out.set(false);
+        spawn(async move {
+            let Some(request) = deal::next_page(Door::Suggested, &applied, &[], LIST_PAGE) else {
+                return;
+            };
+            let reply = authed
+                .try_run("deal_suggestions", |c, s| async move {
+                    c.deal_commanders(request, &s).await
+                })
+                .await;
+            if !tickets.peek().is_current(ticket) {
+                return;
+            }
+            match reply {
+                Ok(page) => {
+                    exhausted.set(deal::is_last_page(page.suggestions.len(), LIST_PAGE));
+                    ranked_by.set(Some(page.ranked_by));
+                    entries.set(page.suggestions);
+                    load_failed.set(false);
+                }
+                Err(_) => load_failed.set(entries.peek().is_empty()),
+            }
+            is_loading.set(false);
+        });
+    });
+    let redeal = use_callback(move |()| {
+        let tick = *redeals.peek();
+        redeals.set(tick.wrapping_add(1));
+    });
+
+    // The next page, leaving out what the list already holds.
+    let show_more = use_callback(move |()| {
+        if *more_out.peek() || *exhausted.peek() {
+            return;
+        }
+        let held_ids = deal::oracle_ids(&entries.peek());
+        let Some(request) = deal::next_page(Door::Suggested, &filter.peek(), &held_ids, LIST_PAGE)
+        else {
+            exhausted.set(true);
+            return;
+        };
+        more_out.set(true);
+        let ticket = tickets.peek().current();
+        spawn(async move {
+            let reply = authed
+                .try_run("deal_more_suggestions", |c, s| async move {
+                    c.deal_commanders(request, &s).await
+                })
+                .await;
+            if !tickets.peek().is_current(ticket) {
+                return;
+            }
+            more_out.set(false);
+            if let Ok(page) = reply {
+                exhausted.set(deal::is_last_page(page.suggestions.len(), LIST_PAGE));
+                entries.write().extend(page.suggestions);
+            }
+        });
+    });
+
+    DealPages {
+        entries,
+        ranked_by,
+        exhausted,
+        is_loading,
+        load_failed,
+        redeal,
+        show_more,
+    }
+}
+
+/// Deals the suggested commanders a page at a time from the merged ranking under the screen's
+/// `filter`, and holds what their list does. A filter change, Swipe select closing and Clear
+/// skips deal again from the top; Show more deals the next page, leaving out the rows already
+/// dealt; a dropped row tops the list back up to a page. Each deal takes a ticket and only the
+/// newest one's reply lands.
+pub(crate) fn use_suggestions(filter: Signal<CardQueryBuilder>) -> Suggestions {
     let swipe_open = use_signal(|| false);
     let clear_open = use_signal(|| false);
-    let load = use_held();
-    let mut entries = load.entries;
-    let deck_count = load.deck_count;
+    let held = use_held();
+    let DealPages {
+        mut entries,
+        ranked_by,
+        exhausted,
+        is_loading,
+        load_failed,
+        redeal,
+        show_more,
+    } = use_deal_pages(filter);
 
     // The overlay's swipes dismissed and saved commanders the list must not
-    // show any more, so closing it refetches.
+    // show any more, so closing it deals again.
     let mut swipe_was_open = use_signal(|| false);
     use_effect(move || {
         if swipe_open() {
             swipe_was_open.set(true);
         } else if *swipe_was_open.peek() {
             swipe_was_open.set(false);
-            load.refetch();
+            redeal.call(());
         }
     });
 
-    // The chips are the identities in the held list plus the chosen one, so
-    // a chip stays after its last commander goes and the empty line says so.
-    let active_identity: Signal<Option<Vec<Color>>> = use_signal(|| None);
-    let identities = use_memo(move || {
-        let held = entries();
-        let chosen = active_identity();
-        colors::identities_present(held.iter().map(suggestion_colors).chain(chosen.as_deref()))
-    });
-    let filtered = use_memo(move || {
-        let of_one = of_identity(&entries(), suggestion_colors, active_identity().as_deref());
-        match filter {
-            Some(filter) => passing(of_one, &filter()),
-            None => of_one,
-        }
-    });
-    let pile = use_memo(move || SuggestedPile {
-        suggestions: filtered(),
-        deck_count: deck_count(),
-        identity: active_identity(),
-    });
-
-    // Drops a row; the next held suggestion of that identity moves up. The
-    // server is asked again only when the filtered list runs under ten or a
-    // load from before the drop is still out.
+    // Drops a row, topping the list back up to a page when it runs short.
     let drop_row = use_callback(move |oracle_id: Uuid| {
         entries
             .write()
             .retain(|s| s.card.scryfall_data.oracle_id != Some(oracle_id));
-        let remaining = of_identity(
-            &entries.peek(),
-            suggestion_colors,
-            active_identity.peek().as_deref(),
-        )
-        .len();
-        if remaining < LIST_SIZE || *load.load_out.peek() {
-            load.refetch();
+        let short = u32::try_from(entries.peek().len()).is_ok_and(|n| n < LIST_PAGE);
+        if short {
+            show_more.call(());
         }
     });
 
     let (deck_profiles, create_with) = use_create_gate();
-    let (on_maybe, on_dismiss, clear_dismissals) = use_writes(drop_row, load);
+    let (on_maybe, on_dismiss, clear_dismissals) = use_writes(drop_row, redeal);
 
     Suggestions {
         entries,
-        deck_count,
-        profile: load.profile,
-        is_loading: load.is_loading,
-        load_failed: load.load_failed,
-        active_identity,
-        identities,
-        filtered,
+        ranked_by,
+        exhausted,
+        deck_count: held.deck_count,
+        is_loading,
+        load_failed,
         deck_profiles,
+        filter,
         swipe_open,
         clear_open,
-        pile,
+        show_more,
         create_with,
         on_maybe,
         on_dismiss,
@@ -399,17 +432,19 @@ pub(crate) fn SuggestedFold(
 ) -> Element {
     let Suggestions {
         entries,
+        ranked_by,
+        exhausted,
         deck_count,
-        active_identity,
-        filtered,
+        filter,
         mut swipe_open,
+        show_more,
         create_with,
         on_maybe,
         on_dismiss,
         ..
     } = list;
-    let has_entries = !entries().is_empty();
-    let rows = shown(&filtered());
+    let rows = entries();
+    let line = ranked_by().and_then(deal::ranked_line);
     rsx! {
         // Swipe sits in the list's header, so it says
         // what gets swiped.
@@ -423,17 +458,18 @@ pub(crate) fn SuggestedFold(
                 }
                 InfoButton { topic: HintTopic::SuggestionList }
             },
-            if !has_entries {
+            if let Some(line) = line {
                 div { class: "activity-total activity-total-group",
-                    span { class: "chip-note", "No suggestions right now" }
+                    span { class: "chip-note", {line} }
                 }
-            } else if rows.is_empty() {
+            }
+            if rows.is_empty() {
                 div { class: "activity-total activity-total-group",
                     span { class: "chip-note",
-                        {
-                            let identity = active_identity();
-                            let of_one = of_identity(&entries(), suggestion_colors, identity.as_deref());
-                            suggested_empty_line(&of_one, identity.as_deref())
+                        if filter.read().is_empty() {
+                            "No suggestions right now"
+                        } else {
+                            "No commanders match"
                         }
                     }
                 }
@@ -449,19 +485,26 @@ pub(crate) fn SuggestedFold(
                     on_dismiss,
                 }
             }
+            if !exhausted() && !entries.read().is_empty() {
+                button {
+                    r#type: "button",
+                    class: "chip changelog-more",
+                    onclick: move |_| show_more.call(()),
+                    "Show more"
+                }
+            }
         }
     }
 }
 
-/// The list's Clear skips dialog and its Swipe select, whose filter is the same Show row.
+/// The list's Clear skips dialog and its Swipe select, which starts from the screen's filter.
 #[component]
 pub(crate) fn SuggestedOverlays(list: Suggestions) -> Element {
     let Suggestions {
-        active_identity,
-        identities,
+        filter,
+        deck_count,
         mut swipe_open,
         clear_open,
-        pile,
         create_with,
         clear_dismissals,
         ..
@@ -482,11 +525,9 @@ pub(crate) fn SuggestedOverlays(list: Suggestions) -> Element {
         }
         SwipeSelect {
             open: swipe_open,
-            mode: SwipeMode::Suggested,
-            suggested_pile: Some(pile.into()),
-            suggested_filter: rsx! {
-                ShowIdentityChips { active_identity, identities: identities() }
-            },
+            mode: SwipeMode::Commanders(Door::Suggested),
+            start_filter: Some(filter.into()),
+            reasons_deck_count: Some(deck_count.into()),
             on_select: move |card: Card| {
                 swipe_open.set(false);
                 create_with.call(card);

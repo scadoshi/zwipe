@@ -9,6 +9,7 @@ use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::http::contracts::suggestions::{
     HttpCommanderSuggestion, HttpStaple, HttpSuggestionReasons,
 };
+use zwipe_ui::commander::deal;
 use zwipe_ui::playstyle::{
     StapleColor, StapleDeck, color_lines, group_shared_tags, matching_staples, named_staple_decks,
     staple_colors_present, staple_decks, staple_identity, staple_percent, staple_type_line,
@@ -26,9 +27,9 @@ const STAPLES_TITLE: &str = "Staples";
 
 /// The "Why this commander?" block under a suggestion: folded under a chip
 /// in a list row (`foldable`), or open under a `chips-label` heading in a
-/// details sheet. It holds the shared oracle tags grouped by card role and
-/// one bullet per shared color, each left out when empty, and renders
-/// nothing when both are. Tag reveals use `describe_tag` and `on_examples`,
+/// details sheet. It holds the shared oracle tags grouped by card role, or
+/// [`deal::POPULAR_REASON`] when the commander shares none, then one bullet
+/// per shared color. Tag reveals use `describe_tag` and `on_examples`,
 /// else the screen's contexts.
 #[component]
 pub fn SuggestionReasons(
@@ -42,15 +43,14 @@ pub fn SuggestionReasons(
     let context_describe = try_use_context::<OtagDescribe>().map(|d| d.0);
     let context_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let colors = color_lines(&reasons.colors, deck_count);
-    if reasons.tags.is_empty() && colors.is_empty() {
-        return rsx! {};
-    }
     let shared = group_shared_tags(&reasons.tags);
     let describe_tag = describe_tag.or(context_describe);
     let on_examples = on_examples.or(context_examples);
     let bullets = rsx! {
         ul { class: "card-detail-bullets",
-            if !reasons.tags.is_empty() {
+            if reasons.tags.is_empty() {
+                li { {deal::POPULAR_REASON} }
+            } else {
                 li {
                     "Shares Oracle tags with your decks"
                     CardRoleChips {
