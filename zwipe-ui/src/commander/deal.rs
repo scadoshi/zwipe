@@ -33,6 +33,25 @@ pub enum Door {
     DeckCreation(Format),
 }
 
+/// `filter` as `door` deals under it: deck creation also holds every commander to its format's
+/// legality, joined to any legality the filter already asks for, since a commander the format
+/// doesn't allow can't lead the deck. Suggested has no deck format and takes `filter` as it is.
+#[must_use]
+pub fn door_filter(door: Door, filter: &CardQueryBuilder) -> CardQueryBuilder {
+    let mut dealt = filter.clone();
+    if let Door::DeckCreation(format) = door {
+        let mut legal_in: Vec<String> = dealt
+            .legalities_contains_all()
+            .map_or_else(Vec::new, <[String]>::to_vec);
+        let key = format.to_legality_key().to_owned();
+        if !legal_in.contains(&key) {
+            legal_in.push(key);
+        }
+        dealt.set_legalities_contains_all(legal_in);
+    }
+    dealt
+}
+
 /// The next page for `door` under the card `filter`, `limit` commanders long, leaving out the
 /// oracle ids in `dealt`; `None` once `dealt` holds [`MAX_DEAL_EXCLUDE`], past which the server
 /// would deal them again.
@@ -51,7 +70,7 @@ pub fn next_page(
         Door::DeckCreation(format) => (Some(format), true),
     };
     Some(HttpCommanderDeal {
-        filter: filter.build().ok(),
+        filter: door_filter(door, filter).build().ok(),
         format,
         offset: 0,
         limit,
@@ -111,6 +130,38 @@ mod tests {
         assert!(deck.keep_maybeboard);
         assert_eq!(deck.format, Some(Format::Brawl));
         assert_eq!(deck.limit, 25);
+    }
+
+    #[test]
+    fn deck_creation_deals_only_commanders_legal_in_its_format() {
+        let mut filter = CardQueryBuilder::new();
+        filter.set_legalities_contains_all(vec!["commander".to_owned()]);
+        let brawl = door_filter(Door::DeckCreation(Format::Brawl), &filter);
+        assert_eq!(
+            brawl.legalities_contains_all(),
+            Some(["commander".to_owned(), "brawl".to_owned()].as_slice()),
+            "the format joins what the user asked for"
+        );
+        let page = next_page(
+            Door::DeckCreation(Format::StandardBrawl),
+            &CardQueryBuilder::new(),
+            &[],
+            25,
+        )
+        .unwrap();
+        assert_eq!(
+            page.filter.and_then(|q| q
+                .criteria()
+                .legalities_contains_all()
+                .map(<[String]>::to_vec)),
+            Some(vec!["standardbrawl".to_owned()]),
+            "the server deals in the format's legality"
+        );
+        assert_eq!(
+            door_filter(Door::Suggested, &CardQueryBuilder::new()).legalities_contains_all(),
+            None,
+            "Suggested has no deck format"
+        );
     }
 
     #[test]

@@ -246,17 +246,18 @@ async fn deal_page(
 }
 
 /// `saved` narrowed to the commanders that lead a deck in `door`'s format (Commander for
-/// Suggested), by the format's commander rules as the deal applies them, and that `filter`
-/// matches. A filter that doesn't build narrows by the format alone.
+/// Suggested) by the format's commander rules, are legal in it where the door has a deck format,
+/// as the deal asks the server for, and that `filter` matches. A filter that doesn't build
+/// narrows by the format alone.
 fn maybeboard_matching(saved: Vec<Card>, filter: &CardQueryBuilder, door: Door) -> Vec<Card> {
     let format = match door {
         Door::Suggested => Format::Commander,
         Door::DeckCreation(format) => format,
     };
-    let mut narrowed = filter.clone();
+    let mut narrowed = deal::door_filter(door, filter);
     narrowed.set_is_commander_in_format(format);
     let criteria = narrowed.build_criteria().or_else(|_| {
-        let mut format_only = CardQueryBuilder::new();
+        let mut format_only = deal::door_filter(door, &CardQueryBuilder::new());
         format_only.set_is_commander_in_format(format);
         format_only.build_criteria()
     });
@@ -1105,6 +1106,8 @@ fn SwipeSelectBody(
 
 #[cfg(test)]
 mod tests {
+    use zwipe_core::domain::card::scryfall_data::legalities::LegalityKind;
+
     use super::*;
 
     /// A real card, as the API serves it.
@@ -1151,9 +1154,38 @@ mod tests {
             0,
             "but not in Brawl"
         );
-        let creature = commander("Legendary Creature — Human Wizard");
+        let mut creature = commander("Legendary Creature — Human Wizard");
+        creature.scryfall_data.legalities.brawl = Some(LegalityKind::Legal);
         assert_eq!(
             maybeboard_matching(vec![creature], &none, Door::DeckCreation(Format::Brawl)).len(),
+            1
+        );
+    }
+
+    #[test]
+    fn maybe_on_a_brawl_deck_drops_a_commander_not_legal_in_brawl() {
+        let mut meren = commander("Legendary Creature — Human Shaman");
+        meren.scryfall_data.name = "Meren of Clan Nel Toth".to_owned();
+        meren.scryfall_data.legalities.commander = Some(LegalityKind::Legal);
+        meren.scryfall_data.legalities.brawl = Some(LegalityKind::NotLegal);
+        meren.scryfall_data.legalities.standardbrawl = Some(LegalityKind::NotLegal);
+        let none = CardQueryBuilder::new();
+        assert_eq!(
+            maybeboard_matching(vec![meren.clone()], &none, Door::Suggested).len(),
+            1,
+            "Suggested has no deck format to hold it to"
+        );
+        for format in [Format::Brawl, Format::StandardBrawl] {
+            assert_eq!(
+                maybeboard_matching(vec![meren.clone()], &none, Door::DeckCreation(format)).len(),
+                0,
+                "{format:?}"
+            );
+        }
+        let mut legal = commander("Legendary Creature — Human Wizard");
+        legal.scryfall_data.legalities.brawl = Some(LegalityKind::Legal);
+        assert_eq!(
+            maybeboard_matching(vec![legal], &none, Door::DeckCreation(Format::Brawl)).len(),
             1
         );
     }
