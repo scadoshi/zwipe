@@ -620,6 +620,36 @@ fn a_failed_next_page_leaves_the_cards_still_showing() {
 }
 
 #[test]
+fn a_page_that_lands_after_a_failed_one_clears_the_failure() {
+    let mut state = loaded(&full_page());
+    let ticket = (0..20)
+        .filter_map(|_| {
+            let effects = state.update(Action::Skip);
+            effects
+                .iter()
+                .any(|e| matches!(e, Effect::LoadMore { .. }))
+                .then(|| ticket_of(&effects))
+        })
+        .last()
+        .unwrap();
+    let _ = state.update(Action::Failed { ticket });
+    assert_eq!(state.status(), Status::Loaded);
+    let ticket = ticket_of(&state.update(Action::Skip));
+    let _ = state.update(Action::Found {
+        ticket,
+        cards: Vec::new(),
+    });
+    for _ in 0..5 {
+        let _ = state.update(Action::Skip);
+    }
+    assert_eq!(
+        state.status(),
+        Status::Empty,
+        "the pile ran out after a page landed: no load failed"
+    );
+}
+
+#[test]
 fn retry_with_nothing_failed_does_nothing() {
     let mut state = loaded(&cards(&["Krenko"]));
     assert_eq!(state.update(Action::Retry), Vec::new());

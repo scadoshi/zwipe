@@ -332,6 +332,7 @@ fn land_deal(pile: &Pile, reply: Result<Option<Vec<HttpCommanderSuggestion>>, ()
         }
     };
     searched.set(true);
+    failed.set(false);
     exhausted.set(deal::is_last_page(page.len(), PAGE_SIZE));
     let cards: Vec<Card> = page.iter().map(|s| s.card.clone()).collect();
     if first {
@@ -494,6 +495,7 @@ pub fn SwipeSelect(
                     failed.set(true);
                     break;
                 };
+                failed.set(false);
                 if found.is_empty() {
                     exhausted.set(true);
                     // The cursor waits past the last card: the pile has run out.
@@ -1172,7 +1174,7 @@ mod tests {
     }
 
     #[test]
-    fn a_failed_deal_marks_the_pile_failed_and_a_dealt_page_does_not() {
+    fn a_failed_deal_marks_the_pile_failed_and_a_landed_page_clears_it() {
         let mut dom = VirtualDom::new(EmptyPile);
         dom.rebuild_in_place();
         let pile = PILE.with(std::cell::Cell::get).expect("mounted");
@@ -1184,6 +1186,11 @@ mod tests {
             "a 500 on the deal says so with a Retry, not a ghost"
         );
         assert!(dom.in_runtime(|| pile.stack.peek().is_empty()));
+        dom.in_runtime(|| land_deal(&pile, Ok(Some(Vec::new())), /* first */ false));
+        assert!(
+            !dom.in_runtime(|| *pile.failed.peek()),
+            "a later page that lands clears the failure"
+        );
     }
 
     /// A real card, as the API serves it.

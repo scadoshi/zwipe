@@ -522,11 +522,12 @@ impl State {
         self.pile = pile;
     }
 
-    /// Lands a page: the first one replaces the pile, a next one joins it. A page the host's exclusions or the pile's own cards empty pulls the next, up to [`PAGE_PULLS`] per load more.
+    /// Lands a page, which clears an earlier failure: the first one replaces the pile, a next one joins it. A page the host's exclusions or the pile's own cards empty pulls the next, up to [`PAGE_PULLS`] per load more.
     fn found(&mut self, ticket: Ticket, cards: Vec<Card>) -> Vec<Effect> {
         let raw_empty = cards.is_empty();
         match self.take(ticket) {
             Some(Pending::Search) => {
+                self.failed = false;
                 let page = self.without_excluded(cards);
                 if raw_empty {
                     self.exhausted = true;
@@ -540,6 +541,7 @@ impl State {
                 Vec::new()
             }
             Some(Pending::More { pulls }) => {
+                self.failed = false;
                 if raw_empty {
                     self.exhausted = true;
                     return Vec::new();
