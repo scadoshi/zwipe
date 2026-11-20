@@ -115,9 +115,7 @@ impl Mode {
     /// Adds this mode's constraint to `builder`. The suggested pile never searches, so it adds none.
     fn apply(&self, builder: &mut CardQueryBuilder) {
         match self {
-            Self::Commander(format) => {
-                builder.set_is_commander_in_format(*format);
-            }
+            Self::Commander(format) => form::narrow_to_commanders(builder, *format),
             Self::Partner(commander) => form::narrow_to_partners(builder, commander.as_deref()),
             Self::Background => {
                 builder.set_is_background(true);
