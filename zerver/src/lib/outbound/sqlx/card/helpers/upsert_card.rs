@@ -232,9 +232,41 @@ async fn upsert_one_in_savepoint(
     }
 }
 
-/// The `scryfall_data` columns a clash may name and be looked up by: each one Postgres holds
-/// unique, plus the store ids a clash could plausibly name.
-const CLASH_COLUMNS: &[&str] = &["id", "mtgo_id", "mtgo_foil_id", "arena_id", "tcgplayer_id"];
+/// The `scryfall_data` columns a clash may name and be looked up by, each with its type, so the
+/// lookup compares in that type and its index serves it: each column Postgres holds unique, plus
+/// the store ids a clash could plausibly name.
+const CLASH_COLUMNS: &[(&str, &str)] = &[
+    ("id", "uuid"),
+    ("mtgo_id", "integer"),
+    ("mtgo_foil_id", "integer"),
+    ("arena_id", "integer"),
+    ("tcgplayer_id", "integer"),
+];
+
+/// The printing whose `column` holds `value`, as its id and name. The lookup runs in its own
+/// savepoint, so a failure, which reads as no holder, never aborts the sync's transaction.
+async fn fetch_holder(
+    tx: &mut PgTransaction<'_>,
+    column: &str,
+    kind: &str,
+    value: &str,
+) -> Option<(Uuid, String)> {
+    let mut savepoint = tx.begin().await.ok()?;
+    // The column and its type come from CLASH_COLUMNS, never from the error text.
+    let sql =
+        format!("SELECT id, name FROM scryfall_data WHERE {column} = CAST($1 AS {kind}) LIMIT 1");
+    let holder = sqlx::query_as(sqlx::AssertSqlSafe(sql))
+        .bind(value)
+        .fetch_optional(&mut *savepoint)
+        .await;
+    if let Ok(found) = holder {
+        savepoint.commit().await.ok()?;
+        found
+    } else {
+        savepoint.rollback().await.ok()?;
+        None
+    }
+}
 
 /// The column and value in a unique violation's detail, `Key (mtgo_id)=(777) already exists.`
 fn clash_of(detail: &str) -> Option<(&str, &str)> {
@@ -259,17 +291,10 @@ async fn label_clash(error: CreateCardError, tx: &mut PgTransaction<'_>) -> Crea
     let Some((column, value)) = detail.as_deref().and_then(clash_of) else {
         return error;
     };
-    let Some(&column) = CLASH_COLUMNS.iter().find(|c| **c == column) else {
+    let Some(&(column, kind)) = CLASH_COLUMNS.iter().find(|(c, _)| *c == column) else {
         return error;
     };
-    // The column comes from CLASH_COLUMNS, never from the error text.
-    let sql = format!("SELECT id, name FROM scryfall_data WHERE {column}::text = $1 LIMIT 1");
-    let holder: Option<(Uuid, String)> = sqlx::query_as(sqlx::AssertSqlSafe(sql))
-        .bind(value)
-        .fetch_optional(&mut **tx)
-        .await
-        .ok()
-        .flatten();
+    let holder = fetch_holder(tx, column, kind, value).await;
     CreateCardError::Clash {
         column: column.to_string(),
         value: value.to_string(),
