@@ -1,7 +1,9 @@
 //! Where the card search's results page was, kept for Back: each text's loaded pages
 //! ([`Kept`]) and how far its list was scrolled, so returning from a card opens on the same
-//! cards at the same place, the keyboard cursor on its card. The last [`KEPT_TEXTS`] texts are
-//! kept for the visit, in memory only.
+//! cards at the same place, the keyboard cursor on its card. Only Back finds a place: the card
+//! search forgets a text's place when it submits the text ([`forget`]), and a place counts only
+//! under the sign-in it was made under, which decides what the lookup answers. The last
+//! [`KEPT_TEXTS`] texts are kept for the visit, in memory only.
 
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -17,19 +19,38 @@ pub struct KeptPlace {
     pub kept: Kept,
     /// How far the list was scrolled.
     pub scroll: f64,
+    /// Whether the results were looked up signed in.
+    pub signed_in: bool,
 }
 
 /// The kept places, oldest first.
 static KEPT: GlobalSignal<Vec<KeptPlace>> = Signal::global(Vec::new);
 
-/// The place kept for `query`, if any.
+/// The place kept for `query` looked up signed in or not (`signed_in`), if any.
 #[must_use]
-pub fn kept_for(query: &str) -> Option<KeptPlace> {
+pub fn kept_for(query: &str, signed_in: bool) -> Option<KeptPlace> {
+    find_in(&KEPT.peek(), query, signed_in)
+}
+
+/// [`kept_for`] over `places`.
+fn find_in(places: &[KeptPlace], query: &str, signed_in: bool) -> Option<KeptPlace> {
     let query = query.trim();
-    KEPT.peek()
+    places
         .iter()
-        .find(|place| place.kept.query() == query)
+        .find(|place| place.kept.query() == query && place.signed_in == signed_in)
         .cloned()
+}
+
+/// Forgets the place kept for `query`, as the card search submits it: a fresh search starts at
+/// the top on a fresh lookup.
+pub fn forget(query: &str) {
+    forget_in(&mut KEPT.write(), query);
+}
+
+/// [`forget`] over `places`.
+fn forget_in(places: &mut Vec<KeptPlace>, query: &str) {
+    let query = query.trim();
+    places.retain(|place| place.kept.query() != query);
 }
 
 /// Keeps `place`, in place of any place for the same text, dropping the oldest past
@@ -200,6 +221,7 @@ mod tests {
             KeptPlace {
                 kept: kept("a"),
                 scroll: 100.0,
+                signed_in: false,
             },
         );
         keep_in(
@@ -207,6 +229,7 @@ mod tests {
             KeptPlace {
                 kept: kept("a"),
                 scroll: 900.0,
+                signed_in: false,
             },
         );
         assert_eq!(places.len(), 1, "one place per text");
@@ -220,6 +243,7 @@ mod tests {
                 KeptPlace {
                     kept: kept(query),
                     scroll: 0.0,
+                    signed_in: false,
                 },
             );
         }
@@ -228,6 +252,40 @@ mod tests {
             places.iter().all(|place| place.kept.query() != "a"),
             "the oldest went"
         );
+    }
+
+    #[test]
+    fn a_fresh_submit_forgets_its_text_s_place() {
+        let mut places = Vec::new();
+        keep_in(
+            &mut places,
+            KeptPlace {
+                kept: kept("bolt"),
+                scroll: 5486.0,
+                signed_in: true,
+            },
+        );
+        assert!(find_in(&places, "bolt", true).is_some());
+        forget_in(&mut places, " bolt ");
+        assert!(find_in(&places, "bolt", true).is_none());
+    }
+
+    #[test]
+    fn a_place_is_kept_only_for_the_sign_in_it_was_made_under() {
+        let mut places = Vec::new();
+        keep_in(
+            &mut places,
+            KeptPlace {
+                kept: kept("bolt"),
+                scroll: 0.0,
+                signed_in: true,
+            },
+        );
+        assert!(
+            find_in(&places, "bolt", false).is_none(),
+            "signed out, the lookup may answer other cards"
+        );
+        assert!(find_in(&places, "bolt", true).is_some());
     }
 
     #[test]

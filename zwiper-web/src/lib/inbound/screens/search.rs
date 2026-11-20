@@ -156,7 +156,12 @@ pub fn Search(q: String) -> Element {
     let mut scroll = use_signal(|| 0.0_f64);
     use_results_scroll(Callback::new(move |y: f64| scroll.set(y)));
     use_effect(use_reactive!(|q| {
-        if let Some(place) = results_place::kept_for(&q) {
+        let signed_in = driver
+            .session
+            .peek()
+            .as_ref()
+            .is_some_and(|s| !s.is_expired());
+        if let Some(place) = results_place::kept_for(&q, signed_in) {
             dispatch(Action::Resume(place.kept));
             results_place::restore_place(place.scroll);
         } else {
@@ -168,6 +173,11 @@ pub fn Search(q: String) -> Element {
             results_place::keep(KeptPlace {
                 kept,
                 scroll: *scroll.peek(),
+                signed_in: driver
+                    .session
+                    .peek()
+                    .as_ref()
+                    .is_some_and(|s| !s.is_expired()),
             });
         }
     });
