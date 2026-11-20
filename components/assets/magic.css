@@ -3923,6 +3923,7 @@ footer.site-footer .site-footer-note {
     line-height: inherit;
     cursor: pointer;
     animation: card-search-chip-in 0.25s ease-out both;
+    border-radius: var(--radius-control);
 }
 
 /* The match the arrow keys light, or the only one, which Enter opens. */
@@ -3979,6 +3980,7 @@ nav:has(> .card-search-nav) > .nav-panel {
     height: 100%;
     padding: 0;
     cursor: pointer;
+    border-radius: var(--radius-control);
 }
 
 .card-search-slot {
