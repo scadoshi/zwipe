@@ -215,3 +215,20 @@ fn the_glass_keeps_its_neighbors_own_box() {
         }
     }
 }
+
+#[test]
+fn a_finger_gets_the_glass_s_44px_tap_box_as_its_neighbors_do() {
+    let base = include_str!("../assets/screens/base.css");
+    let (_, coarse) = base
+        .split_once("@media (pointer: coarse) {")
+        .unwrap_or_else(|| panic!("the touch block"));
+    for opening in [
+        ":where(button, [role=\"button\"], .chip, .chip-xs, a.nav-cta, a.panel-action, a.nav-brand, .card-search-label) {",
+        ":is(button, [role=\"button\"], .chip, .chip-xs, a.nav-cta, a.panel-action, a.nav-brand, .card-search-label)::after {",
+    ] {
+        assert!(
+            coarse.contains(opening),
+            "the glass, a label, joins the tap box: {opening}"
+        );
+    }
+}

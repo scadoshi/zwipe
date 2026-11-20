@@ -4007,7 +4007,6 @@ nav:has(> .card-search-nav) > .nav-panel {
     height: 100%;
 }
 
-
 /* Where the nav leaves the box too little room for its placeholder, the
    chip rests alone; the box stays in the page, out of sight, so the chip's
    click and `/` still put the cursor in it. */
