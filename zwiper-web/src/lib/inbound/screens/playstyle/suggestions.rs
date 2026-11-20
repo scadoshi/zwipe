@@ -450,13 +450,15 @@ pub(crate) fn SuggestedFold(
         // what gets swiped.
         CardListFold {
             title,
+            hint: rsx! {
+                InfoButton { topic: HintTopic::SuggestionList }
+            },
             actions: rsx! {
                 Button {
                     variant: ButtonVariant::Action,
                     onclick: move |_| swipe_open.set(true),
                     "Swipe"
                 }
-                InfoButton { topic: HintTopic::SuggestionList }
             },
             if let Some(line) = line {
                 div { class: "activity-total activity-total-group",

@@ -191,7 +191,7 @@ pub fn StaplesPanel(
             div { class: "deck-controls", {filters} }
             CardListFold {
                 title: STAPLES_TITLE,
-                actions: rsx! {
+                hint: rsx! {
                     InfoButton { topic: HintTopic::SuggestionStaples }
                 },
                 if rows.is_empty() {

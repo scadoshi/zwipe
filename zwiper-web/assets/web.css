@@ -2223,6 +2223,12 @@ body {
     margin: 0;
 }
 
+/* The Suggested console's Show row keeps a chip row's gap over the list, as
+   the Maybeboard's rows beside it do. */
+.web-suggested > .deck-controls {
+    margin-bottom: var(--space-2);
+}
+
 /* The app's column: the list's controls and the list. A wide window gives
    it the page's width, the list and Danger zone as full panels. */
 .web-maybeboard,

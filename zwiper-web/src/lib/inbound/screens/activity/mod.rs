@@ -86,7 +86,7 @@ fn ActivitySkeleton() -> Element {
                 div { class: "maybeboard-list card-group row-enter",
                     div { class: "card-group-header card-group-header-with-hint",
                         span { GhostText { chars: 12 } }
-                        GhostHint {}
+                        span { class: "card-list-fold-hint", GhostHint {} }
                     }
                     for i in 0..10 {
                         div { key: "{i}", class: "skeleton-card-row web-ghost-card-row",

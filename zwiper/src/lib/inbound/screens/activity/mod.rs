@@ -143,7 +143,9 @@ fn ActivitySkeleton() -> Element {
             div { class: "maybeboard-list card-group row-enter",
                 div { class: "card-group-header card-group-header-with-hint",
                     div { class: "skeleton-bar skeleton-card-bar-header-wide" }
-                    div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
+                    span { class: "card-list-fold-hint",
+                        div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
+                    }
                 }
                 for i in 0..10 {
                     div { key: "{i}", class: "skeleton-card-row",
