@@ -1143,7 +1143,7 @@ pub static GUIDES: &[Guide] = &[
                 "Tap a role chip to see the Oracle tags under it. A trailing \"Other tags\" chip holds tags that fall under no role.",
             ),
             Block::Image {
-                file: "card-roles/01-role-chips.webp",
+                file: "card-roles/01-role-chips-2.webp",
                 alt: "An expanded card row with its Card roles chips, one opened to its Oracle tags",
                 caption: None,
             },
@@ -1181,7 +1181,7 @@ pub static GUIDES: &[Guide] = &[
                 "You never assign card roles; they're computed from a card's Oracle tags and shown as chips (Removal, Ramp, Card advantage) when you expand a card's row or open its rules. Tap a role to see the Oracle tags under it. You can filter the stack by role.",
             ),
             Block::Image {
-                file: "tags-roles-and-oracle-tags/02-role-to-oracle-tags.webp",
+                file: "tags-roles-and-oracle-tags/02-role-to-oracle-tags-2.webp",
                 alt: "A card's row expanded: its card roles, with Ramp tapped to show the Oracle tags under it",
                 caption: None,
             },
