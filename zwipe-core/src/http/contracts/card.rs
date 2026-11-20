@@ -6,17 +6,21 @@ use std::collections::BTreeSet;
 use serde::{Deserialize, Serialize};
 
 use crate::domain::card::models::card_role::CardRole;
-use crate::domain::card::models::lookup::{CardTypeWord, LookupName, MAX_LOOKUP_CHIPS};
+use crate::domain::card::models::lookup::{
+    CardTypeWord, LookupName, MAX_LOOKUP_CHIPS, MAX_LOOKUP_OFFSET,
+};
 use crate::domain::card::models::scryfall_data::colors::Color;
 use crate::domain::card::models::search_card::card_filter;
 
 /// The body of `POST /api/card/lookup`, a card search open to signed-out callers.
 ///
 /// It names only what to match: a name and the filter's type, color and role chips, each one
-/// optional, the name included (left out, it's the empty name). Limits,
-/// offsets, sorts and every other search field are refused as unknown, and the server builds the
-/// query itself. Each list holds at most [`MAX_LOOKUP_CHIPS`] values, and a lookup names at least
-/// one thing to match. Colors are kept once each, in WUBRG order.
+/// optional, the name included (left out, it's the empty name), and, for a client that pages, the
+/// offset of the page it wants. With no offset the server answers the first [`LOOKUP_LIMIT`](crate::domain::card::models::lookup::LOOKUP_LIMIT)
+/// cards, as it did before lookups paged; with one, [`LOOKUP_PAGE`](crate::domain::card::models::lookup::LOOKUP_PAGE) cards from there, at most
+/// [`MAX_LOOKUP_OFFSET`] in. Limits, sorts and every other search field are refused as unknown,
+/// and the server builds the query itself. Each list holds at most [`MAX_LOOKUP_CHIPS`] values,
+/// and a lookup names at least one thing to match. Colors are kept once each, in WUBRG order.
 ///
 /// Unlike other requests, unknown fields are refused: an old server refuses a newer client's
 /// body with a 422, so a new field ships on the server before any client sends it.
@@ -27,6 +31,8 @@ pub struct HttpCardLookup {
     types: Vec<CardTypeWord>,
     colors: Vec<Color>,
     card_roles: Vec<CardRole>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    offset: Option<u32>,
 }
 
 /// The wire shape before the lookup's own checks.
@@ -41,6 +47,8 @@ struct RawCardLookup {
     colors: Vec<Color>,
     #[serde(default)]
     card_roles: Vec<CardRole>,
+    #[serde(default)]
+    offset: Option<u32>,
 }
 
 /// A lookup that can't be run: a list past [`MAX_LOOKUP_CHIPS`], or nothing to match.
@@ -58,6 +66,9 @@ pub enum InvalidCardLookup {
     /// No name and no chips.
     #[error("a lookup needs a name, a type, a color or a role")]
     Nothing,
+    /// An offset past the last page a lookup reaches.
+    #[error("an offset of at most {MAX_LOOKUP_OFFSET}")]
+    TooFar,
 }
 
 impl HttpCardLookup {
@@ -94,7 +105,24 @@ impl HttpCardLookup {
             types,
             colors: colors.into_iter().collect(),
             card_roles,
+            offset: None,
         })
+    }
+
+    /// This lookup asking for the page from `offset`, at most [`MAX_LOOKUP_OFFSET`] in.
+    #[must_use]
+    pub fn paged(self, offset: u32) -> Self {
+        Self {
+            offset: Some(offset.min(MAX_LOOKUP_OFFSET)),
+            ..self
+        }
+    }
+
+    /// The offset of the page asked for: `None` for the first [`LOOKUP_LIMIT`](crate::domain::card::models::lookup::LOOKUP_LIMIT) cards of a client
+    /// that doesn't page.
+    #[must_use]
+    pub fn offset(&self) -> Option<u32> {
+        self.offset
     }
 
     /// The name to match; empty matches every name.
@@ -126,7 +154,12 @@ impl TryFrom<RawCardLookup> for HttpCardLookup {
     type Error = InvalidCardLookup;
 
     fn try_from(raw: RawCardLookup) -> Result<Self, Self::Error> {
-        Self::try_new(raw.name, raw.types, raw.colors, raw.card_roles)
+        let lookup = Self::try_new(raw.name, raw.types, raw.colors, raw.card_roles)?;
+        match raw.offset {
+            Some(offset) if offset > MAX_LOOKUP_OFFSET => Err(InvalidCardLookup::TooFar),
+            Some(offset) => Ok(lookup.paged(offset)),
+            None => Ok(lookup),
+        }
     }
 }
 
@@ -221,10 +254,9 @@ mod tests {
     }
 
     #[test]
-    fn a_limit_offset_sort_or_any_other_field_is_refused() {
+    fn a_limit_sort_or_any_other_field_is_refused() {
         for field in [
             "limit",
-            "offset",
             "order_by",
             "direction",
             "synergy",
@@ -235,6 +267,27 @@ mod tests {
             let error = read(body).unwrap_err();
             assert!(error.contains("unknown field"), "{field}: {error}");
         }
+    }
+
+    #[test]
+    fn an_offset_reads_and_none_means_the_first_lookup_as_before() {
+        let plain = read(json!({ "name": "bolt" })).unwrap();
+        assert_eq!(plain.offset(), None);
+        assert_eq!(
+            serde_json::to_value(&plain).unwrap(),
+            json!({ "name": "bolt", "types": [], "colors": [], "card_roles": [] }),
+            "a lookup with no offset sends none, so a server before it reads the body"
+        );
+        let paged = read(json!({ "name": "bolt", "offset": 40 })).unwrap();
+        assert_eq!(paged.offset(), Some(40));
+        assert_eq!(serde_json::to_value(&paged).unwrap()["offset"], json!(40));
+        assert_eq!(plain.paged(20).offset(), Some(20));
+    }
+
+    #[test]
+    fn an_offset_past_the_last_page_a_caller_could_reach_is_refused() {
+        assert!(read(json!({ "name": "bolt", "offset": MAX_LOOKUP_OFFSET })).is_ok());
+        assert!(read(json!({ "name": "bolt", "offset": MAX_LOOKUP_OFFSET + 1 })).is_err());
     }
 
     #[test]
