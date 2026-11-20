@@ -442,7 +442,7 @@ pub(crate) fn SwipeSelect(
                 ::components::GridCells { still: true }
             }
             if open() {
-                ScreenHeader { title, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
+                ScreenHeader { title, hint: hint_open, back: move |()| driver.dispatch(Action::Back), search: false }
 
                 div { class: "screen-content card-swipe content-enter",
                     SwipeConfirmChip { said: driver.said, at_end: status == Status::Empty }

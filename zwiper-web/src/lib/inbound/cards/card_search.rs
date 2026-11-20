@@ -14,6 +14,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::http::contracts::card::HttpCardLookup;
 use zwipe_ui::screens::card_search::{Destination, Failure};
 
+use crate::inbound::chrome::media::NAV_FOLD_MAX_PX;
 use crate::inbound::router::Route;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::outbound::timer;
@@ -73,8 +74,10 @@ pub fn route_of(to: Destination) -> Option<Route> {
     }
 }
 
-/// Where the nav folds (media.rs's `NAV_FOLD_MAX_PX`), the card search is the header's.
-const HEADER_MEDIA: &str = "(max-width: 1179px)";
+/// Where the nav folds, the card search is the header's.
+fn header_media() -> String {
+    format!("(max-width: {NAV_FOLD_MAX_PX}px)")
+}
 
 /// The nav's card search: the chip and the box on a wide window, the chip alone in the header
 /// below the nav's fold, where a tap opens the box across the header.
@@ -86,7 +89,7 @@ pub fn NavSearch() -> Element {
             model: search.model(),
             on_action: Callback::new(move |action| search.dispatch(action)),
             input_id: NAV_SEARCH_ID,
-            header_media: HEADER_MEDIA,
+            header_media: header_media(),
         }
     }
 }

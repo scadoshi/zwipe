@@ -21,12 +21,15 @@ use crate::inbound::router::Router;
 ///
 /// Omit `hint` for screens without a hint dialog (the `?` isn't rendered).
 /// Pass `back` on a screen below a section: the left corner then shows a back
-/// arrow that calls it; without it the corner is empty.
+/// arrow that calls it; without it the corner is empty. `search: false` leaves
+/// the card search's chip out, for a picker that opens as a screen over
+/// another, whose own header stays mounted under it.
 #[component]
 pub fn ScreenHeader(
     title: String,
     hint: Option<Signal<bool>>,
     back: Option<Callback<()>>,
+    #[props(default = true)] search: bool,
 ) -> Element {
     let route: Router = use_route();
     let mut open = use_context::<MenuOpen>().0;
@@ -60,7 +63,7 @@ pub fn ScreenHeader(
                             BackArrow {}
                         }
                     }
-                    if signed_in {
+                    if signed_in && search {
                         HeaderSearch {}
                     }
                 },

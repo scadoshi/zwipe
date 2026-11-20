@@ -79,7 +79,7 @@ pub(crate) fn FormatSelect(
                 ::components::GridCells { still: true }
             }
             if open() {
-                ScreenHeader { title: Picker::Format.title(), hint: hint_open, back: move |()| back.call(()) }
+                ScreenHeader { title: Picker::Format.title(), hint: hint_open, back: move |()| back.call(()), search: false }
 
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
