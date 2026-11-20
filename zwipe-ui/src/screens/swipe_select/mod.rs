@@ -588,8 +588,9 @@ impl State {
         }]
     }
 
-    /// Lands a page of the ranking: the first one replaces the pile, a next one joins it, keeping
-    /// each card's reasons. A short page ends the pile; a failed first page fails it.
+    /// Lands a page of the ranking, which clears an earlier failure: the first one replaces the
+    /// pile, a next one joins it, keeping each card's reasons. A short page ends the pile; a failed
+    /// page, first or next, fails it, so a pile that runs out on one says so with Retry.
     fn dealt_page(
         &mut self,
         ticket: Ticket,
@@ -597,12 +598,15 @@ impl State {
     ) -> Vec<Effect> {
         let pending = self.take(ticket);
         let Ok(page) = reply else {
-            if pending == Some(Pending::Search) {
+            if matches!(pending, Some(Pending::Search | Pending::More { .. })) {
                 self.failed = true;
             }
             return Vec::new();
         };
         let cards: Vec<Card> = page.suggestions.iter().map(|s| s.card.clone()).collect();
+        if matches!(pending, Some(Pending::Search | Pending::More { .. })) {
+            self.failed = false;
+        }
         match pending {
             Some(Pending::Search) => {
                 self.exhausted = deal::is_last_page(cards.len(), PAGE_SIZE);
@@ -678,7 +682,14 @@ impl State {
         if !self.failed || self.status() == Status::Loading {
             return Vec::new();
         }
-        if self.offset == 0 {
+        // A search pile has dealt a page once its offset moved; the suggested pile never moves its
+        // offset, since each page leaves out what was dealt, so it has once it holds cards.
+        let dealt = if self.mode == Some(Mode::Suggested) {
+            !self.stack.is_empty()
+        } else {
+            self.offset != 0
+        };
+        if !dealt {
             return self.deal();
         }
         self.failed = false;
@@ -900,7 +911,8 @@ impl State {
         }
     }
 
-    /// The line in place of the card when the pile holds nothing: the host's suggested pile with nothing under its Show chip, "No Jeskai commanders in your top 100", or a search that dealt no card, [`empty_pile_line`].
+    /// The line in place of the card when the pile holds nothing: the saved commanders' line on the
+    /// From chip's Maybe pile, or a pile that dealt no card, [`empty_pile_line`].
     #[must_use]
     pub fn message(&self) -> Option<String> {
         if self.on_maybe() {

@@ -1239,3 +1239,61 @@ fn every_fresh_open_starts_on_search_with_its_own_filter() {
     );
     let _ = ticket;
 }
+
+/// A suggested overlay that dealt a full first page and was swiped to its end: the ticket of the
+/// next page still out as the last card goes.
+fn suggested_swiped_to_the_end(state: &mut State) -> Ticket {
+    let first: Vec<HttpCommanderSuggestion> = (0..PAGE_SIZE)
+        .map(|i| suggestion(&format!("Commander {i}")))
+        .collect();
+    *state = suggested(first);
+    let mut out = None;
+    while state.current().is_some() {
+        let effects = state.update(Action::Skip);
+        if effects
+            .iter()
+            .any(|e| matches!(e, Effect::DealCommanders { .. }))
+        {
+            out = Some(deal_of(&effects).0);
+        }
+    }
+    out.expect("a full page asks for more as it runs low")
+}
+
+#[test]
+fn a_failed_next_suggested_page_with_no_card_left_shows_failed_and_retry_deals_on() {
+    let mut state = State::new();
+    let ticket = suggested_swiped_to_the_end(&mut state);
+    assert_eq!(state.status(), Status::Loading);
+    let _ = state.update(Action::Dealt {
+        ticket,
+        reply: Err(()),
+    });
+    assert_eq!(state.status(), Status::Failed, "Couldn't load, not spent");
+    let effects = state.update(Action::Retry);
+    let (_, request) = deal_of(&effects);
+    assert_eq!(
+        request.exclude.len(),
+        usize::try_from(PAGE_SIZE).unwrap(),
+        "the next page after every card swiped, not a fresh deal from the top"
+    );
+}
+
+#[test]
+fn a_failed_suggested_page_then_one_that_lands_ends_empty() {
+    let mut state = State::new();
+    let ticket = suggested_swiped_to_the_end(&mut state);
+    let _ = state.update(Action::Dealt {
+        ticket,
+        reply: Err(()),
+    });
+    let (ticket, _) = deal_of(&state.update(Action::Retry));
+    let _ = state.update(dealt(ticket, vec![suggestion("Talrand")]));
+    assert_eq!(names(state.window()), ["Talrand"]);
+    let _ = state.update(Action::Skip);
+    assert_eq!(
+        state.status(),
+        Status::Empty,
+        "a page that lands clears the failure"
+    );
+}
