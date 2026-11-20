@@ -108,6 +108,7 @@ mod pressable;
 mod printing_face;
 mod printing_sheet;
 pub mod render_count;
+pub mod results_place;
 mod role_tags;
 pub mod screen_return;
 mod screen_task;

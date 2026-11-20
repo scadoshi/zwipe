@@ -251,3 +251,55 @@ fn a_new_text_drops_a_next_page_still_out() {
     assert_eq!(state.status(), Status::Loading);
     assert_eq!(state.cards().len(), 0);
 }
+
+#[test]
+fn a_page_of_results_keeps_its_loaded_pages_and_resumes_on_them() {
+    let mut state = first_page();
+    let effects = state.update(Action::LoadMore);
+    let [Effect::Lookup { ticket, .. }] = effects.as_slice() else {
+        panic!("one lookup: {effects:?}");
+    };
+    let _ = state.update(Action::Loaded {
+        ticket: *ticket,
+        cards: many("Second", 20),
+    });
+    let kept = state.kept().expect("results to keep");
+    assert_eq!(kept.query(), "a");
+
+    let mut back = State::new();
+    assert_eq!(back.update(Action::Resume(kept)), [], "nothing to look up");
+    assert_eq!(back.status(), Status::Several);
+    assert_eq!(back.cards().len(), 40);
+    assert_eq!(back.query(), "a");
+    let effects = back.update(Action::LoadMore);
+    let [Effect::Lookup { lookup, .. }] = effects.as_slice() else {
+        panic!("one lookup: {effects:?}");
+    };
+    assert_eq!(
+        lookup.offset(),
+        Some(40),
+        "the next page after what it kept"
+    );
+}
+
+#[test]
+fn only_shown_results_are_kept() {
+    let mut state = State::new();
+    assert!(state.kept().is_none(), "nothing loaded");
+    let _ = loading(&mut state, "a");
+    assert!(state.kept().is_none(), "still loading");
+}
+
+#[test]
+fn spent_results_resume_spent() {
+    let mut state = State::new();
+    let (ticket, _) = loading(&mut state, "a");
+    let _ = state.update(Action::Loaded {
+        ticket,
+        cards: many("Only", 7),
+    });
+    let mut back = State::new();
+    let _ = back.update(Action::Resume(state.kept().unwrap()));
+    assert!(!back.has_more());
+    assert_eq!(back.update(Action::LoadMore), []);
+}

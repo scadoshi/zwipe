@@ -4,6 +4,7 @@
 //! only one card matches opens that card's page in this page's place.
 
 use components::list_end::{ListEnd, use_list_end};
+use components::results_place::{self, KeptPlace, use_results_scroll};
 use components::{CardResultsGrid, CardResultsGridGhost, LoadFailed};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -73,8 +74,26 @@ pub fn Search(q: String) -> Element {
     };
     let dispatch = move |action: Action| driver.dispatch(action);
 
-    // Looks up on mount and again whenever the route's text changes in place.
-    use_effect(use_reactive!(|q| dispatch(Action::Load(q))));
+    // Back from a card finds the results it kept, every page loaded, scrolled where they were;
+    // anything else looks the text up.
+    let mut scroll = use_signal(|| 0.0_f64);
+    use_results_scroll(Callback::new(move |y: f64| scroll.set(y)));
+    use_effect(use_reactive!(|q| {
+        if let Some(place) = results_place::kept_for(&q) {
+            dispatch(Action::Resume(place.kept));
+            results_place::restore_place(place.scroll);
+        } else {
+            dispatch(Action::Load(q));
+        }
+    }));
+    use_drop(move || {
+        if let Some(kept) = driver.model.peek().kept() {
+            results_place::keep(KeptPlace {
+                kept,
+                scroll: *scroll.peek(),
+            });
+        }
+    });
 
     let state = driver.model.read();
     let status = state.status();
