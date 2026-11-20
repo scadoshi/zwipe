@@ -1319,15 +1319,16 @@ html.js:not(.splash-skip).splash-over .splash {
    On a touch screen every control answers a tap 44px across, however
    small it draws: a box centered on it, at least 44px each way, takes the
    tap without changing how it looks (the store and theme icons, the
-   hamburger, the toast's close, chips and buttons). `:where` keeps a
-   control that sets its own position where it is. The expanded row's -
-   and + stand apart, so a tap meant for one never lands on the other. */
+   hamburger, the toast's close, chips and buttons, and the card search's
+   glass, a label for its box). `:where` keeps a control that sets its
+   own position where it is. The expanded row's - and + stand apart, so a
+   tap meant for one never lands on the other. */
 @media (pointer: coarse) {
-    :where(button, [role="button"], .chip, .chip-xs, a.nav-cta, a.panel-action, a.nav-brand) {
+    :where(button, [role="button"], .chip, .chip-xs, a.nav-cta, a.panel-action, a.nav-brand, .card-search-label) {
         position: relative;
     }
 
-    :is(button, [role="button"], .chip, .chip-xs, a.nav-cta, a.panel-action, a.nav-brand)::after {
+    :is(button, [role="button"], .chip, .chip-xs, a.nav-cta, a.panel-action, a.nav-brand, .card-search-label)::after {
         content: "";
         position: absolute;
         top: 50%;

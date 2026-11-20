@@ -43,3 +43,20 @@ fn folded_the_glass_is_the_persistent_store_icons_size() {
         "and its glyph the store glyphs' size"
     );
 }
+
+#[test]
+fn a_finger_gets_the_glass_s_44px_tap_box_as_the_store_icons_do() {
+    let css = include_str!("../assets/style.css");
+    let (_, coarse) = css
+        .split_once("@media (pointer: coarse) {")
+        .unwrap_or_else(|| panic!("the touch block"));
+    for opening in [
+        ":where(button, [role=\"button\"], .chip, .chip-xs, a.nav-cta, a.panel-action, a.nav-brand, .card-search-label) {",
+        ":is(button, [role=\"button\"], .chip, .chip-xs, a.nav-cta, a.panel-action, a.nav-brand, .card-search-label)::after {",
+    ] {
+        assert!(
+            coarse.contains(opening),
+            "the glass, a label, joins the tap box: {opening}"
+        );
+    }
+}
