@@ -225,9 +225,11 @@ pub fn CardSearchBar(
                 onkeydown: move |event: Event<KeyboardData>| {
                     let action = match event.key() {
                         // With no chips to step through, `↓` hands the keys back to the page's
-                        // cards where the page has a cursor over them.
+                        // cards where the page has a cursor over them, landing on its card
+                        // rather than moving from it.
                         Key::ArrowDown if model.peek().results().is_empty() => {
                             event.prevent_default();
+                            event.stop_propagation();
                             document::eval(HAND_BACK_JS);
                             return;
                         }
@@ -479,6 +481,20 @@ mod tests {
         assert!(js.contains("dioxus.send(q.matches)"), "{js}");
         assert!(js.contains("addEventListener('change', on)"), "{js}");
         assert!(media_drop_js(id).contains("removeEventListener('change'"));
+    }
+
+    #[test]
+    fn down_out_of_the_box_lands_on_the_page_s_card_without_moving_it() {
+        let source = include_str!("card_search.rs");
+        let (_, branch) = source
+            .split_once("Key::ArrowDown if model.peek().results().is_empty() => {")
+            .unwrap_or_default();
+        let branch = branch.split_once("return;").map_or("", |(body, _)| body);
+        assert!(
+            branch.contains("event.stop_propagation();"),
+            "the page's cursor keys never see the same down: {branch}"
+        );
+        assert!(branch.contains("document::eval(HAND_BACK_JS);"), "{branch}");
     }
 
     #[test]

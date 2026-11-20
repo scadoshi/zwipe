@@ -208,10 +208,11 @@ window.__zwipeCursorHome = () => {
 const HOME_DROP_JS: &str = "delete window.__zwipeCursorHome;";
 
 /// Hands the keyboard cursor back to the page's cards where the page has a hand-back
-/// ([`use_card_grid_cursor`]), and reports whether it did, for the card search box as Escape or
-/// `↓` lets it go.
+/// ([`use_card_grid_cursor`]), for the card search box as Escape or `↓` lets it go. It waits for
+/// the key to finish, so the page's own key listeners still see the box in focus and leave that
+/// key alone.
 pub(crate) const HAND_BACK_JS: &str =
-    "if (window.__zwipeCursorHome) { window.__zwipeCursorHome(); true } else { false }";
+    "setTimeout(() => { if (window.__zwipeCursorHome) window.__zwipeCursorHome(); }, 0);";
 
 /// Removes one page's cursor keys.
 const NAV_DROP_JS: &str = r"
@@ -775,6 +776,10 @@ mod tests {
         assert!(
             HAND_BACK_JS.contains("if (window.__zwipeCursorHome)"),
             "a page with no hand-back keeps the box's own keys: {HAND_BACK_JS}"
+        );
+        assert!(
+            HAND_BACK_JS.starts_with("setTimeout("),
+            "the key that let the box go never also moves the cursor: {HAND_BACK_JS}"
         );
     }
 
