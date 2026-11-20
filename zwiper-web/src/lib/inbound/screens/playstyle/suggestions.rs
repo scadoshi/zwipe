@@ -44,6 +44,8 @@ pub(crate) struct Suggestions {
     pub(crate) ranked_by: Signal<Option<RankedBy>>,
     /// Whether the ranking has no more rows to deal.
     pub(crate) exhausted: Signal<bool>,
+    /// Whether Show more has dealt its page since the last fresh deal.
+    more_used: Signal<bool>,
     /// The user's deck count, which the reasons count against; 0 before it loads.
     pub(crate) deck_count: Signal<u32>,
     /// Whether the first page is still out.
@@ -262,6 +264,7 @@ struct DealPages {
     entries: Signal<Vec<HttpCommanderSuggestion>>,
     ranked_by: Signal<Option<RankedBy>>,
     exhausted: Signal<bool>,
+    more_used: Signal<bool>,
     is_loading: Signal<bool>,
     load_failed: Signal<bool>,
     redeal: Callback<()>,
@@ -278,6 +281,7 @@ fn use_deal_pages(filter: Signal<CardQueryBuilder>) -> DealPages {
     let mut is_loading = use_signal(|| true);
     let mut load_failed = use_signal(|| false);
     let mut more_out = use_signal(|| false);
+    let mut more_used = use_signal(|| false);
     let mut tickets = use_signal(Generation::default);
     let mut redeals = use_signal(|| 0u32);
 
@@ -287,6 +291,7 @@ fn use_deal_pages(filter: Signal<CardQueryBuilder>) -> DealPages {
         let _tick = redeals();
         let ticket = tickets.write().next_ticket();
         more_out.set(false);
+        more_used.set(false);
         spawn(async move {
             let Some(request) = deal::next_page(Door::Suggested, &applied, &[], LIST_PAGE) else {
                 return;
@@ -350,6 +355,7 @@ fn use_deal_pages(filter: Signal<CardQueryBuilder>) -> DealPages {
         entries,
         ranked_by,
         exhausted,
+        more_used,
         is_loading,
         load_failed,
         redeal,
@@ -370,6 +376,7 @@ pub(crate) fn use_suggestions(filter: Signal<CardQueryBuilder>) -> Suggestions {
         mut entries,
         ranked_by,
         exhausted,
+        more_used,
         is_loading,
         load_failed,
         redeal,
@@ -406,6 +413,7 @@ pub(crate) fn use_suggestions(filter: Signal<CardQueryBuilder>) -> Suggestions {
         entries,
         ranked_by,
         exhausted,
+        more_used,
         deck_count: held.deck_count,
         is_loading,
         load_failed,
@@ -434,6 +442,7 @@ pub(crate) fn SuggestedFold(
         entries,
         ranked_by,
         exhausted,
+        mut more_used,
         deck_count,
         filter,
         mut swipe_open,
@@ -444,6 +453,7 @@ pub(crate) fn SuggestedFold(
         ..
     } = list;
     let rows = entries();
+    let more = offers_more(rows.len(), exhausted(), more_used());
     let line = ranked_by().and_then(deal::ranked_line);
     rsx! {
         // Swipe sits in the list's header, so it says
@@ -487,16 +497,26 @@ pub(crate) fn SuggestedFold(
                     on_dismiss,
                 }
             }
-            if !exhausted() && !entries.read().is_empty() {
-                button {
-                    r#type: "button",
-                    class: "chip changelog-more card-list-more",
-                    onclick: move |_| show_more.call(()),
-                    "Show more"
-                }
+        }
+        // Show more sits under the panel, as a chip row sits over one, and deals one page.
+        if more {
+            button {
+                r#type: "button",
+                class: "chip card-list-more",
+                onclick: move |_| {
+                    more_used.set(true);
+                    show_more.call(());
+                },
+                "Show more"
             }
         }
     }
+}
+
+/// Whether the list offers Show more: it holds rows, the ranking has more to deal, and Show more
+/// has not dealt its page since the last fresh deal.
+fn offers_more(rows: usize, exhausted: bool, more_used: bool) -> bool {
+    rows > 0 && !exhausted && !more_used
 }
 
 /// The list's Clear skips dialog and its Swipe select, which starts from the screen's filter.
@@ -536,5 +556,24 @@ pub(crate) fn SuggestedOverlays(list: Suggestions) -> Element {
             },
             on_close: move |()| swipe_open.set(false),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn show_more_is_offered_once_per_deal_while_the_ranking_holds_more() {
+        assert!(
+            offers_more(10, false, false),
+            "a first page with more to deal"
+        );
+        assert!(!offers_more(10, false, true), "used once, it goes away");
+        assert!(!offers_more(10, true, false), "nothing left to deal");
+        assert!(
+            !offers_more(0, false, false),
+            "no rows, nothing to show more of"
+        );
     }
 }

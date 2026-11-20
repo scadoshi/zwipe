@@ -1,7 +1,7 @@
 //! The Commanders Suggested list's Show row sits a chip row's gap (`--space-2`) over the list, as
 //! the Maybeboard's rows beside it do, and a panel gap under the Maybeboard's Danger zone once the
-//! columns stack. Its loading ghost draws its header's `?` and Swipe, and its Show more sits at
-//! the panel's content inset.
+//! columns stack. Its loading ghost draws its header's `?` and Swipe, and Show more sits just
+//! under the panel, offered once per deal.
 
 const WEB: &str = include_str!("../assets/web.css");
 
@@ -65,16 +65,52 @@ fn the_suggested_ghost_draws_its_header_s_question_mark_and_swipe() {
 /// The Suggested fold's source, which draws Show more.
 const FOLD: &str = include_str!("../src/lib/inbound/screens/playstyle/suggestions.rs");
 
+/// `SuggestedFold`'s body, from its signature to the next item.
+fn suggested_fold() -> &'static str {
+    let (_, body) = FOLD
+        .split_once("pub(crate) fn SuggestedFold(")
+        .unwrap_or_default();
+    body.split_once("\n}\n").map_or(body, |(fold, _)| fold)
+}
+
 #[test]
-fn show_more_sits_at_the_panel_s_content_inset_clear_of_its_corner() {
+fn show_more_sits_under_the_panel_not_as_a_row_in_it() {
+    let body = suggested_fold();
+    let (fold, after) = body
+        .split_once("// Show more sits under the panel")
+        .unwrap();
     assert!(
-        FOLD.contains(r#"class: "chip changelog-more card-list-more","#),
-        "Show more carries the card list's own class"
+        !fold.contains("Show more\""),
+        "no Show more row inside the fold: {fold}"
+    );
+    assert!(
+        after.contains(r#"class: "chip card-list-more","#),
+        "{after}"
+    );
+    assert!(body.contains("let more = offers_more("), "{body}");
+    assert!(after.contains("if more {"), "{after}");
+}
+
+#[test]
+fn show_more_sits_a_chip_row_s_gap_under_its_panel_and_a_panel_gap_over_the_next() {
+    assert!(
+        WEB.contains(".card-group:has(+ .card-list-more) {\n    margin-bottom: var(--space-2);\n}"),
+        "8px between the panel and its chip, as a chip row keeps over its panel"
     );
     assert!(
         WEB.contains(
-            ".card-list-more {\n    display: flex;\n    width: fit-content;\n    margin: var(--space-3) var(--space-4) var(--space-4);\n}"
+            ".card-list-more {\n    display: flex;\n    width: fit-content;\n    margin: 0 0 var(--panel-gap);\n}"
         ),
-        "16px in from the left as the header and rows are, and 16px up, the panel's own radius, so the chip's corner clears the panel's"
+        "the panel gap to what follows, as the panel itself kept"
+    );
+}
+
+#[test]
+fn the_suggested_ghost_draws_show_more_under_its_panel() {
+    let (_, ghost) = SUGGESTED.split_once("if is_loading() {").unwrap();
+    let ghost = ghost.split_once("} else if load_failed()").unwrap().0;
+    assert!(
+        ghost.contains(r#"div { class: "card-list-more", GhostChip { chars: 9, button: true } }"#),
+        "{ghost}"
     );
 }

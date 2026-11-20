@@ -2229,13 +2229,16 @@ body {
     margin-bottom: var(--space-2);
 }
 
-/* A card list's Show more under its last row: 16px in from the left as the
-   header and rows are, and 16px up, the panel's radius, so its corner clears
-   the panel's. */
+/* A card list's Show more sits under its panel as a chip row sits over one:
+   a chip row's gap between them, and the panel's own gap to what follows. */
+.card-group:has(+ .card-list-more) {
+    margin-bottom: var(--space-2);
+}
+
 .card-list-more {
     display: flex;
     width: fit-content;
-    margin: var(--space-3) var(--space-4) var(--space-4);
+    margin: 0 0 var(--panel-gap);
 }
 
 /* Stacked under the Maybeboard, the Suggested column keeps a panel gap over

@@ -7,7 +7,7 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 
 use crate::inbound::cards::card_row::ShowRowArt;
-use crate::inbound::chrome::ghost::{GhostButton, GhostChipRow, GhostHint, GhostText};
+use crate::inbound::chrome::ghost::{GhostButton, GhostChip, GhostChipRow, GhostHint, GhostText};
 use crate::inbound::screens::playstyle::{SuggestedFold, Suggestions};
 
 /// The list's header.
@@ -58,6 +58,7 @@ pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uui
                             }
                         }
                     }
+                    div { class: "card-list-more", GhostChip { chars: 9, button: true } }
                 } else if load_failed() {
                     div { class: "message-empty",
                         span { class: "chip-note", "Couldn't load your suggestions" }
