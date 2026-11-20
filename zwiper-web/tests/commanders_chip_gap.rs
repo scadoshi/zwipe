@@ -1,5 +1,6 @@
 //! The Commanders Suggested list's Show row sits a chip row's gap (`--space-2`) over the list, as
-//! the Maybeboard's rows beside it do, rather than on the list's top edge.
+//! the Maybeboard's rows beside it do, and a panel gap under the Maybeboard's Danger zone once the
+//! columns stack.
 
 const WEB: &str = include_str!("../assets/web.css");
 
@@ -29,4 +30,14 @@ fn a_list_ghost_s_hint_follows_its_title() {
             "{header}"
         );
     }
+}
+
+#[test]
+fn stacked_under_the_maybeboard_the_suggested_column_keeps_a_panel_gap_over_its_show_row() {
+    assert!(
+        WEB.contains(
+            "@media (max-width: 899px) {\n    .web-commanders-suggested {\n        margin-top: var(--panel-gap);\n    }\n}"
+        ),
+        "a phone stacks the columns with nothing between them, so the Show row would sit on the Danger zone"
+    );
 }
