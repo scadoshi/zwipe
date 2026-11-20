@@ -54,21 +54,39 @@ pub fn OpenFrame() -> Element {
     }
 }
 
-/// Whether `route` is open to everyone, so a signed-out visit draws it.
+/// Whether `route` is open to everyone, so a signed-out visit draws it. Every route is named,
+/// so a new one is decided here before it builds.
 fn is_open(route: &Route) -> bool {
-    matches!(
-        route,
+    match route {
         Route::PrivacyPolicy {}
-            | Route::About {}
-            | Route::SharedDeck { .. }
-            | Route::CardNamed { .. }
-            | Route::CardPrinting { .. }
-            | Route::Search { .. }
-            | Route::SharedDeckExport { .. }
-            | Route::Guides {}
-            | Route::GuidePage { .. }
-            | Route::NotFound { .. }
-    )
+        | Route::About {}
+        | Route::SharedDeck { .. }
+        | Route::SharedDeckExport { .. }
+        | Route::CardNamed { .. }
+        | Route::CardPrinting { .. }
+        | Route::Search { .. }
+        | Route::Guides {}
+        | Route::GuidePage { .. }
+        | Route::NotFound { .. } => true,
+        // The auth screens sit in their own frame; the rest need a session.
+        Route::Login {}
+        | Route::Register {}
+        | Route::ForgotPassword {}
+        | Route::Home {}
+        | Route::Account {}
+        | Route::Config {}
+        | Route::Activity {}
+        | Route::DeckList {}
+        | Route::CommanderMaybeboard {}
+        | Route::Playstyle {}
+        | Route::CreateDeck {}
+        | Route::EditDeck { .. }
+        | Route::ViewDeck { .. }
+        | Route::ImportDeck { .. }
+        | Route::ExportDeck { .. }
+        | Route::AddDeckCard { .. }
+        | Route::RemoveDeckCard { .. } => false,
+    }
 }
 
 /// A screen under the top nav. `title` names the screen for assistive tech,
@@ -181,6 +199,73 @@ mod tests {
         for destination in destinations {
             let route = route_of(destination.clone()).unwrap();
             assert!(is_open(&route), "{destination:?} opens {route:?}");
+        }
+    }
+
+    #[test]
+    fn the_public_pages_are_open_and_the_rest_need_a_session() {
+        let id = Uuid::new_v4();
+        let open = [
+            Route::PrivacyPolicy {},
+            Route::About {},
+            Route::SharedDeck {
+                owner: "owner".to_owned(),
+                slug: "deck".to_owned(),
+                token: "token".to_owned(),
+                view: None,
+            },
+            Route::SharedDeckExport {
+                owner: "owner".to_owned(),
+                slug: "deck".to_owned(),
+                token: "token".to_owned(),
+            },
+            Route::CardNamed {
+                slug: "sol-ring".to_owned(),
+                open: None,
+            },
+            Route::CardPrinting {
+                slug: "sol-ring".to_owned(),
+                id,
+                open: None,
+            },
+            Route::Search {
+                q: "sol".to_owned(),
+            },
+            Route::Guides {},
+            Route::GuidePage {
+                slug: "first-deck".to_owned(),
+            },
+            Route::NotFound {
+                segments: vec!["nowhere".to_owned()],
+            },
+        ];
+        let gated = [
+            Route::Login {},
+            Route::Register {},
+            Route::ForgotPassword {},
+            Route::Home {},
+            Route::Account {},
+            Route::Config {},
+            Route::Activity {},
+            Route::DeckList {},
+            Route::CommanderMaybeboard {},
+            Route::Playstyle {},
+            Route::CreateDeck {},
+            Route::EditDeck { deck_id: id },
+            Route::ViewDeck {
+                deck_id: id,
+                view: None,
+            },
+            Route::ImportDeck { deck_id: id },
+            Route::ExportDeck { deck_id: id },
+            Route::AddDeckCard { deck_id: id },
+            Route::RemoveDeckCard { deck_id: id },
+        ];
+        for route in open {
+            assert!(is_open(&route), "{route:?}");
+        }
+        for route in gated {
+            assert!(!is_open(&route), "{route:?}");
         }
     }
 }
