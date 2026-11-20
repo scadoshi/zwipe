@@ -4325,17 +4325,28 @@ nav:has(> .card-search-header:focus-within) > :not(.card-search-nav, .nav-panel)
 
 /* A bar cell (.data-table-bar) holds a DataBar: a thin bar in its column's
    color, its fill the value's share of the column's most, growing in as a
-   chart's bar does, with the value inside in the text color. Bar cells split the room past the label, 1px
-   either side so bars stand 2px apart. */
+   chart's bar does, with the value inside in the text color. Bar cells
+   split the room past the label, 1px either side so bars stand 2px apart,
+   and give way first when the table is narrow. */
 .data-table .data-table-bar {
     width: 20%;
     padding-left: 1px;
     padding-right: 1px;
 }
 
-/* A bar column's name and its `?` stay on one line. */
-.data-table thead th.data-table-bar {
-    white-space: nowrap;
+/* A bar column's name and its `?` stay on one line where a phone leaves
+   room; narrower, the `?` may drop under the name so the bars can shrink. */
+@media (min-width: 360px) {
+    .data-table thead th.data-table-bar {
+        white-space: nowrap;
+    }
+}
+
+/* An Oracle tags table's tag chip keeps room for a slug's longest usual
+   word and its hyphen (repeatable-, additional-), so it wraps at the
+   hyphens and the bars shrink before a chip breaks mid-word. */
+.tag-data-table tbody th .chip {
+    min-width: calc(12ch + 2 * var(--space-2));
 }
 
 .data-bar {

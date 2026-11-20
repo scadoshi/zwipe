@@ -70,7 +70,18 @@ fn bars_are_thin_with_4px_ends_and_the_value_in_the_text_color() {
 }
 
 #[test]
-fn a_bar_column_s_header_keeps_its_name_and_hint_on_one_line() {
-    let head = rule(".data-table thead th.data-table-bar");
-    assert!(head.contains("white-space: nowrap;"), "{head}");
+fn a_bar_column_s_header_keeps_its_name_and_hint_on_one_line_where_it_fits() {
+    assert!(
+        MAGIC.contains("@media (min-width: 360px) {\n    .data-table thead th.data-table-bar {\n        white-space: nowrap;\n    }\n}"),
+        "one line from a phone's usual width up; at 320 the hint may drop under the name"
+    );
+}
+
+#[test]
+fn the_tag_column_keeps_room_to_wrap_a_chip_at_its_hyphens() {
+    let tag = rule(".tag-data-table tbody th .chip");
+    assert!(
+        tag.contains("min-width: calc(12ch + 2 * var(--space-2));"),
+        "{tag}"
+    );
 }
