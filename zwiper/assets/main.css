@@ -469,3 +469,15 @@ body {
     transform: none !important;
     --nav-fade: 1 !important;
 }
+
+/* A card list's Show more sits under its panel as a chip row sits over one:
+   a chip row's gap between them, and the panel's own gap to what follows. */
+.card-group:has(+ .card-list-more) {
+    margin-bottom: var(--space-2);
+}
+
+.card-list-more {
+    display: flex;
+    width: fit-content;
+    margin: 0 0 var(--panel-gap);
+}

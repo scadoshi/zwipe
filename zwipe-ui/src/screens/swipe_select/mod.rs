@@ -1,8 +1,8 @@
 //! Swipe select: the overlay that swipes through cards to fill a command zone slot, or through the user's suggested commanders.
 //!
-//! Left skips the card on top, right picks it, up saves it to the commander maybeboard and down undoes the last swipe. A [`Mode`] decides the always-on constraint on the search: legal commanders for a format, partners, backgrounds, or signature spells within an identity. [`Mode::Suggested`] deals the host's ranking instead of searching, and there a left swipe dismisses the commander for a week.
+//! Left skips the card on top, right picks it, up saves it to the commander maybeboard and down undoes the last swipe. A [`Mode`] decides the always-on constraint on the search: legal commanders for a format, partners, backgrounds, or signature spells within an identity. [`Mode::Suggested`] deals the merged commander ranking a page at a time instead of searching ([`deal`]), and there a left swipe dismisses the commander for a week.
 //!
-//! The overlay stays mounted while it is closed, so a reopen with the same mode keeps the pile and its place. The client sends [`Action::Open`] each time the overlay opens, [`Action::Filter`] when the card filter sheet applies, and [`Action::Redeal`] when the host's suggested pile changes while it is open. A right swipe hands the card to the host with [`Effect::Pick`], and Back goes to [`Destination::Previous`], which the host takes as the overlay closing. Gestures, the card's exit and entrance motion, the filter sheet's draft, the details and printings sheets and whether the overlay is up stay in the client.
+//! The overlay stays mounted while it is closed, so a reopen with the same mode keeps the pile and its place. The client sends [`Action::Open`] each time the overlay opens, and [`Action::Filter`] when the card filter sheet applies. A right swipe hands the card to the host with [`Effect::Pick`], and Back goes to [`Destination::Previous`], which the host takes as the overlay closing. Gestures, the card's exit and entrance motion, the filter sheet's draft, the details and printings sheets and whether the overlay is up stay in the client.
 
 #[cfg(test)]
 mod tests;
@@ -11,18 +11,19 @@ use std::collections::{HashMap, HashSet};
 
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::colors::{Color, Colors};
+use zwipe_core::domain::card::scryfall_data::colors::Colors;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::query::CardQuery;
 use zwipe_core::domain::deck::Format;
 use zwipe_core::domain::user::hints::OneTimeHint;
-use zwipe_core::http::contracts::suggestions::{HttpCommanderSuggestion, HttpSuggestionReasons};
+use zwipe_core::http::contracts::suggestions::{
+    HttpCommanderDeal, HttpCommanderDealPage, HttpCommanderSuggestion, HttpSuggestionReasons,
+};
 
 use crate::commander::deal::{self, Door};
-use crate::commander::{maybeboard, swipe_select};
+use crate::commander::maybeboard;
 use crate::deck::form;
 use crate::generation::{Generation, Ticket};
-use crate::playstyle;
 use crate::screens::add_cards::Source;
 use crate::stack::{CardStack, Direction, NO_CARDS_LEFT, StackAction};
 use crate::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
@@ -114,7 +115,7 @@ impl Mode {
         )
     }
 
-    /// Adds this mode's constraint to `builder`. The suggested pile never searches, so it adds none.
+    /// Adds this mode's constraint to `builder`. The suggested pile is dealt from the ranking, so it adds none.
     fn apply(&self, builder: &mut CardQueryBuilder) {
         match self {
             Self::Commander(format) => form::narrow_to_commanders(builder, *format),
@@ -129,17 +130,6 @@ impl Mode {
             Self::Suggested => {}
         }
     }
-}
-
-/// The ranking [`Mode::Suggested`] deals, held by its host.
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct SuggestedPile {
-    /// Best fit first, as the host's list shows them.
-    pub suggestions: Vec<HttpCommanderSuggestion>,
-    /// Decks the reasons count against.
-    pub deck_count: u32,
-    /// The color identity the host's Show chip narrows `suggestions` to; `None` is All.
-    pub identity: Option<Vec<Color>>,
 }
 
 /// Where the overlay stands, for the client to pick what it draws.
@@ -158,14 +148,14 @@ pub enum Status {
 /// What a user does on the overlay, and each reply the client hands back.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
-    /// The overlay opened. A reopen with the same mode and a pile left keeps it; the suggested pile is dealt afresh every time. The hint is offered on the first open.
+    /// The overlay opened. A reopen with the same mode and a pile left keeps it. The hint is offered on the first open.
     Open {
         /// The slot to fill; `None` deals nothing.
         mode: Option<Mode>,
         /// The card filter the search starts from.
         filter: CardQueryBuilder,
-        /// The host's ranking, for [`Mode::Suggested`]; the default elsewhere.
-        pile: SuggestedPile,
+        /// Decks the suggested reasons count against, for [`Mode::Suggested`]; 0 elsewhere.
+        deck_count: u32,
         /// Oracle ids kept out of searched pages: the host's own saves.
         excluded: HashSet<Uuid>,
         /// Whether the overlay has the From chip (the Commander maybeboard's swipe), which
@@ -188,8 +178,14 @@ pub enum Action {
     Filter(CardQueryBuilder),
     /// Refresh: the pile is dealt again from the top with `filter`.
     Refresh(CardQueryBuilder),
-    /// The host's suggested pile changed while the overlay is open: the cards already swiped stay behind the top one and the new pile deals after them.
-    Redeal(SuggestedPile),
+    /// A page of the merged ranking arrived for the deal holding `ticket`, or failed (`Err`,
+    /// already logged).
+    Dealt {
+        /// The ticket from the [`Effect::DealCommanders`] this answers.
+        ticket: Ticket,
+        /// The page, or `Err(())` when the request failed.
+        reply: Result<HttpCommanderDealPage, ()>,
+    },
     /// A page arrived for the search holding `ticket`.
     Found {
         /// The ticket from the [`Effect::SearchCommanders`] or [`Effect::LoadMore`] this answers.
@@ -232,6 +228,14 @@ pub enum Effect {
         ticket: Ticket,
         /// The search.
         query: Box<CardQuery>,
+    },
+    /// Asks the merged ranking for a page of [`Mode::Suggested`]'s pile, the first of a fresh pile
+    /// or the next, and answers with [`Action::Dealt`].
+    DealCommanders {
+        /// The ticket to hand back with the reply.
+        ticket: Ticket,
+        /// The request.
+        request: Box<HttpCommanderDeal>,
     },
     /// Searches the next page of the pile and answers with [`Action::Found`] or [`Action::Failed`]. A failure is logged only.
     LoadMore {
@@ -287,6 +291,7 @@ fn toast_line(effect: &Effect) -> Option<Line<'_>> {
         | Effect::SearchCommanders { .. }
         | Effect::LoadMore { .. }
         | Effect::LoadMaybeboard { .. }
+        | Effect::DealCommanders { .. }
         | Effect::DismissCommander(_)
         | Effect::UndismissCommander(_)
         | Effect::AddMaybeboardCard { .. }
@@ -366,7 +371,8 @@ pub struct State {
     dealt: Option<Mode>,
     filter: CardQueryBuilder,
     excluded: HashSet<Uuid>,
-    pile: SuggestedPile,
+    /// Decks the suggested reasons count against.
+    deck_count: u32,
     /// The reasons behind every suggested card dealt, kept for the cards behind the top one.
     suggestions: Vec<HttpCommanderSuggestion>,
     stack: CardStack<Swipe>,
@@ -417,10 +423,11 @@ impl State {
             Action::Open {
                 mode,
                 filter,
-                pile,
+                deck_count,
                 excluded,
                 from,
             } => {
+                self.deck_count = deck_count;
                 self.from = from;
                 if !from {
                     self.source = Source::Search;
@@ -432,9 +439,9 @@ impl State {
                     self.source = Source::Search;
                     self.dealt = None;
                     let search = self.parked.remove(&Source::Search).unwrap_or_default();
-                    return self.open(mode, search, pile, excluded);
+                    return self.open(mode, search, excluded);
                 }
-                self.open(mode, filter, pile, excluded)
+                self.open(mode, filter, excluded)
             }
             Action::PickSource => self.pick_source(),
             Action::MaybeboardLoaded { ticket, saved } => {
@@ -459,10 +466,7 @@ impl State {
                 effects.extend(self.deal());
                 effects
             }
-            Action::Redeal(pile) => {
-                self.redeal(pile);
-                Vec::new()
-            }
+            Action::Dealt { ticket, reply } => self.dealt_page(ticket, reply),
             Action::Found { ticket, cards } => self.found(ticket, cards),
             Action::Failed { ticket } => {
                 if self.take(ticket) == Some(Pending::Search) {
@@ -502,7 +506,6 @@ impl State {
         &mut self,
         mode: Option<Mode>,
         filter: CardQueryBuilder,
-        pile: SuggestedPile,
         excluded: HashSet<Uuid>,
     ) -> Vec<Effect> {
         let mut effects = Vec::new();
@@ -511,13 +514,11 @@ impl State {
             effects.push(Effect::OfferHint(OneTimeHint::SwipeSelect));
         }
         self.mode = mode;
-        self.pile = pile;
         self.excluded = excluded;
         let Some(mode) = &self.mode else {
             return effects;
         };
-        let keep =
-            *mode != Mode::Suggested && self.dealt.as_ref() == Some(mode) && !self.stack.is_empty();
+        let keep = self.dealt.as_ref() == Some(mode) && !self.stack.is_empty();
         if !keep {
             self.filter = filter;
             effects.extend(self.deal());
@@ -525,7 +526,7 @@ impl State {
         effects
     }
 
-    /// Deals the pile afresh for the current mode: the suggested ranking, or a search's first page. Searches still out stop counting.
+    /// Deals the pile afresh for the current mode: the ranking's first page, or a search's. Searches still out stop counting.
     fn deal(&mut self) -> Vec<Effect> {
         let Some(mode) = self.mode.clone() else {
             return Vec::new();
@@ -544,10 +545,8 @@ impl State {
             return vec![Effect::LoadMaybeboard { ticket }];
         }
         if mode == Mode::Suggested {
-            self.exhausted = true;
-            self.suggestions.clone_from(&self.pile.suggestions);
-            self.stack.replace(pile_cards(&self.pile));
-            return Vec::new();
+            self.suggestions.clear();
+            return self.deal_page(Pending::Search);
         }
         let Some(query) = self.query(&mode, 0) else {
             return Vec::new();
@@ -559,26 +558,59 @@ impl State {
         }]
     }
 
-    /// Deals the host's new suggested pile under the cards already swiped.
-    fn redeal(&mut self, pile: SuggestedPile) {
-        if self.mode != Some(Mode::Suggested) {
-            return;
-        }
-        let fresh = pile_cards(&pile);
-        let (cards, index, history) = self.stack.park_state();
-        let dealt = swipe_select::redeal(&cards, index, &fresh, swipe_select::card_key);
-        self.stack.restore(dealt, index, history);
-        for suggestion in &pile.suggestions {
-            let id = suggestion.card.scryfall_data.id;
-            if !self
-                .suggestions
+    /// Asks the merged ranking for a page of the suggested pile under the filter, leaving out the
+    /// host's exclusions and the cards already dealt; the ranking has no next page once it read as
+    /// many as it can leave out.
+    fn deal_page(&mut self, pending: Pending) -> Vec<Effect> {
+        let mut dealt: Vec<Uuid> = self.excluded.iter().copied().collect();
+        dealt.sort_unstable();
+        dealt.extend(
+            self.stack
+                .cards()
                 .iter()
-                .any(|s| s.card.scryfall_data.id == id)
-            {
-                self.suggestions.push(suggestion.clone());
+                .filter_map(|c| c.scryfall_data.oracle_id),
+        );
+        let Some(request) = deal::next_page(Door::Suggested, &self.filter, &dealt, PAGE_SIZE)
+        else {
+            self.exhausted = true;
+            return Vec::new();
+        };
+        let ticket = self.wait(pending);
+        vec![Effect::DealCommanders {
+            ticket,
+            request: Box::new(request),
+        }]
+    }
+
+    /// Lands a page of the ranking: the first one replaces the pile, a next one joins it, keeping
+    /// each card's reasons. A short page ends the pile; a failed first page fails it.
+    fn dealt_page(
+        &mut self,
+        ticket: Ticket,
+        reply: Result<HttpCommanderDealPage, ()>,
+    ) -> Vec<Effect> {
+        let pending = self.take(ticket);
+        let Ok(page) = reply else {
+            if pending == Some(Pending::Search) {
+                self.failed = true;
             }
+            return Vec::new();
+        };
+        let cards: Vec<Card> = page.suggestions.iter().map(|s| s.card.clone()).collect();
+        match pending {
+            Some(Pending::Search) => {
+                self.exhausted = deal::is_last_page(cards.len(), PAGE_SIZE);
+                self.suggestions = page.suggestions;
+                self.stack.replace(cards);
+            }
+            Some(Pending::More { .. }) => {
+                self.exhausted = deal::is_last_page(cards.len(), PAGE_SIZE);
+                self.suggestions.extend(page.suggestions);
+                self.stack.append(cards);
+            }
+            Some(Pending::Save | Pending::Unsave) | None => {}
         }
-        self.pile = pile;
+        Vec::new()
     }
 
     /// Lands a page: the first one replaces the pile, a next one joins it. A page the host's exclusions or the pile's own cards empty pulls the next, up to [`PAGE_PULLS`] per load more.
@@ -650,8 +682,11 @@ impl State {
         let Some(mode) = self.mode.clone() else {
             return Vec::new();
         };
-        if mode == Mode::Suggested || self.on_maybe() {
+        if self.on_maybe() {
             return Vec::new();
+        }
+        if mode == Mode::Suggested {
+            return self.deal_page(Pending::More { pulls });
         }
         let Some(query) = self.query(&mode, self.offset) else {
             return Vec::new();
@@ -848,16 +883,6 @@ impl State {
     /// The line in place of the card when the pile holds nothing: the host's suggested pile with nothing under its Show chip, "No Jeskai commanders in your top 100", or a search that dealt no card, [`empty_pile_line`].
     #[must_use]
     pub fn message(&self) -> Option<String> {
-        if self.is_suggested() {
-            if !self.pile.suggestions.is_empty() {
-                return None;
-            }
-            return self
-                .pile
-                .identity
-                .as_deref()
-                .map(playstyle::empty_identity_line);
-        }
         if self.on_maybe() {
             let empty = self.stack.is_empty() && self.status() == Status::Empty;
             return self.maybe_note.filter(|_| empty).map(str::to_owned);
@@ -938,17 +963,6 @@ impl State {
     /// Decks the suggested reasons count against.
     #[must_use]
     pub fn deck_count(&self) -> u32 {
-        self.pile.deck_count
+        self.deck_count
     }
-
-    /// The color identity the host's Show chip picked for the suggested pile, which lights its Filter dot.
-    #[must_use]
-    pub fn identity(&self) -> Option<&[Color]> {
-        self.pile.identity.as_deref()
-    }
-}
-
-/// The cards of `pile`, in its order.
-fn pile_cards(pile: &SuggestedPile) -> Vec<Card> {
-    pile.suggestions.iter().map(|s| s.card.clone()).collect()
 }

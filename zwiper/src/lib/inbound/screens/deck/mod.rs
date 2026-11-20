@@ -4,8 +4,10 @@
 
 /// Card management within decks (add/remove cards).
 pub mod card;
-/// Commander maybeboard screen (per-user "maybe this commander" list).
+/// The Commanders screen: the commander maybeboard, then the suggested commanders.
 pub mod commander_maybeboard;
+/// The Commanders screen's Suggested list, under the Maybeboard.
+pub(crate) mod commanders_suggested;
 /// Create new deck screen.
 pub mod create;
 /// Edit existing deck screen.

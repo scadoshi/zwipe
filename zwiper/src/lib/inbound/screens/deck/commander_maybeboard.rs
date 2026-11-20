@@ -1,29 +1,23 @@
-//! Commander maybeboard screen: the per-user "maybe this commander" list,
-//! and a direct commander-discovery surface.
+//! The Commanders screen: the commander maybeboard, then the suggested commanders under it
+//! (`SuggestedSection`), one filter narrowing both, the dock's funnel at the bottom right.
 //!
-//! Entries arrive three ways: up-swiping during any commander Zwipe-select,
-//! up-swiping in this screen's own Swipe overlay, or tapping a floating
-//! result chip under the Quick add input (a debounced commander-name search,
-//! hung downward since this console sits at the top of the page). The input
-//! is pure quick add: narrowing the saved list belongs to the five color
-//! pips alone (contains-all identity semantics, like the deck list's Show
-//! row); both console rows render statically per the closed-vocabulary
-//! skeleton rule.
+//! Maybeboard entries arrive three ways: up-swiping during any commander Swipe select,
+//! up-swiping in this list's own Swipe overlay or a suggestion's Maybeboard, or tapping a
+//! floating result chip under the Quick add input (a debounced commander-name search, hung
+//! downward since this console sits at the top of the page). Right-swiping in a Swipe overlay,
+//! or an expanded row's **Create deck**, seeds the create screen with that commander
+//! (capacity-gated like the deck list's Create). **Remove** un-maybes an entry in place.
 //!
-//! Right-swiping in the Swipe overlay, or an expanded row's **Create deck**,
-//! seeds the create screen with that commander (capacity-gated like the deck
-//! list's Create). **Remove** un-maybes an entry in place.
-//!
-//! What the screen knows and does is
-//! `zwipe_ui::screens::commander_maybeboard`; this file draws its state and
-//! performs its effects.
+//! What the Maybeboard knows and does is `zwipe_ui::screens::commander_maybeboard`, and the
+//! Suggested list's `zwipe_ui::screens::suggested_commanders`; this file draws their state and
+//! performs the Maybeboard's effects.
 
 use std::collections::HashSet;
 use std::iter;
 
 use components::{
-    AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap, DialogAction, Toasts,
-    use_toast,
+    AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap, DialogAction, DockFilter,
+    Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -33,7 +27,6 @@ use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::hints::OneTimeHint;
@@ -42,8 +35,9 @@ use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::commander_maybeboard::{
     self as model, Action, Destination, Effect, QuickAddResults, State, Status,
 };
-use zwipe_ui::screens::deck_list;
+use zwipe_ui::screens::{deck_list, suggested_commanders};
 
+use super::commanders_suggested::SuggestedSection;
 use super::components::danger_zone::DangerZoneAction;
 use super::components::skeletons::{ChipGhost, ChipRowGhost, QuickAddSkeleton};
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
@@ -273,8 +267,8 @@ impl Driver {
     }
 }
 
-/// Screen listing the user's saved "maybe" commanders with search-to-add,
-/// an in-place commander Swipe overlay, and per-entry create-deck / remove.
+/// The Commanders screen: the Maybeboard, with search-to-add, its own commander Swipe overlay and
+/// per-entry Create deck and Remove, then the Suggested list.
 #[component]
 pub fn CommanderMaybeboard() -> Element {
     let driver = Driver {
@@ -342,6 +336,8 @@ pub fn CommanderMaybeboard() -> Element {
     use_context_provider(|| filter_builder);
     let filter_reset_counter = use_signal(|| 0u32);
     use_context_provider(|| filter_reset_counter);
+    // The Suggested list's model, which a picked printing swaps into too.
+    let mut suggested = use_signal(suggested_commanders::State::new);
     let mut filters_overlay_open = use_signal(|| false);
     let mut show_clear_dialog = use_signal(|| false);
 
@@ -364,6 +360,9 @@ pub fn CommanderMaybeboard() -> Element {
     });
 
     let on_remove = move |oracle_id: Uuid| driver.dispatch(Action::Remove(oracle_id));
+    let create_from_suggested = use_callback(move |card: Card| driver.create(card));
+    // A suggestion saved from its row lands in the Maybeboard: the list loads again.
+    let reload_board = use_callback(move |()| driver.dispatch(Action::SwipeClosed));
 
     // Already-saved oracles: the Swipe overlay excludes them from its pile
     // (discovery wants fresh commanders; deck create/edit still serve saves).
@@ -381,17 +380,15 @@ pub fn CommanderMaybeboard() -> Element {
     let nothing_saved = view.status() == Status::Empty;
     let query = view.query().to_owned();
     let quick_add = view.quick_add();
-    let all_on = view.shows_all();
-    let pips = Color::all().map(|color| (color, view.is_picked(color)));
     let message = view.message(&builder);
     let filtered = view.shown(&builder);
     drop(view);
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: model::TITLE, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
+            ScreenHeader { title: model::SCREEN_TITLE, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
-            OneTimeHintDialog { open: hint_open, hint: OneTimeHint::CommanderMaybeboard }
+            OneTimeHintDialog { open: hint_open, hint: OneTimeHint::Commanders }
 
             div { class: "screen-content",
                 // Bounded like the deck cards screen: screen-content centers
@@ -406,10 +403,7 @@ pub fn CommanderMaybeboard() -> Element {
                         QuickAddSkeleton { label: model::QUICK_ADD }
                         ChipRowGhost {
                             label: model::SHOW,
-                            chips: iter::once(ChipGhost::Text(model::SHOW_ALL.to_string()))
-                                .chain(Color::all().into_iter().map(ChipGhost::Pip))
-                                .chain(iter::once(ChipGhost::Text(model::ART.to_string())))
-                                .collect::<Vec<_>>(),
+                            chips: vec![ChipGhost::Text(model::ART.to_string())],
                         }
                         ChipRowGhost {
                             label: deck_list::SORT,
@@ -488,23 +482,7 @@ pub fn CommanderMaybeboard() -> Element {
                         }
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", {model::SHOW} }
-                            Chip {
-                                selected: all_on,
-                                onclick: move |_| driver.dispatch(Action::ShowAll),
-                                {model::SHOW_ALL}
-                            }
-                            for (color, picked) in pips {
-                                Chip {
-                                    key: "{color.to_short_name()}",
-                                    selected: picked,
-                                    onclick: move |_| driver.dispatch(Action::ToggleColor(color)),
-                                    i {
-                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                                        "aria-hidden": "true",
-                                    }
-                                    span { class: "sr-only", "{color.to_long_name()}" }
-                                }
-                            }
+                            // Art alone: colors come from the screen's filter.
                             Chip {
                                 selected: show_row_art(),
                                 onclick: move |_| show_row_art.set(!show_row_art()),
@@ -535,7 +513,7 @@ pub fn CommanderMaybeboard() -> Element {
                         // Swipe sits in the list's header, so it says what gets
                         // swiped; with nothing to list, one row says why.
                         CardListFold {
-                            title: model::LIST_TITLE,
+                            title: model::BOARD_TITLE,
                             actions: rsx! {
                                 Button {
                                     variant: ButtonVariant::Action,
@@ -569,18 +547,30 @@ pub fn CommanderMaybeboard() -> Element {
                             onclick: move |()| show_clear_dialog.set(true),
                         }
                     }
+                    // Suggested sits under the Maybeboard, under the same filter.
+                    SuggestedSection {
+                        model: suggested,
+                        filter: filter_builder,
+                        filter_applied: filter_reset_counter,
+                        expanded_card,
+                        preview_card,
+                        preview_dismissing,
+                        on_printing: move |c: Card| {
+                            printing_card.set(Some(c));
+                            printing_open.set(true);
+                        },
+                        on_create: create_from_suggested,
+                        on_saved: reload_board,
+                    }
                 }
             }
 
-            // Filter, the screen's action, floats at the bottom right.
+            // The one filter over both lists floats at the bottom right as the dock's funnel.
             div { class: "action-dock action-dock-right",
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| filters_overlay_open.set(true),
-                    {model::FILTER}
-                    if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
-                        span { class: "filter-dot" }
-                    }
+                DockFilter {
+                    label: model::FILTER,
+                    dot: !filter_builder.read().is_empty() || filter_builder.read().sort().is_some(),
+                    onclick: move |()| filters_overlay_open.set(true),
                 }
             }
 
@@ -634,6 +624,7 @@ pub fn CommanderMaybeboard() -> Element {
                             let mut expanded = expanded_card;
                             expanded.set(Some(new_card.scryfall_data.id));
                         }
+                        suggested.write().swap_printing(&new_card);
                         driver.dispatch(Action::PickPrinting(Box::new(new_card)));
                     },
                 }
