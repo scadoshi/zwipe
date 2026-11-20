@@ -1182,6 +1182,7 @@ button {
 .skeleton-chip.skeleton-tinted {
     background-color: color-mix(in srgb, var(--tone) 12%, transparent);
     border-color: color-mix(in srgb, var(--tone) 35%, transparent);
+    border-radius: var(--radius-readonly);
 }
 
 /* An empty .input-compact filling the rest of its chip row. */
@@ -1832,7 +1833,7 @@ button {
 .skeleton-bar.skeleton-price-chip {
     width: 4.5rem;
     height: 1.6rem;
-    border-radius: 0.4rem;
+    border-radius: var(--radius-readonly);
 }
 
 .card-prices > .card-price-chip {
@@ -2218,7 +2219,7 @@ button {
     line-height: 1;
     padding: var(--space-2) var(--space-3);
     font-size: 0.8rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-readonly);
     animation: flavor-enter 0.3s ease-out 0.15s backwards;
 }
 
@@ -2289,7 +2290,7 @@ button {
     padding: var(--space-1) var(--space-2);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
-    border-radius: 0.6rem;
+    border-radius: var(--radius-readonly);
     font-size: 0.75rem;
     margin-bottom: var(--space-1);
 }
@@ -2301,7 +2302,7 @@ button {
     padding: var(--space-1) var(--space-2);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-error);
-    border-radius: 0.6rem;
+    border-radius: var(--radius-readonly);
     font-size: 0.75rem;
     margin-bottom: var(--space-1);
 }
@@ -2485,7 +2486,7 @@ button {
     padding: 0.15rem var(--space-2);
     border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
     background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
-    border-radius: 0.4rem;
+    border-radius: var(--radius-readonly);
     font-size: 0.7rem;
     color: var(--ink-color-success, var(--color-success));
     white-space: nowrap;
@@ -2498,7 +2499,7 @@ button {
     padding: 0.15rem var(--space-2);
     border: 1px solid color-mix(in srgb, var(--text-muted) 35%, transparent);
     background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
-    border-radius: 0.4rem;
+    border-radius: var(--radius-readonly);
     font-size: 0.7rem;
     color: var(--ink-text-muted, var(--text-muted));
     white-space: nowrap;
@@ -2510,7 +2511,7 @@ button {
     padding: 0.15rem var(--space-2);
     border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
     background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
-    border-radius: 0.4rem;
+    border-radius: var(--radius-readonly);
     font-size: 0.7rem;
     color: var(--ink-color-error, var(--color-error));
     white-space: nowrap;
@@ -2933,7 +2934,7 @@ button {
     font-size: 0.7rem;
     padding: 0.05rem var(--space-2);
     border: 1px solid var(--border-muted);
-    border-radius: 0.4rem;
+    border-radius: var(--radius-readonly);
 }
 
 .dict-empty {
@@ -3213,7 +3214,7 @@ button {
 .deck-featured-chips > .stat-chip {
     padding: 0.1rem var(--space-2);
     font-size: 0.62rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-readonly);
 }
 
 /* The row's loading ghost: its chips at a loaded card's chips' size, in the

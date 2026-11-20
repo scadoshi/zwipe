@@ -658,7 +658,7 @@ code {
     font-size: 0.8rem;
     line-height: 1.3;
     text-align: center;
-    border-radius: 0.6rem;
+    border-radius: var(--radius-readonly);
 }
 
 .ff-name {
@@ -984,7 +984,7 @@ h2.panel-title {
     display: inline-flex;
     align-items: center;
     padding: var(--space-1) var(--space-2);
-    border-radius: 0.6rem;
+    border-radius: var(--radius-readonly);
     font-family: "JetBrains Mono", monospace;
     font-size: 0.8rem;
     border: 1px solid;
@@ -1037,7 +1037,7 @@ body[class$="-dark"] .chip-value {
     color: var(--ink-palette-5, var(--palette-5));
     background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--palette-5) 35%, transparent);
-    border-radius: 0.6rem;
+    border-radius: var(--radius-control);
     transition: all 0.2s ease;
 }
 
@@ -1162,7 +1162,7 @@ body[class$="-dark"] .chip-value {
     color: var(--ink-color-success, var(--color-success));
     background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
-    border-radius: 0.6rem;
+    border-radius: var(--radius-readonly);
     white-space: nowrap;
 }
 

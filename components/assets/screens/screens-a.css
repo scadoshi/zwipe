@@ -512,7 +512,7 @@
 .skeleton-bar.skeleton-price-chip {
     width: 4.5rem;
     height: 1.6rem;
-    border-radius: 0.4rem;
+    border-radius: var(--radius-readonly);
 }
 
 .card-prices > .card-price-chip {
