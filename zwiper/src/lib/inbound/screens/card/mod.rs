@@ -216,7 +216,6 @@ fn CardScreen(open: Open) -> Element {
                                     key: "{widget.title}",
                                     widget,
                                     folded: stats_folded,
-                                    ghost: rsx! { "…" },
                                 }
                             }
                         }
