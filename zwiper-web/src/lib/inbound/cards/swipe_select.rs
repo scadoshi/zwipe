@@ -51,7 +51,6 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 use zwipe_ui::commander::deal::{self, Door};
@@ -245,28 +244,6 @@ async fn deal_page(
         .ok_or(())
 }
 
-/// `saved` narrowed to the commanders that lead a deck in `door`'s format (Commander for
-/// Suggested) by the format's commander rules, are legal in it where the door has a deck format,
-/// as the deal asks the server for, and that `filter` matches. A filter that doesn't build
-/// narrows by the format alone.
-fn maybeboard_matching(saved: Vec<Card>, filter: &CardQueryBuilder, door: Door) -> Vec<Card> {
-    let format = match door {
-        Door::Suggested => Format::Commander,
-        Door::DeckCreation(format) => format,
-    };
-    let mut narrowed = deal::door_filter(door, filter);
-    narrowed.set_is_commander_in_format(format);
-    let criteria = narrowed.build_criteria().or_else(|_| {
-        let mut format_only = deal::door_filter(door, &CardQueryBuilder::new());
-        format_only.set_is_commander_in_format(format);
-        format_only.build_criteria()
-    });
-    match criteria {
-        Ok(criteria) => Cards::from(saved).matching(&criteria).into(),
-        Err(_) => saved,
-    }
-}
-
 /// A Maybe load: how many commanders are saved, and the ones `filter` and the door's format let
 /// through. `Err(())` when it didn't load.
 type MaybeReply = Result<(usize, Vec<Card>), ()>;
@@ -281,18 +258,18 @@ async fn maybeboard_pile(authed: Authed, filter: &CardQueryBuilder, door: Door) 
         .await
         .ok_or(())?;
     let count = saved.len();
-    Ok((count, maybeboard_matching(saved, filter, door)))
+    Ok((count, deal::maybeboard_matching(saved, filter, door)))
 }
 
 /// The line Maybe's empty card carries, as the commander maybeboard's own list words it: the
 /// failed load, nothing saved, or saved commanders none of which pass. `None` with cards to swipe.
 fn maybe_note(reply: &MaybeReply) -> Option<&'static str> {
-    match reply {
-        Err(()) => Some(maybeboard::LOAD_FAILED),
-        Ok((0, _)) => Some(maybeboard::NO_COMMANDERS),
-        Ok((_, matched)) if matched.is_empty() => Some(maybeboard::NO_MATCH),
-        Ok(_) => None,
-    }
+    maybeboard::pile_note(
+        reply
+            .as_ref()
+            .ok()
+            .map(|(saved, matched)| (*saved, matched.len())),
+    )
 }
 
 /// The swipes `mode` takes from `source`, and whether left skips a commander for a week: the
@@ -355,6 +332,36 @@ struct Pile {
     maybe_line: Signal<Option<&'static str>>,
 }
 
+/// The door the From chip's Maybe pile is matched under, where the overlay has the chip: deck
+/// creation's commander slot, and the Commander maybeboard's swipe (`starts_deck`), whose Maybe
+/// pile is its saved commanders for Commander. Suggested only swipes its deal, so it has none.
+fn from_door(mode: SwipeMode, starts_deck: bool) -> Option<Door> {
+    match mode {
+        SwipeMode::Commanders(door @ Door::DeckCreation(_)) => Some(door),
+        SwipeMode::Commander(format) if starts_deck => Some(Door::DeckCreation(format)),
+        SwipeMode::Commanders(Door::Suggested)
+        | SwipeMode::Commander(_)
+        | SwipeMode::Partner
+        | SwipeMode::Background
+        | SwipeMode::SignatureSpell => None,
+    }
+}
+
+/// What the overlay is for, which names it and picks its hint: the suggested ranking, the
+/// Commander maybeboard's swipe (`starts_deck`, where a pick starts a deck), or a command-zone
+/// pick.
+fn overlay_mode(mode: SwipeMode, starts_deck: bool) -> SwipeSelectMode {
+    match mode {
+        SwipeMode::Commanders(Door::Suggested) => SwipeSelectMode::Suggested { has_filter: true },
+        _ if starts_deck => SwipeSelectMode::StartsDeck,
+        SwipeMode::Commander(_)
+        | SwipeMode::Commanders(Door::DeckCreation(_))
+        | SwipeMode::Partner
+        | SwipeMode::Background
+        | SwipeMode::SignatureSpell => SwipeSelectMode::Picking(mode.noun()),
+    }
+}
+
 /// The overlay. `on_select` takes the picked card; `on_close` is `Back`.
 /// See the module docs for the modes and their props.
 #[component]
@@ -375,8 +382,10 @@ pub fn SwipeSelect(
     let authed = use_authed().in_component(component::SWIPE_SELECT);
     let usage = telemetry::use_usage();
     let toast = use_toast();
-    // The From chip's source, for a mode that deals the merged ranking; kept across a close.
+    // The From chip's source, where the overlay has the chip ([`from_door`]); kept across a close.
     let mut source = use_signal(Source::default);
+    let maybe_door = from_door(mode, starts_deck);
+    let on_maybe_now = move || maybe_door.is_some() && *source.peek() == Source::Maybeboard;
     // Each source's filter, parked while another is picked.
     let mut parked: Signal<HashMap<Source, CardQueryBuilder>> = use_signal(HashMap::new);
     let pile = Pile {
@@ -409,6 +418,25 @@ pub fn SwipeSelect(
     // The Refresh count the pile was last dealt at; `None` before the first.
     let mut dealt_at: Signal<Option<u32>> = use_signal(|| None);
     let mut refreshes = use_signal(|| 0u32);
+    // Every fresh open starts on Search: closing on Maybe parks its filter, takes back Search's
+    // and deals afresh at the next open. A sheet or the details over the overlay keep it open, so
+    // they keep Maybe.
+    use_effect(move || {
+        if open() || maybe_door.is_none() || *source.peek() != Source::Maybeboard {
+            return;
+        }
+        let mut user_filter = user_filter;
+        let leaving = user_filter.peek().clone();
+        parked.write().insert(Source::Maybeboard, leaving);
+        let search = parked
+            .peek()
+            .get(&Source::Search)
+            .cloned()
+            .unwrap_or_default();
+        user_filter.set(search);
+        source.set(Source::Search);
+        dealt_at.set(None);
+    });
     let hint_open = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
     use_effect(move || {
@@ -438,11 +466,12 @@ pub fn SwipeSelect(
         loading_more.set(true);
         let ticket = loads.peek().current();
         let commander = commander_for_more.clone();
+        // The Maybe pile is whole once loaded.
+        if on_maybe_now() {
+            loading_more.set(false);
+            return;
+        }
         if let Some(door) = mode.door() {
-            if *source.peek() == Source::Maybeboard {
-                loading_more.set(false);
-                return;
-            }
             spawn(async move {
                 let dealt = dealt_ids(&stack.peek(), &excluded_now());
                 let applied = user_filter.peek().clone();
@@ -560,21 +589,10 @@ pub fn SwipeSelect(
         searched.set(false);
         suggestions.set(Vec::new());
         maybe_line.set(None);
-        if let Some(door) = mode.door() {
+        if let Some(door) = maybe_door.filter(|_| on_maybe_now()) {
             loading.set(true);
-            let at = *source.peek();
             spawn(async move {
                 let applied = user_filter.peek().clone();
-                if at == Source::Search {
-                    let dealt = dealt_ids(&CardStack::default(), &excluded_now());
-                    let reply = deal_page(authed, door, &applied, dealt).await;
-                    if !loads.peek().is_current(ticket) {
-                        return;
-                    }
-                    loading.set(false);
-                    land_deal(&pile, reply, /* first */ true);
-                    return;
-                }
                 let reply = maybeboard_pile(authed, &applied, door).await;
                 if !loads.peek().is_current(ticket) {
                     return;
@@ -587,6 +605,20 @@ pub fn SwipeSelect(
                     exhausted.set(true);
                     stack.write().replace(saved);
                 }
+            });
+            return;
+        }
+        if let Some(door) = mode.door() {
+            loading.set(true);
+            spawn(async move {
+                let applied = user_filter.peek().clone();
+                let dealt = dealt_ids(&CardStack::default(), &excluded_now());
+                let reply = deal_page(authed, door, &applied, dealt).await;
+                if !loads.peek().is_current(ticket) {
+                    return;
+                }
+                loading.set(false);
+                land_deal(&pile, reply, /* first */ true);
             });
             return;
         }
@@ -641,11 +673,8 @@ pub fn SwipeSelect(
         refreshes.set(next);
     });
 
-    let title = if mode == SwipeMode::Commanders(Door::Suggested) {
-        "Suggested commanders"
-    } else {
-        "Swipe select"
-    };
+    let hint_mode = overlay_mode(mode, starts_deck);
+    let title = hint_mode.title();
     // On a wide window the overlay sits under the nav, which names it, opens
     // its hint and closes it from the back arrow.
     let mut hint_from_nav = hint_open;
@@ -655,15 +684,6 @@ pub fn SwipeSelect(
         Callback::new(move |()| hint_from_nav.set(true)),
         Callback::new(move |()| on_close.call(())),
     );
-    let hint_mode = match mode {
-        SwipeMode::Commanders(Door::Suggested) => SwipeSelectMode::Suggested { has_filter: true },
-        _ if starts_deck => SwipeSelectMode::StartsDeck,
-        SwipeMode::Commander(_)
-        | SwipeMode::Commanders(Door::DeckCreation(_))
-        | SwipeMode::Partner
-        | SwipeMode::Background
-        | SwipeMode::SignatureSpell => SwipeSelectMode::Picking(mode.noun()),
-    };
 
     rsx! {
         div {
@@ -684,7 +704,7 @@ pub fn SwipeSelect(
                         refreshes.set(next);
                     },
                     user_filter,
-                    source: mode.door().map(|_| source),
+                    source: maybe_door.map(|_| source),
                     next_source,
                 }
                 // It scrolls as a screen does and ends as one, with the
@@ -1120,6 +1140,63 @@ mod tests {
 
     use super::*;
 
+    #[test]
+    fn from_shows_on_deck_creation_and_the_maybeboard_swipe_and_not_on_suggested() {
+        assert_eq!(
+            from_door(SwipeMode::Commanders(Door::Suggested), false),
+            None,
+            "Suggested only swipes its deal"
+        );
+        assert_eq!(
+            from_door(
+                SwipeMode::Commanders(Door::DeckCreation(Format::Brawl)),
+                false
+            ),
+            Some(Door::DeckCreation(Format::Brawl))
+        );
+        assert_eq!(
+            from_door(SwipeMode::Commander(Format::Commander), true),
+            Some(Door::DeckCreation(Format::Commander)),
+            "the maybeboard swipe's Maybe pile is Commander's"
+        );
+        for picking in [
+            SwipeMode::Commander(Format::Commander),
+            SwipeMode::Partner,
+            SwipeMode::Background,
+            SwipeMode::SignatureSpell,
+        ] {
+            assert_eq!(from_door(picking, false), None, "{picking:?}");
+        }
+        assert_eq!(Source::default(), Source::Search, "From starts on Search");
+    }
+
+    #[test]
+    fn every_swipe_names_itself_and_the_maybeboard_s_by_its_screen() {
+        let commander = SwipeMode::Commander(Format::Commander);
+        assert_eq!(
+            overlay_mode(commander, true).title(),
+            "Commander maybeboard",
+            "the Commanders screen's Maybeboard Swipe"
+        );
+        assert_eq!(overlay_mode(commander, false).title(), "Swipe select");
+        for picking in [
+            SwipeMode::Commanders(Door::DeckCreation(Format::Commander)),
+            SwipeMode::Partner,
+            SwipeMode::Background,
+            SwipeMode::SignatureSpell,
+        ] {
+            assert_eq!(
+                overlay_mode(picking, false).title(),
+                "Swipe select",
+                "{picking:?}"
+            );
+        }
+        assert_eq!(
+            overlay_mode(SwipeMode::Commanders(Door::Suggested), false).title(),
+            "Suggested commanders"
+        );
+    }
+
     /// A real card, as the API serves it.
     fn card() -> Card {
         serde_json::from_str(include_str!(
@@ -1134,20 +1211,20 @@ mod tests {
         let name = saved.scryfall_data.name.clone();
         let door = Door::Suggested;
         assert_eq!(
-            maybeboard_matching(vec![saved.clone()], &CardQueryBuilder::new(), door).len(),
+            deal::maybeboard_matching(vec![saved.clone()], &CardQueryBuilder::new(), door).len(),
             1,
             "no filter keeps every saved commander"
         );
         let mut miss = CardQueryBuilder::new();
         miss.set_name_contains("zzzzqqq");
         assert_eq!(
-            maybeboard_matching(vec![saved.clone()], &miss, door).len(),
+            deal::maybeboard_matching(vec![saved.clone()], &miss, door).len(),
             0,
             "a name it lacks drops it"
         );
         let mut hit = CardQueryBuilder::new();
         hit.set_name_contains(name);
-        assert_eq!(maybeboard_matching(vec![saved], &hit, door).len(), 1);
+        assert_eq!(deal::maybeboard_matching(vec![saved], &hit, door).len(), 1);
     }
 
     #[test]
@@ -1155,19 +1232,21 @@ mod tests {
         let vehicle = commander("Legendary Artifact — Vehicle");
         let none = CardQueryBuilder::new();
         assert_eq!(
-            maybeboard_matching(vec![vehicle.clone()], &none, Door::Suggested).len(),
+            deal::maybeboard_matching(vec![vehicle.clone()], &none, Door::Suggested).len(),
             1,
             "a legendary vehicle with power and toughness leads in Commander"
         );
         assert_eq!(
-            maybeboard_matching(vec![vehicle], &none, Door::DeckCreation(Format::Brawl)).len(),
+            deal::maybeboard_matching(vec![vehicle], &none, Door::DeckCreation(Format::Brawl))
+                .len(),
             0,
             "but not in Brawl"
         );
         let mut creature = commander("Legendary Creature — Human Wizard");
         creature.scryfall_data.legalities.brawl = Some(LegalityKind::Legal);
         assert_eq!(
-            maybeboard_matching(vec![creature], &none, Door::DeckCreation(Format::Brawl)).len(),
+            deal::maybeboard_matching(vec![creature], &none, Door::DeckCreation(Format::Brawl))
+                .len(),
             1
         );
     }
@@ -1181,13 +1260,14 @@ mod tests {
         meren.scryfall_data.legalities.standardbrawl = Some(LegalityKind::NotLegal);
         let none = CardQueryBuilder::new();
         assert_eq!(
-            maybeboard_matching(vec![meren.clone()], &none, Door::Suggested).len(),
+            deal::maybeboard_matching(vec![meren.clone()], &none, Door::Suggested).len(),
             1,
             "Suggested has no deck format to hold it to"
         );
         for format in [Format::Brawl, Format::StandardBrawl] {
             assert_eq!(
-                maybeboard_matching(vec![meren.clone()], &none, Door::DeckCreation(format)).len(),
+                deal::maybeboard_matching(vec![meren.clone()], &none, Door::DeckCreation(format))
+                    .len(),
                 0,
                 "{format:?}"
             );
@@ -1195,7 +1275,7 @@ mod tests {
         let mut legal = commander("Legendary Creature — Human Wizard");
         legal.scryfall_data.legalities.brawl = Some(LegalityKind::Legal);
         assert_eq!(
-            maybeboard_matching(vec![legal], &none, Door::DeckCreation(Format::Brawl)).len(),
+            deal::maybeboard_matching(vec![legal], &none, Door::DeckCreation(Format::Brawl)).len(),
             1
         );
     }
