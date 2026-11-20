@@ -6,9 +6,8 @@
 
 #![expect(
     clippy::unwrap_used,
-    clippy::indexing_slicing,
     clippy::arithmetic_side_effects,
-    reason = "a test: helpers outside #[test] fns unwrap and index, and a panic is the failure report"
+    reason = "a test: helpers outside #[test] fns unwrap and do page arithmetic, and a panic is the failure report"
 )]
 
 mod common;
@@ -49,7 +48,7 @@ fn commander_pool() -> Vec<common::CardFixture> {
                 .power("1")
                 .toughness("1")
                 .commander_legal()
-                .edhrec_rank(i32::try_from(i / 3).unwrap())
+                .edhrec_rank(i / 3)
         })
         .collect();
     // Commanders by their text, a non-legendary creature and a banned one, which the pool
@@ -95,8 +94,8 @@ async fn reference_page(pool: &sqlx::PgPool, seed: &str, offset: u32) -> Vec<Uui
     }
     // Sleeving the page keys it by id, so a probe the band already holds (the pool's tail) is
     // served once, where it first stands.
-    let mut seen = std::collections::HashSet::new();
-    ids.retain(|id| seen.insert(*id));
+    let mut served_once = std::collections::HashSet::new();
+    ids.retain(|id| served_once.insert(*id));
     ids
 }
 
