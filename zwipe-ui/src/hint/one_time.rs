@@ -4,7 +4,6 @@
 //! Whether a user has seen one is the server's to record, under
 //! [`OneTimeHint::key`]; this module only holds what the dialogs say.
 
-use zwipe_core::content::Surface;
 use zwipe_core::domain::user::hints::OneTimeHint;
 
 use super::{
@@ -436,36 +435,11 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             "Playstyle",
             vec![
                 line(vec![text(
-                    "Your colors, card roles and top Oracle tags from every deck you own in any format",
+                    "Your colors, card roles, top Oracle tags and staples from every deck you own in any format",
                 )]),
-                line(vec![text(
-                    "Below them, your top 10 commanders ranked against all your decks, best fit first",
-                )]),
-                bullet(vec![
-                    key("Create deck"),
-                    text(" begins a deck with that commander"),
-                ]),
-                bullet(vec![
-                    key("Maybeboard"),
-                    text(" saves it to your commander maybeboard"),
-                ]),
-                bullet(vec![
-                    key_in("Remove", Role::Error),
-                    text(" hides it for a week and pulls the next one up"),
-                ]),
-                bullet(vec![
-                    key("Swipe"),
-                    text(" deals the same ranking: "),
-                    emph("right", Role::Success),
-                    text(" starts a deck, "),
-                    emph("up", Role::Warning),
-                    text(" saves, "),
-                    emph("left", Role::Error),
-                    text(" skips it"),
-                ]),
-                bullet(vec![
-                    key("Show"),
-                    text(" narrows the list to one color identity"),
+                line(vec![
+                    text("Suggested commanders are on "),
+                    key("Commanders"),
                 ]),
             ],
         ),
@@ -522,14 +496,6 @@ fn up_saves() -> Block {
 /// The Swipe select hint, which changes with its overlay.
 #[must_use]
 pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
-    swipe_select_on(mode, Surface::App)
-}
-
-/// [`swipe_select`] as `surface` shows it: the web's Suggested swipe pages the deal under the
-/// screen's filter, so it keeps dealing and its funnel narrows by anything, where the app's deals
-/// a fixed ranking.
-#[must_use]
-pub fn swipe_select_on(mode: SwipeSelectMode, surface: Surface) -> HintContent {
     let mut blocks = match mode {
         SwipeSelectMode::Suggested { .. } => vec![
             bullet(vec![
@@ -588,23 +554,16 @@ pub fn swipe_select_on(mode: SwipeSelectMode, surface: Surface) -> HintContent {
     ]));
     let title = match mode {
         SwipeSelectMode::Suggested { has_filter } => {
-            let (depth, narrows) = match surface {
-                Surface::App => (
-                    "Best fit first, 100 deep. ",
-                    " narrows the stack to one color identity",
-                ),
-                Surface::Web => (
-                    "Best fit first, and it keeps dealing as you swipe. ",
-                    " narrows what it deals",
-                ),
-            };
             blocks.push(line(vec![
-                text(depth),
+                text("Best fit first, and it keeps dealing as you swipe. "),
                 icon_key(KeyIcon::Eye),
                 text(" shows why each one was suggested"),
             ]));
             if has_filter {
-                blocks.push(line(vec![icon_key(KeyIcon::Funnel), text(narrows)]));
+                blocks.push(line(vec![
+                    icon_key(KeyIcon::Funnel),
+                    text(" narrows what it deals"),
+                ]));
             }
             "Suggested commanders"
         }
@@ -620,25 +579,7 @@ pub fn swipe_select_on(mode: SwipeSelectMode, surface: Surface) -> HintContent {
     content(title, blocks)
 }
 
-/// [`content_for_user`] as `surface` shows it: the web app's own text for the hints whose screens
-/// differ from the app's (the welcome and Playstyle, whose suggestions the web moved to its
-/// Commanders screen). Every other hint, and every hint in the app, reads as
-/// [`content_for_user`] has it.
-#[must_use]
-pub fn content_on(
-    hint: OneTimeHint,
-    email_verified: bool,
-    surface: Surface,
-) -> Option<HintContent> {
-    if surface == Surface::Web
-        && let Some(web) = web_content(hint, email_verified)
-    {
-        return Some(web);
-    }
-    content_for_user(hint, email_verified)
-}
-
-/// The web's Commanders screen: its two lists and what each list's controls do.
+/// The Commanders screen: its two lists and what each list's controls do.
 fn commanders_hint() -> HintContent {
     content(
         "Commanders",
@@ -687,28 +628,6 @@ fn commanders_hint() -> HintContent {
     )
 }
 
-/// The web app's text for `hint` where it differs from the app's, else `None`.
-fn web_content(hint: OneTimeHint, email_verified: bool) -> Option<HintContent> {
-    if hint == OneTimeHint::FirstLogin {
-        return Some(welcome_on(!email_verified, Surface::Web));
-    }
-    if hint == OneTimeHint::SuggestedCommanders {
-        return Some(content(
-            "Playstyle",
-            vec![
-                line(vec![text(
-                    "Your colors, card roles, top Oracle tags and staples from every deck you own in any format",
-                )]),
-                line(vec![
-                    text("Suggested commanders are on "),
-                    key("Commanders"),
-                ]),
-            ],
-        ));
-    }
-    None
-}
-
 /// [`content_for`] for an account whose email is verified (`email_verified`) or not: a verified
 /// account's welcome leaves out verifying it. Every other hint reads the same.
 #[must_use]
@@ -721,25 +640,12 @@ pub fn content_for_user(hint: OneTimeHint, email_verified: bool) -> Option<HintC
 
 /// Home's welcome, with the line that asks to verify the email when `ask_to_verify`.
 fn welcome(ask_to_verify: bool) -> HintContent {
-    welcome_on(ask_to_verify, Surface::App)
-}
-
-/// [`welcome`] as `surface` shows it: the web's Colors line points to Commanders for suggestions.
-fn welcome_on(ask_to_verify: bool, surface: Surface) -> HintContent {
-    let suggestions = match surface {
-        Surface::App => bullet(vec![
-            key("Colors"),
-            text(" counts your decks' cards by color. "),
-            key("Playstyle"),
-            text(" suggests commanders"),
-        ]),
-        Surface::Web => bullet(vec![
-            key("Colors"),
-            text(" counts your decks' cards by color. "),
-            key("Commanders"),
-            text(" suggests ones that fit your decks"),
-        ]),
-    };
+    let suggestions = bullet(vec![
+        key("Colors"),
+        text(" counts your decks' cards by color. "),
+        key("Commanders"),
+        text(" suggests ones that fit your decks"),
+    ]);
     let mut blocks = vec![
         bullet(vec![
             key("Decks"),
@@ -848,7 +754,7 @@ mod tests {
             lines,
             [
                 "Decks shows your latest. Create deck starts one; All decks opens the full list",
-                "Colors counts your decks' cards by color. Playstyle suggests commanders",
+                "Colors counts your decks' cards by color. Commanders suggests ones that fit your decks",
                 "Account, the person up top or in the menu, has your email, password and Log out. Settings, the cog beside it, sets your theme and which cards show",
                 "Verify your email in Account to lift the deck and card limits",
             ]
@@ -904,7 +810,7 @@ mod tests {
         let welcome = content_for(OneTimeHint::FirstLogin).unwrap();
         assert_eq!(
             welcome.blocks[1].plain(),
-            "Colors counts your decks' cards by color. Playstyle suggests commanders"
+            "Colors counts your decks' cards by color. Commanders suggests ones that fit your decks"
         );
         let decks = content_for(OneTimeHint::DeckList).unwrap();
         assert_eq!(
@@ -958,12 +864,9 @@ mod tests {
     }
 
     #[test]
-    fn the_web_s_suggested_swipe_reads_as_the_deal_does() {
-        let web = swipe_select_on(
-            SwipeSelectMode::Suggested { has_filter: true },
-            Surface::Web,
-        );
-        let lines: Vec<String> = web.blocks.iter().map(Block::plain).collect();
+    fn the_suggested_swipe_reads_as_the_deal_does() {
+        let suggested = swipe_select(SwipeSelectMode::Suggested { has_filter: true });
+        let lines: Vec<String> = suggested.blocks.iter().map(Block::plain).collect();
         assert!(
             lines
                 .iter()
@@ -980,14 +883,6 @@ mod tests {
             lines.last().map(String::as_str),
             Some("funnel narrows what it deals")
         );
-        assert_eq!(
-            swipe_select_on(
-                SwipeSelectMode::Suggested { has_filter: true },
-                Surface::App
-            ),
-            swipe_select(SwipeSelectMode::Suggested { has_filter: true }),
-            "the app's swipe reads as it does"
-        );
     }
 
     #[test]
@@ -998,10 +893,7 @@ mod tests {
         let suggested = swipe_select(SwipeSelectMode::Suggested { has_filter: true });
         assert_eq!(suggested.title, "Suggested commanders");
         assert_eq!(suggested.blocks.len(), 6);
-        assert_eq!(
-            suggested.blocks[5].plain(),
-            "funnel narrows the stack to one color identity"
-        );
+        assert_eq!(suggested.blocks[5].plain(), "funnel narrows what it deals");
         assert_eq!(suggested.blocks[5].spans()[0], icon_key(KeyIcon::Funnel));
         assert_eq!(
             swipe_select(SwipeSelectMode::Suggested { has_filter: false })
@@ -1017,32 +909,20 @@ mod tests {
     }
 
     #[test]
-    fn the_web_reads_its_own_welcome_playstyle_and_commanders_hints() {
+    fn the_welcome_playstyle_and_commanders_hints_send_suggestions_to_commanders() {
         let plain = |c: HintContent| c.blocks.iter().map(Block::plain).collect::<Vec<String>>();
-        for hint in [
-            OneTimeHint::FirstLogin,
-            OneTimeHint::SuggestedCommanders,
-            OneTimeHint::CommanderMaybeboard,
-            OneTimeHint::Activity,
-        ] {
-            assert_eq!(
-                content_on(hint, false, Surface::App),
-                content_for_user(hint, false),
-                "the app reads today's text: {hint:?}"
-            );
-        }
-        let welcome = plain(content_on(OneTimeHint::FirstLogin, true, Surface::Web).unwrap());
+        let welcome = plain(content_for_user(OneTimeHint::FirstLogin, true).unwrap());
         assert!(welcome.contains(
             &"Colors counts your decks' cards by color. Commanders suggests ones that fit your decks"
                 .to_owned()
         ));
-        let playstyle = content_on(OneTimeHint::SuggestedCommanders, true, Surface::Web).unwrap();
+        let playstyle = content_for(OneTimeHint::SuggestedCommanders).unwrap();
         assert_eq!(playstyle.title, "Playstyle");
         assert_eq!(
             plain(playstyle).last().map(String::as_str),
             Some("Suggested commanders are on Commanders")
         );
-        let commanders = content_on(OneTimeHint::Commanders, true, Surface::Web).unwrap();
+        let commanders = content_for(OneTimeHint::Commanders).unwrap();
         assert_eq!(commanders.title, "Commanders");
         let lines = plain(commanders);
         assert_eq!(
@@ -1062,16 +942,6 @@ mod tests {
                 ][..]
             ),
             "Swipe's bullet names what each list deals, then the directions"
-        );
-        assert_eq!(
-            content_on(OneTimeHint::CommanderMaybeboard, true, Surface::Web),
-            content_for_user(OneTimeHint::CommanderMaybeboard, true),
-            "the maybeboard's own hint keeps its text"
-        );
-        assert_eq!(
-            content_on(OneTimeHint::Activity, true, Surface::Web),
-            content_for_user(OneTimeHint::Activity, true),
-            "a hint the web shares reads the same"
         );
     }
 }
