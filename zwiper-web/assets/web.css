@@ -3047,8 +3047,11 @@ body {
         flex-shrink: 0;
     }
 
+    /* Room for five results at their widest (the grid's 15rem), their
+       gaps and the column's side padding; the grid fits as many as the
+       window allows, up to that. */
     .web-card-list {
-        max-width: 60rem;
+        max-width: calc(5 * 15rem + 4 * var(--space-4) + 2 * var(--space-4));
     }
 }
 
