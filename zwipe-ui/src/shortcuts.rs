@@ -446,17 +446,18 @@ pub fn card_rows_groups(layout: ListLayout) -> Vec<SheetGroup> {
     sheet_groups(card_rows_keys(layout))
 }
 
-/// The Commander maybeboard's groups: a screen of card rows in one list ([`card_rows_groups`]),
-/// with the filter, the filter at its name and Quick add under Page.
+/// The web's Commanders screen's groups: two lists of card rows side by side
+/// ([`card_rows_groups`]), with the one filter over both lists, that filter at its name and
+/// Quick add under Page.
 #[must_use]
 pub fn commander_maybeboard_groups() -> Vec<SheetGroup> {
     sheet_groups(ScreenKeys {
         page: vec![
-            (&["f"], "Filter"),
-            FILTER_NAME_ROW,
+            (&["f"], "Filter both lists"),
+            (&[FILTER_NAME_KEY], "Filter both lists by name"),
             (&[QUICK_ADD_KEY], "Quick add"),
         ],
-        ..card_rows_keys(ListLayout::One)
+        ..card_rows_keys(ListLayout::SideBySide)
     })
 }
 
@@ -780,7 +781,7 @@ mod tests {
     }
 
     #[test]
-    fn the_commander_maybeboard_lists_its_filter_and_quick_add_keys() {
+    fn the_commanders_screen_lists_its_two_lists_moves_and_its_one_filter() {
         assert_eq!(
             outline(&commander_maybeboard_groups())
                 .get(..3)
@@ -788,16 +789,17 @@ mod tests {
             Some(vec![
                 (
                     "Navigation",
-                    vec!["↑", "j", "Home", "gg", "Shift+G", "Enter"]
+                    vec!["↑", "h", "Home", "gg", "Shift+G", "Enter"]
                 ),
                 ("Card", vec!["p", "Shift+P", "i", "v", "d"]),
                 ("Page", vec!["f", "/", "q", "t", "?", "Shift+H", "Esc"]),
-            ])
+            ]),
+            "two lists side by side: h and l cross between them"
         );
         let rows = rows_of(&commander_maybeboard_groups());
         for row in [
-            (&["f"][..], "Filter"),
-            FILTER_NAME_ROW,
+            (&["f"][..], "Filter both lists"),
+            (&["/"][..], "Filter both lists by name"),
             (&["q"][..], "Quick add"),
         ] {
             assert!(rows.contains(&row), "{row:?}");

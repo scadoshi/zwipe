@@ -5,13 +5,14 @@ use std::borrow::Cow;
 use uuid::Uuid;
 
 use crate::http::contracts::suggestions::{
-    HttpActivity, HttpClearedDismissals, HttpCommanderSuggestions, HttpDismissCommander,
-    HttpPlayStyleSummary,
+    HttpActivity, HttpClearedDismissals, HttpCommanderDeal, HttpCommanderDealPage,
+    HttpCommanderSuggestions, HttpDismissCommander, HttpPlayStyleSummary,
 };
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths;
 use crate::http::paths::{
-    ACTIVITY_ROUTE, COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, PLAYSTYLE_ROUTE,
+    ACTIVITY_ROUTE, COMMANDER_DEAL_ROUTE, COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE,
+    PLAYSTYLE_ROUTE,
 };
 
 /// The user's deck count and color map, for Home's play
@@ -53,6 +54,22 @@ impl Endpoint for GetCommanderSuggestions {
     }
     fn query(&self) -> Option<String> {
         Some(format!("limit={}", self.0))
+    }
+}
+
+/// One page of the merged commander ranking over every commander the body's filter matches, best
+/// fit first. The server clamps the limit to `MAX_SUGGESTION_LIMIT`.
+#[derive(Debug)]
+pub struct DealCommanders(pub HttpCommanderDeal);
+impl Endpoint for DealCommanders {
+    const METHOD: Method = Method::Post;
+    type Request = HttpCommanderDeal;
+    type Response = HttpCommanderDealPage;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(COMMANDER_DEAL_ROUTE)
+    }
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
     }
 }
 
@@ -105,6 +122,22 @@ mod tests {
         let endpoint = GetCommanderSuggestions(100);
         assert_eq!(endpoint.path(), "/api/commander/suggestions");
         assert_eq!(endpoint.query().as_deref(), Some("limit=100"));
+    }
+
+    #[test]
+    fn a_deal_posts_its_body_to_the_deal_route() {
+        let deal = HttpCommanderDeal {
+            filter: None,
+            format: None,
+            offset: 10,
+            limit: 10,
+            exclude: vec![],
+            keep_maybeboard: false,
+        };
+        let endpoint = DealCommanders(deal.clone());
+        assert_eq!(endpoint.path(), "/api/commander/deal");
+        assert_eq!(DealCommanders::METHOD, Method::Post);
+        assert_eq!(endpoint.body(), Some(&deal));
     }
 
     #[test]

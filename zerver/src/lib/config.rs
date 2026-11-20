@@ -221,12 +221,9 @@ impl Config {
             Err(_) => REFRESH_REUSE_SECONDS_DEFAULT,
         };
         let refresh_reuse_window = Duration::seconds(refresh_reuse_seconds);
-        let web_base_url = std::env::var(WEB_BASE_URL_KEY)
-            .unwrap_or_else(|_| WEB_BASE_URL_DEFAULT.to_string())
-            .trim_end_matches('/')
-            .to_string();
-        let support_email_address = std::env::var(SUPPORT_EMAIL_ADDRESS_KEY)
-            .unwrap_or_else(|_| SUPPORT_EMAIL_ADDRESS_DEFAULT.to_string());
+        let web_base_url = web_base_url(std::env::var(WEB_BASE_URL_KEY).ok().as_deref());
+        let support_email_address =
+            support_email_address(std::env::var(SUPPORT_EMAIL_ADDRESS_KEY).ok());
         Ok(Self {
             jwt_secret,
             database_url,
@@ -244,6 +241,120 @@ impl Config {
             support_email_address,
         })
     }
+}
+
+/// Whether a `zerver-admin` command sends mail, and so needs the Resend settings.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AdminMail {
+    /// It mails the account: `RESEND_API_KEY` and `RESEND_EMAIL_FROM` are required.
+    Sends,
+    /// It sends nothing, and reads no Resend setting.
+    Silent,
+}
+
+/// Configuration for `zerver-admin`: only what its commands use.
+///
+/// Every command needs `DATABASE_URL`. A command that sends mail needs the Resend settings too,
+/// read only under [`AdminMail::Sends`]. The web base URL and support address keep zerver's
+/// defaults. No admin command mints a token or serves a request, so the JWT secret, bind address
+/// and the rest of [`Config`] are never read.
+pub struct AdminConfig {
+    /// PostgreSQL connection URL (e.g., `"postgres://user:pass@host/db"`).
+    pub database_url: String,
+
+    /// Public web base URL for the links in the emails it sends. Defaults to zerver's.
+    pub web_base_url: String,
+
+    /// The support address, the default reply-to of its notices. Defaults to zerver's.
+    pub support_email_address: String,
+
+    /// The Resend settings, present under [`AdminMail::Sends`] only.
+    pub mail: Option<AdminMailConfig>,
+}
+
+/// The Resend settings a `zerver-admin` command that sends mail reads.
+pub struct AdminMailConfig {
+    /// Resend API key for sending transactional email.
+    pub resend_api_key: String,
+
+    /// Sender address for outbound email (e.g. `"noreply@zwipe.net"`).
+    pub resend_from_email: String,
+}
+
+/// Redacted: the database URL carries its password.
+impl std::fmt::Debug for AdminConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AdminConfig")
+            .field("database_url", &"REDACTED")
+            .field("web_base_url", &self.web_base_url)
+            .field("support_email_address", &self.support_email_address)
+            .field("mail", &self.mail)
+            .finish()
+    }
+}
+
+/// Redacted: the Resend key is a secret.
+impl std::fmt::Debug for AdminMailConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AdminMailConfig")
+            .field("resend_api_key", &"REDACTED")
+            .field("resend_from_email", &self.resend_from_email)
+            .finish()
+    }
+}
+
+impl AdminConfig {
+    /// Loads the settings a command needs from the environment, after a `.env` file in the
+    /// working directory if there is one.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `DATABASE_URL` is missing, or under [`AdminMail::Sends`] if
+    /// `RESEND_API_KEY` or `RESEND_EMAIL_FROM` is.
+    pub fn from_env(mail: AdminMail) -> anyhow::Result<Self> {
+        dotenvy::dotenv().ok();
+        Self::from_vars(|key| std::env::var(key).ok(), mail)
+    }
+
+    /// Loads the settings a command needs from `var`, which answers a variable's value by name.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `DATABASE_URL` is missing, or under [`AdminMail::Sends`] if
+    /// `RESEND_API_KEY` or `RESEND_EMAIL_FROM` is.
+    pub fn from_vars(
+        var: impl Fn(&str) -> Option<String>,
+        mail: AdminMail,
+    ) -> anyhow::Result<Self> {
+        let required =
+            |key: &str| var(key).with_context(|| format!("failed to get variable from env: {key}"));
+        let database_url = required(DATABASE_URL_KEY)?;
+        let mail = match mail {
+            AdminMail::Sends => Some(AdminMailConfig {
+                resend_api_key: required(RESEND_API_KEY_KEY)?,
+                resend_from_email: required(RESEND_EMAIL_FROM_KEY)?,
+            }),
+            AdminMail::Silent => None,
+        };
+        Ok(Self {
+            database_url,
+            web_base_url: web_base_url(var(WEB_BASE_URL_KEY).as_deref()),
+            support_email_address: support_email_address(var(SUPPORT_EMAIL_ADDRESS_KEY)),
+            mail,
+        })
+    }
+}
+
+/// The public web base URL from `raw`, zerver's default when unset, with no trailing slash.
+fn web_base_url(raw: Option<&str>) -> String {
+    raw.unwrap_or(WEB_BASE_URL_DEFAULT)
+        .trim_end_matches('/')
+        .to_string()
+}
+
+/// The support address from `raw`, zerver's default when unset.
+fn support_email_address(raw: Option<String>) -> String {
+    raw.unwrap_or_else(|| SUPPORT_EMAIL_ADDRESS_DEFAULT.to_string())
 }
 
 /// Minimal configuration for the `zervice` sync binary.
@@ -332,4 +443,94 @@ fn setting_is(key: &str, on_value: &str) -> bool {
 /// Retrieves an environment variable by key with a descriptive error on failure.
 fn env_var_by_key(key: &str) -> anyhow::Result<String> {
     std::env::var(key).context(format!("failed to get variable from env: {key}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use super::*;
+
+    /// A lookup over `vars` alone.
+    fn vars(vars: &[(&str, &str)]) -> impl Fn(&str) -> Option<String> {
+        let vars: HashMap<String, String> = vars
+            .iter()
+            .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
+            .collect();
+        move |key| vars.get(key).cloned()
+    }
+
+    #[test]
+    fn a_silent_admin_command_needs_only_the_database_url() {
+        let config = AdminConfig::from_vars(
+            vars(&[("DATABASE_URL", "postgres:///z")]),
+            AdminMail::Silent,
+        )
+        .unwrap();
+        assert_eq!(config.database_url, "postgres:///z");
+        assert!(config.mail.is_none());
+        assert_eq!(
+            config.web_base_url,
+            WEB_BASE_URL_DEFAULT.trim_end_matches('/')
+        );
+        assert_eq!(config.support_email_address, SUPPORT_EMAIL_ADDRESS_DEFAULT);
+    }
+
+    #[test]
+    fn an_admin_command_that_sends_mail_needs_the_resend_settings() {
+        let err =
+            AdminConfig::from_vars(vars(&[("DATABASE_URL", "postgres:///z")]), AdminMail::Sends)
+                .unwrap_err();
+        assert!(err.to_string().contains(RESEND_API_KEY_KEY), "{err}");
+
+        let config = AdminConfig::from_vars(
+            vars(&[
+                ("DATABASE_URL", "postgres:///z"),
+                ("RESEND_API_KEY", "re_key"),
+                ("RESEND_EMAIL_FROM", "noreply@test.local"),
+                ("WEB_BASE_URL", "https://example.test/"),
+                ("SUPPORT_EMAIL_ADDRESS", "help@test.local"),
+            ]),
+            AdminMail::Sends,
+        )
+        .unwrap();
+        let mail = config.mail.unwrap();
+        assert_eq!(mail.resend_api_key, "re_key");
+        assert_eq!(mail.resend_from_email, "noreply@test.local");
+        assert_eq!(config.web_base_url, "https://example.test");
+        assert_eq!(config.support_email_address, "help@test.local");
+    }
+
+    #[test]
+    fn every_admin_command_needs_the_database_url() {
+        for mail in [AdminMail::Silent, AdminMail::Sends] {
+            let err = AdminConfig::from_vars(
+                vars(&[
+                    ("RESEND_API_KEY", "k"),
+                    ("RESEND_EMAIL_FROM", "f@test.local"),
+                ]),
+                mail,
+            )
+            .unwrap_err();
+            assert!(err.to_string().contains(DATABASE_URL_KEY), "{err}");
+        }
+    }
+
+    #[test]
+    fn the_debug_output_hides_the_database_url_and_the_resend_key() {
+        let config = AdminConfig::from_vars(
+            vars(&[
+                ("DATABASE_URL", "postgres://u:hunter2@h/z"),
+                ("RESEND_API_KEY", "re_secret"),
+                ("RESEND_EMAIL_FROM", "f@test.local"),
+            ]),
+            AdminMail::Sends,
+        )
+        .unwrap();
+        let debug = format!("{config:?}");
+        assert!(
+            !debug.contains("hunter2") && !debug.contains("re_secret"),
+            "{debug}"
+        );
+    }
 }

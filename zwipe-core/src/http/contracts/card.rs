@@ -190,6 +190,7 @@ mod tests {
     use serde_json::json;
 
     use super::*;
+    use crate::domain::card::models::lookup::MAX_LOOKUP_NAME_CHARS;
 
     fn read(body: serde_json::Value) -> Result<HttpCardLookup, String> {
         serde_json::from_value(body).map_err(|e| e.to_string())
@@ -293,7 +294,7 @@ mod tests {
             json!({ "name": "x", "colors": ["P"] }),
             json!({ "name": "x", "card_roles": ["teleport"] }),
             json!({ "name": "x", "types": ["Gob;lin"] }),
-            json!({ "name": "a".repeat(101) }),
+            json!({ "name": "a".repeat(MAX_LOOKUP_NAME_CHARS + 1) }),
         ] {
             assert!(read(body.clone()).is_err(), "{body}");
         }

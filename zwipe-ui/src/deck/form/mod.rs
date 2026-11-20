@@ -217,6 +217,21 @@ fn is_time_lord_doctor(card: &Card) -> bool {
         .is_some_and(|line| line.contains(TIME_LORD_DOCTOR))
 }
 
+/// Narrows `builder` to the cards that can lead a deck in `format`: its commander rules, and
+/// legal in it, joined to any legality the builder already asks for, since a commander the format
+/// doesn't allow can't lead the deck.
+pub fn narrow_to_commanders(builder: &mut CardQueryBuilder, format: Format) {
+    builder.set_is_commander_in_format(format);
+    let mut legal_in: Vec<String> = builder
+        .legalities_contains_all()
+        .map_or_else(Vec::new, <[String]>::to_vec);
+    let key = format.to_legality_key().to_owned();
+    if !legal_in.contains(&key) {
+        legal_in.push(key);
+    }
+    builder.set_legalities_contains_all(legal_in);
+}
+
 /// The typeahead search for `slot`: the name typed, narrowed by the slot's rule while its Filter is on.
 ///
 /// # Errors
@@ -241,7 +256,7 @@ pub fn search_query(
         match slot {
             Slot::Commander => {
                 if let Some(format) = format {
-                    builder.set_is_commander_in_format(format);
+                    narrow_to_commanders(&mut builder, format);
                 }
             }
             Slot::Partner => narrow_to_partners(&mut builder, commander),
@@ -277,7 +292,7 @@ pub fn swipe_query(
     match slot {
         Slot::Commander => {
             if let Some(format) = format {
-                builder.set_is_commander_in_format(format);
+                narrow_to_commanders(&mut builder, format);
             }
         }
         Slot::Partner => narrow_to_partners(&mut builder, commander),
@@ -338,6 +353,8 @@ pub enum ImportTone {
 
 #[cfg(test)]
 mod tests {
+    use zwipe_core::domain::card::scryfall_data::legalities::LegalityKind;
+
     use super::*;
     use crate::test_support::card;
 
@@ -685,6 +702,61 @@ mod tests {
         let (got, added) = reseed_oracle_tags(&full, &[], &tags(&["more"]));
         assert_eq!(got.len(), MAX_DECK_ORACLE_TAGS);
         assert!(!added, "no room for the seed");
+    }
+
+    /// Meren of Clan Nel Toth as the catalog holds it: a legendary creature legal in Commander and
+    /// in neither Brawl.
+    fn meren() -> Card {
+        let mut meren = card("Meren of Clan Nel Toth");
+        meren.scryfall_data.type_line = Some("Legendary Creature — Human Shaman".to_owned());
+        meren.scryfall_data.legalities.commander = Some(LegalityKind::Legal);
+        meren.scryfall_data.legalities.brawl = Some(LegalityKind::NotLegal);
+        meren.scryfall_data.legalities.standardbrawl = Some(LegalityKind::NotLegal);
+        meren
+    }
+
+    #[test]
+    fn a_commander_pick_holds_to_its_format_s_legality() {
+        let mut filter = CardQueryBuilder::new();
+        filter.set_legalities_contains_all(vec!["commander".to_owned()]);
+        let swipe = swipe_query(&filter, Slot::Commander, Some(Format::Brawl), None, 0).unwrap();
+        assert_eq!(
+            swipe.criteria().legalities_contains_all(),
+            Some(["commander".to_owned(), "brawl".to_owned()].as_slice()),
+            "the format joins what the user asked for"
+        );
+        let typed = search_query(
+            Slot::Commander,
+            "meren",
+            true,
+            Some(Format::StandardBrawl),
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            typed.criteria().legalities_contains_all(),
+            Some(["standardbrawl".to_owned()].as_slice())
+        );
+        let open =
+            search_query(Slot::Commander, "meren", false, Some(Format::Brawl), None).unwrap();
+        assert_eq!(
+            open.criteria().legalities_contains_all(),
+            None,
+            "with its Filter off the typeahead finds any card"
+        );
+    }
+
+    #[test]
+    fn meren_leads_a_commander_deck_and_not_a_brawl_one() {
+        let none = CardQueryBuilder::new();
+        for (format, leads) in [
+            (Format::Commander, true),
+            (Format::Brawl, false),
+            (Format::StandardBrawl, false),
+        ] {
+            let query = swipe_query(&none, Slot::Commander, Some(format), None, 0).unwrap();
+            assert_eq!(query.criteria().matches(&meren()), leads, "{format:?}");
+        }
     }
 
     #[test]

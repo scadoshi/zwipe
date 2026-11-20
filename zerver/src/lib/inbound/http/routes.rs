@@ -475,6 +475,7 @@ pub fn private_routes(jwt_secret: JwtSecret, limits: &RateLimits) -> Router<AppS
                     "/commander",
                     Router::new()
                         .route("/suggestions", get(deck::get_commander_suggestions))
+                        .route("/deal", post(deck::deal_commanders))
                         .route(
                             "/suggestions/dismissals",
                             post(deck::dismiss_commander).delete(deck::clear_commander_dismissals),

@@ -151,10 +151,13 @@ body {
     opacity: var(--nav-fade, 1);
 }
 
-/* The title holds the middle column whatever sits in the left corner. */
+/* The title holds the middle column whatever sits in the left corner, and
+   may shrink below its text's width, so a long one truncates there. */
 .app-nav .nav-persistent {
     grid-column: 2;
     grid-row: 1;
+    min-width: 0;
+    max-width: 100%;
 }
 
 /* The open menu drops over the screen instead of pushing it down. It leaves

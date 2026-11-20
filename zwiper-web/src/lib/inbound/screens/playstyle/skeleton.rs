@@ -2,11 +2,11 @@
 //! text a ghost bar in the element that holds it, so the swap to the real
 //! page moves nothing.
 
+use components::DataBarGhost;
 use dioxus::prelude::*;
 
 use crate::inbound::chrome::ghost::{
-    GhostChip, GhostChipBars, GhostChipRow, GhostFold, GhostHint, GhostSection, GhostShowRow,
-    GhostText,
+    GhostChipBars, GhostChipRow, GhostFold, GhostHint, GhostSection, GhostShowRow, GhostText,
 };
 
 /// The Card roles chart's ghost chips, as wide as the roles' short labels.
@@ -57,28 +57,33 @@ fn SummaryGhost() -> Element {
     }
 }
 
-/// The Oracle tags table: its four heads, then a tag chip and three counts
-/// per row.
+/// The Oracle tags table, all ghost: its four column names (three with their `?`), then a tag
+/// and three bars per row, each bar in its column's color, in the shared data table's rows and
+/// columns.
 #[component]
 fn TagTableGhost() -> Element {
     rsx! {
-        div { class: "tag-table",
-            div { class: "tag-table-head",
-                span { class: "settings-row-label", GhostText { chars: 3 } }
-            }
-            for (tone, chars) in [("p3", 5), ("p5", 5), ("p2", 6)] {
-                div { class: "tag-table-head tag-table-head-{tone}",
-                    span { class: "settings-row-label", GhostText { chars } }
-                    GhostHint {}
+        table { class: "data-table tag-data-table",
+            thead {
+                tr {
+                    th { scope: "col", {table_ghost(3)} }
+                    for chars in [5, 5, 6] {
+                        th { scope: "col", class: "data-table-bar",
+                            {table_ghost(chars)}
+                            GhostHint {}
+                        }
+                    }
                 }
             }
-            for chars in TAG_CHIPS.iter().copied().cycle().take(TAG_ROWS) {
-                div { class: "tag-table-tag",
-                    GhostChip { chars, button: true }
-                }
-                for tone in ["p3", "p5", "p2"] {
-                    span { class: "tag-table-num",
-                        span { class: "skeleton-bar skeleton-chip web-ghost-count-chip stat-chip-{tone} skeleton-tinted" }
+            tbody {
+                for (i, chars) in TAG_CHIPS.iter().copied().cycle().take(TAG_ROWS).enumerate() {
+                    tr { key: "{i}",
+                        th { scope: "row", {table_ghost(chars)} }
+                        for (tone, percent) in ghost_bars(i) {
+                            td { class: "data-table-bar",
+                                DataBarGhost { percent, tone }
+                            }
+                        }
                     }
                 }
             }
@@ -86,11 +91,27 @@ fn TagTableGhost() -> Element {
     }
 }
 
-/// A card list: its header (the title and `actions` ghosts), then `rows`
-/// below the filter rows `filters`, which sit inside the panel below the
-/// breakpoint.
+/// Row `i`'s three ghost bars, each in its column's color, shortening down the table as the
+/// loaded bars do.
+fn ghost_bars(i: usize) -> [(&'static str, u32); 3] {
+    let step = u32::try_from(i).unwrap_or(0).saturating_mul(7);
+    [
+        ("p3", 90_u32.saturating_sub(step).max(20)),
+        ("p5", 80_u32.saturating_sub(step).max(15)),
+        ("p2", 100_u32.saturating_sub(step).max(25)),
+    ]
+}
+
+/// A data table cell's ghost, `chars` characters wide.
+fn table_ghost(chars: u8) -> Element {
+    rsx! {
+        span { class: "skeleton-bar data-table-ghost", style: "width: {chars}ch;" }
+    }
+}
+
+/// A card list: its header (the title and `actions` ghosts), then its rows.
 #[component]
-fn ListGhost(title: u8, swipe: bool, filters: Option<Element>) -> Element {
+fn ListGhost(title: u8, swipe: bool) -> Element {
     rsx! {
         div { class: "maybeboard-list card-group",
             div { class: "card-group-header card-group-header-with-hint",
@@ -101,9 +122,6 @@ fn ListGhost(title: u8, swipe: bool, filters: Option<Element>) -> Element {
                     }
                     GhostHint {}
                 }
-            }
-            if let Some(filters) = filters {
-                div { class: "web-card-group-filters", {filters} }
             }
             for i in 0..LIST_ROWS {
                 div { key: "{i}", class: "skeleton-card-row web-ghost-card-row",
@@ -116,15 +134,11 @@ fn ListGhost(title: u8, swipe: bool, filters: Option<Element>) -> Element {
 }
 
 /// The page while it loads, in the loaded page's layout: on a wide window
-/// Summary beside Colors, Card roles beside Oracle tags, then the
-/// suggestions beside Staples with their chip rows above them; below the
-/// breakpoint the accordion with Colors open, then the lists with their
-/// chip rows inside.
+/// Summary beside Colors, Card roles beside Oracle tags, then Staples across
+/// the page with its chip rows above it; below the breakpoint the accordion
+/// with Colors open, then Staples with its chip rows above it too.
 #[component]
 pub fn PlaystyleSkeleton(wide: bool) -> Element {
-    let show = rsx! {
-        GhostShowRow { pips: 3 }
-    };
     let staples = rsx! {
         GhostChipRow { label: 4, chips: vec![3, 8, 4] }
         GhostShowRow { label: 5, pips: 3, art: false }
@@ -150,33 +164,45 @@ pub fn PlaystyleSkeleton(wide: bool) -> Element {
                     }
                 }
                 div { class: "web-playstyle-list",
-                    div { class: "web-playstyle-cell web-playstyle-suggested",
-                        if wide {
-                            div { class: "deck-controls", {show.clone()} }
-                        }
-                        ListGhost { title: 20, swipe: true, filters: (!wide).then_some(show) }
-                    }
                     div { class: "web-playstyle-cell web-playstyle-staples",
-                        if wide {
-                            div { class: "deck-controls", {staples.clone()} }
-                        }
-                        ListGhost { title: 7, swipe: false, filters: (!wide).then_some(staples) }
-                    }
-                    div { class: "web-playstyle-cell web-playstyle-danger",
-                        div { class: "settings-list danger-zone",
-                            div { class: "settings-list-header",
-                                span { class: "settings-list-title", GhostText { chars: 11 } }
-                            }
-                            div { class: "settings-row",
-                                span { class: "settings-row-label", GhostText { chars: 11 } }
-                                div { class: "settings-row-value",
-                                    span { class: "skeleton-bar skeleton-chip web-ghost-action" }
-                                }
-                            }
-                        }
+                        div { class: "deck-controls", {staples} }
+                        ListGhost { title: 7, swipe: false }
                     }
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn render(app: fn() -> Element) -> String {
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dioxus_ssr::render(&dom)
+    }
+
+    #[test]
+    fn the_tag_table_ghosts_every_bar_in_its_own_color_and_no_chips() {
+        let html = render(|| rsx! { TagTableGhost {} });
+        assert!(
+            html.contains(r#"<table class="data-table tag-data-table">"#),
+            "{html}"
+        );
+        for tone in ["p3", "p5", "p2"] {
+            assert_eq!(
+                html.matches(&format!("data-bar data-bar-{tone} data-bar-ghost"))
+                    .count(),
+                TAG_ROWS,
+                "a {tone} ghost bar in every row: {html}"
+            );
+        }
+        assert!(!html.contains("stat-chip"), "no chip ghosts: {html}");
+        assert!(
+            !html.contains("skeleton-chip web-ghost-count-chip"),
+            "no count chip ghosts: {html}"
+        );
     }
 }

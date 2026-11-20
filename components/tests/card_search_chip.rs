@@ -256,3 +256,18 @@ fn the_resting_nav_box_answers_a_mouse_as_the_nav_buttons_do() {
         "a hovered resting box takes the accent border, as the nav buttons do"
     );
 }
+
+#[test]
+fn the_box_takes_at_most_the_model_s_query_length() {
+    let html = render(|| {
+        let model = use_signal(State::new);
+        rsx! {
+            CardSearchBar { model, on_action: move |_: Action| {}, input_id: "nav-card-search".to_owned() }
+        }
+    });
+    let expected = format!(
+        r#"maxlength="{}""#,
+        zwipe_ui::screens::card_search::MAX_QUERY_CHARS
+    );
+    assert!(html.contains(&expected), "{expected} on the box: {html}");
+}

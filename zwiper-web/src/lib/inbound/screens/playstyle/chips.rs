@@ -1,7 +1,5 @@
-//! Playstyle's identity chips: an identity drawn as its name and pips, and
-//! the Show row that narrows the list and the Swipe pile to one identity.
+//! Playstyle's identity chips: an identity drawn as its name and pips.
 
-use components::Chip;
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::colors::{Color, identity_name};
 use zwipe_ui::playstyle::identity_label;
@@ -48,47 +46,6 @@ pub fn IdentityPips(
             if let Some(count) = count {
                 span { "{count}" }
             }
-        }
-    }
-}
-
-/// The Show chip row: the label, `All`, one chip per identity in
-/// `identities`, then `children` (the screen's `Art` toggle). Single select
-/// over `active_identity`, `None` being All; the selected chip tapped again
-/// is All. The screen and Swipe select's filter render it over the same
-/// signal, so a tap in either filters both.
-#[component]
-pub fn ShowIdentityChips(
-    mut active_identity: Signal<Option<Vec<Color>>>,
-    identities: Vec<Vec<Color>>,
-    children: Element,
-) -> Element {
-    rsx! {
-        div { class: "chip-row", "data-settle": "",
-            span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
-            Chip {
-                selected: active_identity().is_none(),
-                onclick: move |_| active_identity.set(None),
-                "All"
-            }
-            for identity in identities {
-                Chip {
-                    key: "{identity_key(&identity)}",
-                    selected: active_identity().as_deref() == Some(identity.as_slice()),
-                    onclick: {
-                        let identity = identity.clone();
-                        move |_| {
-                            if active_identity().as_deref() == Some(identity.as_slice()) {
-                                active_identity.set(None);
-                            } else {
-                                active_identity.set(Some(identity.clone()));
-                            }
-                        }
-                    },
-                    IdentityPips { identity: identity.clone() }
-                }
-            }
-            {children}
         }
     }
 }

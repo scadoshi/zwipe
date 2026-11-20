@@ -127,6 +127,33 @@ fn empty_identity_line_names_the_identity() {
 }
 
 #[test]
+fn an_empty_list_names_its_identity_only_when_nothing_of_it_is_held() {
+    let jeskai = [Red, White, Blue];
+    let none: [Named; 0] = [];
+    let held = [commander("Narset", &jeskai)];
+    assert_eq!(
+        suggested_empty_line(&none, Some(&jeskai)),
+        "No Jeskai commanders in your top 100",
+        "a Show identity with nothing held"
+    );
+    assert_eq!(
+        suggested_empty_line(&held, Some(&jeskai)),
+        "No commanders match",
+        "the identity holds commanders and the filter let none through"
+    );
+    assert_eq!(
+        suggested_empty_line(&held, None),
+        "No commanders match",
+        "All, narrowed to nothing by the filter, names no identity"
+    );
+    assert_eq!(
+        suggested_empty_line(&none, None),
+        "No commanders match",
+        "All is never 'colorless'"
+    );
+}
+
+#[test]
 fn a_single_color_is_its_pip_alone_and_others_are_named() {
     assert_eq!(identity_label(&[Blue]), None);
     assert_eq!(identity_label(&[White, Blue, Red]), Some("Jeskai"));
@@ -704,4 +731,37 @@ fn a_staple_from_a_server_without_deck_ids_names_no_decks() {
         named_staple_decks(&staple.deck_ids, &decks).is_empty(),
         "no decks to list, so the chip stays the plain count"
     );
+}
+
+#[test]
+fn each_column_s_bars_scale_to_that_column_s_own_most() {
+    let rows = vec![
+        TagRow {
+            slug: "ramp".into(),
+            decks: 8,
+            cards: 30,
+            impact: Some(100),
+        },
+        TagRow {
+            slug: "tome".into(),
+            decks: 4,
+            cards: 15,
+            impact: Some(25),
+        },
+        TagRow {
+            slug: "none".into(),
+            decks: 0,
+            cards: 0,
+            impact: None,
+        },
+    ];
+    let bars = TagBars::of(&rows);
+    assert_eq!(bars.decks(&rows[0]), 100);
+    assert_eq!(bars.decks(&rows[1]), 50);
+    assert_eq!(bars.cards(&rows[1]), 50);
+    assert_eq!(bars.impact(&rows[1]), Some(25));
+    assert_eq!(bars.decks(&rows[2]), 0, "an empty count draws no bar");
+    assert_eq!(bars.impact(&rows[2]), None, "no impact, no bar");
+    let empty = TagBars::of(&[]);
+    assert_eq!(empty.decks(&rows[0]), 0, "no column most, no bar");
 }

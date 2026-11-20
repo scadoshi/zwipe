@@ -46,11 +46,16 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 9);
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 24, 1),
+    version: Version::new(1, 25, 0),
     date: None,
     entries: &[
         "On Android, the app no longer signs you out now and then after a restart",
         "On Android, Send to, Oracle tag examples and the update screen show their header below the status bar",
+        "On a card's page, tapping a tag under a card role opens its description and example cards",
+        "A toast stamps down harder as it lands, coming in big and settling with a small bounce",
+        "Commanders, a new screen on the web with your commander maybeboard and suggested commanders side by side",
+        "A Brawl deck's commander picker only offers commanders legal in Brawl",
+        "Playstyle's Oracle tags show Decks, Cards and Impact as colored bars",
     ],
 }];
 

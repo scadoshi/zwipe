@@ -18,6 +18,7 @@ use zwipe_core::http::contracts::suggestions::{
 };
 
 use crate::activity::Bar;
+use crate::commander::maybeboard::NO_MATCH;
 use crate::deck::decks_label;
 
 /// Suggestions the list shows; a shorter list after a dropped row refetches.
@@ -80,6 +81,18 @@ pub fn empty_identity_line(identity: &[Color]) -> String {
         _ => name.to_owned(),
     };
     format!("No {name} commanders in your top 100")
+}
+
+/// The line in place of an empty Suggested list. `of_identity` is the held list narrowed to the
+/// Show `identity` alone, before the screen's filter: the identity's own line,
+/// [`empty_identity_line`], when an identity is picked and nothing of it is held, else
+/// [`NO_MATCH`], since the filter let nothing through.
+#[must_use]
+pub fn suggested_empty_line<T>(of_identity: &[T], identity: Option<&[Color]>) -> String {
+    match identity {
+        Some(identity) if of_identity.is_empty() => empty_identity_line(identity),
+        Some(_) | None => NO_MATCH.to_owned(),
+    }
 }
 
 /// A staple's share of the user's decks for its row header, rounded half up, "67%". `None` with no decks to count against.
@@ -282,6 +295,57 @@ pub struct TagRow {
     pub cards: u32,
     /// The tag's score against the top tag's, rounded, the top tag reading [`TOP_IMPACT`]. `None` when no tag scores above 0.
     pub impact: Option<u32>,
+}
+
+/// How long each oracle tags table bar draws: every column's bars scale to that column's own
+/// most, so the longest bar in a column fills it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TagBars {
+    decks: u32,
+    cards: u32,
+    impact: u32,
+}
+
+impl TagBars {
+    /// The column mosts of `rows`.
+    #[must_use]
+    pub fn of(rows: &[TagRow]) -> Self {
+        Self {
+            decks: rows.iter().map(|r| r.decks).max().unwrap_or(0),
+            cards: rows.iter().map(|r| r.cards).max().unwrap_or(0),
+            impact: rows.iter().filter_map(|r| r.impact).max().unwrap_or(0),
+        }
+    }
+
+    /// `row`'s Decks bar, as a percent of its column.
+    #[must_use]
+    pub fn decks(&self, row: &TagRow) -> u32 {
+        share(row.decks, self.decks)
+    }
+
+    /// `row`'s Cards bar, as a percent of its column.
+    #[must_use]
+    pub fn cards(&self, row: &TagRow) -> u32 {
+        share(row.cards, self.cards)
+    }
+
+    /// `row`'s Impact bar, as a percent of its column, or `None` when the row has no impact.
+    #[must_use]
+    pub fn impact(&self, row: &TagRow) -> Option<u32> {
+        row.impact.map(|impact| share(impact, self.impact))
+    }
+}
+
+/// `value` as a whole percent of `most`, 0 when `most` is 0.
+fn share(value: u32, most: u32) -> u32 {
+    if most == 0 {
+        return 0;
+    }
+    let percent = u64::from(value.min(most))
+        .saturating_mul(100)
+        .checked_div(u64::from(most))
+        .unwrap_or(0);
+    u32::try_from(percent).unwrap_or(100)
 }
 
 /// `score` against `max` on a 0 to [`TOP_IMPACT`] scale, rounded. `None` when `max` is not above 0; a negative or NaN score reads 0.

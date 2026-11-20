@@ -8,6 +8,7 @@
 
 use dioxus::prelude::*;
 use orangui::{ClearWrap, GalleryFooter, GalleryFrame, HintKey, Panel};
+use zwipe_core::content::Surface;
 use zwipe_core::content::guides::{Block, Guide, image_size, image_url};
 use zwipe_ui::guides::{self, GALLERY_KEYS, IndexFilter, Inline, Shot};
 use zwipe_ui::hint::KeyIcon;
@@ -79,8 +80,9 @@ fn text_block(block: &'static Block) -> Element {
                 pre { class: "scroll-fade-x", "{t}" }
             }
         },
-        // The screenshots show in the gallery.
-        Block::Image { .. } => rsx! {},
+        // The screenshots show in the gallery, and the article reads its
+        // blocks through `blocks_on`, which opens every `Only` first.
+        Block::Image { .. } | Block::Only(..) => rsx! {},
     }
 }
 
@@ -211,9 +213,13 @@ fn replace_search_js(search: &str) -> String {
 ///
 /// The filter lives in the page address's query ([`IndexFilter`]): the index
 /// opens on the one there, so Back from a guide and a shared link both show
-/// the same list, and each change replaces it in place.
+/// the same list, and each change replaces it in place. The search reads each
+/// guide as `surface` shows it (the app's text unless told otherwise).
 #[component]
-pub fn GuideIndex(href: Callback<&'static str, String>) -> Element {
+pub fn GuideIndex(
+    href: Callback<&'static str, String>,
+    #[props(default)] surface: Surface,
+) -> Element {
     let mut selected = use_signal(|| Option::<&'static str>::None);
     let mut query = use_signal(String::new);
     // Whether the address's filter is read yet; until then nothing is written over it.
@@ -241,7 +247,7 @@ pub fn GuideIndex(href: Callback<&'static str, String>) -> Element {
             document::eval(&replace_search_js(&search));
         }
     });
-    let hits = guides::hits(selected(), &query());
+    let hits = guides::hits(selected(), &query(), surface);
     let typed = query().trim().to_owned();
     rsx! {
         div { class: "guide-index-head",
@@ -291,14 +297,16 @@ pub fn GuideIndex(href: Callback<&'static str, String>) -> Element {
 /// its text), with its screenshots in an "In the app" gallery beside it
 /// when it has any (above it on a phone), then its related guides, each
 /// linking to `href` of its slug. Each tag links to `index`, the host's
-/// guides index, filtered to that tag.
+/// guides index, filtered to that tag. The text and screenshots are the ones
+/// `surface` shows (the app's unless told otherwise).
 #[component]
 pub fn GuideArticle(
     guide: &'static Guide,
     href: Callback<&'static str, String>,
     index: String,
+    #[props(default)] surface: Surface,
 ) -> Element {
-    let shots = guides::shots(guide);
+    let shots = guides::shots(guide, surface);
     let related: Vec<&'static Guide> = guides::related(guide).collect();
     let article = rsx! {
         div { class: "guide-content section panel",
@@ -307,7 +315,7 @@ pub fn GuideArticle(
             h1 { class: "panel-title guide-title", "{guide.title}" }
             {tag_links(guide, "guide-title-tags", &index)}
             hr { class: "panel-rule" }
-            for block in guide.blocks.iter() {
+            for block in guide.blocks_on(surface) {
                 {text_block(block)}
             }
         }
@@ -464,7 +472,7 @@ mod tests {
     fn an_article_links_its_related_guides_through_the_host_and_its_shots_from_zwipe_net() {
         let guide = zwipe_core::content::guides::GUIDES
             .iter()
-            .find(|g| !g.related.is_empty() && !guides::shots(g).is_empty())
+            .find(|g| !g.related.is_empty() && !guides::shots(g, Surface::App).is_empty())
             .unwrap();
         let page = html(Page::Article(guide));
         assert!(page.contains("guide-with-gallery"), "{page}");

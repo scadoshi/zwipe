@@ -16,7 +16,7 @@ use crate::inbound::chrome::leave_guard::LeaveDialog;
 use crate::inbound::router::Route;
 use crate::inbound::shell::deck_opener::DeckOpener;
 use crate::inbound::shell::menu_footer::MenuFooter;
-use crate::inbound::shell::nav::{self, Back, MenuOpen, Section, route_of, section_of};
+use crate::inbound::shell::nav::{self, Back, MenuOpen, Section, label_of, route_of, section_of};
 
 /// The screen on view's title and its `?`, which the folded nav shows
 /// between the corners and a wide window's nav shows in its icon row. The
@@ -107,8 +107,8 @@ fn nav_hint(page: Memo<Option<PageTitle>>) -> Option<Callback<()>> {
 }
 
 /// The nav for a signed-in user over the matched screen: the app's menu at
-/// every width. A wide window shows Decks, Playstyle, Activity and
-/// Commander maybeboard as pills, the current one lit, then the footer's
+/// every width. A wide window shows Decks, Playstyle, Activity, Commanders
+/// and Guides as pills, the current one lit, then the footer's
 /// icons, the screen's `?` and Log out in the bar, with the mark the way
 /// Home. Below the
 /// breakpoint the same list folds behind the hamburger over the footer row.
@@ -140,9 +140,12 @@ pub fn Shell() -> Element {
                     },
                     links: rsx! {
                         for section in Section::LISTED {
-                            li { key: "{section.label()}",
-                                NavLink { to: route_of(section), label: section.label(), current: current == Some(section), open }
+                            li { key: "{label_of(section)}",
+                                NavLink { to: route_of(section), label: label_of(section), current: current == Some(section), open }
                             }
+                        }
+                        li {
+                            NavLink { to: Route::Guides {}, label: GUIDES, current: is_guides(&route), open }
                         }
                     },
                     trailing: rsx! {
@@ -157,10 +160,19 @@ pub fn Shell() -> Element {
     }
 }
 
-/// The signed-out menu: `Log in` and `Create account`. Forgot password is a
-/// link on the Log in screen, not a place in the nav.
-fn public_links() -> [(Route, &'static str); 2] {
+/// The nav entry for the guides, which every visitor can read.
+const GUIDES: &str = "Guides";
+
+/// Whether `route` is the guides or one guide, where the Guides entry lights.
+const fn is_guides(route: &Route) -> bool {
+    matches!(route, Route::Guides {} | Route::GuidePage { .. })
+}
+
+/// The signed-out menu: `Guides`, `Log in` and `Create account`. Forgot
+/// password is a link on the Log in screen, not a place in the nav.
+fn public_links() -> [(Route, &'static str); 3] {
     [
+        (Route::Guides {}, GUIDES),
         (Route::Login {}, "Log in"),
         (Route::Register {}, "Create account"),
     ]
@@ -192,7 +204,7 @@ pub fn PublicNav() -> Element {
                 links: rsx! {
                     for (to, label) in links {
                         li { key: "{label}",
-                            NavLink { current: to == route, to, label, open }
+                            NavLink { current: to == route || (label == GUIDES && is_guides(&route)), to, label, open }
                         }
                     }
                 },
@@ -380,9 +392,9 @@ mod tests {
     }
 
     #[test]
-    fn the_signed_out_menu_is_log_in_and_create_account_only() {
+    fn the_signed_out_menu_is_guides_log_in_and_create_account() {
         let labels: Vec<&str> = public_links().iter().map(|(_, label)| *label).collect();
-        assert_eq!(labels, ["Log in", "Create account"]);
+        assert_eq!(labels, ["Guides", "Log in", "Create account"]);
         assert!(
             !public_links()
                 .iter()
