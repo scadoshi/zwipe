@@ -13,9 +13,12 @@ use dioxus::mobile as shell;
 
 /// Keeps the app's lifecycle and shares it with every screen. Call it once,
 /// at the root, before anything that reacts to a return.
-#[expect(
-    clippy::wildcard_enum_match_arm,
-    reason = "tao's WindowEvent is a foreign enum; only the events handled matter"
+#[cfg_attr(
+    any(feature = "desktop", feature = "mobile"),
+    expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "tao's WindowEvent is a foreign enum; only the events handled matter"
+    )
 )]
 pub fn use_lifecycle_root() {
     let life = components::use_app_lifecycle_root();

@@ -43,7 +43,7 @@ tracing = { workspace = true }
 uuid = { workspace = true }
 # The single-flight refresh lock and its answer channel; `sync` builds for
 # wasm32 as well.
-tokio = { version = "1.47.1", default-features = false, features = ["sync"] }
+tokio = { version = "1.54.1", default-features = false, features = ["sync"] }
 
 # The browser build: localStorage for the session and theme, the browser's
 # timer for the upkeep loop, the console for logs, and the fetch of the
@@ -60,11 +60,11 @@ getrandom = { version = "0.4", features = ["wasm_js"] }
 # The native build exists for the workspace lint and the tests; its timer
 # is tokio's.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio = { version = "1.47.1", default-features = false, features = ["sync", "time"] }
+tokio = { version = "1.54.1", default-features = false, features = ["sync", "time"] }
 
 [dev-dependencies]
 # Renders a picker's narrow form to HTML in its test.
 dioxus-ssr = "0.7"
-tokio = { version = "1.47.1", features = ["macros", "rt", "time", "test-util"] }
+tokio = { version = "1.54.1", features = ["macros", "rt", "time", "test-util"] }
 # Hashes index.html's first-paint script against deploy/_headers' CSP.
 sha2 = { workspace = true }
