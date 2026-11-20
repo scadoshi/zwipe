@@ -1041,3 +1041,41 @@ fn each_source_keeps_its_own_filter() {
     assert_eq!(state.source(), Some(Source::Search));
     let _ = ticket_of(&back);
 }
+
+#[test]
+fn every_fresh_open_starts_on_search_with_its_own_filter() {
+    let mut state = State::new();
+    let _ = state.update(open_with_from());
+    let mut search_filter = CardQueryBuilder::new();
+    search_filter.set_name_contains("meren");
+    let _ = state.update(Action::Filter(search_filter.clone()));
+    let ticket = maybe_load_of(&state.update(Action::PickSource));
+    let _ = state.update(Action::MaybeboardLoaded {
+        ticket,
+        saved: vec![legend("Meren of Clan Nel Toth")],
+    });
+    let mut maybe_filter = CardQueryBuilder::new();
+    maybe_filter.set_name_contains("krenko");
+    let _ = state.update(Action::Filter(maybe_filter.clone()));
+    let reopened = state.update(Action::Open {
+        mode: Some(Mode::Commander(Format::Commander)),
+        filter: maybe_filter.clone(),
+        pile: SuggestedPile::default(),
+        excluded: HashSet::new(),
+        from: true,
+    });
+    assert_eq!(
+        state.source(),
+        Some(Source::Search),
+        "a fresh open is on Search"
+    );
+    assert_eq!(*state.filter(), search_filter, "with Search's own filter");
+    let _ = ticket_of(&reopened);
+    let ticket = maybe_load_of(&state.update(Action::PickSource));
+    assert_eq!(
+        *state.filter(),
+        maybe_filter,
+        "Maybe's filter is kept for the next switch"
+    );
+    let _ = ticket;
+}

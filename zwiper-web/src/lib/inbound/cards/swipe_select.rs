@@ -418,6 +418,25 @@ pub fn SwipeSelect(
     // The Refresh count the pile was last dealt at; `None` before the first.
     let mut dealt_at: Signal<Option<u32>> = use_signal(|| None);
     let mut refreshes = use_signal(|| 0u32);
+    // Every fresh open starts on Search: closing on Maybe parks its filter, takes back Search's
+    // and deals afresh at the next open. A sheet or the details over the overlay keep it open, so
+    // they keep Maybe.
+    use_effect(move || {
+        if open() || maybe_door.is_none() || *source.peek() != Source::Maybeboard {
+            return;
+        }
+        let mut user_filter = user_filter;
+        let leaving = user_filter.peek().clone();
+        parked.write().insert(Source::Maybeboard, leaving);
+        let search = parked
+            .peek()
+            .get(&Source::Search)
+            .cloned()
+            .unwrap_or_default();
+        user_filter.set(search);
+        source.set(Source::Search);
+        dealt_at.set(None);
+    });
     let hint_open = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
     use_effect(move || {

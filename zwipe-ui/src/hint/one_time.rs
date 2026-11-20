@@ -770,6 +770,9 @@ fn welcome_on(ask_to_verify: bool, surface: Surface) -> HintContent {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::deck::form::Slot;
+
     #[test]
     fn the_maybeboard_s_swipe_is_titled_commander_maybeboard() {
         assert_eq!(SwipeSelectMode::StartsDeck.title(), "Commander maybeboard");
@@ -779,9 +782,6 @@ mod tests {
             "Suggested commanders"
         );
     }
-
-    use super::*;
-    use crate::deck::form::Slot;
 
     #[test]
     fn every_hint_but_swipe_select_has_its_dialog() {

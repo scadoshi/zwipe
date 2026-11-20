@@ -359,6 +359,14 @@ pub(crate) fn SwipeSelect(
             excluded,
             from: starts_deck,
         });
+        // An open back on Search takes Search's own filter: the sheet shows it, its sections reset.
+        let dealt_under = driver.model.peek().filter().clone();
+        if *filter_builder.peek() != dealt_under {
+            filter_builder.set(dealt_under);
+            let counter = filter_reset_counter.peek().wrapping_add(1);
+            searched_counter.set(counter);
+            filter_reset_counter.set(counter);
+        }
     });
 
     // The filter sheet's Apply bumped the counter: search again.
@@ -469,40 +477,40 @@ pub(crate) fn SwipeSelect(
     let swipe_config = SwipeConfig::new(directions, SWIPE_DISTANCE_PX, SWIPE_SPEED_PX_PER_MS);
 
     let dock = rsx! {
-                div { class: if source.is_some() { "action-dock" } else { "action-dock action-dock-right" },
-                    if has_suggested_filter {
-                        DockFilter {
-                            label: model::FILTER,
-                            dot: has_suggested_identity,
-                            onclick: move |()| suggested_filter_open.set(true),
-                        }
-                    } else if !suggested {
-                        // Popularity order is this screen's default (no
-                        // sort), so any user filter or explicit sort lights
-                        // the dot.
-                        DockFilter {
-                            label: model::FILTER,
-                            dot: model::filter_lit(&filter_builder.read()),
-                            onclick: move |()| filters_overlay_open.set(true),
-                        }
-                    }
-                    DockAction {
-                        label: model::REFRESH,
-                        icon: icons::REFRESH,
-                        onclick: move |()| refresh(),
-                    }
-                    span { class: "action-dock-divider" }
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": "Card details",
-                        disabled: !has_cards,
-                        onclick: move |_| {
-                            let mut open = show_details;
-                            open.toggle();
-                        },
-                        EyeIcon {}
-                    }
+        div { class: if source.is_some() { "action-dock" } else { "action-dock action-dock-right" },
+            if has_suggested_filter {
+                DockFilter {
+                    label: model::FILTER,
+                    dot: has_suggested_identity,
+                    onclick: move |()| suggested_filter_open.set(true),
                 }
+            } else if !suggested {
+                // Popularity order is this screen's default (no
+                // sort), so any user filter or explicit sort lights
+                // the dot.
+                DockFilter {
+                    label: model::FILTER,
+                    dot: model::filter_lit(&filter_builder.read()),
+                    onclick: move |()| filters_overlay_open.set(true),
+                }
+            }
+            DockAction {
+                label: model::REFRESH,
+                icon: icons::REFRESH,
+                onclick: move |()| refresh(),
+            }
+            span { class: "action-dock-divider" }
+            button {
+                class: "action-dock-btn",
+                "aria-label": "Card details",
+                disabled: !has_cards,
+                onclick: move |_| {
+                    let mut open = show_details;
+                    open.toggle();
+                },
+                EyeIcon {}
+            }
+        }
     };
 
     rsx! {

@@ -169,8 +169,8 @@ pub enum Action {
         /// Oracle ids kept out of searched pages: the host's own saves.
         excluded: HashSet<Uuid>,
         /// Whether the overlay has the From chip (the Commander maybeboard's swipe), which
-        /// switches between the search and the user's saved commanders. Without it the overlay
-        /// always searches.
+        /// switches between the search and the user's saved commanders, starting on the search
+        /// at every open. Without it the overlay always searches.
         from: bool,
     },
     /// The From chip was tapped: the overlay switches to the other [`Source`], parking this one's
@@ -424,6 +424,15 @@ impl State {
                 self.from = from;
                 if !from {
                     self.source = Source::Search;
+                }
+                // Every fresh open starts on Search: a pile left on Maybe parks there with the
+                // filter the host still shows, and Search deals afresh under its own.
+                if self.source == Source::Maybeboard {
+                    self.parked.insert(Source::Maybeboard, filter);
+                    self.source = Source::Search;
+                    self.dealt = None;
+                    let search = self.parked.remove(&Source::Search).unwrap_or_default();
+                    return self.open(mode, search, pile, excluded);
                 }
                 self.open(mode, filter, pile, excluded)
             }
