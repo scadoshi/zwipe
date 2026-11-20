@@ -1,7 +1,8 @@
 //! The end of a list that loads more as it is reached: a marker under the list, and
-//! [`use_list_end`], which calls the screen when the marker scrolls near the view and when the
-//! keyboard's End is pressed on the page, so End reaches the next page rather than stopping at the
-//! last card drawn.
+//! [`use_list_end`], which calls the screen when the marker scrolls near the view, again when a
+//! page lands and leaves it still near (a screen the cards don't fill), and when the keyboard's
+//! End is pressed on the page, so End reaches the next page rather than stopping at the last card
+//! drawn.
 
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -16,17 +17,39 @@ pub const LIST_END_ID: &str = "list-end";
 const REACH_PX: u32 = 600;
 
 /// Watches the marker and the End key: a marker that comes within [`REACH_PX`] of the view, or
-/// End under the cursor keys' guard, sends once. A marker drawn again is watched again.
+/// End under the cursor keys' guard, sends once. A marker drawn again, or moved by a page that
+/// landed, is watched again, which sends again while it is still within reach; a page that failed
+/// leaves it where it was, so nothing asks again until a scroll does.
 const LIST_END_JS: &str = r"
+// The reach applies to the box that scrolls the list, which clips the marker before the window
+// does; with none, the window.
+const scroller = (el) => {
+    for (let box = el.parentElement; box; box = box.parentElement) {
+        const overflow = getComputedStyle(box).overflowY;
+        if (overflow === 'auto' || overflow === 'scroll') return box;
+    }
+    return null;
+};
 const watch = () => {
     const end = document.getElementById('__ID__');
-    if (!end || end === window['__zwipeListEndAt__KEY__']) return;
+    if (!end) return;
+    if (end === window['__zwipeListEndAt__KEY__']) {
+        // A page landed and moved the marker: watching it afresh reports it again while it is
+        // still within reach, so a screen the cards don't fill keeps loading.
+        if (end.offsetTop !== window['__zwipeListEndTop__KEY__']) {
+            window['__zwipeListEndTop__KEY__'] = end.offsetTop;
+            const seen = window['__zwipeListEndSeen__KEY__'];
+            if (seen) { seen.unobserve(end); seen.observe(end); }
+        }
+        return;
+    }
     window['__zwipeListEndAt__KEY__'] = end;
+    window['__zwipeListEndTop__KEY__'] = end.offsetTop;
     const seen = window['__zwipeListEndSeen__KEY__'];
     if (seen) seen.disconnect();
     const observer = new IntersectionObserver((hits) => {
         if (hits.some((hit) => hit.isIntersecting)) dioxus.send(true);
-    }, { rootMargin: '__REACH__px 0px' });
+    }, { root: scroller(end), rootMargin: '__REACH__px 0px' });
     observer.observe(end);
     window['__zwipeListEndSeen__KEY__'] = observer;
 };
@@ -48,6 +71,7 @@ if (seen) seen.disconnect();
 document.removeEventListener('keydown', window['__zwipeListEndKey__KEY__']);
 delete window['__zwipeListEndSeen__KEY__'];
 delete window['__zwipeListEndAt__KEY__'];
+delete window['__zwipeListEndTop__KEY__'];
 delete window['__zwipeListEndKey__KEY__'];
 ";
 
@@ -91,6 +115,10 @@ mod tests {
     fn the_marker_is_watched_ahead_of_the_view_and_again_when_redrawn() {
         assert!(LIST_END_JS.contains("rootMargin: '__REACH__px 0px'"));
         assert!(
+            LIST_END_JS.contains("{ root: scroller(end), rootMargin"),
+            "the reach is measured in the box that scrolls the list, which clips the marker first"
+        );
+        assert!(
             LIST_END_JS.contains("end === window['__zwipeListEndAt__KEY__']"),
             "the same marker is watched once"
         );
@@ -98,6 +126,19 @@ mod tests {
             LIST_END_JS.contains("setInterval(watch, 500)"),
             "a marker drawn again is found again"
         );
+    }
+
+    #[test]
+    fn a_page_that_leaves_the_marker_in_reach_loads_the_next() {
+        assert!(
+            LIST_END_JS.contains("if (end.offsetTop !== window['__zwipeListEndTop__KEY__']) {"),
+            "a landed page moves the marker"
+        );
+        assert!(
+            LIST_END_JS.contains("seen.unobserve(end); seen.observe(end);"),
+            "watching afresh reports a marker still in reach"
+        );
+        assert!(LIST_END_DROP_JS.contains("delete window['__zwipeListEndTop__KEY__'];"));
     }
 
     #[test]

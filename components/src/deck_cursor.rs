@@ -333,15 +333,17 @@ pub fn use_card_list_cursor() {
 
 /// The cursor on a grid of whole cards marked [`GRID_ATTR`] (the card search's results): the
 /// deck page's keys over the grid as laid out at this width ([`Walk::Grid`]), Enter opening the
-/// card as a click does. The card search box hands the cursor back as Escape or `↓` lets it go.
-pub fn use_card_grid_cursor() {
+/// card as a click does. The keys pass through the page's details drawer (`details`), which swaps
+/// to each card the cursor lands on, as the deck page's Stacks drawer does. The card search box
+/// hands the cursor back as Escape or `↓` lets it go.
+pub fn use_card_grid_cursor(details: Option<StackDetails>) {
     use_hook(|| {
         document::eval(&HOME_JS.replace("__STOPS__", STOP_SELECTOR));
     });
     use_drop(|| {
         document::eval(HOME_DROP_JS);
     });
-    use_deck_cursor(None, Walk::Grid);
+    use_deck_cursor(details, Walk::Grid);
 }
 
 /// One card as the browser sends it: its id, vertical center and whether it is in view.

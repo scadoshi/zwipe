@@ -169,8 +169,10 @@ pub enum SearchResultsKey {
     Printings,
     /// Opens the card's Send to, or the login page for a visitor.
     SendTo,
-    /// Opens the card's details drawer.
+    /// Opens or closes the card's details drawer.
     Details,
+    /// Opens the card's full image.
+    Image,
     /// Flips the card to its other face, or toggles a meld half's Meld.
     Flip,
     /// Puts the cursor in the card search box that shows.
@@ -178,14 +180,17 @@ pub enum SearchResultsKey {
 }
 
 /// The results page key `key` (a `KeyboardEvent.key`) stands for: `p` Printings, Shift+P Send to
-/// and `/` the card search as on the card page, `d` and `v` as every screen reads them
-/// ([`card_key`]).
+/// and `/` the card search as on the card page, `i` the image as on the deck page, `d` and `v` as
+/// every screen reads them ([`card_key`]).
 #[must_use]
 pub fn search_results_key(key: &str) -> Option<SearchResultsKey> {
     match card_key(key) {
         Some(CardKey::Details) => return Some(SearchResultsKey::Details),
         Some(CardKey::Flip) => return Some(SearchResultsKey::Flip),
         Some(CardKey::Filter | CardKey::FilterByName) | None => {}
+    }
+    if matches!(key, "i" | "I") {
+        return Some(SearchResultsKey::Image);
     }
     match card_page_key(key)? {
         CardPageKey::Printings => Some(SearchResultsKey::Printings),
@@ -294,10 +299,12 @@ mod tests {
             ("v", SearchResultsKey::Flip),
             ("V", SearchResultsKey::Flip),
             ("/", SearchResultsKey::Search),
+            ("i", SearchResultsKey::Image),
+            ("I", SearchResultsKey::Image),
         ] {
             assert_eq!(search_results_key(key), Some(does), "{key}");
         }
-        for key in ["i", "f", "m", "s", "u", "H", "Enter"] {
+        for key in ["f", "m", "s", "u", "H", "Enter"] {
             assert_eq!(search_results_key(key), None, "{key}");
         }
         let listed: Vec<&str> = sheet_rows(&ShortcutsScreen::SearchResults)
@@ -305,11 +312,19 @@ mod tests {
             .flat_map(|(keys, _)| keys.iter().copied())
             .collect();
         for key in [
-            "p", "Shift+P", "d", "v", "/", "Enter", "Home", "h", "Shift+H",
+            "p", "Shift+P", "i", "d", "v", "/", "Enter", "Home", "h", "Shift+H",
         ] {
             assert!(listed.contains(&key), "{key}");
         }
-        assert!(!listed.contains(&"i"), "no Image key on the results");
+        for byte in b' '..=b'~' {
+            let key = char::from(byte).to_string();
+            let card_key = search_results_key(&key).is_some_and(|k| k != SearchResultsKey::Search);
+            assert_eq!(
+                card_key,
+                crate::inbound::cards::row_keys::ROW_KEYS.contains(&key.as_str()),
+                "{key}: every card key reaches the page through the drawer"
+            );
+        }
         assert!(
             claims_steps(&ShortcutsScreen::SearchResults),
             "the cursor keeps j and k"
