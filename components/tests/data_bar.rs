@@ -70,31 +70,39 @@ fn bars_are_thin_with_4px_ends_and_the_value_in_the_text_color() {
 }
 
 #[test]
-fn a_bar_column_s_header_keeps_its_name_and_hint_on_one_line_where_it_fits() {
+fn a_bar_column_s_header_keeps_its_name_and_hint_on_one_line_where_its_panel_fits_it() {
     assert!(
-        MAGIC.contains("@media (min-width: 400px) {\n    .data-table thead th.data-table-bar {\n        white-space: nowrap;\n    }\n}"),
-        "one line from 400px up; narrower, the hint may drop under the name"
+        MAGIC.contains("@container (min-width: 28rem) {\n    .tag-data-table .data-table-bar {\n        width: 20%;\n    }\n\n    .tag-data-table thead th.data-table-bar {\n        white-space: nowrap;\n    }\n}"),
+        "keyed to the panel, not the window: the bars take their share and the headers one line only in a wide panel"
     );
 }
 
 #[test]
 fn a_tag_breaks_at_its_hyphens_first_and_mid_word_only_when_a_word_cannot_fit() {
+    assert!(
+        MAGIC.contains(":where(:has(> .tag-data-table)) {\n    container-type: inline-size;\n}"),
+        "the tag table's panel is the container its rules read"
+    );
     let floor = rule(".tag-data-table tbody th::before");
     assert!(
         floor.contains("width: 6.25rem;") && floor.contains("height: 0;"),
-        "room for a usual word and its hyphen: {floor}"
+        "a narrow panel's floor: {floor}"
     );
     assert!(
-        MAGIC.contains("@media (min-width: 400px) {\n    .data-table .data-table-bar {\n        width: 20%;\n    }\n}"),
-        "bar columns take their share only where the room is; narrower, they give way to the tag"
+        MAGIC.contains("@container (min-width: 18.5rem) {\n    .tag-data-table tbody th::before {\n        width: 8.35rem;\n    }\n}"),
+        "from a 360 phone's panel up, room for the longest real word (planeswalkerfall, 16)"
     );
     let chip = rule(".tag-data-table tbody th .chip");
     assert!(
         chip.contains("overflow-wrap: anywhere;"),
-        "a word too long for the cell breaks: {chip}"
+        "only a word too long for the cell breaks: {chip}"
     );
     assert!(
         !chip.contains("min-width"),
         "a short chip hugs its text: {chip}"
+    );
+    assert!(
+        !MAGIC.contains("@media (min-width: 400px)"),
+        "no window breakpoint"
     );
 }

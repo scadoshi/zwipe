@@ -4327,35 +4327,25 @@ nav:has(> .card-search-header:focus-within) > :not(.card-search-nav, .nav-panel)
 
 /* A bar cell (.data-table-bar) holds a DataBar: a thin bar in its column's
    color, its fill the value's share of the column's most, growing in as a
-   chart's bar does, with the value inside in the text color. Bar cells
-   split the room past the label where there is room for it, 1px either
-   side so bars stand 2px apart; narrower, they size to their content and
-   give way first. */
+   chart's bar does, with the value inside in the text color, 1px either
+   side so bars stand 2px apart. */
 .data-table .data-table-bar {
     padding-left: 1px;
     padding-right: 1px;
 }
 
-@media (min-width: 400px) {
-    .data-table .data-table-bar {
-        width: 20%;
-    }
+/* An Oracle tags table reads its panel's width, not the window's, so a
+   narrow panel on a wide window and a phone behave alike. */
+:where(:has(> .tag-data-table)) {
+    container-type: inline-size;
 }
 
-/* A bar column's name and its `?` stay on one line where a wide phone
-   leaves room; narrower, the `?` may drop under the name so the bars can
-   shrink. */
-@media (min-width: 400px) {
-    .data-table thead th.data-table-bar {
-        white-space: nowrap;
-    }
-}
-
-/* An Oracle tags table's tag cell keeps room for a usual word and its
-   hyphen (repeatable-, additional-) with a floor no column share can take
-   (an empty line its width), so a tag wraps at its hyphens first;
-   only a word too long for the cell (planeswalkerfall) breaks inside, so
-   the table never runs past its panel. A short chip still hugs its text. */
+/* Its tag cell keeps a floor no column share can take (an empty line that
+   wide), so a tag wraps at its hyphens first and only a word too long for
+   the cell breaks inside, and the table never runs past its panel. A
+   narrow panel keeps room for a usual word and its hyphen (repeatable-);
+   from a 360 phone's panel up, for the longest real word
+   (planeswalkerfall). A short chip still hugs its text. */
 .tag-data-table tbody th::before {
     content: "";
     display: block;
@@ -4363,8 +4353,27 @@ nav:has(> .card-search-header:focus-within) > :not(.card-search-nav, .nav-panel)
     height: 0;
 }
 
+@container (min-width: 18.5rem) {
+    .tag-data-table tbody th::before {
+        width: 8.35rem;
+    }
+}
+
 .tag-data-table tbody th .chip {
     overflow-wrap: anywhere;
+}
+
+/* In a panel wide enough, the bars split the room past the tag and each
+   column's name stays on one line with its `?`; narrower, the bars size to
+   their content and give way, and a `?` may drop under its name. */
+@container (min-width: 28rem) {
+    .tag-data-table .data-table-bar {
+        width: 20%;
+    }
+
+    .tag-data-table thead th.data-table-bar {
+        white-space: nowrap;
+    }
 }
 
 .data-bar {
