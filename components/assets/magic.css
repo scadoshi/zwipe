@@ -147,8 +147,11 @@
 
 /* Emphasis (shadow + tint) marks the expanded row; its own border drops so
    the closing rule isn't doubled. It never scales: a scaled row puts its
-   pips' 1px rings on fractional pixels, which splits them. */
+   pips' 1px rings on fractional pixels, which splits them. Its own layer
+   repaints whole as a reveal inside it eases open; Android's WebView 133
+   otherwise leaves stale tiles of the row behind. */
 .card-row.expanded {
+    will-change: transform;
     /* The chips inside tint over the panel's own background, not this row's
        accent tint, so their text reads as their inks are made for. */
     --tone-base: var(--bg-primary);
