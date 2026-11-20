@@ -33,6 +33,7 @@ use crate::domain::card::models::helpers::SleeveCardProfile;
 use crate::domain::card::models::printing_removal::{
     Printing, References, RemovalCounts, RemovalPlan, Survivors,
 };
+use crate::domain::card::models::scryfall_pull::{CatalogCounts, ScryfallLoad};
 use crate::domain::card::models::search_card::error::SearchCardsError;
 use crate::domain::card::models::zervice_metrics::ZerviceMetrics;
 use crate::domain::card::models::zervice_step::{StepOutcome, StepRecord};
@@ -408,13 +409,35 @@ impl CardRepository for MyPostgres {
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         zervice_metrics: &mut ZerviceMetrics,
+        load: Option<&ScryfallLoad>,
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut tx = self.pool.begin().await?;
         let cards = multiple_scryfall_data
             .batch_delta_upsert_with_tx(&mut tx, batch_size, zervice_metrics)
             .await?;
+        if let Some(load) = load {
+            scryfall_loads::record_load(&mut tx, load)
+                .await
+                .map_err(CreateCardError::Database)?;
+        }
         self.finish(tx).await?;
         Ok(cards)
+    }
+
+    async fn fetch_catalog_counts(&self) -> anyhow::Result<CatalogCounts> {
+        let (printings, cards, priced): (i64, i64, i64) = sqlx::query_as(
+            "SELECT count(*), count(DISTINCT oracle_id), count(*) FILTER (WHERE prices->>'usd' IS NOT NULL)
+             FROM scryfall_data",
+        )
+        .fetch_one(&self.pool)
+        .await
+        .context("failed to count the stored catalog")?;
+        let count = |n: i64| u64::try_from(n).unwrap_or_default();
+        Ok(CatalogCounts {
+            printings: count(printings),
+            cards: count(cards),
+            priced: count(priced),
+        })
     }
 
     /// Persists a completed sync run to `zervice_metrics`.

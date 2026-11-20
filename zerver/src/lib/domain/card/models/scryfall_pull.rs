@@ -4,7 +4,11 @@
 //! carries, and writes nothing when one refuses. A refusal fails the step, which keeps the stored
 //! rows and makes the run exit non-zero, so the failure alert fires.
 
+use std::collections::HashSet;
+
 use chrono::{DateTime, Utc};
+use uuid::Uuid;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
 /// The share, in percent, of the stored printings and cards a card pull has to carry.
 pub const CARD_FLOOR_PCT: u64 = 90;
@@ -202,6 +206,78 @@ pub fn check_floor(
             pulled,
             stored,
             floor_pct,
+        });
+    }
+    Ok(())
+}
+
+/// What a card catalog holds, stored or pulled.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct CatalogCounts {
+    /// Printings.
+    pub printings: u64,
+    /// Distinct cards, by oracle id.
+    pub cards: u64,
+    /// Printings with a USD price.
+    pub priced: u64,
+}
+
+impl CatalogCounts {
+    /// What `printings` hold.
+    #[must_use]
+    pub fn of(printings: &[ScryfallData]) -> Self {
+        let cards: HashSet<Uuid> = printings.iter().filter_map(|p| p.oracle_id).collect();
+        Self {
+            printings: count(printings.len()),
+            cards: count(cards.len()),
+            priced: count(printings.iter().filter(|p| p.prices.usd.is_some()).count()),
+        }
+    }
+}
+
+/// A length as a count.
+fn count(n: usize) -> u64 {
+    u64::try_from(n).unwrap_or(u64::MAX)
+}
+
+/// Accepts a card pull with unique, non-nil printing ids, at least [`CARD_FLOOR_PCT`] percent of
+/// the stored printings and cards, and at least half the stored share of USD-priced printings.
+///
+/// # Errors
+///
+/// [`RefusedPull::DuplicateIds`], [`RefusedPull::NilIds`], [`RefusedPull::Empty`],
+/// [`RefusedPull::Shrunk`] or [`RefusedPull::PricesWiped`], checked in that order.
+pub fn check_cards(printings: &[ScryfallData], stored: CatalogCounts) -> Result<(), RefusedPull> {
+    let mut seen: HashSet<Uuid> = HashSet::with_capacity(printings.len());
+    let duplicates = printings.iter().filter(|p| !seen.insert(p.id)).count();
+    if duplicates > 0 {
+        return Err(RefusedPull::DuplicateIds {
+            count: count(duplicates),
+        });
+    }
+    let nils = printings.iter().filter(|p| p.id.is_nil()).count();
+    if nils > 0 {
+        return Err(RefusedPull::NilIds { count: count(nils) });
+    }
+    let pulled = CatalogCounts::of(printings);
+    check_floor(
+        "printings",
+        pulled.printings,
+        stored.printings,
+        CARD_FLOOR_PCT,
+    )?;
+    check_floor("cards", pulled.cards, stored.cards, CARD_FLOOR_PCT)?;
+    // pulled.priced / pulled.printings < (stored.priced / stored.printings) / 2, cross-multiplied.
+    let pulled_share = u128::from(pulled.priced)
+        .saturating_mul(u128::from(stored.printings))
+        .saturating_mul(2);
+    let stored_share = u128::from(stored.priced).saturating_mul(u128::from(pulled.printings));
+    if pulled_share < stored_share {
+        return Err(RefusedPull::PricesWiped {
+            priced: pulled.priced,
+            printings: pulled.printings,
+            stored_priced: stored.priced,
+            stored_printings: stored.printings,
         });
     }
     Ok(())

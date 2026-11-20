@@ -9,21 +9,32 @@
 
 #![expect(
     clippy::unwrap_used,
-    reason = "a test: helpers outside #[test] fns unwrap, and a panic is the failure report"
+    clippy::indexing_slicing,
+    reason = "a test: helpers outside #[test] fns unwrap and index the fixture's JSON, and a panic is the failure report"
 )]
 
 mod common;
 
+use std::collections::HashSet;
 use std::future::{self, Future};
 use std::io::Write;
 
 use chrono::{DateTime, TimeZone, Utc};
 use flate2::Compression;
 use flate2::write::GzEncoder;
+use serde_json::Value;
+use uuid::Uuid;
+use zwipe::domain::card;
+use zwipe::domain::card::models::printing_removal::RemovalMode;
 use zwipe::domain::card::models::scryfall_pull::{RefusedPull, ScryfallLoad};
+use zwipe::domain::card::ports::CardService;
 use zwipe::inbound::external::scryfall::bulk::{self, BulkEndpoint, BulkFile, BulkSource};
 use zwipe::inbound::external::scryfall::oracle_tag::OracleTag;
 use zwipe::outbound::sqlx::card::helpers::scryfall_loads;
+use zwipe::outbound::sqlx::postgres::Postgres;
+
+/// One real printing, the template every card line is made from.
+const CARD: &str = include_str!("fixtures/scryfall/card.json");
 
 /// The oracle tags fixture: three tags on three cards, a blank line and a tagging without a card.
 const ORACLE_TAGS: &str = include_str!("fixtures/scryfall/oracle_tags.jsonl");
@@ -219,5 +230,195 @@ async fn a_load_record_only_ever_rises(pool: sqlx::PgPool) {
             .unwrap(),
         None,
         "each kind keeps its own mark"
+    );
+}
+
+// == the card sync ==
+
+/// A card service over `pool`.
+fn cards(pool: &sqlx::PgPool) -> card::services::Service<Postgres> {
+    card::services::Service::new(Postgres::from_pool(pool.clone()))
+}
+
+/// One printing as a bulk line: printing `n` of card `oracle`, priced at `usd`.
+fn card_line(n: u128, oracle: u128, usd: Option<&str>) -> String {
+    let mut card: Value = serde_json::from_str(CARD).unwrap();
+    card["id"] = Value::String(Uuid::from_u128(0xc0de_0000 | n).to_string());
+    card["oracle_id"] = Value::String(Uuid::from_u128(0x0a1c_0000 | oracle).to_string());
+    card["name"] = Value::String(format!("Fixture Card {oracle}"));
+    card["collector_number"] = Value::String(n.to_string());
+    // Unique per printing in the catalog; the template's would collide.
+    card["mtgo_id"] = Value::Null;
+    card["mtgo_foil_id"] = Value::Null;
+    card["prices"]["usd"] = usd.map_or(Value::Null, |p| Value::String(p.to_string()));
+    card.to_string()
+}
+
+/// A card file of printings `0..count`, one card each, every one priced.
+fn card_file(count: u128) -> String {
+    (0..count)
+        .map(|n| card_line(n, n, Some("1.00")))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// The card catalog's printings, priced printings and last card load.
+async fn catalog(pool: &sqlx::PgPool) -> (i64, i64, Option<DateTime<Utc>>) {
+    let (printings, priced): (i64, i64) = sqlx::query_as(
+        "SELECT count(*), count(*) FILTER (WHERE prices->>'usd' IS NOT NULL) FROM scryfall_data",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap();
+    let mut conn = pool.acquire().await.unwrap();
+    let load = scryfall_loads::fetch_load(&mut conn, "default_cards")
+        .await
+        .unwrap();
+    (printings, priced, load)
+}
+
+/// Syncs a good file of `count` printings made on day 19, the catalog later tests start from.
+async fn seed_catalog(pool: &sqlx::PgPool, count: u128) {
+    let fixture = Fixture::new(BulkEndpoint::DefaultCards, &card_file(count), day(19));
+    cards(pool).scryfall_sync(&fixture).await.unwrap();
+    assert_eq!(
+        catalog(pool).await,
+        (
+            i64::try_from(count).unwrap(),
+            i64::try_from(count).unwrap(),
+            Some(day(19))
+        )
+    );
+}
+
+/// Syncs `fixture` and asserts it is refused as `expected` with the catalog left as it was.
+async fn assert_refused(
+    pool: &sqlx::PgPool,
+    fixture: &Fixture,
+    expected: fn(&RefusedPull) -> bool,
+) {
+    let before = catalog(pool).await;
+    let error = cards(pool).scryfall_sync(fixture).await.unwrap_err();
+    assert!(refusal(&error).is_some_and(expected), "{error:#}");
+    assert_eq!(catalog(pool).await, before, "the stored catalog stays");
+}
+
+#[sqlx::test]
+async fn a_good_card_file_loads_and_records_its_date(pool: sqlx::PgPool) {
+    seed_catalog(&pool, 10).await;
+    let again = Fixture::new(BulkEndpoint::DefaultCards, &card_file(10), day(20));
+    let synced = cards(&pool).scryfall_sync(&again).await.unwrap();
+    assert_eq!(synced.printing_ids.len(), 10);
+    assert_eq!(catalog(&pool).await, (10, 10, Some(day(20))));
+}
+
+#[sqlx::test]
+async fn an_empty_card_file_is_refused(pool: sqlx::PgPool) {
+    seed_catalog(&pool, 10).await;
+    let empty = Fixture::new(BulkEndpoint::DefaultCards, "", day(20));
+    assert_refused(&pool, &empty, |r| matches!(r, RefusedPull::Empty { .. })).await;
+}
+
+#[sqlx::test]
+async fn a_card_file_under_ninety_percent_of_the_catalog_is_refused(pool: sqlx::PgPool) {
+    seed_catalog(&pool, 10).await;
+    let short = Fixture::new(BulkEndpoint::DefaultCards, &card_file(8), day(20));
+    assert_refused(&pool, &short, |r| matches!(r, RefusedPull::Shrunk { .. })).await;
+    let at_the_line = Fixture::new(BulkEndpoint::DefaultCards, &card_file(9), day(20));
+    cards(&pool).scryfall_sync(&at_the_line).await.unwrap();
+}
+
+#[sqlx::test]
+async fn a_card_file_listing_a_printing_twice_or_the_nil_id_is_refused(pool: sqlx::PgPool) {
+    seed_catalog(&pool, 10).await;
+    let twice = format!("{}\n{}", card_file(10), card_line(3, 3, Some("1.00")));
+    let doubled = Fixture::new(BulkEndpoint::DefaultCards, &twice, day(20));
+    assert_refused(&pool, &doubled, |r| {
+        matches!(r, RefusedPull::DuplicateIds { count: 1 })
+    })
+    .await;
+
+    let mut nil: Value = serde_json::from_str(&card_line(10, 10, None)).unwrap();
+    nil["id"] = Value::String(Uuid::nil().to_string());
+    let with_nil = format!("{}\n{nil}", card_file(10));
+    let niled = Fixture::new(BulkEndpoint::DefaultCards, &with_nil, day(20));
+    assert_refused(&pool, &niled, |r| {
+        matches!(r, RefusedPull::NilIds { count: 1 })
+    })
+    .await;
+}
+
+#[sqlx::test]
+async fn a_card_file_that_drops_most_prices_is_refused(pool: sqlx::PgPool) {
+    seed_catalog(&pool, 10).await;
+    let wiped: String = (0..10)
+        .map(|n| card_line(n, n, (n < 4).then_some("2.00")))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let fixture = Fixture::new(BulkEndpoint::DefaultCards, &wiped, day(20));
+    assert_refused(&pool, &fixture, |r| {
+        matches!(r, RefusedPull::PricesWiped { .. })
+    })
+    .await;
+
+    let half: String = (0..10)
+        .map(|n| card_line(n, n, (n < 5).then_some("2.00")))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let at_the_line = Fixture::new(BulkEndpoint::DefaultCards, &half, day(20));
+    cards(&pool).scryfall_sync(&at_the_line).await.unwrap();
+    assert_eq!(catalog(&pool).await.1, 5);
+}
+
+#[sqlx::test]
+async fn an_older_card_file_than_the_last_loaded_is_refused(pool: sqlx::PgPool) {
+    seed_catalog(&pool, 10).await;
+    let older = Fixture::new(BulkEndpoint::DefaultCards, &card_file(10), day(18));
+    assert_refused(&pool, &older, |r| matches!(r, RefusedPull::Stale { .. })).await;
+}
+
+#[sqlx::test]
+async fn a_truncated_card_download_is_refused(pool: sqlx::PgPool) {
+    seed_catalog(&pool, 10).await;
+    let good = Fixture::new(BulkEndpoint::DefaultCards, &card_file(10), day(20));
+    let cut = good.bytes.get(..good.bytes.len() / 2).unwrap().to_vec();
+    let truncated = good.serving(cut);
+    assert_refused(&pool, &truncated, |r| {
+        matches!(r, RefusedPull::Truncated { .. })
+    })
+    .await;
+}
+
+#[sqlx::test]
+async fn a_removal_over_its_cap_is_refused_and_removes_nothing(pool: sqlx::PgPool) {
+    seed_catalog(&pool, 600).await;
+    let short: HashSet<Uuid> = (0..50).map(|n| Uuid::from_u128(0xc0de_0000 | n)).collect();
+    for mode in [RemovalMode::Apply, RemovalMode::Preview] {
+        let error = cards(&pool)
+            .remove_deleted_printings(&short, mode)
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(
+                refusal(&error),
+                Some(RefusedPull::MassRemoval {
+                    removing: 550,
+                    cap: 500
+                })
+            ),
+            "{error:#}"
+        );
+    }
+    assert_eq!(catalog(&pool).await.0, 600);
+
+    let most: HashSet<Uuid> = (0..100).map(|n| Uuid::from_u128(0xc0de_0000 | n)).collect();
+    let report = cards(&pool)
+        .remove_deleted_printings(&most, RemovalMode::Apply)
+        .await
+        .unwrap();
+    assert_eq!(
+        report.plan.removals.len(),
+        500,
+        "exactly the cap goes through"
     );
 }

@@ -17,6 +17,7 @@ use zwipe_core::domain::card::slug::CardSlug;
 use zwipe_core::http::contracts::card::HttpCardLookup;
 
 use crate::domain::card::models::printing_removal::{self, RemovalMode, RemovalReport};
+use crate::domain::card::models::scryfall_pull::{self, ScryfallLoad};
 use crate::domain::card::models::search_card::error::{LookupCardsError, SearchCardsError};
 use crate::domain::card::models::zervice_metrics::{self, SyncedCards, ZerviceMetrics};
 use crate::domain::card::models::zervice_step::StepRecord;
@@ -101,12 +102,29 @@ impl<R: CardRepository> CardService for Service<R> {
     async fn scryfall_sync<S: BulkSource>(&self, source: &S) -> anyhow::Result<SyncedCards> {
         let file = source.describe(BulkEndpoint::DefaultCards).await?;
         tracing::info!("performing scryfall sync with {}", file.kind);
+        if let Some(made) = file.updated_at {
+            let last = self.repo.fetch_scryfall_load(file.kind).await?;
+            scryfall_pull::check_fresh(file.kind, made, last)?;
+        }
         let mut zervice_metrics = ZerviceMetrics::new();
         let batch_size = batch_size();
-        let scryfall_data: Vec<ScryfallData> = bulk::pull_cards(source, file).await?.items;
+        let pulled = bulk::pull_cards(source, file).await?;
+        let scryfall_data: Vec<ScryfallData> = pulled.items;
         zervice_metrics.set_received_count(zervice_metrics::count_column(scryfall_data.len()));
+        scryfall_pull::check_cards(&scryfall_data, self.repo.fetch_catalog_counts().await?)?;
+        let load = pulled.file.updated_at.map(|made| ScryfallLoad {
+            kind: pulled.file.kind,
+            updated_at: made,
+            uri: pulled.file.uri.clone(),
+            items: u64::try_from(scryfall_data.len()).unwrap_or(u64::MAX),
+        });
         self.repo
-            .batch_delta_upsert(&scryfall_data, batch_size, &mut zervice_metrics)
+            .batch_delta_upsert(
+                &scryfall_data,
+                batch_size,
+                &mut zervice_metrics,
+                load.as_ref(),
+            )
             .await?;
         zervice_metrics.mark_as_completed();
         let zervice_metrics = self.repo.record_zervice_metrics(&zervice_metrics).await?;
@@ -144,6 +162,10 @@ impl<R: CardRepository> CardService for Service<R> {
             .await?;
         let references = self.repo.fetch_printing_references(&removed).await?;
         let plan = printing_removal::plan(gone, &survivors, &references);
+        scryfall_pull::check_removal(
+            u64::try_from(plan.removals.len()).unwrap_or(u64::MAX),
+            u64::try_from(stored.len()).unwrap_or(u64::MAX),
+        )?;
         let counts = match mode {
             RemovalMode::Apply => Some(self.repo.apply_printing_removals(&plan).await?),
             RemovalMode::Preview => None,

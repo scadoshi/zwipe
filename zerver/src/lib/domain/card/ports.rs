@@ -19,6 +19,7 @@ use zwipe_core::http::contracts::card::HttpCardLookup;
 use crate::domain::card::models::printing_removal::{
     Printing, References, RemovalCounts, RemovalMode, RemovalPlan, RemovalReport, Survivors,
 };
+use crate::domain::card::models::scryfall_pull::{CatalogCounts, ScryfallLoad};
 use crate::domain::card::models::search_card::error::{LookupCardsError, SearchCardsError};
 use crate::domain::card::models::zervice_metrics::{SyncedCards, ZerviceMetrics};
 use crate::domain::card::models::zervice_step::StepRecord;
@@ -103,13 +104,18 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         zervice_metrics: &mut ZerviceMetrics,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
-    /// Delta upserts: only updates cards newer than database version.
+    /// Delta upserts: only updates cards newer than database version. With `load`, records the
+    /// bulk file in `scryfall_loads` in the same transaction.
     fn batch_delta_upsert(
         &self,
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         zervice_metrics: &mut ZerviceMetrics,
+        load: Option<&ScryfallLoad>,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
+
+    /// What the stored card catalog holds: printings, distinct cards and USD-priced printings.
+    fn fetch_catalog_counts(&self) -> impl Future<Output = anyhow::Result<CatalogCounts>> + Send;
 
     /// When Scryfall made the `kind` bulk file loaded last, or `None` before any load.
     fn fetch_scryfall_load(

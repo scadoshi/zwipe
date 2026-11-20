@@ -88,7 +88,7 @@ async fn a_dry_run_card_sync_upserts_nothing(pool: sqlx::PgPool) {
     let dry = real.clone().with_writes(Writes::Discard);
     let mut metrics = ZerviceMetrics::new();
     let _ = dry
-        .batch_delta_upsert(std::slice::from_ref(&renamed), 100, &mut metrics)
+        .batch_delta_upsert(std::slice::from_ref(&renamed), 100, &mut metrics, None)
         .await
         .unwrap();
     assert_eq!(
@@ -99,7 +99,7 @@ async fn a_dry_run_card_sync_upserts_nothing(pool: sqlx::PgPool) {
 
     let mut metrics = ZerviceMetrics::new();
     let _ = real
-        .batch_delta_upsert(std::slice::from_ref(&renamed), 100, &mut metrics)
+        .batch_delta_upsert(std::slice::from_ref(&renamed), 100, &mut metrics, None)
         .await
         .unwrap();
     assert_eq!(name(pool.clone()).await, "Llanowar Elves (renamed)");
