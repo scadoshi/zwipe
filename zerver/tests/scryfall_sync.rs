@@ -394,22 +394,30 @@ async fn a_truncated_card_download_is_refused(pool: sqlx::PgPool) {
 async fn a_removal_over_its_cap_is_refused_and_removes_nothing(pool: sqlx::PgPool) {
     seed_catalog(&pool, 600).await;
     let short: HashSet<Uuid> = (0..50).map(|n| Uuid::from_u128(0xc0de_0000 | n)).collect();
-    for mode in [RemovalMode::Apply, RemovalMode::Preview] {
-        let error = cards(&pool)
-            .remove_deleted_printings(&short, mode)
-            .await
-            .unwrap_err();
-        assert!(
-            matches!(
-                refusal(&error),
-                Some(RefusedPull::MassRemoval {
-                    removing: 550,
-                    cap: 500
-                })
-            ),
-            "{error:#}"
-        );
-    }
+    let error = cards(&pool)
+        .remove_deleted_printings(&short, RemovalMode::Apply)
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(
+            refusal(&error),
+            Some(RefusedPull::MassRemoval {
+                removing: 550,
+                cap: 500
+            })
+        ),
+        "{error:#}"
+    );
+    // A preview lists the whole plan and says it would be refused.
+    let preview = cards(&pool)
+        .remove_deleted_printings(&short, RemovalMode::Preview)
+        .await
+        .unwrap();
+    assert_eq!(preview.plan.removals.len(), 550);
+    assert!(matches!(
+        preview.refused,
+        Some(RefusedPull::MassRemoval { .. })
+    ));
     assert_eq!(catalog(&pool).await.0, 600);
 
     let most: HashSet<Uuid> = (0..100).map(|n| Uuid::from_u128(0xc0de_0000 | n)).collect();
@@ -422,6 +430,7 @@ async fn a_removal_over_its_cap_is_refused_and_removes_nothing(pool: sqlx::PgPoo
         500,
         "exactly the cap goes through"
     );
+    assert_eq!(report.refused, None);
 }
 
 // == the oracle tag sync and the rebuilds ==

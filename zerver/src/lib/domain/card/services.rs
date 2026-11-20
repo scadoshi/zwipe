@@ -162,15 +162,21 @@ impl<R: CardRepository> CardService for Service<R> {
             .await?;
         let references = self.repo.fetch_printing_references(&removed).await?;
         let plan = printing_removal::plan(gone, &survivors, &references);
-        scryfall_pull::check_removal(
+        let refused = scryfall_pull::check_removal(
             u64::try_from(plan.removals.len()).unwrap_or(u64::MAX),
             u64::try_from(stored.len()).unwrap_or(u64::MAX),
-        )?;
-        let counts = match mode {
-            RemovalMode::Apply => Some(self.repo.apply_printing_removals(&plan).await?),
-            RemovalMode::Preview => None,
+        )
+        .err();
+        let counts = match (mode, &refused) {
+            (RemovalMode::Apply, Some(refusal)) => return Err(refusal.clone().into()),
+            (RemovalMode::Apply, None) => Some(self.repo.apply_printing_removals(&plan).await?),
+            (RemovalMode::Preview, _) => None,
         };
-        Ok(RemovalReport { plan, counts })
+        Ok(RemovalReport {
+            plan,
+            counts,
+            refused,
+        })
     }
 
     async fn derive_card_categories(&self, batch_size: usize) -> anyhow::Result<(u64, usize)> {

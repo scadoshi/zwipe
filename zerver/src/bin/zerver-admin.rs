@@ -516,6 +516,9 @@ async fn preview_removed_printings(cards: &Cards) -> anyhow::Result<()> {
     for line in preview.plan.lines() {
         report(&line);
     }
+    if let Some(refusal) = &preview.refused {
+        report(&format!("zervice would refuse to apply this: {refusal}"));
+    }
     report("preview only: nothing changed");
     Ok(())
 }

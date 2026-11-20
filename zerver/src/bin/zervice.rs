@@ -156,17 +156,21 @@ async fn main() -> anyhow::Result<()> {
                         tracing::info!("printing removal ({mode:?}): {line}");
                     }
                     let applied = report.counts.unwrap_or_default();
-                    done(
-                        Some(applied.removed),
-                        &[
-                            ("to_remove", size(report.plan.removals.len())),
-                            ("kept", size(report.plan.kept.len())),
-                            ("removed", applied.removed),
-                            ("moved_deck_cards", applied.remapped_deck_cards),
-                            ("moved_slots", applied.remapped_slots),
-                            ("applied", u64::from(report.counts.is_some())),
-                        ],
-                    )
+                    if let Some(refusal) = report.refused {
+                        failed(&anyhow::Error::new(refusal))
+                    } else {
+                        done(
+                            Some(applied.removed),
+                            &[
+                                ("to_remove", size(report.plan.removals.len())),
+                                ("kept", size(report.plan.kept.len())),
+                                ("removed", applied.removed),
+                                ("moved_deck_cards", applied.remapped_deck_cards),
+                                ("moved_slots", applied.remapped_slots),
+                                ("applied", u64::from(report.counts.is_some())),
+                            ],
+                        )
+                    }
                 }
                 Err(e) => failed(&e),
             }

@@ -8,6 +8,8 @@ use std::hash::BuildHasher;
 
 use uuid::Uuid;
 
+use crate::domain::card::models::scryfall_pull::RefusedPull;
+
 /// One stored printing, as the plan and its log need it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Printing {
@@ -185,6 +187,9 @@ pub struct RemovalReport {
     pub plan: RemovalPlan,
     /// What applying it changed; `None` for a preview.
     pub counts: Option<RemovalCounts>,
+    /// Why applying the plan would be refused: it removes more than the cap allows. A preview
+    /// still returns the plan with this set; an applied run refuses instead.
+    pub refused: Option<RefusedPull>,
 }
 
 /// The stored printings `bulk` (the ids of a complete bulk file) no longer lists, by name then id.
