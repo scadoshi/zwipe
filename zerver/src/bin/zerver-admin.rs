@@ -3,7 +3,10 @@
 //!
 //! Every command names an account by its exact username, its id or its exact email, and goes
 //! through zerver's own services, as the app's requests do. Each one that runs writes an
-//! `admin_action_log` row. It reads zerver's settings from the environment or `zerver/.env`.
+//! `admin_action_log` row. It reads its settings from the environment or a `.env` in the working
+//! directory: `DATABASE_URL` for every command, and `RESEND_API_KEY` and `RESEND_EMAIL_FROM` for
+//! the ones that send mail (`rename` without `--no-notice`, `resend-verification` and
+//! `change-email`). `WEB_BASE_URL` and `SUPPORT_EMAIL_ADDRESS` are optional, as in zerver.
 //! `zerver-admin --help` lists the commands and `zerver-admin <command> --help` their options.
 //!
 //! - `show <account>` prints the account at a glance and changes nothing.
@@ -34,12 +37,16 @@ use std::process::ExitCode;
 use std::sync::Arc;
 
 use anyhow::{Context, bail};
+use chrono::Duration;
 use clap::{Args, Parser, Subcommand};
-use zwipe::config::Config;
+use zwipe::config::{AdminConfig, AdminMail};
+use zwipe::domain::auth::models::access_token::JwtSecret;
 use zwipe::domain::auth::models::account_ref::AccountRef;
 use zwipe::domain::auth::ports::AuthService;
 use zwipe::domain::card::models::printing_removal::RemovalMode;
 use zwipe::domain::card::ports::CardService;
+use zwipe::domain::email::models::{SendEmail, SendEmailError};
+use zwipe::domain::email::ports::{EmailSender, SendEmailFuture};
 use zwipe::domain::user::models::account_summary::AccountSummary;
 use zwipe::domain::{auth, card, metrics, user};
 use zwipe::inbound::admin::{self, NoticeOutcome, RenameNotice};
@@ -348,23 +355,31 @@ struct Services {
 }
 
 impl Services {
-    /// Connects with zerver's settings.
+    /// Connects with the settings the command needs, reading the Resend ones only under
+    /// [`AdminMail::Sends`].
+    ///
+    /// The auth service gets a throwaway signing secret and a zero token lifetime: no admin
+    /// command mints a token, and one minted anyway would be expired and signed with a key no
+    /// server holds.
     ///
     /// # Errors
     ///
     /// A missing or bad setting, or no database.
-    async fn connect() -> anyhow::Result<Self> {
-        let config = Config::from_env()?;
+    async fn connect(mail: AdminMail) -> anyhow::Result<Self> {
+        let config = AdminConfig::from_env(mail)?;
         let support = Email::new(&config.support_email_address)
             .context("SUPPORT_EMAIL_ADDRESS is not an email")?;
         let db = Postgres::new(&config.database_url, Jit::Keep).await?;
-        let resend = Resend::new(config.resend_api_key, config.resend_from_email);
+        let sender: Arc<dyn EmailSender> = match config.mail {
+            Some(mail) => Arc::new(Resend::new(mail.resend_api_key, mail.resend_from_email)),
+            None => Arc::new(NoMail),
+        };
         let auth = auth::services::Service::new(
             db.clone(),
             db.clone(),
-            Arc::new(resend),
-            config.jwt_secret,
-            config.access_token_lifetime,
+            sender,
+            throwaway_jwt_secret()?,
+            Duration::zero(),
             config.web_base_url,
             config.support_email_address,
         );
@@ -387,13 +402,60 @@ impl Services {
     }
 }
 
+/// A signing secret of two random v4 uuids in hex, 64 characters, made for one run and never
+/// stored.
+///
+/// # Errors
+///
+/// Never in practice: the secret is longer than [`JwtSecret`]'s minimum.
+fn throwaway_jwt_secret() -> anyhow::Result<JwtSecret> {
+    let hex = format!(
+        "{}{}",
+        uuid::Uuid::new_v4().simple(),
+        uuid::Uuid::new_v4().simple()
+    );
+    Ok(JwtSecret::new(&hex)?)
+}
+
+/// The email sender of a command that sends no mail: it read no Resend settings, so a send fails.
+#[derive(Debug)]
+struct NoMail;
+
+impl EmailSender for NoMail {
+    fn send_email(&self, _email: SendEmail) -> SendEmailFuture<'_> {
+        Box::pin(async {
+            Err(SendEmailError::Network(anyhow::anyhow!(
+                "this command read no mail settings"
+            )))
+        })
+    }
+}
+
+impl Command {
+    /// Whether the command sends mail, and so needs the Resend settings.
+    fn mail(&self) -> AdminMail {
+        match self {
+            Self::Rename(rename) if rename.no_notice => AdminMail::Silent,
+            Self::Rename(_) | Self::ResendVerification(_) | Self::ChangeEmail(_) => {
+                AdminMail::Sends
+            }
+            Self::Show(_)
+            | Self::Lock(_)
+            | Self::Unlock(_)
+            | Self::SignOutAll(_)
+            | Self::Delete(_)
+            | Self::RemovedPrintings => AdminMail::Silent,
+        }
+    }
+}
+
 /// Runs `command`.
 ///
 /// # Errors
 ///
 /// Whatever stopped it: a missing account, a refused change, a wrong confirmation, a failure.
 async fn run(command: Command) -> anyhow::Result<()> {
-    let s = Services::connect().await?;
+    let s = Services::connect(command.mail()).await?;
     match command {
         Command::Show(AccountArgs { account }) => {
             let user = s.fetch(&account).await?;
@@ -884,5 +946,30 @@ mod tests {
             text.contains("locked       yes, since 2026-11-12 09:30:00 UTC (spam)"),
             "{text}"
         );
+    }
+
+    #[test]
+    fn only_the_commands_that_send_mail_ask_for_the_resend_settings() {
+        let id = "00000000-0000-0000-0000-000000000000";
+        for (args, mail) in [
+            (&["show", "zatest1"][..], AdminMail::Silent),
+            (
+                &["rename", "zatest1", "zatest2", "--no-notice"],
+                AdminMail::Silent,
+            ),
+            (&["rename", "zatest1", "zatest2"], AdminMail::Sends),
+            (&["lock", "zatest1"], AdminMail::Silent),
+            (&["unlock", id], AdminMail::Silent),
+            (&["sign-out-all", "zatest1"], AdminMail::Silent),
+            (&["resend-verification", "zatest1"], AdminMail::Sends),
+            (&["delete", "zatest1"], AdminMail::Silent),
+            (
+                &["change-email", "zatest1", "new@test.local"],
+                AdminMail::Sends,
+            ),
+            (&["removed-printings"], AdminMail::Silent),
+        ] {
+            assert_eq!(command(args).unwrap().mail(), mail, "{args:?}");
+        }
     }
 }
