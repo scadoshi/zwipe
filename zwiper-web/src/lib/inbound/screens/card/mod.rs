@@ -30,6 +30,9 @@ use zwipe_ui::screens::card_lookup::{
 };
 use zwipe_ui::telemetry::vocabulary::Screen;
 
+use crate::inbound::cards::otag::{
+    OtagDescribe, OtagExamplesHost, OtagExamplesOpen, use_otag_reveals,
+};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::send_to::{SendToHost, use_send_to};
 use crate::inbound::chrome::shortcuts::{CardPageKey, ShortcutsScreen, card_page_key};
@@ -176,6 +179,10 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
     let mut printings_open = use_signal(|| false);
     // The stats folds the user shut; every one starts open.
     let stats_folded = use_signal(HashSet::<String>::new);
+    // The role tags' descriptions and their example cards.
+    let examples = use_otag_reveals();
+    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let signed_in = move || session.read().as_ref().is_some_and(|s| !s.is_expired());
 
     let driver = Driver {
@@ -226,6 +233,8 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
                         CardDetailsPanel {
                             card: card.clone(),
                             send_to: false,
+                            describe_tag,
+                            on_examples,
                             on_printings: move |()| printings_open.set(true),
                         }
                     }
@@ -307,6 +316,7 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
 
     rsx! {
         ScreenFrame { title, titled, {body} }
+        OtagExamplesHost { examples }
         if signed_in() {
             SendToHost { send_to }
         }
