@@ -25,8 +25,8 @@ use std::collections::{HashMap, HashSet};
 use components::hint::ContentHintDialog;
 use components::icons::{self, EyeIcon};
 use components::{
-    BottomSheet, DockAction, DockFilter, ToastOptions, Toasts, spawn_in_order, use_overlay_back,
-    use_toast,
+    BottomSheet, DockAction, DockFilter, LoadFailed, ToastOptions, Toasts, spawn_in_order,
+    use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -476,6 +476,8 @@ pub(crate) fn SwipeSelect(
                                 driver.dispatch(Action::Undo);
                             },
                         }
+                    } else if status == Status::Failed {
+                        LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Retry) }
                     } else if let Some(line) = empty_line {
                         // Why there is no card, inside the card's own box, as deck Add says it.
                         CardSkeleton { note: line }

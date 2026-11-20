@@ -39,9 +39,9 @@ use components::swipe_stack::{
     Swipe, SwipeControl, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use components::{
-    BackArrow, CardDetailsPanelSkeleton, CardGhost, Chip, DockEye, DockFilter, MeldSource,
-    PageHeader, PrintingsFace, Surface, TOAST_QUICK, open_on_shown_face, spawn_write_in_order,
-    turn_face, use_details_eye, use_mounted, use_overlay_back,
+    BackArrow, CardDetailsPanelSkeleton, CardGhost, Chip, DockEye, DockFilter, LoadFailed,
+    MeldSource, PageHeader, PrintingsFace, Surface, TOAST_QUICK, open_on_shown_face,
+    spawn_write_in_order, turn_face, use_details_eye, use_mounted, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -62,7 +62,7 @@ use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::Generation;
 use zwipe_ui::hint::{Role, SwipeSelectMode};
 use zwipe_ui::screens::add_cards::{self, Source};
-use zwipe_ui::screens::swipe_select::{empty_pile_line, filter_lit};
+use zwipe_ui::screens::swipe_select::{LOAD_FAILED, empty_pile_line, filter_lit};
 use zwipe_ui::stack::{CardStack, Direction, NO_CARDS_LEFT, StackAction};
 use zwipe_ui::telemetry::vocabulary::component;
 use zwipe_ui::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
@@ -317,6 +317,7 @@ fn land_deal(pile: &Pile, reply: Result<Option<Vec<HttpCommanderSuggestion>>, ()
         mut suggestions,
         mut exhausted,
         mut searched,
+        mut failed,
         ..
     } = *pile;
     let page = match reply {
@@ -325,7 +326,10 @@ fn land_deal(pile: &Pile, reply: Result<Option<Vec<HttpCommanderSuggestion>>, ()
             exhausted.set(true);
             return;
         }
-        Err(()) => return,
+        Err(()) => {
+            failed.set(true);
+            return;
+        }
     };
     searched.set(true);
     exhausted.set(deal::is_last_page(page.len(), PAGE_SIZE));
@@ -350,6 +354,9 @@ struct Pile {
     loading_more: Signal<bool>,
     /// Whether the search's first page has landed since the last deal.
     searched: Signal<bool>,
+    /// Whether the last search or deal failed, its first page or a next one: with no card left
+    /// to show, the pile says so with a Retry in place of its ghost.
+    failed: Signal<bool>,
     loads: Signal<Generation>,
     /// The line Maybe's empty card carries since its last load ([`maybe_note`]).
     maybe_line: Signal<Option<&'static str>>,
@@ -388,6 +395,7 @@ pub fn SwipeSelect(
         loading: use_signal(|| false),
         loading_more: use_signal(|| false),
         searched: use_signal(|| false),
+        failed: use_signal(|| false),
         loads: use_signal(Generation::default),
         maybe_line: use_signal(|| None),
     };
@@ -400,6 +408,7 @@ pub fn SwipeSelect(
         mut loading,
         mut loading_more,
         mut searched,
+        mut failed,
         mut loads,
         mut maybe_line,
     } = pile;
@@ -482,6 +491,7 @@ pub fn SwipeSelect(
                     break;
                 }
                 let Some(found) = reply else {
+                    failed.set(true);
                     break;
                 };
                 if found.is_empty() {
@@ -558,6 +568,7 @@ pub fn SwipeSelect(
         offset.set(0);
         exhausted.set(false);
         searched.set(false);
+        failed.set(false);
         suggestions.set(Vec::new());
         maybe_line.set(None);
         if let Some(door) = mode.door() {
@@ -610,6 +621,7 @@ pub fn SwipeSelect(
             }
             loading.set(false);
             let Some(found) = reply else {
+                failed.set(true);
                 return;
             };
             searched.set(true);
@@ -683,6 +695,17 @@ pub fn SwipeSelect(
                         let next = refreshes.peek().wrapping_add(1);
                         refreshes.set(next);
                     },
+                    // The page that failed again: the next one once cards were dealt, else the
+                    // first, by dealing again.
+                    on_retry: move |()| {
+                        failed.set(false);
+                        if stack.peek().is_empty() {
+                            let next = refreshes.peek().wrapping_add(1);
+                            refreshes.set(next);
+                        } else {
+                            load_more.call(());
+                        }
+                    },
                     user_filter,
                     source: mode.door().map(|_| source),
                     next_source,
@@ -709,6 +732,7 @@ fn SwipeSelectBody(
     on_close: EventHandler<()>,
     load_more: Callback<()>,
     on_refresh: EventHandler<()>,
+    on_retry: EventHandler<()>,
     user_filter: Signal<CardQueryBuilder>,
     source: Option<Signal<Source>>,
     next_source: Callback<()>,
@@ -730,6 +754,7 @@ fn SwipeSelectBody(
         loading,
         loading_more,
         searched,
+        failed,
         maybe_line,
         ..
     } = pile;
@@ -1022,6 +1047,8 @@ fn SwipeSelectBody(
                     }
                 } else if loading() || loading_more() {
                     CardGhost {}
+                } else if failed() {
+                    LoadFailed { message: LOAD_FAILED, on_retry: move |()| on_retry.call(()) }
                 } else if let Some(line) = maybe_line().filter(|_| on_maybe) {
                     // Maybe's empty card, worded as the commander maybeboard's list words it.
                     CardGhost { note: line }
@@ -1119,6 +1146,45 @@ mod tests {
     use zwipe_core::domain::card::scryfall_data::legalities::LegalityKind;
 
     use super::*;
+
+    thread_local! {
+        static PILE: std::cell::Cell<Option<Pile>> = const { std::cell::Cell::new(None) };
+    }
+
+    /// Mounts an empty pile and hands it to the test.
+    #[component]
+    fn EmptyPile() -> Element {
+        let pile = Pile {
+            stack: use_signal(CardStack::default),
+            suggestions: use_signal(Vec::new),
+            deck_count: use_signal(|| 0),
+            offset: use_signal(|| 0),
+            exhausted: use_signal(|| false),
+            loading: use_signal(|| false),
+            loading_more: use_signal(|| false),
+            searched: use_signal(|| false),
+            failed: use_signal(|| false),
+            loads: use_signal(Generation::default),
+            maybe_line: use_signal(|| None),
+        };
+        PILE.with(|p| p.set(Some(pile)));
+        rsx! {}
+    }
+
+    #[test]
+    fn a_failed_deal_marks_the_pile_failed_and_a_dealt_page_does_not() {
+        let mut dom = VirtualDom::new(EmptyPile);
+        dom.rebuild_in_place();
+        let pile = PILE.with(std::cell::Cell::get).expect("mounted");
+        dom.in_runtime(|| land_deal(&pile, Ok(Some(Vec::new())), /* first */ true));
+        assert!(!dom.in_runtime(|| *pile.failed.peek()), "a page landed");
+        dom.in_runtime(|| land_deal(&pile, Err(()), /* first */ true));
+        assert!(
+            dom.in_runtime(|| *pile.failed.peek()),
+            "a 500 on the deal says so with a Retry, not a ghost"
+        );
+        assert!(dom.in_runtime(|| pile.stack.peek().is_empty()));
+    }
 
     /// A real card, as the API serves it.
     fn card() -> Card {

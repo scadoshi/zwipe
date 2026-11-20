@@ -56,6 +56,9 @@ pub const UNSAVED: &str = "Removed from your commander maybeboard";
 /// The toast for an undo with no swipe to undo.
 pub const NOTHING_TO_UNDO: &str = "Nothing to undo";
 
+/// The line in place of the card, with a Retry, when the cards could not load.
+pub const LOAD_FAILED: &str = "Couldn't load cards";
+
 /// The toast for undoing a skip or a dismissal.
 pub const UNDID_SKIP: &str = "Undid skip";
 
@@ -145,7 +148,7 @@ pub struct SuggestedPile {
 pub enum Status {
     /// No card shows and a search or a next page is out.
     Loading,
-    /// No card shows and the search failed.
+    /// No card shows and the search or the next page failed: [`LOAD_FAILED`] with a Retry.
     Failed,
     /// No card shows and nothing is out: the pile is spent or empty. [`State::message`] has the line to show, if any.
     Empty,
@@ -185,6 +188,8 @@ pub enum Action {
         /// The ticket from the request this answers.
         ticket: Ticket,
     },
+    /// Tries the failed load again, from the Retry in place of the card: the first page when it never came, else the next page. Does nothing while nothing has failed.
+    Retry,
     /// The maybeboard request holding `ticket` went through.
     Landed {
         /// The ticket from the [`Effect::AddMaybeboardCard`] or [`Effect::RemoveMaybeboardCard`] this answers.
@@ -407,11 +412,15 @@ impl State {
             }
             Action::Found { ticket, cards } => self.found(ticket, cards),
             Action::Failed { ticket } => {
-                if self.take(ticket) == Some(Pending::Search) {
+                if matches!(
+                    self.take(ticket),
+                    Some(Pending::Search | Pending::More { .. })
+                ) {
                     self.failed = true;
                 }
                 Vec::new()
             }
+            Action::Retry => self.retry(),
             Action::Landed { ticket } => match self.take(ticket) {
                 Some(Pending::Save) => vec![Effect::Confirm(Toast::new(
                     ToastKind::Success,
@@ -563,6 +572,18 @@ impl State {
             }
             _ => Vec::new(),
         }
+    }
+
+    /// Sends the load that failed again: the first page when none came, else the next one.
+    fn retry(&mut self) -> Vec<Effect> {
+        if !self.failed || self.status() == Status::Loading {
+            return Vec::new();
+        }
+        if self.offset == 0 {
+            return self.deal();
+        }
+        self.failed = false;
+        self.pull(1)
     }
 
     /// Asks for the next page unless one is out, the pile is spent or the mode never searches.

@@ -2,9 +2,10 @@
 //! Swipe and Clear skips, its Show row over the list at every width. The
 //! screen's one filter narrows it.
 
-use components::{Chip, DangerZoneAction};
+use components::{Chip, DangerZoneAction, LoadFailed};
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_ui::screens::playstyle;
 
 use crate::inbound::cards::card_row::ShowRowArt;
 use crate::inbound::chrome::ghost::{GhostButton, GhostChip, GhostChipRow, GhostHint, GhostText};
@@ -23,6 +24,7 @@ pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uui
     let Suggestions {
         is_loading,
         load_failed,
+        redeal,
         ..
     } = list;
     // The console's Show row, Art alone: colors come from the screen's filter.
@@ -60,9 +62,7 @@ pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uui
                     }
                     div { class: "card-list-more", GhostChip { chars: 9, button: true } }
                 } else if load_failed() {
-                    div { class: "message-empty",
-                        span { class: "chip-note", "Couldn't load your suggestions" }
-                    }
+                    LoadFailed { message: playstyle::LOAD_FAILED, on_retry: move |()| redeal.call(()) }
                 } else {
                     // The console sits over the list at every width, as Staples' and the
                     // Maybeboard's do.

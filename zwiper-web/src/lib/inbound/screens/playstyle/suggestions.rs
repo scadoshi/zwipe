@@ -52,6 +52,8 @@ pub(crate) struct Suggestions {
     pub(crate) is_loading: Signal<bool>,
     /// Whether a page failed with nothing to show.
     pub(crate) load_failed: Signal<bool>,
+    /// Deals the first page again, for the failed load's Retry.
+    pub(crate) redeal: Callback<()>,
     /// The user's decks, for the create gate; `None` until loaded.
     pub(crate) deck_profiles: Signal<Option<Vec<DeckProfile>>>,
     filter: Signal<CardQueryBuilder>,
@@ -292,6 +294,11 @@ fn use_deal_pages(filter: Signal<CardQueryBuilder>) -> DealPages {
         let ticket = tickets.write().next_ticket();
         more_out.set(false);
         more_used.set(false);
+        // A deal after a failed one ghosts the list again while it is out.
+        if *load_failed.peek() {
+            load_failed.set(false);
+            is_loading.set(true);
+        }
         spawn(async move {
             let Some(request) = deal::next_page(Door::Suggested, &applied, &[], LIST_PAGE) else {
                 return;
@@ -417,6 +424,7 @@ pub(crate) fn use_suggestions(filter: Signal<CardQueryBuilder>) -> Suggestions {
         deck_count: held.deck_count,
         is_loading,
         load_failed,
+        redeal,
         deck_profiles,
         filter,
         swipe_open,

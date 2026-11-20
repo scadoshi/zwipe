@@ -537,12 +537,99 @@ fn an_empty_next_page_spends_the_pile() {
 }
 
 #[test]
-fn a_failed_next_page_stops_loading() {
+fn a_failed_next_page_with_no_card_left_shows_failed_not_spent() {
     let mut state = loaded(&cards(&["Krenko"]));
     let ticket = ticket_of(&state.update(Action::Skip));
     assert_eq!(state.status(), Status::Loading);
+    let effects = state.update(Action::Failed { ticket });
+    assert_eq!(state.status(), Status::Failed);
+    assert_eq!(
+        effects,
+        Vec::new(),
+        "no \"no cards left\" for a page that never came"
+    );
+}
+
+#[test]
+fn a_failed_first_search_offers_retry_which_searches_from_the_top() {
+    let mut state = State::new();
+    let mode = Mode::Commander(Format::Commander);
+    let ticket = ticket_of(&state.update(open(mode.clone())));
+    assert_eq!(state.update(Action::Failed { ticket }), Vec::new());
+    assert_eq!(state.status(), Status::Failed);
+
+    let effects = state.update(Action::Retry);
+    let (ticket, query) = search_of(&effects);
+    assert!(
+        matches!(effects.as_slice(), [Effect::SearchCommanders { .. }]),
+        "{effects:?}"
+    );
+    assert_eq!(query, want_query(&mode, 0));
+    assert_eq!(state.status(), Status::Loading);
+    let _ = state.update(Action::Found {
+        ticket,
+        cards: cards(&["Krenko"]),
+    });
+    assert_eq!(state.status(), Status::Loaded);
+    assert_eq!(names(state.window()), ["Krenko"]);
+}
+
+#[test]
+fn a_failed_next_page_offers_retry_which_asks_for_that_page_again() {
+    let mut state = loaded(&cards(&["Krenko"]));
+    let ticket = ticket_of(&state.update(Action::Skip));
     let _ = state.update(Action::Failed { ticket });
-    assert_eq!(state.status(), Status::Empty);
+
+    let effects = state.update(Action::Retry);
+    let (ticket, query) = search_of(&effects);
+    assert!(
+        matches!(effects.as_slice(), [Effect::LoadMore { .. }]),
+        "{effects:?}"
+    );
+    assert_eq!(
+        query,
+        want_query(&Mode::Commander(Format::Commander), PAGE_SIZE)
+    );
+    let _ = state.update(Action::Found {
+        ticket,
+        cards: cards(&["Talrand"]),
+    });
+    assert_eq!(state.status(), Status::Loaded);
+    assert_eq!(names(state.window()), ["Talrand"]);
+}
+
+#[test]
+fn a_failed_next_page_leaves_the_cards_still_showing() {
+    let mut state = loaded(&full_page());
+    let ticket = (0..20)
+        .filter_map(|_| {
+            let effects = state.update(Action::Skip);
+            effects
+                .iter()
+                .any(|e| matches!(e, Effect::LoadMore { .. }))
+                .then(|| ticket_of(&effects))
+        })
+        .last()
+        .unwrap();
+    let _ = state.update(Action::Failed { ticket });
+    assert_eq!(
+        state.status(),
+        Status::Loaded,
+        "the page's last cards still show"
+    );
+}
+
+#[test]
+fn retry_with_nothing_failed_does_nothing() {
+    let mut state = loaded(&cards(&["Krenko"]));
+    assert_eq!(state.update(Action::Retry), Vec::new());
+    let mut state = State::new();
+    let _ = ticket_of(&state.update(open(Mode::Commander(Format::Commander))));
+    assert_eq!(
+        state.update(Action::Retry),
+        Vec::new(),
+        "the search is still out"
+    );
 }
 
 #[test]

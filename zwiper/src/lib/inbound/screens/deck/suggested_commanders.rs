@@ -28,7 +28,8 @@
 
 use components::{
     AlertDialog, Bar, BarChart, BarOrientation, Button, ButtonVariant, CardListFold, CardRoleChips,
-    Chip, ColorBars, DataBar, DialogAction, OtagDef, RoleTags, StapleDecksChip, Toasts, use_toast,
+    Chip, ColorBars, DataBar, DialogAction, LoadFailed, OtagDef, RoleTags, StapleDecksChip, Toasts,
+    use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -1026,6 +1027,8 @@ pub fn SuggestedCommanders() -> Element {
                                 }
                             }
                         }
+                    } else if status == Status::Failed {
+                        LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Load) }
                     } else if let Some(message) = message {
                         div { class: "message-empty",
                             span { class: "chip-note", {message} }
