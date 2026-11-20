@@ -223,6 +223,24 @@ pub fn everywhere_groups() -> Vec<SheetGroup> {
     })
 }
 
+/// The groups of a card page showing one card: `p` opens its Printings, beside the keys every
+/// page has ([`everywhere_groups`]), and the keys Printings answers once open.
+#[must_use]
+pub fn card_page_groups() -> Vec<SheetGroup> {
+    sheet_groups(ScreenKeys {
+        card: vec![PRINTINGS_ROW],
+        page: vec![CARD_SEARCH_ROW],
+        steps: true,
+        ..ScreenKeys::default()
+    })
+}
+
+/// The key that opens the Printings sheet for the card the keys act on.
+pub const PRINTINGS_KEY: &str = "p";
+
+/// The sheet's row for [`PRINTINGS_KEY`].
+pub const PRINTINGS_ROW: SheetRow = (&[PRINTINGS_KEY], "Printings");
+
 /// `groups` with the hint key's row ([`HINT_ROW`]) taken out, for a page with no hint, where `?`
 /// does nothing. A group left with no rows goes too.
 #[must_use]
@@ -686,6 +704,20 @@ mod tests {
         assert!(
             rows_of(&everywhere_groups()).contains(&CARD_SEARCH_ROW),
             "/ says it searches cards"
+        );
+    }
+
+    #[test]
+    fn a_card_page_lists_p_for_printings_beside_the_keys_every_page_has() {
+        assert_eq!(
+            outline(&card_page_groups()),
+            vec![
+                ("Navigation", vec!["gg", "Shift+G", "j", "k"]),
+                ("Card", vec!["p"]),
+                ("Page", vec!["/", "t", "?", "Shift+H", "Esc"]),
+                ("In printings", vec!["←", "h", "v", "Enter"]),
+                ("In themes", vec!["↑", "h", "gg", "Enter"]),
+            ]
         );
     }
 

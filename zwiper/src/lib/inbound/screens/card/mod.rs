@@ -254,7 +254,9 @@ fn CardScreen(open: Open) -> Element {
         },
         (Status::NotFound, _) => rsx! {
             div { class: "screen-content card-page-list",
-                p { class: "card-page-message", {message.unwrap_or(card_lookup::NOT_FOUND)} }
+                p { class: "card-page-message",
+                    span { class: "chip-note", {message.unwrap_or(card_lookup::NOT_FOUND)} }
+                }
             }
         },
         (Status::Failed, _) => rsx! {

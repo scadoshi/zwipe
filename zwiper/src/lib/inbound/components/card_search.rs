@@ -1,12 +1,14 @@
 //! The card search in the app: its lookup, signed in with a fresh session when one is held, so
 //! the user's Universes Beyond setting applies, else signed out; and its routes, the card page
-//! and the results page, which `use_app_search` drives Home's Card search panel with.
+//! and the results page; and `HeaderSearch`, the chip in every signed-in screen's header that
+//! opens the box across it.
 
 use std::time::Duration;
 
-use components::{CardSearch, SearchHost, use_card_search};
+use components::{CardSearch, CardSearchBar, HEADER_ALWAYS, SearchHost, use_card_search};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
+use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_client::card::lookup_cards::LookupError;
 use zwipe_core::domain::auth::models::session::Session;
@@ -48,8 +50,29 @@ impl SearchHost for AppSearch {
     }
 }
 
+/// The header's card search: the chip in the header, a tap on which opens the box across it.
+#[component]
+pub(crate) fn HeaderSearch() -> Element {
+    let search = use_app_search();
+    let input_id = use_hook(|| header_search_id(Uuid::new_v4()));
+    rsx! {
+        CardSearchBar {
+            model: search.model(),
+            on_action: Callback::new(move |action| search.dispatch(action)),
+            input_id,
+            header_media: HEADER_ALWAYS,
+        }
+    }
+}
+
+/// The header search's box id for one mount, so a header drawn while another's is still
+/// mounted never shares its box, or its chip's label, with it.
+fn header_search_id(mount: Uuid) -> String {
+    format!("header-card-search-{}", mount.simple())
+}
+
 /// A card search bar driven by the app, for one mount.
-pub(crate) fn use_app_search() -> CardSearch<AppSearch> {
+fn use_app_search() -> CardSearch<AppSearch> {
     use_card_search(AppSearch {
         session: use_context(),
         client: use_context(),
@@ -99,5 +122,18 @@ fn failure(error: &LookupError) -> Failure {
             retry_after: *retry_after,
         },
         LookupError::Client(_) => Failure::Other,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn each_header_search_names_its_box_for_its_own_mount() {
+        let first = header_search_id(Uuid::from_u128(1));
+        let second = header_search_id(Uuid::from_u128(2));
+        assert_ne!(first, second, "two mounts never share a box id");
+        assert!(first.starts_with("header-card-search-"), "{first}");
     }
 }

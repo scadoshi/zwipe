@@ -1347,17 +1347,27 @@ html.js:not(.splash-skip).splash-over .splash {
 }
 
 /* ---- Card search ----
-   The nav's box above the nav's fold, Home's Card search panel below it,
-   never both. */
+   The nav's chip and box above the nav's fold; below it, the header's card
+   search (components' magic.css): the chip right of the Z mark, and open,
+   the box from the left corner to the nav's right padding. It stays out of
+   sight until it knows it is the header's. */
 @media (max-width: 60rem) {
     nav .card-search-nav {
-        display: none;
+        top: calc(50% - 0.85rem);
+        left: calc(var(--space-3) + 3.375rem + var(--space-2));
+        right: var(--space-3);
+        height: 1.7rem;
+        --card-search-open-shift: calc(-1 * (3.375rem + var(--space-2)));
+        --card-search-drop-top: 4rem;
     }
-}
 
-@media (min-width: 60.01rem) {
-    .site-card-search {
-        display: none;
+    nav .card-search-nav:not(.card-search-header) {
+        visibility: hidden;
+    }
+
+    /* The store icons and Log in start clear of the chip and its gap. */
+    nav:has(> .card-search-nav) > .nav-persistent {
+        margin-left: calc(var(--space-6) + var(--space-3));
     }
 }
 
@@ -1368,11 +1378,3 @@ html.js:not(.splash-skip).splash-over .splash {
     border-color: var(--color-error);
 }
 
-/* The panel keeps the hero's side inset, 1rem above it. */
-.site-card-search {
-    padding: var(--space-4) var(--space-5) var(--space-2);
-}
-
-.site-card-search .card-search {
-    width: 100%;
-}

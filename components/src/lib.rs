@@ -142,8 +142,8 @@ pub use card_results_grid::{CardResultsGrid, CardResultsGridGhost};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use card_search::{
-    CardSearch, CardSearchBar, CardSearchPanel, NAV_GROWN_PX, SEARCH_ICON, SearchHost, SearchPlace,
-    use_card_search,
+    CardSearch, CardSearchBar, HEADER_ALWAYS, NAV_GROWN_PX, SEARCH_ICON, SearchHost,
+    focus_card_search, use_card_search,
 };
 pub use card_skeleton::CardSkeleton;
 pub use card_stack::{CardStack, StackCard};

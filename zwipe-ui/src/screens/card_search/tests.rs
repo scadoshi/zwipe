@@ -33,6 +33,11 @@ fn cards(names: &[&str]) -> Vec<Card> {
 }
 
 #[test]
+fn the_empty_box_reads_card_search() {
+    assert_eq!(PLACEHOLDER, "Card search");
+}
+
+#[test]
 fn it_starts_idle() {
     let state = State::new();
     assert_eq!(state.status(), Status::Idle);

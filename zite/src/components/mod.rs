@@ -2,7 +2,7 @@ mod card_search;
 mod featured_flavor;
 mod page_meta;
 mod stats_strip;
-pub(crate) use card_search::{HomeCardSearch, NavCardSearch};
+pub(crate) use card_search::NavCardSearch;
 pub(crate) use featured_flavor::{FeaturedFlavor, dismiss_flavor_overlay};
 pub(crate) use page_meta::PageMeta;
 pub(crate) use stats_strip::StatsStrip;
