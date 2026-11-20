@@ -28,6 +28,10 @@
     --corner-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2));
     /* The corner floats' own corner: the dock's and a toast's. */
     --corner-radius: 0.9rem;
+    /* A chip's corner: read-only for one that only shows something, control for
+       one that does something. */
+    --radius-readonly: 0.4rem;
+    --radius-control: 0.6rem;
     --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
     --enter-duration: 280ms;
 }
@@ -58,7 +62,7 @@
     padding: var(--space-1) var(--space-2);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-muted);
-    border-radius: 0.6rem;
+    border-radius: var(--radius-readonly);
     font-size: 0.75rem;
     color: var(--ink-text-muted, var(--text-muted));
     cursor: pointer;
@@ -70,7 +74,7 @@
     display: inline-block;
     padding: var(--space-1) var(--space-2);
     border: 1px solid var(--border-primary);
-    border-radius: 0.6rem;
+    border-radius: var(--radius-control);
     /* A button element, so the host's face has to be named. */
     font-family: inherit;
     font-size: 0.75rem;
@@ -129,7 +133,7 @@
 /* A label on a project, a guide, a source row. The size and shape are soft
    defaults, so a host rule of any specificity resizes a tag. */
 :where(.tag) {
-    border-radius: 0.6rem;
+    border-radius: var(--radius-readonly);
     padding: var(--space-1) var(--space-3);
     font-size: 0.78rem;
     letter-spacing: 0.02em;
@@ -148,8 +152,13 @@
    border. The size and shape are soft defaults, as on .tag. */
 :where(.stat-chip) {
     padding: var(--space-1) var(--space-2);
-    border-radius: 0.6rem;
+    border-radius: var(--radius-readonly);
     font-size: 0.75rem;
+}
+
+/* A tag or stat chip that is a link or a button takes the control corner. */
+:where(a.tag, button.tag, a.stat-chip, button.stat-chip) {
+    border-radius: var(--radius-control);
 }
 
 .stat-chip {
@@ -2013,15 +2022,14 @@ html:has(.bottom-sheet.show) body,
 
 /* Status pills, shared with the banner header. Filled to match the app's stat
    chips: the status color as text over a 12% tint, with a 35% border. */
-/* Same height and radius as .chip, so a status pill and the chips beside it
-   read as one family. */
+/* Same height as .chip, at the read-only corner since a pill only shows a status. */
 .status-tag {
     display: inline-block;
     font-size: 0.75rem;
     letter-spacing: 0.05em;
     padding: var(--space-1) var(--space-2);
     border: 1px solid transparent;
-    border-radius: 0.6rem;
+    border-radius: var(--radius-readonly);
     vertical-align: middle;
     text-transform: none;
 }

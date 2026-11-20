@@ -332,7 +332,7 @@
     flex: 0 0 auto;
     padding: 0.1rem var(--space-2);
     border: 1px solid transparent;
-    border-radius: 0.4rem;
+    border-radius: var(--radius-readonly);
     font-size: 0.7rem;
     white-space: nowrap;
 }
@@ -371,10 +371,10 @@
     vertical-align: middle;
 }
 
-/* Match the neighboring price/stat tags' corner radius (0.4rem) so the pips read
+/* The read-only corner of the price and stat tags beside them, so the pips read
    as part of the same tag row. Element+3-class selector beats the base pip's. */
 .card-row-colors i.ms.ms-cost {
-    border-radius: 0.4rem;
+    border-radius: var(--radius-readonly);
 }
 
 .card-row-detail {
@@ -807,7 +807,7 @@ i.ms.ms-cost.ms-gp {
     display: inline-block;
     padding: 0.15rem var(--space-2);
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: var(--radius-readonly);
     font-size: 0.75rem;
     color: var(--ink-text-muted, var(--text-muted));
     background-color: var(--bg-primary);
@@ -1317,14 +1317,14 @@ i.ms.ms-cost.ms-gp {
     display: inline-block;
     width: 5.25rem;
     height: 1.725rem;
-    border-radius: 0.4rem;
+    border-radius: var(--radius-readonly);
 }
 
 .card-details-ghost .card-details-ghost-tag {
     display: inline-block;
     width: 4rem;
     height: 1.725rem;
-    border-radius: 0.4rem;
+    border-radius: var(--radius-readonly);
 }
 
 .card-details-ghost .card-details-ghost-tag-wide {
@@ -2211,7 +2211,7 @@ html.keyboard-up .web-dock-pair {
 .card-prices > .card-price-ghost {
     width: 3.6rem;
     height: 1.8rem;
-    border-radius: 0.4rem;
+    border-radius: var(--radius-readonly);
 }
 
 /* A step button's ghost, the button's size. */
@@ -2671,7 +2671,7 @@ html.keyboard-up .web-dock-pair {
     padding: var(--space-1) var(--space-2);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-muted);
-    border-radius: 0.6rem;
+    border-radius: var(--radius-readonly);
     font-size: 0.75rem;
     color: var(--ink-text-muted, var(--text-muted));
     box-shadow: var(--shadow-sm);
@@ -3923,6 +3923,7 @@ footer.site-footer .site-footer-note {
     line-height: inherit;
     cursor: pointer;
     animation: card-search-chip-in 0.25s ease-out backwards;
+    border-radius: var(--radius-control);
 }
 
 /* The match the arrow keys light, or the only one, which Enter opens. */

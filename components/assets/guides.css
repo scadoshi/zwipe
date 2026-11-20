@@ -393,7 +393,7 @@
 
 .guide-kw {
     padding: 0.03rem var(--space-1);
-    border-radius: 0.6rem;
+    border-radius: var(--radius-readonly);
     background-color: color-mix(in srgb, var(--text-primary) 9%, transparent);
     border: 1px solid color-mix(in srgb, var(--text-primary) 16%, transparent);
     color: var(--text-primary);

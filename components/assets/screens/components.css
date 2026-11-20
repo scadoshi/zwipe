@@ -530,6 +530,7 @@
 .skeleton-chip.skeleton-tinted {
     background-color: color-mix(in srgb, var(--tone) 12%, transparent);
     border-color: color-mix(in srgb, var(--tone) 35%, transparent);
+    border-radius: var(--radius-readonly);
 }
 
 /* An empty .input-compact filling the rest of its chip row. */

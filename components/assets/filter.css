@@ -353,6 +353,7 @@
     animation:
         search-float-in 0.25s ease-out both,
         search-float-drift 3.2s ease-in-out 0.25s infinite;
+    border-radius: var(--radius-control);
 }
 
 .stepper {
@@ -673,6 +674,7 @@
     line-height: inherit;
     cursor: pointer;
     animation: search-float-in 0.25s ease-out both;
+    border-radius: var(--radius-control);
 }
 
 /* The picker result the arrow keys point at. */
