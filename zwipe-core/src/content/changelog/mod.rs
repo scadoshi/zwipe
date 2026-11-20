@@ -75,6 +75,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Card search opens a card or a page of matches from the nav, the search button in the header on a phone, and zwipe.net",
         "On a phone, Send to opens as a side drawer instead of covering the screen",
         "Send to a deck that already has the card says so right away",
+        "Chips you can't tap have smaller corners than buttons, so they no longer look like one",
     ],
 }];
 
