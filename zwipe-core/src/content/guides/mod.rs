@@ -659,7 +659,7 @@ pub static GUIDES: &[Guide] = &[
                     ]),
                     Block::H2("Swipe from either list"),
                     Block::P(
-                        "Each list's Swipe deals a stack. Suggested deals its ranking up to 100 deep; Maybeboard deals commanders you haven't saved, most played first.",
+                        "Each list's Swipe deals a stack. Suggested deals its ranking, best fit first, and keeps dealing as you swipe; Maybeboard deals commanders you haven't saved, most played first.",
                     ),
                     Block::Swipe(&[
                         ("right", "start a new deck with it"),
@@ -1228,6 +1228,21 @@ mod tests {
             image_url("getting-started/01-create-deck.webp"),
             format!("{WEB_BASE}/guide-images/getting-started/01-create-deck.webp")
         );
+    }
+
+    #[test]
+    fn the_web_s_guides_say_what_the_commander_deal_does() {
+        for guide in GUIDES {
+            for block in guide.blocks_on(Surface::Web) {
+                if let Block::P(text) | Block::Note(text) = block {
+                    assert!(
+                        !text.contains("100 deep") && !text.contains("one color identity"),
+                        "{}: {text}",
+                        guide.slug
+                    );
+                }
+            }
+        }
     }
 
     #[test]
