@@ -1086,7 +1086,7 @@ dependencies = [
 
 [[package]]
 name = "components"
-version = "1.23.2"
+version = "1.24.0"
 dependencies = [
  "chrono",
  "dioxus",
@@ -9163,7 +9163,7 @@ dependencies = [
 
 [[package]]
 name = "zerver"
-version = "1.23.2"
+version = "1.24.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -9205,7 +9205,7 @@ dependencies = [
 
 [[package]]
 name = "zite"
-version = "1.23.2"
+version = "1.24.0"
 dependencies = [
  "chrono",
  "components",
@@ -9296,7 +9296,7 @@ dependencies = [
 
 [[package]]
 name = "zwipe-client"
-version = "1.23.2"
+version = "1.24.0"
 dependencies = [
  "chrono",
  "getrandom 0.4.3",
@@ -9312,7 +9312,7 @@ dependencies = [
 
 [[package]]
 name = "zwipe-core"
-version = "1.23.2"
+version = "1.24.0"
 dependencies = [
  "chrono",
  "email_address",
@@ -9329,7 +9329,7 @@ dependencies = [
 
 [[package]]
 name = "zwipe-ui"
-version = "1.23.2"
+version = "1.24.0"
 dependencies = [
  "chrono",
  "getrandom 0.4.3",
@@ -9342,7 +9342,7 @@ dependencies = [
 
 [[package]]
 name = "zwiper"
-version = "1.23.2"
+version = "1.24.0"
 dependencies = [
  "anyhow",
  "apple-native-keyring-store",
@@ -9375,7 +9375,7 @@ dependencies = [
 
 [[package]]
 name = "zwiper-web"
-version = "1.23.2"
+version = "1.24.0"
 dependencies = [
  "chrono",
  "components",

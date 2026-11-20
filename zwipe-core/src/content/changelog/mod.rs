@@ -46,41 +46,36 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 9);
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 24, 0),
+    version: Version::new(1, 24, 1),
     date: None,
     entries: &[
         "On Android, the app no longer signs you out now and then after a restart",
-        "Starring a card pops its Star button",
-        "Toasts stamp as they land",
-        "On the web, Shift+P opens Send to wherever a card's details offer it",
-        "Undoing a Send to takes the card back out of the deck it went to",
-        "Theme search highlights the theme Enter would pick as you type",
-        "Enter or Go in the Format, Deck tags, Oracle tags and Send to searches picks the top match, highlighted as you type",
-        "A card keeps the same art from one refresh to the next",
-        "On the web, Clone and Share stay off until the deck loads",
-        "On the web, Share stays open after Create link until the link is ready",
-        "On the web on Android, Esc during Create link no longer shows an error over a link that was made",
-        "After a dropped connection, Create deck and Clone open one new deck instead of showing an error",
-        "A change that went through before your connection dropped no longer shows an error",
-        "An unset land target shows your format's usual count, and + and - step from it",
-        "Send to is a paper-plane button",
-        "An open sheet keeps its size when a toast shows, and the toast sits in front",
         "On Android, Send to, Oracle tag examples and the update screen show their header below the status bar",
-        "A card row keeps its icon buttons together with - and + by the count, and puts its move buttons, now Mainboard, Maybeboard and Sideboard, on rows of their own",
-        "On the web, the top nav folds into the menu on narrower windows instead of wrapping onto two rows",
-        "Deck lists and commander suggestions load faster",
-        "After a dropped connection, a quantity change or board move tries once more on its own and lands only once",
-        "Undo right after a + or - on a card takes it back, even before it saves",
-        "Card pages, one for every card with its image, details, prices, tags, stats and printings, open without logging in",
-        "Card search opens a card or a page of matches from the nav, the search button in the header on a phone, and zwipe.net",
-        "On a phone, Send to opens as a side drawer instead of covering the screen",
-        "Send to a deck that already has the card says so right away",
-        "Chips you can't tap have smaller corners than buttons",
     ],
 }];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 24, 0),
+        date: NaiveDate::from_ymd_opt(2026, 11, 19),
+        entries: &[
+            "Card pages, one for every card with its image, details, prices, tags, stats and printings, open without logging in",
+            "Card search opens a card or a page of matches from the nav, the header on a phone and zwipe.net",
+            "Send to is a paper-plane button and a side drawer on a phone, opens with Shift+P on the web, says right away when the deck has the card, and Undo takes the card back out",
+            "Enter or Go in the theme, Format, Deck tags, Oracle tags and Send to searches picks the top match, highlighted as you type",
+            "After a dropped connection, a change lands once with no error, and Create deck and Clone open one new deck",
+            "On the web, Share and Clone wait for the deck to load, and Share stays open with no false error until its link is ready",
+            "Toasts stamp as they land and sit in front of an open sheet without resizing it",
+            "Card rows keep - and + by the count and put the move buttons, now Mainboard, Maybeboard and Sideboard, on their own rows",
+            "Undo right after a + or - on a card takes it back, even before it saves",
+            "An unset land target shows your format's usual count, and + and - step from it",
+            "A card keeps the same art from one refresh to the next",
+            "Deck lists and commander suggestions load faster",
+            "On the web, the top nav folds into the menu on narrower windows instead of wrapping onto two rows",
+            "Chips you can't tap have smaller corners than buttons, and the Star button pops when you star a card",
+        ],
+    },
     Release {
         version: Version::new(1, 23, 2),
         date: NaiveDate::from_ymd_opt(2026, 11, 18),
