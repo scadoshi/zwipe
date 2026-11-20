@@ -4,12 +4,12 @@ use std::time::Duration;
 
 use components::{AppPhase, use_app_lifecycle};
 use dioxus::prelude::{ReadableExt, Signal, spawn, use_effect};
-use tokio::time::{self, MissedTickBehavior};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::outbound::timer::Ticker;
 
 /// Interval between automatic flushes when the app is foregrounded.
 pub const FLUSH_INTERVAL_SECS: u64 = 30;
@@ -23,9 +23,8 @@ pub fn spawn_usage_flusher(
     session: Signal<Option<Session>>,
 ) {
     spawn(async move {
-        let mut tick = time::interval(Duration::from_secs(FLUSH_INTERVAL_SECS));
+        let mut tick = Ticker::new(Duration::from_secs(FLUSH_INTERVAL_SECS));
         // Ticks missed in the background come back as one, not a burst.
-        tick.set_missed_tick_behavior(MissedTickBehavior::Delay);
         loop {
             tick.tick().await;
             flush_once(&buffer, &client, &session).await;

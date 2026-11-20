@@ -8,7 +8,8 @@
 use std::time::Duration;
 
 use dioxus::prelude::*;
-use tokio::time;
+
+use crate::outbound::timer;
 
 /// The picker's 0.2 s fade (`.swipe-select-screen`), and a frame over.
 const FADE_OUT: Duration = Duration::from_millis(250);
@@ -27,7 +28,7 @@ pub fn use_held_open(open: ReadSignal<bool>) -> bool {
             let close = closes.peek().wrapping_add(1);
             closes.set(close);
             spawn(async move {
-                time::sleep(FADE_OUT).await;
+                timer::sleep(FADE_OUT).await;
                 if !*open.peek() && *closes.peek() == close {
                     held.set(false);
                 }
