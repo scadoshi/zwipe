@@ -67,6 +67,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On Android, opening a card role in a deck's card list no longer leaves doubled pieces of the row behind",
         "Card search results load more as you scroll",
         "Sorting by Rarity goes from common to mythic instead of alphabetically",
+        "Going back from a card to your search results keeps your place",
     ],
 }];
 
