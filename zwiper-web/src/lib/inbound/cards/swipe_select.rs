@@ -40,8 +40,8 @@ use components::swipe_stack::{
 };
 use components::{
     BackArrow, CardDetailsPanelSkeleton, CardGhost, Chip, DockEye, DockFilter, MeldSource,
-    PageHeader, PrintingsFace, Surface, TOAST_LONG, TOAST_QUICK, open_on_shown_face,
-    spawn_write_in_order, turn_face, use_details_eye, use_mounted, use_overlay_back,
+    PageHeader, PrintingsFace, Surface, TOAST_QUICK, open_on_shown_face, spawn_write_in_order,
+    turn_face, use_details_eye, use_mounted, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -282,13 +282,6 @@ async fn maybeboard_pile(authed: Authed, filter: &CardQueryBuilder, door: Door) 
         .ok_or(())?;
     let count = saved.len();
     Ok((count, maybeboard_matching(saved, filter, door)))
-}
-
-/// What a maybeboard load lands as: its commanders, or the line a failed load toasts.
-fn maybeboard_landing(reply: MaybeReply) -> Result<Vec<Card>, &'static str> {
-    reply
-        .map(|(_, matched)| matched)
-        .map_err(|()| maybeboard::LOAD_FAILED)
 }
 
 /// The line Maybe's empty card carries, as the commander maybeboard's own list words it: the
@@ -589,18 +582,10 @@ pub fn SwipeSelect(
                 loading.set(false);
                 let mut line = pile.maybe_line;
                 line.set(maybe_note(&reply));
-                match maybeboard_landing(reply) {
-                    Ok(saved) => {
-                        searched.set(true);
-                        exhausted.set(true);
-                        stack.write().replace(saved);
-                    }
-                    Err(line) => {
-                        toast.error(
-                            line.to_owned(),
-                            ToastOptions::default().duration(TOAST_LONG),
-                        );
-                    }
+                if let Ok((_, saved)) = reply {
+                    searched.set(true);
+                    exhausted.set(true);
+                    stack.write().replace(saved);
                 }
             });
             return;
@@ -1233,18 +1218,6 @@ mod tests {
             "saved commanders, none through the filter or the format"
         );
         assert_eq!(maybe_note(&Ok((2, vec![card()]))), None, "cards to swipe");
-    }
-
-    #[test]
-    fn a_failed_maybeboard_load_says_so() {
-        assert_eq!(
-            maybeboard_landing(Err(())).err(),
-            Some(maybeboard::LOAD_FAILED)
-        );
-        assert_eq!(
-            maybeboard_landing(Ok((1, vec![card()]))).map(|c| c.len()),
-            Ok(1)
-        );
     }
 
     #[test]
