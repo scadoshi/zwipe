@@ -1,7 +1,6 @@
-//! The card search: the magnifying glass sits in its own label chip just left of the box, a
-//! chip-row gap from it, as a label chip sits beside the other inputs, and the box holds only the
-//! text. Where the host's header folds, the bar is the header's: the chip alone until a tap
-//! opens the box across the header.
+//! The card search: the magnifying glass is one of the nav's icon buttons just left of the box,
+//! a chip-row gap from it, and the box holds only the text. Where the host's header folds, the
+//! bar is the header's: the glass alone until a tap opens the box across the header.
 
 #![expect(clippy::panic, reason = "a test: a missing part fails the test")]
 
@@ -37,8 +36,8 @@ fn the_glass_is_a_label_chip_for_the_box_left_of_it() {
         }
     });
     let chip = html
-        .find(r#"<label class="stat-chip stat-chip-p1 chip-row-label card-search-label" for="nav-card-search""#)
-        .unwrap_or_else(|| panic!("a label chip for the box: {html}"));
+        .find(r#"<label class="btn-action nav-icon card-search-label" for="nav-card-search""#)
+        .unwrap_or_else(|| panic!("the glass is a nav icon button for the box: {html}"));
     let glass = html
         .find("card-search-icon")
         .unwrap_or_else(|| panic!("the glass: {html}"));
@@ -60,7 +59,7 @@ fn the_chip_sits_a_chip_row_gap_from_the_box() {
     let nav = rule(".card-search-nav");
     assert!(nav.contains("gap: var(--space-2);"), "{nav}");
     assert!(
-        nav.contains("flex: 0 1000 calc(2rem + var(--space-2) + 120px);"),
+        nav.contains("flex: 0 1000 calc(2.2rem + var(--space-2) + 120px);"),
         "{nav}"
     );
 }
@@ -146,4 +145,20 @@ fn a_result_chip_s_entry_lets_go_of_its_transform_once_it_ends() {
         chip.contains("animation: card-search-chip-in 0.25s ease-out backwards;"),
         "a hover's lift can move the chip after it comes in: {chip}"
     );
+}
+
+#[test]
+fn the_glass_keeps_the_nav_icon_s_own_box() {
+    for selector in [
+        ".card-search-label",
+        ".card-search-header .card-search-label",
+    ] {
+        let glass = rule(selector);
+        for property in ["width:", "height:", "padding:", "border", "background"] {
+            assert!(
+                !glass.contains(property),
+                "{selector} leaves {property} to the nav icon: {glass}"
+            );
+        }
+    }
 }

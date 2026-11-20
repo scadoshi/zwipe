@@ -3862,7 +3862,7 @@ footer.site-footer .site-footer-note {
 }
 
 /* ---- Card search ----
-   The card search bar (CardSearchBar): the glass's label chip and the box
+   The card search bar (CardSearchBar): the glass's icon button and the box
    beside it, in the wide nav, and the chip alone in a phone's header until a
    tap opens the box across it. The field draws its own look, so zwipe.net,
    which loads no app sheet, draws it the same. */
@@ -3942,7 +3942,7 @@ footer.site-footer .site-footer-note {
     }
 }
 
-/* The nav's search rests beside the logo as the glass's label chip, then the
+/* The nav's search rests beside the logo as the glass's icon button, then the
    box at 120px. The box gives up its width before the nav's links wrap,
    down to the chip alone, and the field inside it grows on focus to the
    width the nav measures for it (--card-search-grown) over the links,
@@ -3952,8 +3952,8 @@ footer.site-footer .site-footer-note {
     z-index: 5;
     display: flex;
     gap: var(--space-2);
-    flex: 0 1000 calc(2rem + var(--space-2) + 120px);
-    min-width: 2rem;
+    flex: 0 1000 calc(2.2rem + var(--space-2) + 120px);
+    min-width: 2.2rem;
     height: 2rem;
     align-self: center;
     /* Half the nav's gap from the item before it, so the search fits the
@@ -3968,16 +3968,10 @@ nav:has(> .card-search-nav) > .nav-panel {
     flex: 1 1 auto;
 }
 
-/* The glass's chip: as tall as the box, square, the glass centered. */
+/* The glass is one of the nav's icon buttons, centered on the box's line. */
 .card-search-label {
     flex: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    width: 2rem;
-    height: 100%;
-    padding: 0;
+    align-self: center;
     cursor: pointer;
 }
 
@@ -4108,7 +4102,6 @@ nav.card-search-covers:has(.card-search-nav:focus-within) .nav-links {
 }
 
 .card-search-header .card-search-label {
-    width: 2.125rem;
     pointer-events: auto;
     transition: transform 120ms ease-in;
 }
@@ -4122,7 +4115,7 @@ nav.card-search-covers:has(.card-search-nav:focus-within) .nav-links {
     position: absolute;
     top: 0;
     bottom: 0;
-    left: calc(2.125rem + var(--space-2) + var(--card-search-open-shift, 0px));
+    left: calc(2.2rem + var(--space-2) + var(--card-search-open-shift, 0px));
     right: 0;
     container-type: normal;
 }

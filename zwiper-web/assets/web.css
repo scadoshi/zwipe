@@ -606,10 +606,10 @@ body {
        flashes in the header. */
     .web-app-nav .card-search-nav {
         top: var(--space-2);
-        left: calc(var(--space-3) + 2.125rem + var(--space-2));
+        left: calc(var(--space-3) + 2.2rem + var(--space-2));
         right: var(--space-3);
         height: 1.7rem;
-        --card-search-open-shift: calc(-1 * (2.125rem + var(--space-2)));
+        --card-search-open-shift: calc(-1 * (2.2rem + var(--space-2)));
         --card-search-drop-top: var(--web-nav-h, var(--app-nav-h));
     }
 
@@ -626,7 +626,7 @@ body {
        outer columns grow by the chip and its gap and the title stays
        centered clear of it. */
     .web-app-nav .nav-wrapper nav:has(> .app-nav-back:not(.nav-back-held)):has(> .card-search-nav) {
-        grid-template-columns: calc(2.6rem + 2.125rem + var(--space-2)) minmax(0, 1fr) calc(2.6rem + 2.125rem + var(--space-2));
+        grid-template-columns: calc(2.6rem + 2.2rem + var(--space-2)) minmax(0, 1fr) calc(2.6rem + 2.2rem + var(--space-2));
     }
 
     /* The header holds still while its search is open. */
@@ -672,18 +672,19 @@ body {
     display: contents;
 }
 
-/* The bar's icons, the `!` and Log out answer a mouse as the pills beside
-   them do: the accent on the glyph and the border, at full strength. In
-   the folded menu too, under a mouse at any width. */
+/* The bar's icons, the card search's glass, the `!` and Log out answer a
+   mouse as the pills beside them do: the accent on the glyph and the
+   border, at full strength. In the folded menu too, under a mouse at any
+   width. */
 @media (hover: hover) {
-    .web-shell .nav-trailing-row .btn-action {
+    .web-shell :is(.nav-trailing-row .btn-action, .card-search-label.nav-icon) {
         transition:
             color 0.15s,
             border-color 0.15s,
             opacity 0.15s;
     }
 
-    .web-shell .nav-trailing-row .btn-action:hover {
+    .web-shell :is(.nav-trailing-row .btn-action, .card-search-label.nav-icon):hover {
         opacity: 1;
         color: var(--ink-accent-primary, var(--accent-primary));
         border-color: var(--accent-primary);

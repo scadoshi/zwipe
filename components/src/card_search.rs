@@ -2,13 +2,13 @@
 //! it holds text, and the matches as chips under it, a line in their place while a lookup is
 //! out, matches nothing, or fails.
 //!
-//! The glass is the box's label chip, just left of it. On a wide screen the bar is the nav's
-//! box: the chip and 120px of box at rest, the chip alone where the nav leaves less room, the
-//! box growing over the nav's links while it has focus, with the chips in a dropdown under it.
-//! Where the host's header folds (`header_media`), the chip sits alone in the header, and a tap
-//! on it fades the header's other items out and opens the box across the header, the chips
-//! dropping under it over the page; the ✕ or Escape gives the header back. `/` focuses the box,
-//! unless a text field has focus or the screen answers its own keys.
+//! The glass is the box's label, one of the nav's icon buttons, just left of it. On a wide screen
+//! the bar is the nav's box: the glass and 120px of box at rest, the glass alone where the nav
+//! leaves less room, the box growing over the nav's links while it has focus, with the chips in
+//! a dropdown under it. Where the host's header folds (`header_media`), the glass sits alone in
+//! the header, and a tap on it fades the header's other items out and opens the box across the
+//! header, the chips dropping under it over the page; the ✕ or Escape gives the header back. `/`
+//! focuses the box, unless a text field has focus or the screen answers its own keys.
 //!
 //! A host runs the model's effects through [`use_card_search`] with its own [`SearchHost`]: its
 //! clock, its lookup and its routes.
@@ -136,7 +136,7 @@ pub fn use_card_search<H: SearchHost>(host: H) -> CardSearch<H> {
     }
 }
 
-/// The bar: the glass's label chip, the box beside it and what shows under it. `input_id` names
+/// The bar: the glass's icon button, the box beside it and what shows under it. `input_id` names
 /// the box, unique on the page. `on_action` takes everything the bar does, for
 /// [`CardSearch::dispatch`]. `header_media` is the media query under which the bar is the
 /// header's search ([`HEADER_ALWAYS`] in the app, empty where it never is): the chip alone in
@@ -283,11 +283,11 @@ pub fn CardSearchBar(
     }
     rsx! {
         div { class: "{class}",
-            // The glass is the box's label chip: a tap on it puts the cursor in the box, which
+            // The glass is the box's label: a tap on it puts the cursor in the box, which
             // opens the box in the same tap, so a phone raises its keyboard. Where there is room
             // only for an icon, it shows alone.
             label {
-                class: "stat-chip stat-chip-p1 chip-row-label card-search-label",
+                class: "btn-action nav-icon card-search-label",
                 r#for: "{label_for}",
                 "aria-label": model::NAME,
                 svg {
