@@ -6,8 +6,8 @@
 //! profile Playstyle draws and the deck count the reasons count against.
 
 use components::{
-    AlertDialog, Button, ButtonVariant, CardListFold, DialogAction, TOAST_LONG, TOAST_QUICK,
-    spawn_write, use_mounted,
+    AlertDialog, Button, ButtonVariant, CardListFold, DialogAction, MoreGhostRows, TOAST_LONG,
+    TOAST_QUICK, spawn_write, use_mounted,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -20,6 +20,7 @@ use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpCommanderSuggestion, RankedBy,
 };
 use zwipe_ui::commander::deal::{self, Door, LIST_PAGE};
+use zwipe_ui::commander::more_ghosts::MoreGhosts;
 use zwipe_ui::generation::Generation;
 
 use super::rows::SuggestionRow;
@@ -46,6 +47,8 @@ pub(crate) struct Suggestions {
     pub(crate) exhausted: Signal<bool>,
     /// Whether Show more has dealt its page since the last fresh deal.
     more_used: Signal<bool>,
+    /// Show more's ghost rows, which answer its press while its page is out.
+    more_ghosts: Signal<MoreGhosts>,
     /// The user's deck count, which the reasons count against; 0 before it loads.
     pub(crate) deck_count: Signal<u32>,
     /// Whether the first page is still out.
@@ -267,6 +270,7 @@ struct DealPages {
     ranked_by: Signal<Option<RankedBy>>,
     exhausted: Signal<bool>,
     more_used: Signal<bool>,
+    more_ghosts: Signal<MoreGhosts>,
     is_loading: Signal<bool>,
     load_failed: Signal<bool>,
     redeal: Callback<()>,
@@ -274,7 +278,8 @@ struct DealPages {
 }
 
 /// Deals the first page under `filter` on mount, on a filter change and on every redeal, and the
-/// next page on Show more, leaving out what the list already holds.
+/// next page on Show more, leaving out what the list already holds. The next page's answer, rows
+/// or none, sends away any ghost rows Show more eased in; a fresh deal takes them away at once.
 fn use_deal_pages(filter: Signal<CardQueryBuilder>) -> DealPages {
     let authed = use_authed();
     let mut entries: Signal<Vec<HttpCommanderSuggestion>> = use_signal(Vec::new);
@@ -284,6 +289,7 @@ fn use_deal_pages(filter: Signal<CardQueryBuilder>) -> DealPages {
     let mut load_failed = use_signal(|| false);
     let mut more_out = use_signal(|| false);
     let mut more_used = use_signal(|| false);
+    let mut more_ghosts = use_signal(MoreGhosts::new);
     let mut tickets = use_signal(Generation::default);
     let mut redeals = use_signal(|| 0u32);
 
@@ -294,6 +300,7 @@ fn use_deal_pages(filter: Signal<CardQueryBuilder>) -> DealPages {
         let ticket = tickets.write().next_ticket();
         more_out.set(false);
         more_used.set(false);
+        more_ghosts.write().reset();
         // A deal after a failed one ghosts the list again while it is out.
         if *load_failed.peek() {
             load_failed.set(false);
@@ -330,13 +337,18 @@ fn use_deal_pages(filter: Signal<CardQueryBuilder>) -> DealPages {
 
     // The next page, leaving out what the list already holds.
     let show_more = use_callback(move |()| {
-        if *more_out.peek() || *exhausted.peek() {
+        if *more_out.peek() {
+            return;
+        }
+        if *exhausted.peek() {
+            more_ghosts.write().failed();
             return;
         }
         let held_ids = deal::oracle_ids(&entries.peek());
         let Some(request) = deal::next_page(Door::Suggested, &filter.peek(), &held_ids, LIST_PAGE)
         else {
             exhausted.set(true);
+            more_ghosts.write().failed();
             return;
         };
         more_out.set(true);
@@ -351,9 +363,15 @@ fn use_deal_pages(filter: Signal<CardQueryBuilder>) -> DealPages {
                 return;
             }
             more_out.set(false);
-            if let Ok(page) = reply {
-                exhausted.set(deal::is_last_page(page.suggestions.len(), LIST_PAGE));
-                entries.write().extend(page.suggestions);
+            match reply {
+                Ok(page) => {
+                    exhausted.set(deal::is_last_page(page.suggestions.len(), LIST_PAGE));
+                    more_ghosts
+                        .write()
+                        .landed(deal::oracle_ids(&page.suggestions));
+                    entries.write().extend(page.suggestions);
+                }
+                Err(_) => more_ghosts.write().failed(),
             }
         });
     });
@@ -363,6 +381,7 @@ fn use_deal_pages(filter: Signal<CardQueryBuilder>) -> DealPages {
         ranked_by,
         exhausted,
         more_used,
+        more_ghosts,
         is_loading,
         load_failed,
         redeal,
@@ -384,6 +403,7 @@ pub(crate) fn use_suggestions(filter: Signal<CardQueryBuilder>) -> Suggestions {
         ranked_by,
         exhausted,
         more_used,
+        more_ghosts,
         is_loading,
         load_failed,
         redeal,
@@ -421,6 +441,7 @@ pub(crate) fn use_suggestions(filter: Signal<CardQueryBuilder>) -> Suggestions {
         ranked_by,
         exhausted,
         more_used,
+        more_ghosts,
         deck_count: held.deck_count,
         is_loading,
         load_failed,
@@ -438,8 +459,8 @@ pub(crate) fn use_suggestions(filter: Signal<CardQueryBuilder>) -> Suggestions {
 }
 
 /// The list's fold, titled `title`: Swipe and the list's `?` in its header, the empty lines and
-/// the first ten rows, each expanding into `expanded_card`. Its controls sit above it, in the
-/// screen's console.
+/// the rows, each expanding into `expanded_card`. Show more's ghost rows sit between the rows held
+/// before it and the rows its page dealt. Its controls sit above it, in the screen's console.
 #[component]
 pub(crate) fn SuggestedFold(
     list: Suggestions,
@@ -451,6 +472,7 @@ pub(crate) fn SuggestedFold(
         ranked_by,
         exhausted,
         mut more_used,
+        mut more_ghosts,
         deck_count,
         filter,
         mut swipe_open,
@@ -464,8 +486,14 @@ pub(crate) fn SuggestedFold(
     let open = use_signal(|| true);
     // Show more on its way out, kept until its exit ends.
     let mut leaving = use_signal(|| false);
-    let rows = entries();
+    let mut rows = entries();
     let more = open() && (leaving() || offers_more(rows.len(), exhausted(), more_used()));
+    let ghosts = more_ghosts.read().clone();
+    let split = ghosts.split(&rows, |s| s.card.scryfall_data.oracle_id);
+    let mut dealt = rows.split_off(split.min(rows.len()));
+    if !ghosts.shows_dealt() {
+        dealt.clear();
+    }
     let line = ranked_by().and_then(deal::ranked_line);
     rsx! {
         // Swipe sits in the list's header, so it says
@@ -510,6 +538,20 @@ pub(crate) fn SuggestedFold(
                     on_dismiss,
                 }
             }
+            if ghosts.drawn() {
+                MoreGhostRows { ghosts: more_ghosts, row_class: "web-ghost-card-row" }
+            }
+            for suggestion in dealt {
+                SuggestionRow {
+                    key: "{suggestion.card.scryfall_data.id}",
+                    suggestion,
+                    deck_count: deck_count(),
+                    expanded_card,
+                    on_start: create_with,
+                    on_maybe,
+                    on_dismiss,
+                }
+            }
         }
         // Show more sits under the panel, as a chip row sits over one, and deals one page. It
         // leaves on its exit while the page loads.
@@ -528,6 +570,7 @@ pub(crate) fn SuggestedFold(
                         onclick: move |_| {
                             leaving.set(true);
                             more_used.set(true);
+                            more_ghosts.write().ask();
                             show_more.call(());
                         },
                         "Show more"

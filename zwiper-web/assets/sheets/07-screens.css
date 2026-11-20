@@ -3302,6 +3302,79 @@ button {
     animation-delay: 270ms;
 }
 
+/* Show more's ghost rows, between the rows held before it and the rows its
+   page deals. Their one row folds them open as they ease in, at the foot of
+   the list the moment Show more is pressed. */
+.card-list-ghosts {
+    display: grid;
+    grid-template-rows: 1fr;
+}
+
+.card-list-ghosts > * {
+    min-height: 0;
+}
+
+.card-list-ghosts-entering {
+    overflow: hidden;
+    animation: card-list-ghosts-fade-in var(--enter-duration) var(--ease-enter) both;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .card-list-ghosts-entering {
+        animation-name: card-list-ghosts-enter;
+    }
+}
+
+/* Once the page lands they leave the flow where the dealt rows start, under
+   those rows as they ease in, and fade. */
+.card-list-ghosts-leaving {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: -1;
+    pointer-events: none;
+    animation: card-list-ghosts-leave var(--enter-duration) var(--ease-enter) forwards;
+}
+
+.collapsible-inner:has(> .card-list-ghosts-leaving) {
+    position: relative;
+    z-index: 0;
+}
+
+/* Gone, they stay in the list as a marker for the rows after them. */
+.card-list-ghosts-gone {
+    display: none;
+}
+
+.card-row:has(+ .card-list-ghosts-gone:last-child) {
+    border-bottom: none;
+}
+
+/* The dealt rows ease in at once, over the ghosts, rather than on the
+   cascade's tail. */
+.maybeboard-list .card-list-ghosts ~ .card-row {
+    animation-delay: 0ms;
+}
+
+@keyframes card-list-ghosts-enter {
+    from {
+        grid-template-rows: 0fr;
+        opacity: 0;
+    }
+}
+
+@keyframes card-list-ghosts-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes card-list-ghosts-leave {
+    to {
+        opacity: 0;
+    }
+}
+
 /* The shell is its own stacking context, so orangui's GridCells layer (z-index -1)
    stays under every screen, sheet and dialog in it, including mid-rain when
    each cell carries a transform. */
@@ -3580,5 +3653,12 @@ button {
     .deck-featured.dealing .deck-featured-card {
         animation-duration: 1ms;
         animation-delay: 0s;
+    }
+}
+
+/* Under reduced motion the rows Show more deals fade in over its ghosts. */
+@media (prefers-reduced-motion: reduce) {
+    .maybeboard-list .card-list-ghosts ~ .card-row {
+        animation: card-list-ghosts-fade-in var(--enter-duration) var(--ease-enter) both;
     }
 }
