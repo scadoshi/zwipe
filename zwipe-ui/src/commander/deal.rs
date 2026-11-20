@@ -144,7 +144,8 @@ pub fn maybeboard_matching(saved: Vec<Card>, filter: &CardQueryBuilder, door: Do
 /// Random shuffles. No sort keeps `cards` as they are.
 ///
 /// The server's best match also lifts the 100 most-helmed commanders by their deck count, which
-/// a saved card doesn't carry, so here it is the EDHREC rank alone.
+/// a saved card doesn't carry, so here it is the EDHREC rank alone. Names compare by their bytes,
+/// not by the server's collation.
 #[must_use]
 pub fn deal_order(cards: Vec<Card>, sort: Option<(CardSortKey, SortDirection)>) -> Vec<Card> {
     let Some((key, direction)) = sort else {
