@@ -55,6 +55,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "A toast stamps down harder as it lands, coming in big and settling with a small bounce",
         "Commanders, a new screen on the web with your commander maybeboard and suggested commanders side by side",
         "A Brawl deck's commander picker only offers commanders legal in Brawl",
+        "Playstyle's Oracle tags show Decks, Cards and Impact as colored bars",
     ],
 }];
 
