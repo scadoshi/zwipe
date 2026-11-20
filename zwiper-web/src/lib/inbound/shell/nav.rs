@@ -31,7 +31,7 @@ pub enum Back {
 impl Back {
     /// The back arrow's target from `route`, or `None` on Home and the auth
     /// screens, whose left corner is empty. A deck goes back to the screen
-    /// that opened it, a screen inside a deck goes up the deck tree, the maybeboard to Playstyle, Privacy policy to About, a guide to the guides,
+    /// that opened it, a screen inside a deck goes up the deck tree, Privacy policy to About, a guide to the guides,
     /// and a section goes to the screen before it.
     pub fn of(route: &Route) -> Option<Back> {
         match route {
@@ -50,6 +50,7 @@ impl Back {
             Route::DeckList {}
             | Route::Activity {}
             | Route::Playstyle {}
+            | Route::CommanderMaybeboard {}
             | Route::Account {}
             | Route::Config {}
             | Route::About {}
@@ -74,7 +75,6 @@ impl Back {
                     view: Some(DeckView::Cards),
                 }))
             }
-            Route::CommanderMaybeboard {} => Some(Back::To(Route::Playstyle {})),
             Route::PrivacyPolicy {} => Some(Back::To(Route::About {})),
         }
     }
@@ -94,6 +94,23 @@ pub fn back_or(navigator: Navigator, parent: Route) {
 /// The menu's sections, the shape shared with the app; the routes they open
 /// are this client's, in [`route_of`] and [`section_of`].
 pub use components::MenuSection as Section;
+
+/// `section`'s entry in this client's nav: the shared label, but `Commanders` for the
+/// maybeboard's section, which opens the Commanders screen here while the app's still opens
+/// its maybeboard.
+#[must_use]
+pub const fn label_of(section: Section) -> &'static str {
+    match section {
+        Section::Maybeboard => crate::inbound::screens::commanders::TITLE,
+        Section::Home
+        | Section::Decks
+        | Section::Playstyle
+        | Section::Activity
+        | Section::Account
+        | Section::Config
+        | Section::About => section.label(),
+    }
+}
 
 /// The screen `section` opens.
 #[must_use]

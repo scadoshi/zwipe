@@ -9,6 +9,7 @@ use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::http::contracts::suggestions::{
     HttpCommanderSuggestion, HttpStaple, HttpSuggestionReasons,
 };
+use zwipe_ui::commander::deal;
 use zwipe_ui::playstyle::{
     StapleColor, StapleDeck, color_lines, group_shared_tags, matching_staples, named_staple_decks,
     staple_colors_present, staple_decks, staple_identity, staple_percent, staple_type_line,
@@ -26,9 +27,9 @@ const STAPLES_TITLE: &str = "Staples";
 
 /// The "Why this commander?" block under a suggestion: folded under a chip
 /// in a list row (`foldable`), or open under a `chips-label` heading in a
-/// details sheet. It holds the shared oracle tags grouped by card role and
-/// one bullet per shared color, each left out when empty, and renders
-/// nothing when both are. Tag reveals use `describe_tag` and `on_examples`,
+/// details sheet. It holds the shared oracle tags grouped by card role, or
+/// [`deal::POPULAR_REASON`] when the commander shares none, then one bullet
+/// per shared color. Tag reveals use `describe_tag` and `on_examples`,
 /// else the screen's contexts.
 #[component]
 pub fn SuggestionReasons(
@@ -42,15 +43,14 @@ pub fn SuggestionReasons(
     let context_describe = try_use_context::<OtagDescribe>().map(|d| d.0);
     let context_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let colors = color_lines(&reasons.colors, deck_count);
-    if reasons.tags.is_empty() && colors.is_empty() {
-        return rsx! {};
-    }
     let shared = group_shared_tags(&reasons.tags);
     let describe_tag = describe_tag.or(context_describe);
     let on_examples = on_examples.or(context_examples);
     let bullets = rsx! {
         ul { class: "card-detail-bullets",
-            if !reasons.tags.is_empty() {
+            if reasons.tags.is_empty() {
+                li { {deal::POPULAR_REASON} }
+            } else {
                 li {
                     "Shares Oracle tags with your decks"
                     CardRoleChips {
@@ -162,8 +162,7 @@ fn suggestion_actions(
 
 /// The cards in the most of the user's decks, under their own Type and
 /// Color rows; the first ten that match both show. The rows sit above the
-/// panel when `wide`, and inside it under the header otherwise. The filters
-/// start over when the screen mounts again.
+/// panel at every width. The filters start over when the screen mounts again.
 #[component]
 pub fn StaplesPanel(
     staples: Vec<HttpStaple>,
@@ -171,7 +170,6 @@ pub fn StaplesPanel(
     /// The user's decks, which name each staple's deck chips.
     decks: Vec<StapleDeck>,
     expanded_card: Signal<Option<Uuid>>,
-    wide: bool,
 ) -> Element {
     let active_type: Signal<Option<CardType>> = use_signal(|| None);
     let active_color: Signal<Option<StapleColor>> = use_signal(|| None);
@@ -190,17 +188,12 @@ pub fn StaplesPanel(
     };
     rsx! {
         div { class: "web-playstyle-cell web-playstyle-staples", "data-cursor-list": "",
-            if wide {
-                div { class: "deck-controls", {filters.clone()} }
-            }
+            div { class: "deck-controls", {filters} }
             CardListFold {
                 title: STAPLES_TITLE,
                 actions: rsx! {
                     InfoButton { topic: HintTopic::SuggestionStaples }
                 },
-                if !wide {
-                    div { class: "web-card-group-filters", {filters} }
-                }
                 if rows.is_empty() {
                     div { class: "activity-total activity-total-group",
                         span { class: "chip-note", "No staples match" }

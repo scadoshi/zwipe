@@ -21,6 +21,7 @@ const ROUTES = [
   "/card/:slug",
   "/card/:slug/:id",
   "/changelog",
+  "/commanders",
   "/config",
   "/decks",
   "/decks/:deck_id",
