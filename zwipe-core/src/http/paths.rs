@@ -110,6 +110,9 @@ pub const COMMANDER_DISMISSALS_ROUTE: &str = "/api/commander/suggestions/dismiss
 
 pub const RECORD_USAGE_ROUTE: &str = "/api/metrics/usage";
 pub const RECORD_ANONYMOUS_EVENT_ROUTE: &str = "/api/metrics/anonymous";
+/// One card search run signed out, on zwipe.net: no body, no account, counted into the public
+/// searches total and nothing else.
+pub const RECORD_ANONYMOUS_SEARCH_ROUTE: &str = "/api/metrics/anonymous/search";
 pub const RECORD_CRASH_ROUTE: &str = "/api/metrics/crash";
 pub const PUBLIC_METRICS_ROUTE: &str = "/api/marketing/stats";
 
@@ -321,6 +324,7 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Patch, SETTINGS_ROUTE, true),
     (Method::Get, PUBLIC_METRICS_ROUTE, false),
     (Method::Post, RECORD_ANONYMOUS_EVENT_ROUTE, false),
+    (Method::Post, RECORD_ANONYMOUS_SEARCH_ROUTE, false),
     (Method::Post, RECORD_CRASH_ROUTE, false),
     (Method::Post, RECORD_USAGE_ROUTE, true),
     (Method::Post, REFRESH_SESSION_ROUTE, false),

@@ -105,6 +105,12 @@
    }
   },
   {
+   "name": "anonymous search",
+   "method": "POST",
+   "route": "/api/metrics/anonymous/search",
+   "path": "/api/metrics/anonymous/search"
+  },
+  {
    "name": "crash report",
    "method": "POST",
    "route": "/api/metrics/crash",

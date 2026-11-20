@@ -14,14 +14,14 @@ use common::TestApp;
 use uuid::Uuid;
 use zwipe_core::http::endpoint::Method;
 use zwipe_core::http::paths::{
-    COOKIE_LOGOUT_ROUTE, FEATURED_FLAVOR_ROUTE, FIXED_ROUTES, add_commander_maybeboard_card_route,
-    card_route, card_stats_route, clear_deck_suppressions_route, clone_deck_route,
-    create_deck_card_route, deck_profile_route, deck_route, deck_tokens_route,
-    delete_deck_card_route, delete_deck_route, import_archidekt_deck_route,
-    import_deck_cards_route, named_card_route, oracle_tag_examples_route, printings_route,
-    remove_commander_maybeboard_card_route, search_deck_cards_route, share_deck_route,
-    shared_deck_route, skip_deck_card_route, undismiss_commander_route, unskip_deck_card_route,
-    update_deck_card_route, update_deck_route,
+    COOKIE_LOGOUT_ROUTE, FEATURED_FLAVOR_ROUTE, FIXED_ROUTES, RECORD_ANONYMOUS_SEARCH_ROUTE,
+    add_commander_maybeboard_card_route, card_route, card_stats_route,
+    clear_deck_suppressions_route, clone_deck_route, create_deck_card_route, deck_profile_route,
+    deck_route, deck_tokens_route, delete_deck_card_route, delete_deck_route,
+    import_archidekt_deck_route, import_deck_cards_route, named_card_route,
+    oracle_tag_examples_route, printings_route, remove_commander_maybeboard_card_route,
+    search_deck_cards_route, share_deck_route, shared_deck_route, skip_deck_card_route,
+    undismiss_commander_route, unskip_deck_card_route, update_deck_card_route, update_deck_route,
 };
 
 fn http_method(method: Method) -> HttpMethod {
@@ -76,6 +76,13 @@ async fn assert_contract_route(app: &TestApp, method: Method, path: &str, authed
             status,
             StatusCode::FORBIDDEN,
             "{method:?} {path} should be routed and check its origin, got {status}"
+        );
+    } else if path == RECORD_ANONYMOUS_SEARCH_ROUTE {
+        // Takes no body and counts one search; an unrouted path would answer 404.
+        assert_eq!(
+            status,
+            StatusCode::NO_CONTENT,
+            "{method:?} {path} should be routed and take no body, got {status}"
         );
     } else {
         // Public writes get no body here, so axum's Json extractor rejects

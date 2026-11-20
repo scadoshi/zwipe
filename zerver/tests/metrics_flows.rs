@@ -13,7 +13,7 @@
 use zwipe::inbound::http::handlers::metrics::get_public_metrics::PUBLIC_METRICS_CACHE;
 use zwipe_core::http::paths::{
     DECK_ROUTE, DELETE_USER_ROUTE, PUBLIC_METRICS_ROUTE, RECORD_ANONYMOUS_EVENT_ROUTE,
-    RECORD_CRASH_ROUTE, RECORD_USAGE_ROUTE,
+    RECORD_ANONYMOUS_SEARCH_ROUTE, RECORD_CRASH_ROUTE, RECORD_USAGE_ROUTE,
 };
 mod common;
 
@@ -701,4 +701,68 @@ async fn public_totals_keep_a_deleted_accounts_activity(pool: sqlx::PgPool) {
     let (status, after) = app.get(PUBLIC_METRICS_ROUTE, None).await;
     assert_eq!(status, StatusCode::OK, "stats: {after}");
     assert_eq!(after, before, "the totals hold after the delete");
+}
+
+#[sqlx::test]
+async fn a_signed_out_search_raises_the_public_searches_by_exactly_one(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (_, user) = app.register("searcher").await;
+    set_counters(&pool, &user, 3).await;
+    let (status, before) = app.get(PUBLIC_METRICS_ROUTE, None).await;
+    assert_eq!(status, StatusCode::OK, "stats: {before}");
+    assert_eq!(before["searches"], 3, "{before}");
+
+    let (status, _, body) = app
+        .send_raw(Method::POST, RECORD_ANONYMOUS_SEARCH_ROUTE, None, None, &[])
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::NO_CONTENT,
+        "no account, no body: {body}"
+    );
+
+    let (_, after) = app.get(PUBLIC_METRICS_ROUTE, None).await;
+    assert_eq!(after["searches"], 4, "one search, one more: {after}");
+    assert_eq!(after["cards_swiped"], before["cards_swiped"], "{after}");
+    assert_eq!(after["decks_created"], before["decks_created"], "{after}");
+
+    let user_id: Uuid = user.parse().unwrap();
+    let theirs: i64 =
+        sqlx::query_scalar("SELECT searches FROM user_lifetime_counters WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(theirs, 3, "no account's counters move");
+    let days: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM user_daily_activity")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(days, 0, "no account's Activity moves");
+}
+
+#[sqlx::test]
+async fn a_signed_out_search_ignores_whatever_it_is_sent(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (status, _) = app
+        .post(
+            RECORD_ANONYMOUS_SEARCH_ROUTE,
+            json!({ "query": "sol ring", "searches": 1000 }),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let total: i64 = sqlx::query_scalar("SELECT searches FROM anonymous_searches")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(total, 1, "a body counts nothing more than the one search");
+    let columns: Vec<String> = sqlx::query_scalar(
+        "SELECT column_name::TEXT FROM information_schema.columns
+         WHERE table_name = 'anonymous_searches' ORDER BY column_name",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(columns, ["id", "searches"], "only the count is kept");
 }

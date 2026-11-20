@@ -73,6 +73,10 @@ impl<R: MetricsRepository> MetricsService for Service<R> {
             .await
     }
 
+    async fn record_anonymous_search(&self) -> Result<(), MetricsError> {
+        self.repo.record_anonymous_search().await
+    }
+
     async fn record_crash(&self, report: &HttpCrashReport) -> Result<(), MetricsError> {
         self.repo.record_crash(report).await
     }
