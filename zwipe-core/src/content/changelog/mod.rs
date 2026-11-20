@@ -57,6 +57,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "A Brawl deck's commander picker only offers commanders legal in Brawl",
         "Playstyle's Oracle tags show Decks, Cards and Impact as colored bars",
         "Card searches and opened tag examples count toward Searches run on Home and Activity while you're logged in",
+        "On the web, card search results work from the keyboard and have a hint",
     ],
 }];
 
