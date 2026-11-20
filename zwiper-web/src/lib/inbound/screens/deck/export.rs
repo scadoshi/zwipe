@@ -101,7 +101,7 @@ fn ExportView(
         if let Some(list) = held.clone() {
             browser::copy_to_clipboard(&list);
             toast.info(
-                "Copied to clipboard".to_string(),
+                components::carry_title("Copied to clipboard"),
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }

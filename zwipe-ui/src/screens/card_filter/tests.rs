@@ -141,11 +141,9 @@ fn the_lists_warning_shows_once_until_the_sheet_closes() {
     let warning = state.update(Action::ListsFailed);
     assert_eq!(
         warning,
-        [Effect::Toast(Toast::new(
-            ToastKind::Warning,
-            LISTS_FAILED,
-            NORMAL
-        ))]
+        [Effect::Toast(
+            Toast::new(ToastKind::Warning, LISTS_FAILED, NORMAL).carried()
+        )]
     );
     assert_eq!(state.update(Action::ListsFailed), []);
     let _ = state.update(Action::Back);

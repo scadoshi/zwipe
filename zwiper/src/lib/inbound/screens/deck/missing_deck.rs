@@ -30,7 +30,7 @@ pub(crate) fn settle_quiet<T, A>(
 ) -> A {
     if let Err(e @ ClientError::NotFound(_)) = &reply {
         toast.error(
-            e.to_user_message(),
+            components::carry_title(&e.to_user_message()),
             ToastOptions::default().duration(TOAST_NORMAL),
         );
     }

@@ -69,6 +69,11 @@ fn info(text: &str) -> Effect {
     Effect::Toast(Toast::new(ToastKind::Info, text, QUICK))
 }
 
+/// The same, carried over to the next screen.
+fn carried_info(text: &str) -> Effect {
+    Effect::Toast(Toast::new(ToastKind::Info, text, QUICK).carried())
+}
+
 #[test]
 fn a_new_state_is_loading_with_no_deck() {
     let state = State::new();
@@ -727,7 +732,7 @@ fn a_clone_toasts_the_typed_name_and_opens_the_copy() {
             deck_id: copy
         }),
         [
-            info("Cloned as \"Elves 2\""),
+            carried_info("Cloned as \"Elves 2\""),
             Effect::Navigate(Destination::Deck(copy))
         ]
     );
@@ -743,7 +748,7 @@ fn sharing_copies_the_new_link_and_stopping_disables_it() {
     let token = Uuid::new_v4();
     let copied = Effect::Copy {
         text: format!("{APP_BASE}/scotty/deck/elves/{token}"),
-        done: Toast::new(ToastKind::Info, "Share link copied", QUICK),
+        done: Toast::new(ToastKind::Info, "Share link copied", QUICK).carried(),
     };
     assert_eq!(
         state.update(Action::Shared {

@@ -254,8 +254,10 @@ impl Driver {
             Err(e) => {
                 tracing::warn!("{warning}: {e}");
                 self.report(op, &e);
-                self.toast
-                    .error(e.to_user_message(), ToastOptions::default());
+                self.toast.error(
+                    components::carry_title(&e.to_user_message()),
+                    ToastOptions::default(),
+                );
                 self.dispatch(Action::Failed { ticket });
             }
         }

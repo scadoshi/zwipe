@@ -561,11 +561,9 @@ fn an_unverified_user_with_a_deck_is_warned() {
     });
     assert_eq!(
         effects,
-        [Effect::Toast(Toast::new(
-            ToastKind::Warning,
-            VERIFY_TO_CREATE,
-            LONG
-        ))]
+        [Effect::Toast(
+            Toast::new(ToastKind::Warning, VERIFY_TO_CREATE, LONG).carried()
+        )]
     );
 }
 

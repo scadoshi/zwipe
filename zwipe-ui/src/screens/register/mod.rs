@@ -201,7 +201,7 @@ impl State {
                 let _ = self.repeat.settle(sent, FormAnswer::Done);
                 vec![
                     Effect::Prefill(username),
-                    Effect::Toast(Toast::normal(ToastKind::Info, CHECK_INBOX)),
+                    Effect::Toast(Toast::normal(ToastKind::Info, CHECK_INBOX).carried()),
                     Effect::Navigate(Destination::Login),
                 ]
             }
@@ -219,7 +219,9 @@ impl State {
                     Some(FormNote::Landed) => write_repeat::REGISTER_LANDED.to_owned(),
                     None => message,
                 };
-                vec![Effect::Toast(Toast::normal(ToastKind::Error, &text))]
+                vec![Effect::Toast(
+                    Toast::normal(ToastKind::Error, &text).carried(),
+                )]
             }
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
         }

@@ -195,7 +195,7 @@ pub(super) fn use_board(entries: Signal<Vec<Card>>) -> Board {
         });
         if at_limit {
             toast.warning(
-                "Verify your email to create more than one deck".to_string(),
+                components::carry_title("Verify your email to create more than one deck"),
                 ToastOptions::default().duration(TOAST_LONG),
             );
         } else {

@@ -74,7 +74,7 @@ fn a_failed_catalog_says_so_without_controls() {
 #[test]
 fn every_failure_raises_the_error_toast() {
     let mut state = State::new();
-    let toast = Effect::Toast(Toast::new(ToastKind::Error, LOAD_FAILED_TOAST, NORMAL));
+    let toast = Effect::Toast(Toast::new(ToastKind::Error, LOAD_FAILED_TOAST, NORMAL).carried());
     assert_eq!(
         state.update(Action::CatalogFailed),
         std::slice::from_ref(&toast)

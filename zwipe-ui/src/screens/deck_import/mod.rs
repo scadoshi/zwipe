@@ -517,12 +517,14 @@ impl State {
     }
 }
 
-/// The toast after an import: failed lines alone stay up longer, the rest are routine.
+/// The toast after an import, carried over to the next screen: failed lines alone stay up longer,
+/// the rest are routine.
 fn outcome_toast(result: &ImportDeckCardsResult) -> Toast {
     let (tone, text) = form::import_outcome(result.imported.len(), result.unresolved.len());
-    match tone {
+    let toast = match tone {
         ImportTone::Info => Toast::quick(ToastKind::Info, text),
         ImportTone::Success => Toast::quick(ToastKind::Success, text),
         ImportTone::Error => Toast::normal(ToastKind::Error, text),
-    }
+    };
+    toast.carried()
 }

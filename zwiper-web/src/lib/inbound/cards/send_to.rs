@@ -149,13 +149,13 @@ pub(crate) async fn take_back(
     }
 }
 
-/// What a failed send toasts: the deck by name when it already holds the card, else the error's
-/// own plain words.
+/// What a failed send toasts: the deck by name when it already holds the card, which leaves with
+/// the screen, else the error's own plain words, which carry over as every failure does.
 fn failure_message(error: &ClientError, deck: &str) -> String {
     if matches!(error, ClientError::Conflict(_)) {
         send_to::already_in(deck)
     } else {
-        error.to_user_message()
+        components::carry_title(&error.to_user_message())
     }
 }
 
@@ -199,7 +199,11 @@ mod tests {
         let duplicate = ClientError::Conflict("That card is already in this deck".to_owned());
         assert_eq!(failure_message(&duplicate, "Krenko"), "Already in Krenko");
         let limit = ClientError::UnprocessableEntity("Card limit reached".to_owned());
-        assert_eq!(failure_message(&limit, "Krenko"), limit.to_user_message());
+        assert_eq!(
+            failure_message(&limit, "Krenko"),
+            components::carry_title(&limit.to_user_message()),
+            "a failure carries over"
+        );
     }
 
     #[test]
