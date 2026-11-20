@@ -594,7 +594,7 @@ pub static GUIDES: &[Guide] = &[
                 &[
                     Block::H2("The Commander maybeboard screen"),
                     Block::P(
-                        "Open Commander maybeboard from the menu. Saves show newest first as card rows with art (the Art chip hides it). Expand a row for details and four actions:",
+                        "Open Commander maybeboard from the menu. Saves show as card rows with art (the Art chip hides it), newest first; Sort orders them by Newest saved, Name, Mana value, or Color, and its last chip flips the direction. Expand a row for details and four actions:",
                     ),
                     Block::Image {
                         file: "commander-maybeboard/02-saved-commanders.webp",
@@ -614,7 +614,7 @@ pub static GUIDES: &[Guide] = &[
                     },
                     Block::H2("Add without swiping"),
                     Block::P(
-                        "Quick add searches commanders by name; tap a result to save it. The color pips and the [[funnel]] narrow the list of saves.",
+                        "Quick add searches commanders by name; tap a result to save it. The color pips and the `Filter` button narrow the list of saves.",
                     ),
                     Block::Image {
                         file: "commander-maybeboard/04-maybeboard-hint.webp",
@@ -655,7 +655,7 @@ pub static GUIDES: &[Guide] = &[
                     ]),
                     Block::H2("Suggested"),
                     Block::P(
-                        "Your top 10 commanders, ranked against every deck you have in any format, best fit first. Its `?` explains the ranking.",
+                        "The commanders that fit your decks best, ranked against every deck you have in any format, 10 at a time with Show more for the next. Its `?` explains the ranking.",
                     ),
                     Block::P(
                         "Expand a row and tap Why this commander? for the Oracle tags it shares with your decks and the colors you keep building in. While you swipe, the card's details sheet shows the same reasons.",
@@ -708,7 +708,7 @@ pub static GUIDES: &[Guide] = &[
                     "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
                     "Your colors, card roles and Oracle tags come first.",
                     "Under them, Suggested commanders lists your top 10 as card rows, best fit first. Its `?` explains the ranking.",
-                    "Tap a color chip in the Show row to narrow to those colors; tap again to clear.",
+                    "Tap a color identity in the Show row to narrow the list to it; tap again to clear.",
                     "Staples, at the bottom, lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
                 ])],
             ),
@@ -717,13 +717,13 @@ pub static GUIDES: &[Guide] = &[
                 &[Block::Bullets(&[
                     "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
                     "Your colors, card roles and Oracle tags come first.",
-                    "Staples, at the bottom, lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
+                    "Staples lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
                     "Suggested commanders are on the Commanders screen.",
                 ])],
             ),
             Block::H2("What your decks say"),
             Block::P(
-                "Colors opens first: a bar per color with its mana pip and how many of your cards are that color, colorless last. It's the same panel as on Home. Tap a section under it to open it.",
+                "Colors has a bar per color with its mana pip and how many of your cards are that color, colorless last. It's the same panel as on Home. Each section folds; tap its header to open or close it.",
             ),
             Block::Image {
                 file: "playstyle/01-colors.webp",
@@ -734,13 +734,13 @@ pub static GUIDES: &[Guide] = &[
                 "Summary shows how many decks were read, your most built color combination and your top single color.",
                 "Card roles shows how many of your decks fill each role, like ramp or removal. Tap a role to see its tags.",
                 "Oracle tags lists your 10 most impactful tags. Tap a tag to see what it means.",
-                "Each has a `?` in its header.",
+                "Card roles and Oracle tags each have a `?` in their header.",
             ]),
             Block::H2("How a tag's impact adds up"),
             Block::Bullets(&[
                 "Decks is how many of your decks have the tag, Cards how many cards carry it across them. More of either, more impact.",
                 "Impact is how much more your decks lean on a tag than Magic cards do overall. Your top tag scores 100.",
-                "A tag your decks use no more than Magic overall doesn't show up.",
+                "A tag your decks use no more than Magic overall doesn't show up, and with two or more decks a tag needs to be in at least 2 of them.",
                 "Each column has its own `?`, too.",
             ]),
             Block::Image {
