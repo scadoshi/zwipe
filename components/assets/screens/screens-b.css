@@ -1263,6 +1263,13 @@
     padding: 0 var(--space-3);
 }
 
+/* In the Rates column the gap is the room under the chips; a chip row's own
+   margin would add to it, leaving the note or chart under them further
+   away than the section's foot. */
+.activity-rates > .activity-rate-chips {
+    margin-bottom: 0;
+}
+
 /* The Activity section's body while the screen loads, in its loaded
    shape: the section's padding and gap around the empty grid, its tags, the
    rule and Totals, so the loaded section lands where the ghost stood. */
@@ -1336,14 +1343,16 @@
 
 /* A section's one-line note, such as a rate with nothing to show. */
 .activity-total {
-    padding: var(--space-2) var(--space-3) 0;
+    padding: 0 var(--space-3);
     font-size: 0.7rem;
     color: var(--ink-text-muted, var(--text-muted));
     text-align: center;
 }
 
-/* The same note alone under a card group's header, spaced off the frame. */
+/* The same note alone under a card group's header, as much room above it
+   as below. */
 .activity-total-group {
+    padding-top: var(--space-3);
     padding-bottom: var(--space-3);
 }
 

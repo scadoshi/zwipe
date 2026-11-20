@@ -1091,6 +1091,13 @@ body {
     gap: var(--space-3);
 }
 
+/* A note that opens a section's body (an empty panel's "Swipe more
+   cards...") sits evenly: the rule leaves 8px under it and the section
+   keeps 12px at its foot, so the note takes the 4px between. */
+.web-section-body > .activity-total:first-child {
+    padding-top: var(--space-1);
+}
+
 /* The section's own padding is most of a stat body's foot here. */
 .web-section-body > .deck-stat-body {
     padding-bottom: var(--space-2);
