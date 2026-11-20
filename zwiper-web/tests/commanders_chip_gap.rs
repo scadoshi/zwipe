@@ -87,7 +87,7 @@ fn show_more_sits_under_the_panel_not_as_a_row_in_it() {
         after.contains(r#"class: "chip card-list-more","#),
         "{after}"
     );
-    assert!(body.contains("let more = offers_more("), "{body}");
+    assert!(body.contains("offers_more("), "{body}");
     assert!(after.contains("if more {"), "{after}");
 }
 
@@ -112,5 +112,18 @@ fn the_suggested_ghost_draws_show_more_under_its_panel() {
     assert!(
         ghost.contains(r#"div { class: "card-list-more", GhostChip { chars: 9, button: true } }"#),
         "{ghost}"
+    );
+}
+
+#[test]
+fn show_more_hides_while_the_panel_is_folded() {
+    let body = suggested_fold();
+    assert!(
+        body.contains("let more = open() && offers_more("),
+        "a folded panel offers no Show more: {body}"
+    );
+    assert!(
+        body.contains("CardListFold {\n            title,\n            open,"),
+        "{body}"
     );
 }

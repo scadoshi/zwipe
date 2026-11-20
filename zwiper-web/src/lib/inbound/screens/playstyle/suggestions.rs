@@ -452,14 +452,17 @@ pub(crate) fn SuggestedFold(
         on_dismiss,
         ..
     } = list;
+    // The fold's state, so Show more under the panel hides while it is shut.
+    let open = use_signal(|| true);
     let rows = entries();
-    let more = offers_more(rows.len(), exhausted(), more_used());
+    let more = open() && offers_more(rows.len(), exhausted(), more_used());
     let line = ranked_by().and_then(deal::ranked_line);
     rsx! {
         // Swipe sits in the list's header, so it says
         // what gets swiped.
         CardListFold {
             title,
+            open,
             hint: rsx! {
                 InfoButton { topic: HintTopic::SuggestionList }
             },

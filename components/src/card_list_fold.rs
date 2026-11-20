@@ -10,7 +10,9 @@ use crate::is_press;
 /// Commander maybeboard): a header of the arrow, `title` and its `hint`, then
 /// `actions` at its end, over `children`, which ease shut and open with the
 /// `.collapsible` the card groups use. A click on the header folds it; a
-/// click on `hint` or among `actions` does not. Starts open.
+/// click on `hint` or among `actions` does not. Starts open, or holds its
+/// state in `open` when the parent hands one in, so what the parent draws
+/// outside the panel can follow the fold.
 #[component]
 pub fn CardListFold(
     #[props(into)] title: String,
@@ -20,9 +22,13 @@ pub fn CardListFold(
     /// The header's buttons (Swipe), at its end.
     #[props(default)]
     actions: Option<Element>,
+    /// Whether the panel is open, when the parent keeps it.
+    #[props(default)]
+    open: Option<Signal<bool>>,
     children: Element,
 ) -> Element {
-    let mut open = use_signal(|| true);
+    let own = use_signal(|| true);
+    let mut open = open.unwrap_or(own);
     rsx! {
         div { class: if open() { "maybeboard-list card-group row-enter" } else { "maybeboard-list card-group row-enter collapsed" },
             div {
