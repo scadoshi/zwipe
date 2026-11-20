@@ -614,7 +614,7 @@ pub fn swipe_select_on(mode: SwipeSelectMode, surface: Surface) -> HintContent {
                 icon_key(KeyIcon::Funnel),
                 text(" narrows by color or anything else"),
             ]));
-            "Swipe select"
+            mode.title()
         }
     };
     content(title, blocks)
@@ -856,7 +856,7 @@ mod tests {
     #[test]
     fn from_the_maybeboard_left_skips_up_saves_and_right_starts_a_deck() {
         let hint = swipe_select(SwipeSelectMode::StartsDeck);
-        assert_eq!(hint.title, "Swipe select");
+        assert_eq!(hint.title, "Commander maybeboard", "the screen's own title");
         let lines: Vec<String> = hint.blocks.iter().take(4).map(Block::plain).collect();
         assert_eq!(
             lines,
