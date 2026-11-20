@@ -427,7 +427,7 @@ async fn each_sort_orders_a_page_as_asked(pool: sqlx::PgPool) {
     let token = user(&app, "sorter").await;
     seed_cards(&pool, &sortable()).await;
 
-    let cases: [(CardSortKey, SortDirection, &[&str]); 11] = [
+    let cases: [(CardSortKey, SortDirection, &[&str]); 12] = [
         (
             CardSortKey::Name,
             SortDirection::Ascending,
@@ -468,10 +468,16 @@ async fn each_sort_orders_a_page_as_asked(pool: sqlx::PgPool) {
             SortDirection::Ascending,
             &["Bravo", "Alpha", "Echo", "Delta", "Charlie"],
         ),
+        // By rank, not by letter: common, uncommon, rare, mythic; ties by name.
         (
             CardSortKey::Rarity,
             SortDirection::Ascending,
-            &["Delta", "Charlie", "Alpha", "Echo", "Bravo"],
+            &["Delta", "Bravo", "Alpha", "Echo", "Charlie"],
+        ),
+        (
+            CardSortKey::Rarity,
+            SortDirection::Descending,
+            &["Charlie", "Alpha", "Echo", "Bravo", "Delta"],
         ),
         (
             CardSortKey::PriceEur,
