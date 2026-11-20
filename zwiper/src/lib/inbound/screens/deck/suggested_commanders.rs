@@ -1,35 +1,20 @@
-//! Playstyle screen: what the user builds, read from every deck they
-//! own in any format, over the top 10 commanders ranked against those decks,
-//! each with the reasons it ranked, styled like the commander maybeboard.
-//!
-//! The screen fetches the ranking 100 deep once and shows the first 10. A
-//! Show row atop the list holds one chip per color identity among the 100,
-//! each with its pips and name; a tapped chip narrows the held list to that identity, and the Art chip
-//! toggles the row thumbnails. An expanded row offers **Create deck** (seeds
-//! the create screen), **Maybeboard** (saves to the commander maybeboard) and
-//! **Remove** (hides it for a week). The Swipe button opens the shared
-//! overlay in its suggested mode, which deals the same held list and whose
-//! Filter sheet holds the same Show chips. Every action
-//! that removes a row fills from the held list and refetches only when fewer
-//! than ten remain, so the list stays a full top 10. Above the list, sections
-//! in the deck profile's grammar sum up what the user builds, the profile the
-//! ranking reads: a bar per color of the cards, a Summary table (the
-//! deck count, the top colors and the top single color), a chart of the
-//! card roles and a table of the oracle tags across the decks. They share
-//! one accordion with Colors open on entry. Below the list, the staples
-//! (up to 100 cards in the most decks) show as the shared card rows in the
-//! list's group grammar, the first 10 that match their own Type and Color chip
-//! rows, which the Show row does not touch. With no deck that has cards to
-//! read from, the screen shows a single line instead of the sections and the
-//! list.
+//! Playstyle screen: what the user builds, read from every deck they own in
+//! any format. Sections in the deck profile's grammar sum it up: a bar per
+//! color of the cards, a Summary table (the deck count, the top colors and the
+//! top single color), a chart of the card roles and a table of the Oracle tags
+//! across the decks, sharing one accordion with Colors open on entry. Below
+//! them, the staples (up to 100 cards in the most decks) show as the shared
+//! card rows in the list grammar, the first 10 that match their own Type and
+//! Color chip rows. With no deck that has cards to read from, the screen shows
+//! a single line instead. The suggested commanders live on the Commanders
+//! screen; `SuggestionRow` and `SuggestionReasons` draw them there.
 //!
 //! What the screen knows and does is `zwipe_ui::screens::playstyle`; this
 //! file draws its state and performs its effects.
 
 use components::{
-    AlertDialog, Bar, BarChart, BarOrientation, Button, ButtonVariant, CardListFold, CardRoleChips,
-    Chip, ColorBars, DataBar, DialogAction, LoadFailed, OtagDef, RoleTags, StapleDecksChip, Toasts,
-    use_toast,
+    Bar, BarChart, BarOrientation, CardListFold, CardRoleChips, Chip, ColorBars, DataBar,
+    LoadFailed, OtagDef, RoleTags, StapleDecksChip, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -54,9 +39,7 @@ use zwipe_ui::screens::playstyle::{
 };
 
 use super::components::collapsible_section::CollapsibleSection;
-use super::components::danger_zone::DangerZoneAction;
 use super::components::skeletons::BuilderProfileSkeleton;
-use super::components::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
@@ -109,96 +92,6 @@ pub(crate) fn IdentityPips(
             }
             if let Some(count) = count {
                 span { "{count}" }
-            }
-        }
-    }
-}
-
-/// The Show chip row: the label, All, then one chip per identity in
-/// `identities` with its pips and name, then `children` (the screen's Art
-/// toggle). Single select over `active_identity`, `None` being All; a tap
-/// reports the chip, `None` for All, and the model decides the pick. The
-/// screen and the Swipe overlay's Filter sheet both render it over the same
-/// model, so a tap in either filters both.
-#[component]
-pub(crate) fn ShowIdentityChips(
-    active_identity: Option<Vec<Color>>,
-    identities: Vec<Vec<Color>>,
-    on_pick: EventHandler<Option<Vec<Color>>>,
-    children: Element,
-) -> Element {
-    rsx! {
-        div { class: "chip-row",
-            span { class: "stat-chip stat-chip-p1 chip-row-label", {model::SHOW} }
-            Chip {
-                selected: active_identity.is_none(),
-                onclick: move |_| on_pick.call(None),
-                {model::ALL}
-            }
-            for identity in identities {
-                Chip {
-                    key: "{identity_key(&identity)}",
-                    selected: active_identity.as_deref() == Some(identity.as_slice()),
-                    onclick: {
-                        let identity = identity.clone();
-                        move |_| on_pick.call(Some(identity.clone()))
-                    },
-                    IdentityPips { identity: identity.clone() }
-                }
-            }
-            {children}
-        }
-    }
-}
-
-/// The two-color identities [`ShowIdentityChipsGhost`] stands in for, in the
-/// order the Show row sorts them.
-const GHOST_PAIRS: [[Color; 2]; 10] = [
-    [Color::White, Color::Blue],
-    [Color::Blue, Color::Black],
-    [Color::Black, Color::Red],
-    [Color::Red, Color::Green],
-    [Color::Green, Color::White],
-    [Color::White, Color::Black],
-    [Color::Blue, Color::Red],
-    [Color::Black, Color::Green],
-    [Color::Red, Color::White],
-    [Color::Green, Color::Blue],
-];
-
-/// [`ShowIdentityChips`] while the ranking loads: its label, All, a chip per
-/// color and per two-color pair, and Art, each the live chip's box with its
-/// contents hidden. The ranking holds `HELD_SIZE` commanders, which commonly
-/// cover the five colors and most pairs, so the ghost wraps to about as many
-/// lines as the live row.
-#[component]
-fn ShowIdentityChipsGhost() -> Element {
-    let singles = [
-        Color::White,
-        Color::Blue,
-        Color::Black,
-        Color::Red,
-        Color::Green,
-    ]
-    .map(|color| vec![color]);
-    let identities = singles
-        .into_iter()
-        .chain(GHOST_PAIRS.into_iter().map(Vec::from));
-    rsx! {
-        div { class: "chip-row", "aria-hidden": "true",
-            span { class: "stat-chip stat-chip-p1 chip-row-label ghost-box",
-                span { {model::SHOW} }
-            }
-            button { r#type: "button", class: "chip ghost-box", tabindex: "-1",
-                span { {model::ALL} }
-            }
-            for (i, identity) in identities.enumerate() {
-                button { key: "{i}", r#type: "button", class: "chip ghost-box", tabindex: "-1",
-                    IdentityPips { identity }
-                }
-            }
-            button { r#type: "button", class: "chip ghost-box", tabindex: "-1",
-                span { {model::ART} }
             }
         }
     }
@@ -663,7 +556,7 @@ pub(crate) fn SuggestionReasons(
 /// One suggestion: the shared expandable card row with the reasons block in
 /// its footer and this screen's three actions on its action bar.
 #[component]
-fn SuggestionRow(
+pub(crate) fn SuggestionRow(
     suggestion: HttpCommanderSuggestion,
     deck_count: u32,
     expanded_card: Signal<Option<Uuid>>,
@@ -851,29 +744,9 @@ impl Driver {
             });
         });
     }
-
-    /// Starts a deck with `card`, through the create gate.
-    fn create(self, card: Card) {
-        let verified = self
-            .session
-            .peek()
-            .as_ref()
-            .is_none_or(|s| s.user.email_verified_at.is_some());
-        self.dispatch(Action::Create {
-            card: Box::new(card),
-            verified,
-        });
-    }
-
-    /// The Show chip tapped, `None` being All.
-    fn pick_identity(self, picked: Option<Vec<Color>>) {
-        self.dispatch(picked.map_or(Action::ShowAll, Action::ToggleIdentity));
-    }
 }
 
-/// Screen summing up the user's playstyle over their top 10 suggested
-/// commanders with the reasons behind each, Show chips narrowing them to one color identity, a Swipe
-/// overlay going deeper, and Clear skips under More.
+/// Screen summing up the user's playstyle: the profile sections, then the staples.
 #[component]
 pub fn SuggestedCommanders() -> Element {
     let driver = Driver {
@@ -894,7 +767,7 @@ pub fn SuggestedCommanders() -> Element {
     use_hook(move || driver.dispatch(Action::Load));
     // Art-crop thumbnails on by default; the Show row's Art chip toggles
     // them, as on the commander maybeboard.
-    let mut show_row_art = use_signal(|| true);
+    let show_row_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_row_art));
 
     // Oracle-tag reveal inside expanded rows, wired the same way as the
@@ -922,61 +795,23 @@ pub fn SuggestedCommanders() -> Element {
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
     let preview_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
     let preview_dismissing = use_signal(|| false);
-    let mut swipe_open = use_signal(|| false);
-    let swipe_mode = use_memo(|| Some(SwipeMode::Suggested));
     let mut printing_card: Signal<Option<Card>> = use_signal(|| None);
     let mut printing_open = use_signal(|| false);
-    let mut show_clear_dialog = use_signal(|| false);
-
-    // Tells the model when the Swipe overlay closes: its swipes dismissed and
-    // saved commanders the list must not show anymore, so it fetches again.
-    let mut swipe_was_open = use_signal(|| false);
-    use_effect(move || {
-        if swipe_open() {
-            swipe_was_open.set(true);
-        } else if *swipe_was_open.peek() {
-            swipe_was_open.set(false);
-            driver.dispatch(Action::SwipeClosed);
-        }
-    });
-
-    // What Swipe deals: the held list as the Show chip narrows it, with the
-    // deck count the reasons count against.
-    let pile = use_memo(move || {
-        let state = driver.model.read();
-        SuggestedPile {
-            suggestions: state.filtered(),
-            deck_count: state.deck_count(),
-            identity: state.identity().map(<[Color]>::to_vec),
-        }
-    });
 
     // The tags a role bar reveals, read from the profile the model holds.
     let role_tags = use_callback(move |role: String| driver.model.read().role_tags(&role));
 
-    let on_start = move |card: Card| driver.create(card);
-    let on_maybe = move |oracle_id: Uuid| driver.dispatch(Action::Maybeboard(oracle_id));
-    let on_dismiss = move |oracle_id: Uuid| driver.dispatch(Action::Dismiss(oracle_id));
     let on_action = move |action: Action| driver.dispatch(action);
-
-    let clear_dismissals = use_callback(move |()| {
-        driver.dispatch(Action::ClearSkips);
-    });
 
     let state = driver.model.read();
     let status = state.status();
     let message = state.message();
-    let shows_swipe = state.shows_swipe();
     let deck_count = state.deck_count();
     let sections = state.sections();
     let color_counts = state.colors();
     let summary = state.summary();
     let role_bars = state.role_bars();
     let tag_rows = state.tag_rows();
-    let active_identity = state.identity().map(<[Color]>::to_vec);
-    let identities = state.identities();
-    let rows = state.rows();
-    let list_message = state.list_message();
     let shows_staples = state.shows_staples();
     let staple_rows = state.matching_staples();
     let staples_message = state.staples_message();
@@ -1011,21 +846,6 @@ pub fn SuggestedCommanders() -> Element {
                         // header title a bar.
                         div { style: "width:100%;display:flex;flex-direction:column;gap:var(--panel-gap);",
                             BuilderProfileSkeleton {}
-                            ShowIdentityChipsGhost {}
-                            div { class: "maybeboard-list card-group row-enter",
-                                div { class: "card-group-header card-group-header-with-hint",
-                                    div { class: "skeleton-bar skeleton-card-bar-header-wide" }
-                                    span { class: "card-list-fold-hint",
-                                        div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
-                                    }
-                                }
-                                for i in 0..6 {
-                                    div { key: "{i}", class: "skeleton-card-row",
-                                        div { class: "skeleton-bar skeleton-card-thumb" }
-                                        div { class: "skeleton-bar skeleton-card-bar-row" }
-                                    }
-                                }
-                            }
                         }
                     } else if status == Status::Failed {
                         LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Load) }
@@ -1044,58 +864,6 @@ pub fn SuggestedCommanders() -> Element {
                                     roles: role_bars,
                                     tags: tag_rows,
                                     role_tags,
-                                }
-                            }
-                            // The commander maybeboard's Show row on the grid, over
-                            // the rows it narrows, the Art toggle at its end.
-                            ShowIdentityChips {
-                                active_identity: active_identity.clone(),
-                                identities: identities.clone(),
-                                on_pick: move |picked| driver.pick_identity(picked),
-                                Chip {
-                                    selected: show_row_art(),
-                                    onclick: move |_| show_row_art.set(!show_row_art()),
-                                    {model::ART}
-                                }
-                            }
-                            if let Some(line) = list_message {
-                                div { class: "message-empty",
-                                    span { class: "chip-note", {line} }
-                                }
-                            } else {
-                                // Swipe sits in the list's header, so it says
-                                // what gets swiped.
-                                CardListFold {
-                                    title: model::LIST_TITLE,
-                                    hint: rsx! {
-                                        InfoButton { topic: HintTopic::SuggestionList }
-                                    },
-                                    actions: rsx! {
-                                        if shows_swipe {
-                                            Button {
-                                                variant: ButtonVariant::Action,
-                                                onclick: move |_| swipe_open.set(true),
-                                                {model::SWIPE}
-                                            }
-                                        }
-                                    },
-                                    for suggestion in rows {
-                                        SuggestionRow {
-                                            key: "{suggestion.card.scryfall_data.id}",
-                                            suggestion,
-                                            deck_count,
-                                            expanded_card,
-                                            preview_card,
-                                            preview_dismissing,
-                                            on_start,
-                                            on_maybe,
-                                            on_dismiss,
-                                            on_printing: move |c: Card| {
-                                                printing_card.set(Some(c));
-                                                printing_open.set(true);
-                                            },
-                                        }
-                                    }
                                 }
                             }
                             // Below the list in its group grammar, outside the
@@ -1120,51 +888,9 @@ pub fn SuggestedCommanders() -> Element {
                                     on_action,
                                 }
                             }
-                            DangerZoneAction {
-                                label: model::CLEAR_SKIPS,
-                                button: model::CLEAR,
-                                onclick: move |()| show_clear_dialog.set(true),
-                            }
                         }
                     }
                 }
-            }
-
-            AlertDialog {
-                open: show_clear_dialog,
-                title: model::CLEAR_SKIPS,
-                actions: vec![
-                    DialogAction::Dismiss(model::CANCEL.into()),
-                    DialogAction::Confirm {
-                        label: model::CLEAR.into(),
-                        danger: true,
-                        on_confirm: clear_dismissals,
-                    },
-                ],
-                {model::CLEAR_BODY}
-            }
-
-            // The shared overlay in its suggested mode deals the held list as
-            // the Show chip narrows it: right seeds a new deck with the pick,
-            // up saves it, left dismisses it. Its Filter sheet holds the same
-            // Show chips over the same model.
-            SwipeSelect {
-                host_screen: screen::SUGGESTED_COMMANDERS,
-                open: swipe_open,
-                mode: swipe_mode,
-                suggested_pile: Some(pile.into()),
-                suggested_filter: rsx! {
-                    ShowIdentityChips {
-                        active_identity,
-                        identities,
-                        on_pick: move |picked| driver.pick_identity(picked),
-                    }
-                },
-                on_select: move |card: Card| {
-                    swipe_open.set(false);
-                    driver.create(card);
-                },
-                on_close: move |()| swipe_open.set(false),
             }
 
             // A suggestion's printing swaps into its row, so Create deck carries

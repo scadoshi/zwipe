@@ -12,7 +12,6 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_ui::screens::playstyle as suggested_model;
 use zwipe_ui::telemetry::vocabulary::Screen;
 
 use super::filter::{FilterButton, FilterSheet};
@@ -72,13 +71,12 @@ pub fn CommanderMaybeboard() -> Element {
     let mut saved: Signal<Vec<Card>> = use_signal(Vec::new);
     let board = use_board(saved);
     let suggestions = use_suggestions(filter);
-    let mut held = suggestions.entries;
 
     // Every card on the screen, which the card keys act on.
     let listed_cards = use_memo(move || {
         saved()
             .into_iter()
-            .chain(held.read().iter().map(|s| s.card.clone()))
+            .chain(suggestions.cards())
             .collect::<Vec<Card>>()
     });
     let screen_keys = Callback::new(move |key: String| match screen_key(&key) {
@@ -108,7 +106,7 @@ pub fn CommanderMaybeboard() -> Element {
                 .read()
                 .iter()
                 .any(|c| c.scryfall_data.oracle_id == oracle)
-            || suggested_model::picks_printing(&held.read(), card)
+            || suggestions.picks_printing(card)
     });
     let on_printing_save = move |picked: Card| {
         let target = picked.scryfall_data.oracle_id;
@@ -123,13 +121,7 @@ pub fn CommanderMaybeboard() -> Element {
         {
             *slot = picked.clone();
         }
-        if let Some(slot) = held
-            .write()
-            .iter_mut()
-            .find(|s| s.card.scryfall_data.oracle_id == target)
-        {
-            slot.card = picked;
-        }
+        suggestions.swap_printing(&picked);
     };
 
     rsx! {

@@ -58,7 +58,7 @@ const SUGGESTED: &str = include_str!("../src/lib/inbound/screens/commanders/sugg
 
 #[test]
 fn the_suggested_ghost_draws_its_header_s_question_mark_and_swipe() {
-    let (_, ghost) = SUGGESTED.split_once("if is_loading() {").unwrap();
+    let (_, ghost) = SUGGESTED.split_once("if list.is_loading() {").unwrap();
     let ghost = ghost.split_once("for i in").unwrap().0;
     assert!(
         ghost.contains(r#"class: "card-group-header card-group-header-with-hint","#),
@@ -113,7 +113,7 @@ fn show_more_leaves_on_its_exit_before_it_goes() {
         .split_once("// Show more sits under the panel")
         .unwrap();
     assert!(
-        body.contains("let more = open() && (leaving() || offers_more("),
+        body.contains("let more = open() && (leaving() || state.offers_more());"),
         "a leaving chip stays until its exit ends: {body}"
     );
     assert!(
@@ -137,8 +137,8 @@ fn show_more_leaves_on_its_exit_before_it_goes() {
 
 #[test]
 fn the_suggested_ghost_draws_show_more_under_its_panel() {
-    let (_, ghost) = SUGGESTED.split_once("if is_loading() {").unwrap();
-    let ghost = ghost.split_once("} else if load_failed()").unwrap().0;
+    let (_, ghost) = SUGGESTED.split_once("if list.is_loading() {").unwrap();
+    let ghost = ghost.split_once("} else if list.load_failed()").unwrap().0;
     assert!(
         ghost.contains(r#"div { class: "card-list-more", GhostChip { chars: 9, button: true } }"#),
         "{ghost}"
@@ -149,7 +149,7 @@ fn the_suggested_ghost_draws_show_more_under_its_panel() {
 fn show_more_hides_while_the_panel_is_folded() {
     let body = suggested_fold();
     assert!(
-        body.contains("let more = open() && (leaving() || offers_more("),
+        body.contains("let more = open() && (leaving() || state.offers_more());"),
         "a folded panel offers no Show more: {body}"
     );
     assert!(

@@ -95,21 +95,10 @@ pub fn back_or(navigator: Navigator, parent: Route) {
 /// are this client's, in [`route_of`] and [`section_of`].
 pub use components::MenuSection as Section;
 
-/// `section`'s entry in this client's nav: the shared label, but `Commanders` for the
-/// maybeboard's section, which opens the Commanders screen here while the app's still opens
-/// its maybeboard.
+/// `section`'s entry in this client's nav: the shared label.
 #[must_use]
 pub const fn label_of(section: Section) -> &'static str {
-    match section {
-        Section::Maybeboard => crate::inbound::screens::commanders::TITLE,
-        Section::Home
-        | Section::Decks
-        | Section::Playstyle
-        | Section::Activity
-        | Section::Account
-        | Section::Config
-        | Section::About => section.label(),
-    }
+    section.label()
 }
 
 /// The screen `section` opens.

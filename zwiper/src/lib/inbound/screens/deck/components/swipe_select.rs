@@ -9,13 +9,10 @@
 //! **down** to undo; **up** saves to the commander maybeboard (commander and
 //! partner modes only: the pile advances and selection continues).
 //!
-//! [`SwipeMode::Suggested`] deals a given ranking instead of a search: the
-//! host's held suggestions, read through `suggested_pile` each time the overlay
-//! opens. There a left swipe dismisses the commander for a week and the eyeball
-//! sheet carries the reasons it was suggested. Its Filter opens a sheet holding
-//! the host's `suggested_filter` chips; when they change the pile mid-session,
-//! the stack re-deals, keeping what was already swiped behind the top card so
-//! undo still walks back through it.
+//! [`SwipeMode::Suggested`] deals the merged commander ranking a page at a time
+//! instead of a search, starting from the host's filter (`start_filter`). There a
+//! left swipe dismisses the commander for a week and the eyeball sheet carries the
+//! reasons it was suggested.
 //!
 //! What the overlay knows and does is `zwipe_ui::screens::swipe_select`; this
 //! file draws its state and performs its effects.
@@ -25,7 +22,7 @@ use std::collections::{HashMap, HashSet};
 use components::hint::ContentHintDialog;
 use components::icons::{self, EyeIcon};
 use components::{
-    BottomSheet, Chip, DockAction, DockFilter, LoadFailed, ToastOptions, Toasts, spawn_in_order,
+    Chip, DockAction, DockFilter, LoadFailed, ToastOptions, Toasts, spawn_in_order,
     use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
@@ -35,11 +32,12 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::query::CardQuery;
+use zwipe_core::http::contracts::suggestions::HttpCommanderDeal;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::hint::{SwipeSelectMode, one_time};
 use zwipe_ui::screens::add_cards;
+pub(crate) use zwipe_ui::screens::swipe_select::Mode as SwipeMode;
 use zwipe_ui::screens::swipe_select::{self as model, Action, Destination, Effect, State, Status};
-pub(crate) use zwipe_ui::screens::swipe_select::{Mode as SwipeMode, SuggestedPile};
 use zwipe_ui::stack;
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
@@ -113,6 +111,7 @@ impl Driver {
                 self.search(ticket, *query, "zwipe select load-more failed");
             }
             Effect::LoadMaybeboard { ticket } => self.load_maybeboard(ticket),
+            Effect::DealCommanders { ticket, request } => self.deal(ticket, *request),
             Effect::DismissCommander(oracle_id) => {
                 // Quiet like a deck skip: the pile already moved on, and a
                 // failed post only means it comes back sooner.
@@ -216,6 +215,20 @@ impl Driver {
         });
     }
 
+    /// Asks the merged ranking for `request` and answers with [`Action::Dealt`], logging a
+    /// failure.
+    fn deal(self, ticket: Ticket, request: HttpCommanderDeal) {
+        let client = self.client;
+        spawn(async move {
+            let reply = match self.fresh().await {
+                Ok(session) => client().deal_commanders(request, &session).await,
+                Err(e) => Err(e),
+            };
+            let reply = reply.map_err(|e| tracing::warn!("swipe select deal failed: {e}"));
+            self.dispatch(Action::Dealt { ticket, reply });
+        });
+    }
+
     /// Loads the user's commander maybeboard and answers with [`Action::MaybeboardLoaded`], or
     /// with [`Action::Failed`] after logging the failure.
     fn load_maybeboard(self, ticket: Ticket) {
@@ -289,15 +302,13 @@ pub(crate) fn SwipeSelect(
     /// the partner stack never offers the commander.
     #[props(default)]
     exclude_oracle_ids: Option<ReadSignal<HashSet<Uuid>>>,
-    /// The ranking the suggested mode deals, snapshotted on each open so the
-    /// pile follows the host's own removes and filters. Without it the
-    /// suggested pile is empty.
+    /// The host's filter, which the pile starts from: an open that finds it
+    /// changed since the last deals again under it, on Search.
     #[props(default)]
-    suggested_pile: Option<ReadSignal<SuggestedPile>>,
-    /// The chips the suggested mode's Filter sheet holds, bound to the same
-    /// state that narrows `suggested_pile`. Without it there is no Filter.
+    start_filter: Option<ReadSignal<CardQueryBuilder>>,
+    /// Decks the suggested reasons count against, as the host knows it.
     #[props(default)]
-    suggested_filter: Option<Element>,
+    reasons_deck_count: Option<ReadSignal<u32>>,
     /// Whether a pick starts a new deck, as from the commander maybeboard,
     /// which the hint then says.
     #[props(default)]
@@ -335,32 +346,38 @@ pub(crate) fn SwipeSelect(
     let mut searched_counter = use_signal(|| 0u32);
 
     let mut filters_overlay_open = use_signal(|| false);
-    // The suggested mode's Filter sheet, holding the host's chips.
-    let mut suggested_filter_open = use_signal(|| false);
     let mut show_details = use_signal(|| false);
     // The face each card shows, the front where it has none: its stack image and its details
     // drawer show it, and either's flip turns it, so the image and the details turn together.
     let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
     let mut printing_open = use_signal(|| false);
 
-    // Each open hands the model the mode, the filter, the host's pile and
-    // exclusions; the model keeps the pile or deals afresh, and offers the
-    // hint on the first open.
+    // Each open hands the model the mode, the filter, the reasons' deck count
+    // and the host's exclusions; the model keeps the pile or deals afresh, and
+    // offers the hint on the first open. A host filter that changed since deals
+    // again under it.
     use_effect(move || {
         if !open() {
             return;
         }
         let mode = mode.peek().clone();
         let filter = filter_builder.peek().clone();
-        let pile = suggested_pile.map_or_default(|pile| pile.peek().clone());
+        let deck_count = reasons_deck_count.map_or(0, |count| *count.peek());
         let excluded = exclude_oracle_ids.map_or_default(|ids| ids.peek().clone());
         driver.dispatch(Action::Open {
             mode,
             filter,
-            pile,
+            deck_count,
             excluded,
             from: starts_deck,
         });
+        let on_search = driver.model.peek().source() != Some(add_cards::Source::Maybeboard);
+        if let Some(start) = start_filter.filter(|_| on_search) {
+            let start = start.peek().clone();
+            if *driver.model.peek().filter() != start {
+                driver.dispatch(Action::Filter(start));
+            }
+        }
         // An open back on Search takes Search's own filter: the sheet shows it, its sections reset.
         let dealt_under = driver.model.peek().filter().clone();
         if *filter_builder.peek() != dealt_under {
@@ -380,20 +397,6 @@ pub(crate) fn SwipeSelect(
         searched_counter.set(counter);
         let filter = filter_builder.peek().clone();
         driver.dispatch(Action::Filter(filter));
-    });
-
-    // The host's Filter chips changed the suggested pile mid-session: the
-    // model re-deals it under the cards already swiped. A closed overlay
-    // waits for the open above, which deals afresh.
-    use_effect(move || {
-        let Some(pile) = suggested_pile else {
-            return;
-        };
-        let pile = pile();
-        if !*open.peek() {
-            return;
-        }
-        driver.dispatch(Action::Redeal(pile));
     });
 
     // Bumps the counter so the filter sections reset with the pile, and
@@ -451,7 +454,6 @@ pub(crate) fn SwipeSelect(
     let maybe_enabled = state.can_save();
     let current_reasons = state.reasons().cloned();
     let deck_count = state.deck_count();
-    let has_suggested_identity = state.identity().is_some();
     drop(state);
     // The reasons behind the card on top, for the details sheet's footer. Its
     // shared-tag chips take the sheet's own description lookup and the host's
@@ -459,12 +461,8 @@ pub(crate) fn SwipeSelect(
     // opener, and its examples overlay draws over this screen and the sheet.
     let describe_tag = use_describe_tag();
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
-    // The suggested Filter: the chosen identity lights the button's dot.
-    let has_suggested_filter = suggested && suggested_filter.is_some();
     let hint_mode = if suggested {
-        SwipeSelectMode::Suggested {
-            has_filter: has_suggested_filter,
-        }
+        SwipeSelectMode::Suggested { has_filter: true }
     } else if starts_deck {
         SwipeSelectMode::StartsDeck
     } else {
@@ -480,21 +478,12 @@ pub(crate) fn SwipeSelect(
 
     let dock = rsx! {
         div { class: if source.is_some() { "action-dock" } else { "action-dock action-dock-right" },
-            if has_suggested_filter {
-                DockFilter {
-                    label: model::FILTER,
-                    dot: has_suggested_identity,
-                    onclick: move |()| suggested_filter_open.set(true),
-                }
-            } else if !suggested {
-                // Popularity order is this screen's default (no
-                // sort), so any user filter or explicit sort lights
-                // the dot.
-                DockFilter {
-                    label: model::FILTER,
-                    dot: model::filter_lit(&filter_builder.read()),
-                    onclick: move |()| filters_overlay_open.set(true),
-                }
+            // Popularity order is this screen's default (no sort), so any user
+            // filter or explicit sort lights the dot.
+            DockFilter {
+                label: model::FILTER,
+                dot: model::filter_lit(&filter_builder.read()),
+                onclick: move |()| filters_overlay_open.set(true),
             }
             DockAction {
                 label: model::REFRESH,
@@ -623,17 +612,6 @@ pub(crate) fn SwipeSelect(
                     show_format_filter: false,
                     show_active_indicators: true,
                     on_clear: move |()| clear_filter(),
-                }
-
-                // A chip applies as it is tapped and the stack re-deals behind
-                // the sheet, so the sheet only closes.
-                if let (true, Some(chips)) = (suggested, suggested_filter) {
-                    BottomSheet {
-                        open: suggested_filter_open,
-                        title: "Filter",
-                        closable: true,
-                        {chips}
-                    }
                 }
 
                 ContentHintDialog {
