@@ -251,3 +251,24 @@ fn a_new_text_drops_a_next_page_still_out() {
     assert_eq!(state.status(), Status::Loading);
     assert_eq!(state.cards().len(), 0);
 }
+
+#[test]
+fn a_next_page_says_where_its_cards_start_so_they_deal_in() {
+    let mut state = first_page();
+    assert_eq!(
+        state.newest_page_from(),
+        None,
+        "the first page keeps its own entrance"
+    );
+    let effects = state.update(Action::LoadMore);
+    let [Effect::Lookup { ticket, .. }] = effects.as_slice() else {
+        panic!("one lookup: {effects:?}");
+    };
+    let _ = state.update(Action::Loaded {
+        ticket: *ticket,
+        cards: many("Second", 20),
+    });
+    assert_eq!(state.newest_page_from(), Some(20));
+    let (_, _) = loading(&mut state, "b");
+    assert_eq!(state.newest_page_from(), None, "a new text starts over");
+}

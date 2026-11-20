@@ -101,6 +101,8 @@ pub struct State {
     exhausted: bool,
     /// The ticket of the next page out, if one is.
     more: Option<Ticket>,
+    /// Where the newest next page's cards start, which deal in; `None` on a first page.
+    dealt_from: Option<usize>,
 }
 
 impl State {
@@ -146,10 +148,12 @@ impl State {
                 self.cards.clear();
                 self.more = None;
                 self.exhausted = false;
+                self.dealt_from = None;
                 self.lookup()
             }
             Action::Loaded { ticket, cards } if self.more == Some(ticket) => {
                 self.more = None;
+                self.dealt_from = Some(self.cards.len());
                 self.exhausted = is_last_page(cards.len());
                 let fresh: Vec<Card> = cards
                     .into_iter()
@@ -257,6 +261,13 @@ impl State {
     #[must_use]
     pub fn has_more(&self) -> bool {
         self.status == Status::Several && !self.exhausted
+    }
+
+    /// Where the newest next page's cards start in [`State::cards`], so they deal in as they
+    /// land; `None` while the cards are a first page.
+    #[must_use]
+    pub fn newest_page_from(&self) -> Option<usize> {
+        self.dealt_from
     }
 
     /// Whether a next page is out.

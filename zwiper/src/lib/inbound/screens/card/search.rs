@@ -81,6 +81,7 @@ pub fn Search(q: String) -> Element {
     let cards = state.cards().to_vec();
     let title = state.title();
     let has_more = state.has_more();
+    let dealt_from = state.newest_page_from();
     drop(state);
 
     let body = match status {
@@ -91,6 +92,7 @@ pub fn Search(q: String) -> Element {
                     title: title.clone(),
                     cards,
                     on_select: move |id: Uuid| dispatch(Action::Pick(id)),
+                    dealt_from,
                 }
                 // Scrolling to it loads the next page.
                 if has_more {
