@@ -350,25 +350,63 @@ async fn a_card_file_listing_a_printing_twice_or_the_nil_id_is_refused(pool: sql
 }
 
 #[sqlx::test]
-async fn a_card_file_that_drops_most_prices_is_refused(pool: sqlx::PgPool) {
+async fn a_card_file_that_drops_most_prices_loads_its_cards_with_the_stored_prices(
+    pool: sqlx::PgPool,
+) {
     seed_catalog(&pool, 10).await;
-    let wiped: String = (0..10)
+    // Six of ten prices gone, one card renamed, and one new printing priced in the file.
+    let mut lines: Vec<String> = (0..10)
         .map(|n| card_line(n, n, (n < 4).then_some("2.00")))
-        .collect::<Vec<_>>()
-        .join("\n");
-    let fixture = Fixture::new(BulkEndpoint::DefaultCards, &wiped, day(20));
-    assert_refused(&pool, &fixture, |r| {
-        matches!(r, RefusedPull::PricesWiped { .. })
-    })
-    .await;
+        .collect();
+    let mut renamed: Value = serde_json::from_str(&lines[0]).unwrap();
+    renamed["name"] = Value::String("Fixture Card Renamed".to_string());
+    lines[0] = renamed.to_string();
+    lines.push(card_line(10, 10, None));
+    let fixture = Fixture::new(BulkEndpoint::DefaultCards, &lines.join("\n"), day(20));
 
-    let half: String = (0..10)
-        .map(|n| card_line(n, n, (n < 5).then_some("2.00")))
+    let synced = cards(&pool).scryfall_sync(&fixture).await.unwrap();
+
+    assert!(matches!(
+        synced.kept_prices,
+        Some(RefusedPull::PricesWiped { .. })
+    ));
+    let (printings, priced, load) = catalog(&pool).await;
+    assert_eq!(
+        (printings, priced, load),
+        (11, 10, Some(day(20))),
+        "every stored price stays"
+    );
+    let usd: Vec<Option<String>> = sqlx::query_scalar(
+        "SELECT prices->>'usd' FROM scryfall_data ORDER BY collector_number::int",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        usd[0].as_deref(),
+        Some("1.00"),
+        "the stored price, not the file's 2.00"
+    );
+    assert_eq!(usd[10], None, "a new printing takes the file's price");
+    let renamed: String =
+        sqlx::query_scalar("SELECT name FROM scryfall_data WHERE collector_number = '0'")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(renamed, "Fixture Card Renamed", "card data still lands");
+
+    let half: String = (0..11)
+        .map(|n| card_line(n, n, (n < 6).then_some("3.00")))
         .collect::<Vec<_>>()
         .join("\n");
-    let at_the_line = Fixture::new(BulkEndpoint::DefaultCards, &half, day(20));
-    cards(&pool).scryfall_sync(&at_the_line).await.unwrap();
-    assert_eq!(catalog(&pool).await.1, 5);
+    let at_the_line = Fixture::new(BulkEndpoint::DefaultCards, &half, day(21));
+    let synced = cards(&pool).scryfall_sync(&at_the_line).await.unwrap();
+    assert_eq!(synced.kept_prices, None);
+    assert_eq!(
+        catalog(&pool).await.1,
+        6,
+        "half the share or more loads the file's prices"
+    );
 }
 
 #[sqlx::test]

@@ -17,7 +17,7 @@ use zwipe_core::domain::card::slug::CardSlug;
 use zwipe_core::http::contracts::card::HttpCardLookup;
 
 use crate::domain::card::models::printing_removal::{self, RemovalMode, RemovalReport};
-use crate::domain::card::models::scryfall_pull::{self, ScryfallLoad};
+use crate::domain::card::models::scryfall_pull::{self, CatalogCounts, ScryfallLoad};
 use crate::domain::card::models::search_card::error::{LookupCardsError, SearchCardsError};
 use crate::domain::card::models::zervice_metrics::{self, SyncedCards, ZerviceMetrics};
 use crate::domain::card::models::zervice_step::StepRecord;
@@ -109,9 +109,22 @@ impl<R: CardRepository> CardService for Service<R> {
         let mut zervice_metrics = ZerviceMetrics::new();
         let batch_size = batch_size();
         let pulled = bulk::pull_cards(source, file).await?;
-        let scryfall_data: Vec<ScryfallData> = pulled.items;
+        let mut scryfall_data: Vec<ScryfallData> = pulled.items;
         zervice_metrics.set_received_count(zervice_metrics::count_column(scryfall_data.len()));
-        scryfall_pull::check_cards(&scryfall_data, self.repo.fetch_catalog_counts().await?)?;
+        let stored = self.repo.fetch_catalog_counts().await?;
+        scryfall_pull::check_cards(&scryfall_data, stored)?;
+        let kept_prices =
+            scryfall_pull::prices_collapsed(CatalogCounts::of(&scryfall_data), stored);
+        if let Some(collapse) = &kept_prices {
+            tracing::error!("{collapse}");
+            let ids: Vec<Uuid> = scryfall_data.iter().map(|sd| sd.id).collect();
+            let mut stored_prices = self.repo.fetch_stored_prices(&ids).await?;
+            for card in &mut scryfall_data {
+                if let Some(prices) = stored_prices.remove(&card.id) {
+                    card.prices = prices;
+                }
+            }
+        }
         let load = pulled.file.updated_at.map(|made| ScryfallLoad {
             kind: pulled.file.kind,
             updated_at: made,
@@ -132,6 +145,7 @@ impl<R: CardRepository> CardService for Service<R> {
         Ok(SyncedCards {
             metrics: zervice_metrics,
             printing_ids: scryfall_data.iter().map(|sd| sd.id).collect(),
+            kept_prices,
         })
     }
 

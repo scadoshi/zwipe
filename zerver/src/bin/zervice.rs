@@ -123,15 +123,20 @@ async fn main() -> anyhow::Result<()> {
     let synced = match card_service.scryfall_sync(&Scryfall).await {
         Ok(synced) => {
             let m = &synced.metrics;
-            let outcome = done(
-                Some(count(m.received_count())),
-                &[
-                    ("received", count(m.received_count())),
-                    ("upserted", count(m.upserted_count())),
-                    ("skipped", count(m.skipped_count())),
-                    ("failed", count(m.error_count())),
-                ],
-            );
+            // A price collapse fails the step, so the run alerts, but the cards loaded and the
+            // removal still runs on the complete file.
+            let outcome = match &synced.kept_prices {
+                Some(collapse) => failed(&anyhow::Error::new(collapse.clone())),
+                None => done(
+                    Some(count(m.received_count())),
+                    &[
+                        ("received", count(m.received_count())),
+                        ("upserted", count(m.upserted_count())),
+                        ("skipped", count(m.skipped_count())),
+                        ("failed", count(m.error_count())),
+                    ],
+                ),
+            };
             night.record(Step::CardSync, clock, outcome).await;
             Some(synced)
         }

@@ -19,6 +19,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::scryfall_data::prices::Prices;
 use zwipe_core::domain::card::search_card::card_filter;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
@@ -423,6 +424,22 @@ impl CardRepository for MyPostgres {
         }
         self.finish(tx).await?;
         Ok(cards)
+    }
+
+    async fn fetch_stored_prices(
+        &self,
+        ids: &[uuid::Uuid],
+    ) -> anyhow::Result<std::collections::HashMap<uuid::Uuid, Prices>> {
+        let rows: Vec<(uuid::Uuid, sqlx::types::Json<Prices>)> =
+            sqlx::query_as("SELECT id, prices FROM scryfall_data WHERE id = ANY($1)")
+                .bind(ids)
+                .fetch_all(&self.pool)
+                .await
+                .context("failed to read the stored prices")?;
+        Ok(rows
+            .into_iter()
+            .map(|(id, prices)| (id, prices.0))
+            .collect())
     }
 
     async fn fetch_catalog_counts(&self) -> anyhow::Result<CatalogCounts> {

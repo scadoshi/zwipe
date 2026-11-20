@@ -96,9 +96,10 @@ pub enum RefusedPull {
         /// Printings with it.
         count: u64,
     },
-    /// The share of printings with a USD price fell under half the stored share.
+    /// The share of printings with a USD price fell under half the stored share. The cards still
+    /// load; each stored printing keeps its stored prices.
     #[error(
-        "{priced} of the pull's {printings} printings have a USD price, under half the stored share ({stored_priced} of {stored_printings}), so the stored prices stay"
+        "{priced} of the pull's {printings} printings have a USD price, under half the stored share ({stored_priced} of {stored_printings}), so the cards load with their stored prices"
     )]
     PricesWiped {
         /// The pull's printings with a USD price.
@@ -240,13 +241,14 @@ fn count(n: usize) -> u64 {
     u64::try_from(n).unwrap_or(u64::MAX)
 }
 
-/// Accepts a card pull with unique, non-nil printing ids, at least [`CARD_FLOOR_PCT`] percent of
-/// the stored printings and cards, and at least half the stored share of USD-priced printings.
+/// Accepts a card pull with unique, non-nil printing ids and at least [`CARD_FLOOR_PCT`] percent
+/// of the stored printings and cards. Prices are judged apart, by [`prices_collapsed`], since a
+/// collapse keeps the stored prices rather than refusing the cards.
 ///
 /// # Errors
 ///
-/// [`RefusedPull::DuplicateIds`], [`RefusedPull::NilIds`], [`RefusedPull::Empty`],
-/// [`RefusedPull::Shrunk`] or [`RefusedPull::PricesWiped`], checked in that order.
+/// [`RefusedPull::DuplicateIds`], [`RefusedPull::NilIds`], [`RefusedPull::Empty`] or
+/// [`RefusedPull::Shrunk`], checked in that order.
 pub fn check_cards(printings: &[ScryfallData], stored: CatalogCounts) -> Result<(), RefusedPull> {
     let mut seen: HashSet<Uuid> = HashSet::with_capacity(printings.len());
     let duplicates = printings.iter().filter(|p| !seen.insert(p.id)).count();
@@ -267,20 +269,24 @@ pub fn check_cards(printings: &[ScryfallData], stored: CatalogCounts) -> Result<
         CARD_FLOOR_PCT,
     )?;
     check_floor("cards", pulled.cards, stored.cards, CARD_FLOOR_PCT)?;
+    Ok(())
+}
+
+/// [`RefusedPull::PricesWiped`] when the pull's share of USD-priced printings is under half the
+/// stored share, `None` otherwise or when nothing is stored.
+#[must_use]
+pub fn prices_collapsed(pulled: CatalogCounts, stored: CatalogCounts) -> Option<RefusedPull> {
     // pulled.priced / pulled.printings < (stored.priced / stored.printings) / 2, cross-multiplied.
     let pulled_share = u128::from(pulled.priced)
         .saturating_mul(u128::from(stored.printings))
         .saturating_mul(2);
     let stored_share = u128::from(stored.priced).saturating_mul(u128::from(pulled.printings));
-    if pulled_share < stored_share {
-        return Err(RefusedPull::PricesWiped {
-            priced: pulled.priced,
-            printings: pulled.printings,
-            stored_priced: stored.priced,
-            stored_printings: stored.printings,
-        });
-    }
-    Ok(())
+    (pulled_share < stored_share).then_some(RefusedPull::PricesWiped {
+        priced: pulled.priced,
+        printings: pulled.printings,
+        stored_priced: stored.priced,
+        stored_printings: stored.printings,
+    })
 }
 
 /// The most printings one removal may take out of a catalog of `stored` printings.
@@ -442,5 +448,27 @@ mod tests {
             .err()
             .map_or_else(String::new, |e| e.to_string());
         assert_eq!(refused, "the pull carries no tags, so the stored 4606 stay");
+    }
+}
+
+#[cfg(test)]
+mod price_tests {
+    use super::*;
+
+    fn counts(printings: u64, priced: u64) -> CatalogCounts {
+        CatalogCounts {
+            printings,
+            cards: printings,
+            priced,
+        }
+    }
+
+    #[test]
+    fn prices_collapse_under_half_the_stored_share() {
+        let stored = counts(120_211, 88_994);
+        assert!(prices_collapsed(counts(120_211, 44_496), stored).is_some());
+        assert_eq!(prices_collapsed(counts(120_211, 44_497), stored), None);
+        assert_eq!(prices_collapsed(counts(120_211, 0), counts(0, 0)), None);
+        assert_eq!(prices_collapsed(counts(120_211, 88_994), stored), None);
     }
 }

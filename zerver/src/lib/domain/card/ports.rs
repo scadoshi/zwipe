@@ -12,6 +12,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::scryfall_data::prices::Prices;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::slug::CardSlug;
 use zwipe_core::http::contracts::card::HttpCardLookup;
@@ -116,6 +117,12 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 
     /// What the stored card catalog holds: printings, distinct cards and USD-priced printings.
     fn fetch_catalog_counts(&self) -> impl Future<Output = anyhow::Result<CatalogCounts>> + Send;
+
+    /// The stored prices of the printings among `ids` the catalog holds.
+    fn fetch_stored_prices(
+        &self,
+        ids: &[uuid::Uuid],
+    ) -> impl Future<Output = anyhow::Result<HashMap<uuid::Uuid, Prices>>> + Send;
 
     /// When Scryfall made the `kind` bulk file loaded last, or `None` before any load.
     fn fetch_scryfall_load(
