@@ -93,7 +93,7 @@ fn PendingActions(email: String) -> Element {
                     &telemetry::failure(e),
                 );
                 toast.error(
-                    e.to_user_message(),
+                    components::carry_title(&e.to_user_message()),
                     ToastOptions::default().duration(TOAST_LONG),
                 );
             };
@@ -109,12 +109,12 @@ fn PendingActions(email: String) -> Element {
             let http = client.peek().clone();
             match http.resend_email_change(&current).await {
                 Ok(()) => toast.success(
-                    account_screen::change_link_sent(&email),
+                    components::carry_title(&account_screen::change_link_sent(&email)),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 ),
                 // One went out recently, so the countdown keeps running.
                 Err(ClientError::TooManyRequests(_)) => toast.info(
-                    account_screen::RESEND_LIMITED.to_string(),
+                    components::carry_title(account_screen::RESEND_LIMITED),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 ),
                 Err(e) => {
@@ -268,7 +268,7 @@ pub(super) fn VerificationActions() -> Element {
                     &telemetry::failure(e),
                 );
                 toast.error(
-                    e.to_user_message(),
+                    components::carry_title(&e.to_user_message()),
                     ToastOptions::default().duration(TOAST_LONG),
                 );
             };
@@ -284,12 +284,12 @@ pub(super) fn VerificationActions() -> Element {
             let http = client.peek().clone();
             match http.resend_verification(&current).await {
                 Ok(()) => toast.success(
-                    "Verification email sent".to_string(),
+                    components::carry_title("Verification email sent"),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 ),
                 // One went out recently, so the countdown keeps running.
                 Err(ClientError::TooManyRequests(_)) => toast.info(
-                    "Wait a moment and try again".to_string(),
+                    components::carry_title("Wait a moment and try again"),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 ),
                 Err(e) => {
@@ -332,7 +332,7 @@ pub(super) fn VerificationActions() -> Element {
                     );
                 } else {
                     toast.info(
-                        "Not verified yet. Check your inbox".to_string(),
+                        components::carry_title("Not verified yet. Check your inbox"),
                         ToastOptions::default().duration(TOAST_NORMAL),
                     );
                 }

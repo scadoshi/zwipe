@@ -642,7 +642,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             let fresh = match ensure_fresh(session, client).await {
                 Ok(fresh) => fresh,
                 Err(e) => {
-                    toast.error(e.to_user_message(), ToastOptions::default());
+                    toast.error(
+                        components::carry_title(&e.to_user_message()),
+                        ToastOptions::default(),
+                    );
                     stack.write().unwind_undo(action);
                     if let Some(entry) = taken {
                         undo.write().push(deck_id, entry);
@@ -670,7 +673,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("undo failed: {e}");
-                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
+                    toast.error(
+                        components::carry_title(undo::UNDO_FAILED),
+                        ToastOptions::default(),
+                    );
                     if let Some(entry) = taken {
                         undo.write().push(deck_id, entry);
                     }
@@ -721,7 +727,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             let fresh = match ensure_fresh(session, client).await {
                 Ok(fresh) => fresh,
                 Err(e) => {
-                    toast.error(e.to_user_message(), ToastOptions::default());
+                    toast.error(
+                        components::carry_title(&e.to_user_message()),
+                        ToastOptions::default(),
+                    );
                     if mounted.get() {
                         mb_stack.write().cancel_entering();
                     }
@@ -747,7 +756,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("undo failed: {e}");
-                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
+                    toast.error(
+                        components::carry_title(undo::UNDO_FAILED),
+                        ToastOptions::default(),
+                    );
                     if let Some(entry) = taken {
                         undo.write().push(deck_id, entry);
                     }

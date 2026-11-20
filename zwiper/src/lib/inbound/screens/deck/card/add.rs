@@ -423,7 +423,10 @@ impl Driver {
                         tracing::warn!("undo add (delete deck card) failed: {e}");
                     }
                     tracing::warn!("undo failed: {e}");
-                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
+                    toast.error(
+                        components::carry_title(undo::UNDO_FAILED),
+                        ToastOptions::default(),
+                    );
                     self.dispatch(Action::Failed { ticket });
                 }
             }
@@ -448,7 +451,10 @@ impl Driver {
                 .await;
             if let Err(e) = &moved {
                 tracing::warn!("undo promote failed: {e}");
-                toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
+                toast.error(
+                    components::carry_title(undo::UNDO_FAILED),
+                    ToastOptions::default(),
+                );
             }
             if self.mounted.get() {
                 self.dispatch(match moved {
@@ -478,7 +484,10 @@ impl Driver {
                     operation,
                     &e,
                 );
-                toast.error(e.to_user_message(), ToastOptions::default());
+                toast.error(
+                    components::carry_title(&e.to_user_message()),
+                    ToastOptions::default(),
+                );
                 None
             }
         }

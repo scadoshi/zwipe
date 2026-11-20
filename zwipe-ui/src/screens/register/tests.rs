@@ -198,7 +198,7 @@ fn a_registration_that_goes_through_prefills_login_toasts_and_goes_there() {
         state.update(Action::Registered { ticket }),
         vec![
             Effect::Prefill("newbie".to_owned()),
-            Effect::Toast(Toast::new(ToastKind::Info, CHECK_INBOX, NORMAL)),
+            Effect::Toast(Toast::new(ToastKind::Info, CHECK_INBOX, NORMAL).carried()),
             Effect::Navigate(Destination::Login),
         ],
         "the username sent, not the one typed since"
@@ -215,7 +215,7 @@ fn failed(ticket: Ticket, answer: FormAnswer, message: &str) -> Action {
 }
 
 fn error_toast(text: &str) -> Effect {
-    Effect::Toast(Toast::normal(ToastKind::Error, text))
+    Effect::Toast(Toast::normal(ToastKind::Error, text).carried())
 }
 
 #[test]

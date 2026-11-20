@@ -254,7 +254,10 @@ impl Driver {
                 Err(e) => {
                     tracing::warn!("undo remove (create deck card) failed: {e}");
                     tracing::warn!("undo failed: {e}");
-                    toast.error(shared_undo::UNDO_FAILED.to_owned(), ToastOptions::default());
+                    toast.error(
+                        components::carry_title(shared_undo::UNDO_FAILED),
+                        ToastOptions::default(),
+                    );
                     self.dispatch(Action::Failed { ticket });
                 }
             }
@@ -280,7 +283,10 @@ impl Driver {
                 Err(e) => {
                     tracing::warn!("undo board move (update deck card) failed: {e}");
                     tracing::warn!("undo failed: {e}");
-                    toast.error(shared_undo::UNDO_FAILED.to_owned(), ToastOptions::default());
+                    toast.error(
+                        components::carry_title(shared_undo::UNDO_FAILED),
+                        ToastOptions::default(),
+                    );
                     self.dispatch(Action::Failed { ticket });
                 }
             }
@@ -326,7 +332,10 @@ impl Driver {
                 Ok(_) => self.dispatch(Action::Landed { ticket }),
                 Err(e) => {
                     tracing::warn!("undo mark (update deck card) failed: {e}");
-                    toast.error(e.to_user_message(), ToastOptions::default());
+                    toast.error(
+                        components::carry_title(&e.to_user_message()),
+                        ToastOptions::default(),
+                    );
                     self.dispatch(Action::Failed { ticket });
                 }
             }
@@ -353,7 +362,10 @@ impl Driver {
                     "undo_remove",
                     &e,
                 );
-                toast.error(e.to_user_message(), ToastOptions::default());
+                toast.error(
+                    components::carry_title(&e.to_user_message()),
+                    ToastOptions::default(),
+                );
                 entering.set(None);
                 None
             }

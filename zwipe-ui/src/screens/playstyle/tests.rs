@@ -536,11 +536,9 @@ fn create_is_gated_for_an_unverified_account_with_a_deck() {
     });
     assert_eq!(
         state.update(unverified(&card)),
-        [Effect::Toast(Toast::new(
-            ToastKind::Warning,
-            VERIFY_TO_CREATE,
-            LONG
-        ))]
+        [Effect::Toast(
+            Toast::new(ToastKind::Warning, VERIFY_TO_CREATE, LONG).carried()
+        )]
     );
 }
 

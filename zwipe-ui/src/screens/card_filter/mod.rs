@@ -174,10 +174,9 @@ impl State {
                     return Vec::new();
                 }
                 self.lists = ListsWarning::Said;
-                vec![Effect::Toast(Toast::normal(
-                    ToastKind::Warning,
-                    LISTS_FAILED,
-                ))]
+                vec![Effect::Toast(
+                    Toast::normal(ToastKind::Warning, LISTS_FAILED).carried(),
+                )]
             }
             Action::Apply => self.apply(),
             Action::Back => self.back(),

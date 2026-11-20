@@ -84,7 +84,7 @@ pub fn DeckDialogsHost(
     let copy_link = move |token: Uuid| {
         browser::copy_to_clipboard(&link(&name.peek(), token));
         toast.info(
-            "Share link copied".to_string(),
+            components::carry_title("Share link copied"),
             ToastOptions::default().duration(TOAST_QUICK),
         );
     };
@@ -107,7 +107,7 @@ pub fn DeckDialogsHost(
             }
             Err(error) => {
                 toast.error(
-                    error.to_user_message(),
+                    components::carry_title(&error.to_user_message()),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 );
                 false
@@ -137,7 +137,7 @@ pub fn DeckDialogsHost(
                     );
                 }
                 Err(error) => toast.error(
-                    error.to_user_message(),
+                    components::carry_title(&error.to_user_message()),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 ),
             }
@@ -341,7 +341,7 @@ fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool
                 };
                 clone_id.write().landed();
                 toast.info(
-                    format!("Cloned as \"{new_name}\""),
+                    components::carry_title(&format!("Cloned as \"{new_name}\"")),
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
                 navigator.push(Route::ViewDeck {

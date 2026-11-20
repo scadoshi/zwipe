@@ -774,7 +774,7 @@ fn a_verified_user_is_greeted_once_per_launch() {
         effects,
         [
             Effect::MarkGreeted,
-            Effect::Toast(Toast::quick(ToastKind::Info, "Hello, scotty!"))
+            Effect::Toast(Toast::quick(ToastKind::Info, "Hello, scotty!").carried())
         ]
     );
     assert!(

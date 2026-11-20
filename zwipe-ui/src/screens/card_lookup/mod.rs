@@ -599,9 +599,9 @@ fn own_printing_slug(card: &Card) -> String {
         .map_or_else(|| slug::PRINTING_SLUG_FALLBACK.to_owned(), String::from)
 }
 
-/// The toast after a copied link.
+/// The toast after a copied link, carried over to the next screen.
 fn link_copied() -> Toast {
-    Toast::new(ToastKind::Info, LINK_COPIED, crate::toast::QUICK)
+    Toast::new(ToastKind::Info, LINK_COPIED, crate::toast::QUICK).carried()
 }
 
 /// The link Share copies for `card`, opened as `open`.

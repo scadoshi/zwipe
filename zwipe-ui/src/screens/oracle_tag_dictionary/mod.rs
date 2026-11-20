@@ -194,10 +194,9 @@ impl State {
                 effects
             }
             Action::CatalogFailed => {
-                vec![Effect::Toast(Toast::normal(
-                    ToastKind::Error,
-                    LOAD_FAILED_TOAST,
-                ))]
+                vec![Effect::Toast(
+                    Toast::normal(ToastKind::Error, LOAD_FAILED_TOAST).carried(),
+                )]
             }
             Action::Search(text) => {
                 self.query = text;
