@@ -49,7 +49,7 @@ impl SearchHost for AppSearch {
     fn open(self, to: Destination) {
         // A submitted search starts at the top on a fresh lookup; only Back finds its old place.
         if let Destination::Results { query } = &to {
-            components::results_place::forget(query);
+            components::results_place::submitted(query);
         }
         if let Some(route) = route_of(to) {
             self.navigator.push(route);

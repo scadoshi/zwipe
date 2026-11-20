@@ -1,7 +1,7 @@
 //! Where the card search's results page was, kept for Back: each text's loaded pages
 //! ([`Kept`]) and how far its list was scrolled, so returning from a card opens on the same
 //! cards at the same place, the keyboard cursor on its card. Only Back finds a place: the card
-//! search forgets a text's place when it submits the text ([`forget`]), and a place counts only
+//! search forgets a text's place when it submits the text ([`submitted`]), and a place counts only
 //! under the sign-in it was made under, which decides what the lookup answers. The last
 //! [`KEPT_TEXTS`] texts are kept for the visit, in memory only.
 
@@ -41,10 +41,63 @@ fn find_in(places: &[KeptPlace], query: &str, signed_in: bool) -> Option<KeptPla
         .cloned()
 }
 
-/// Forgets the place kept for `query`, as the card search submits it: a fresh search starts at
-/// the top on a fresh lookup.
-pub fn forget(query: &str) {
+/// The card search submitted `query`: its kept place goes, and a results page already showing
+/// the text hears of it ([`use_submits`]), since a submit to the route on screen changes no route.
+/// A fresh search starts at the top on a fresh lookup.
+pub fn submitted(query: &str) {
     forget_in(&mut KEPT.write(), query);
+    SUBMITS.write().submit(query);
+}
+
+/// The card search's submits, counted, with the latest text.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+struct Submits {
+    /// How many submits so far, so the same text again is a new one.
+    count: u64,
+    /// The latest submit's text, trimmed.
+    text: String,
+}
+
+impl Submits {
+    /// One more submit, of `text`.
+    fn submit(&mut self, text: &str) {
+        self.count = self.count.wrapping_add(1);
+        text.trim().clone_into(&mut self.text);
+    }
+}
+
+/// The card search's submits.
+static SUBMITS: GlobalSignal<Submits> = Signal::global(Submits::default);
+
+/// Calls `on_submit` with the text of each card search submit after the caller mounts, the same
+/// text again included.
+pub fn use_submits(on_submit: Callback<String>) {
+    let mut seen = use_signal(|| SUBMITS.peek().count);
+    use_effect(move || {
+        let submits = SUBMITS.read().clone();
+        if submits.count != *seen.peek() {
+            seen.set(submits.count);
+            on_submit.call(submits.text);
+        }
+    });
+}
+
+/// Starts a fresh search at the top with no keyboard cursor: the cursor's card and its last
+/// reading order go, so nothing hands focus back to a card from before, and every box that
+/// scrolls the page goes back to its top.
+const FRESH_START_JS: &str = r"
+window.__zwipeDeckCursor = null;
+window.__zwipeDeckOrder = [];
+window.__zwipeDeckInput = 'mouse';
+const held = document.activeElement;
+if (held && held.closest && held.closest('[data-row]')) held.blur();
+for (const box of document.querySelectorAll('.web-scroll-screen, .screen-content')) box.scrollTop = 0;
+window.scrollTo(0, 0);
+";
+
+/// Starts a fresh search at the top with no keyboard cursor ([`FRESH_START_JS`]).
+pub fn fresh_start() {
+    document::eval(FRESH_START_JS);
 }
 
 /// [`forget`] over `places`.
@@ -286,6 +339,32 @@ mod tests {
             "signed out, the lookup may answer other cards"
         );
         assert!(find_in(&places, "bolt", true).is_some());
+    }
+
+    #[test]
+    fn each_submit_is_a_new_one_even_for_the_same_text() {
+        let mut submits = Submits::default();
+        submits.submit(" bolt ");
+        let first = submits.clone();
+        submits.submit("bolt");
+        assert_eq!(submits.text, "bolt");
+        assert_ne!(submits, first, "the same text again is a new submit");
+    }
+
+    #[test]
+    fn a_fresh_search_starts_with_no_cursor_at_the_top() {
+        for reset in [
+            "window.__zwipeDeckCursor = null;",
+            "window.__zwipeDeckOrder = [];",
+            "window.__zwipeDeckInput = 'mouse';",
+        ] {
+            assert!(FRESH_START_JS.contains(reset), "{reset}");
+        }
+        assert!(
+            FRESH_START_JS.contains("box.scrollTop = 0;"),
+            "every box that scrolls the page goes back to its top"
+        );
+        assert!(FRESH_START_JS.contains("window.scrollTo(0, 0);"));
     }
 
     #[test]

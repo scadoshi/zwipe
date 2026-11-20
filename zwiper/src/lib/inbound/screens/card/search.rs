@@ -4,7 +4,7 @@
 //! only one card matches opens that card's page in this page's place.
 
 use components::list_end::{ListEnd, use_list_end};
-use components::results_place::{self, KeptPlace, use_results_scroll};
+use components::results_place::{self, KeptPlace, use_results_scroll, use_submits};
 use components::{CardResultsGrid, CardResultsGridGhost, LoadFailed};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -88,7 +88,15 @@ pub fn Search(q: String) -> Element {
             dispatch(Action::Resume(place.kept));
             results_place::restore_place(place.scroll);
         } else {
+            results_place::fresh_start();
             dispatch(Action::Load(q));
+        }
+    }));
+    // A submit of the text already on screen changes no route: it loads page 1 again, at the top.
+    use_submits(Callback::new(move |text: String| {
+        if text == driver.model.peek().query() {
+            results_place::fresh_start();
+            dispatch(Action::Load(text));
         }
     }));
     use_drop(move || {

@@ -16,7 +16,7 @@ use components::deck_cursor::use_card_grid_cursor;
 use components::hint::ContentHintDialog;
 use components::keys::use_page_keys_through;
 use components::list_end::{ListEnd, use_list_end};
-use components::results_place::{self, KeptPlace, use_results_scroll};
+use components::results_place::{self, KeptPlace, use_results_scroll, use_submits};
 use components::{
     CardResultsGrid, CardResultsGridGhost, DeckRowHost, DeckStackDrawer, LoadFailed, MeldSource,
     MeldToggle, StackDetails, focus_card_search, next_card_face, use_stack_details,
@@ -165,7 +165,15 @@ pub fn Search(q: String) -> Element {
             dispatch(Action::Resume(place.kept));
             results_place::restore_place(place.scroll);
         } else {
+            results_place::fresh_start();
             dispatch(Action::Load(q));
+        }
+    }));
+    // A submit of the text already on screen changes no route: it loads page 1 again, at the top.
+    use_submits(Callback::new(move |text: String| {
+        if text == driver.model.peek().query() {
+            results_place::fresh_start();
+            dispatch(Action::Load(text));
         }
     }));
     use_drop(move || {
