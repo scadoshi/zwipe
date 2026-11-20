@@ -868,11 +868,11 @@ pub static GUIDES: &[Guide] = &[
             Block::Lead("Set how many lands you want and Zwipe warns you as the deck fills."),
             Block::H2("Set the target"),
             Block::P(
-                "The Land target stepper starts at \"Not set.\" The first tap sets a default (about 37 for 100-card formats, 17 for 60-card), then you adjust.",
+                "Once the deck has a format, the Land target stepper shows the format's default, `37 (default)` for 100-card formats and `17 (default)` for 60-card ones. Step it to set your own, and × clears it. With no format it reads `Not set`.",
             ),
             Block::H2("Feedback"),
             Block::P(
-                "Cross the target while editing and Zwipe toasts \"Land target reached\" or \"Below land target,\" and a standing warning shows whenever you're under.",
+                "Cross the target while editing and Zwipe toasts \"Land target reached\" or \"Below land target\" with your target, like \"Land target reached (37)\", and a standing warning shows whenever you're under.",
             ),
             Block::Image {
                 file: "land-targets/01-mana-section.webp",
@@ -1023,7 +1023,7 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("Roles"),
             Block::P(
-                "The deck view's Distributions section has a Roles chart, the same roles counted across the whole deck. Tap a role to see the Oracle tags your cards carry under it.",
+                "The deck view's Distributions section has a Card roles chart, the same roles counted across the whole deck. Tap a role to see the Oracle tags your cards carry under it.",
             ),
         ],
     },
@@ -1114,7 +1114,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Create the link"),
             Block::Steps(&[
-                "Open the deck and tap the [[share]] beside its profile.",
+                "Open the deck and tap the [[share]] in its dock.",
                 "Tap Create link.",
                 "The link copies to your clipboard.",
             ]),
@@ -1136,7 +1136,7 @@ pub static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::P(
-                "Below is the full card list with Group by, Show, and Filter by, expandable rows, collapsible headers, and a section for the tokens your cards make.",
+                "Below is the full card list with Group by and Show, the [[funnel]] in the dock to filter it, expandable rows, collapsible headers, and a section for the tokens your cards make.",
             ),
             Block::Note("The page shows the deck as you last saved it, every time it opens."),
             Block::H2("Stop sharing"),
@@ -1164,7 +1164,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Charts"),
             Block::P(
-                "Distributions has the Types, Roles and Oracle tags charts; Roles uses the same roles as the card chips. Roles, Oracle tags and Draw odds show five rows with a See more. Mana holds Lands against their target, Average mana value, the curve (nonland cards by cost, 0 to 6+), Colors, and mana fulfillment, with a ✔ per color your mana base covers.",
+                "Distributions has the Types, Card roles and Oracle tags charts; Card roles uses the same roles as the card chips. Card roles, Oracle tags and Draw odds show five rows with a See more. Mana holds Lands against their target, Average mana value, the curve (nonland cards by cost, 0 to 6+), Colors, and mana fulfillment, with a ✔ per color your mana base covers.",
             ),
             Block::Image {
                 file: "deck-stats/01-distributions.webp",
@@ -1204,7 +1204,7 @@ pub static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::P(
-                "After importing, matched cards show under Imported and anything unmatched under Unresolved, each with a reason.",
+                "After importing, matched cards show under Imported and anything unmatched under Failed, each with a reason.",
             ),
             Block::Image {
                 file: "import-export/02-imported.webp",
