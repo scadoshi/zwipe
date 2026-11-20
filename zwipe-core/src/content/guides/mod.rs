@@ -1317,7 +1317,7 @@ pub static GUIDES: &[Guide] = &[
             Block::H2("Search results"),
             Block::Bullets(&[
                 "The arrow keys, or `h`, `j`, `k`, and `l`, move between the cards as they're laid out; Home and End jump to the first or last. Enter opens the card.",
-                "On the card under the cursor: `p` Printings, Shift+P Send to, `d` details, `v` flip.",
+                "On the card under the cursor: `p` Printings, Shift+P Send to, `i` its image, `v` flip, `d` details.",
                 "From the search box, `↓` or `Esc` puts the cursor back on the cards.",
             ]),
             Block::H2("A card page"),

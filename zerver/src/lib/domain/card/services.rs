@@ -6,7 +6,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::card_role::{self, CardRole};
-use zwipe_core::domain::card::models::lookup::{CardTypeWord, LOOKUP_LIMIT};
+use zwipe_core::domain::card::models::lookup::{CardTypeWord, LOOKUP_LIMIT, LOOKUP_PAGE};
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
@@ -444,8 +444,8 @@ impl<R: CardRepository> CardService for Service<R> {
 }
 
 /// The query a lookup runs, its chips read as the filter's are by default: a type line holding
-/// any of the types, a color identity equal to the colors, and any of the roles. At most
-/// [`LOOKUP_LIMIT`] cards, best match first: the whole name, then a name whose first word is
+/// any of the types, a color identity equal to the colors, and any of the roles. With no offset,
+/// the first [`LOOKUP_LIMIT`] cards; with one, [`LOOKUP_PAGE`] cards from it. Best match first: the whole name, then a name whose first word is
 /// the name typed, then one that starts with it, then one with a word that does, then the rest,
 /// each tier by popularity.
 fn lookup_query(lookup: &HttpCardLookup) -> Result<CardQuery, InvalidCardCriteria> {
@@ -454,11 +454,47 @@ fn lookup_query(lookup: &HttpCardLookup) -> Result<CardQuery, InvalidCardCriteri
         .set_name_contains(lookup.name().as_str())
         .set_type_line_contains_any(lookup.types().iter().map(CardTypeWord::as_str))
         .set_card_roles_contains_any(lookup.card_roles().iter().map(ToString::to_string))
-        .set_sort(CardSortKey::BestMatch)
-        .set_limit(LOOKUP_LIMIT);
+        .set_sort(CardSortKey::BestMatch);
+    match lookup.offset() {
+        Some(offset) => builder.set_limit(LOOKUP_PAGE).set_offset(offset),
+        None => builder.set_limit(LOOKUP_LIMIT),
+    };
     // No colors leaves identity open; an empty set would mean colorless.
     if !lookup.colors().is_empty() {
         builder.set_color_identity_equals(lookup.colors().iter().copied().collect());
     }
     builder.build()
+}
+
+#[cfg(test)]
+mod lookup_tests {
+    use zwipe_core::domain::card::models::lookup::LookupName;
+
+    use super::*;
+
+    fn bolt() -> HttpCardLookup {
+        let name = LookupName::try_from("bolt".to_owned()).unwrap();
+        HttpCardLookup::try_new(name, Vec::new(), Vec::new(), Vec::new()).unwrap()
+    }
+
+    #[test]
+    fn a_lookup_with_no_offset_answers_the_first_thirty_as_before() {
+        let query = lookup_query(&bolt()).unwrap();
+        assert_eq!(query.limit(), LOOKUP_LIMIT);
+        assert_eq!(query.offset(), 0);
+    }
+
+    #[test]
+    fn a_paged_lookup_answers_a_page_of_twenty_from_its_offset() {
+        let query = lookup_query(&bolt().paged(40)).unwrap();
+        assert_eq!(query.limit(), LOOKUP_PAGE);
+        assert_eq!(query.offset(), 40);
+        let first = lookup_query(&bolt().paged(0)).unwrap();
+        assert_eq!(
+            first.limit(),
+            LOOKUP_PAGE,
+            "a pager's first page is a page too"
+        );
+        assert_eq!(first.offset(), 0);
+    }
 }

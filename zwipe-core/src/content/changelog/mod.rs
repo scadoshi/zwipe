@@ -63,6 +63,9 @@ pub const UPCOMING: &[Release] = &[Release {
         "New guides for card search, suggested commanders, a deck's card list and keyboard shortcuts",
         "Toasts about a screen leave when you do; the ones you still need follow you to the next screen",
         "A commander search or deal that fails shows Retry instead of loading forever",
+        "Commander swipes deal cards in the order the filter's sort sets",
+        "On Android, opening a card role in a deck's card list no longer leaves doubled pieces of the row behind",
+        "Card search results load more as you scroll",
     ],
 }];
 

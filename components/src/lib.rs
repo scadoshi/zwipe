@@ -94,6 +94,7 @@ mod identity_pips;
 pub mod keys;
 mod keyword_chips;
 mod layer_presence;
+pub mod list_end;
 mod load_failed;
 mod media;
 mod media_frame;

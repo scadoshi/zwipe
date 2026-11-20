@@ -263,8 +263,9 @@ fn commander_deal_query(
 
 /// The deal statement's opening CTEs, through `candidates`: the user's decks and saved
 /// commanders, the popularity scale, and every commander the filter and `commander`'s rules let
-/// through, less tokens, `signal.exclude` and the user's live dismissals. The `candidates` CTE is
-/// left open for [`push_deal_ranking`] to close.
+/// through, less tokens, `signal.exclude` and the user's live dismissals. A sorted deal also leaves
+/// out the cards the card search drops for that sort, and carries each candidate's sort key and
+/// name. The `candidates` CTE is left open for [`push_deal_ranking`] to close.
 fn deal_candidates(
     deal: &CommanderDeal,
     signal: &DealSignal,
@@ -316,7 +317,17 @@ fn deal_candidates(
                         WHEN latest_cards.edhrec_rank IS NOT NULL AND ps.rank > 0
                             THEN 1 - latest_cards.edhrec_rank::float8 / ps.rank
                         ELSE 0
-                    END AS popularity
+                    END AS popularity",
+    );
+    // A sorted deal carries each candidate's sort key and name, which order its page.
+    if let Some((key, _)) = deal.sort() {
+        qb.push(format!(
+            ", {} AS sort_key, latest_cards.name AS sort_name",
+            sort_column(key)
+        ));
+    }
+    qb.push(
+        "
              FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
              LEFT JOIN (SELECT oracle_id AS ctp_oracle_id, profile AS ctp_profile
@@ -337,6 +348,9 @@ fn deal_candidates(
             push_criteria_conditions(&mut sep, filter.criteria());
         }
         push_criteria_conditions(&mut sep, commander);
+        if let Some(filter) = deal.sort().and_then(|(key, _)| sort_null_filter(key)) {
+            sep.push(filter);
+        }
         sep.push("latest_cards.layout NOT IN ('token', 'double_faced_token', 'emblem')");
         sep.push("latest_cards.oracle_id IS NOT NULL");
         sep.push("NOT (latest_cards.oracle_id = ANY(");
@@ -435,7 +449,8 @@ fn push_deal_ranking(qb: &mut QueryBuilder<Postgres>, deal: &CommanderDeal) {
 
 /// The deal statement's last CTEs and its page: each candidate's score from the terms before
 /// it, the identity cap as an ordering key while `deal.caps_identities()`, then the order and
-/// `deal`'s offset and limit.
+/// `deal`'s offset and limit. A sorted deal orders by its sort key instead, the identity cap
+/// unused.
 fn push_deal_order(qb: &mut QueryBuilder<Postgres>, deal: &CommanderDeal) {
     qb.push(
         "
@@ -450,7 +465,13 @@ fn push_deal_order(qb: &mut QueryBuilder<Postgres>, deal: &CommanderDeal) {
     qb.push_bind(W_POPULARITY);
     qb.push(
         " * c.popularity AS score,
-                    COALESCE(st.tags, '{}'::text[]) AS tags
+                    COALESCE(st.tags, '{}'::text[]) AS tags",
+    );
+    if deal.sort().is_some() {
+        qb.push(", c.sort_key, c.sort_name");
+    }
+    qb.push(
+        "
              FROM candidates c
              LEFT JOIN best_deck bd ON bd.oracle_id = c.oracle_id
              LEFT JOIN color_score cs ON cs.color_identity = c.color_identity
@@ -474,12 +495,70 @@ fn push_deal_order(qb: &mut QueryBuilder<Postgres>, deal: &CommanderDeal) {
          )
          SELECT oracle_id, color_identity, score, tags
          FROM ranked
-         ORDER BY over_cap, score DESC, oracle_id
-         OFFSET ",
+         ORDER BY ",
     );
+    // A sort is the order, as the card search writes it, with no identity held back.
+    match deal.sort() {
+        Some((key, direction)) => {
+            qb.push("sort_key");
+            if key == CardSortKey::BestMatch {
+                qb.push(" ASC");
+            } else if key != CardSortKey::Random {
+                qb.push(match direction {
+                    SortDirection::Ascending => " ASC",
+                    SortDirection::Descending => " DESC",
+                });
+            }
+            if matches!(key, CardSortKey::EdhrecRank | CardSortKey::BestMatch) {
+                qb.push(" NULLS LAST");
+            }
+            qb.push(", sort_name ASC, oracle_id");
+        }
+        None => {
+            qb.push("over_cap, score DESC, oracle_id");
+        }
+    }
+    qb.push(" OFFSET ");
     qb.push_bind(i64::from(deal.offset));
     qb.push(" LIMIT ");
     qb.push_bind(i64::from(deal.limit));
+}
+
+/// The SQL a card search orders by for `key`, over `latest_cards`' columns.
+fn sort_column(key: CardSortKey) -> &'static str {
+    match key {
+        CardSortKey::Name => "name",
+        CardSortKey::Cmc => "cmc",
+        CardSortKey::Power => "CAST(NULLIF(power, '') AS INT)",
+        CardSortKey::Toughness => "CAST(NULLIF(toughness, '') AS INT)",
+        CardSortKey::Rarity => "rarity",
+        CardSortKey::ReleasedAt => "released_at",
+        CardSortKey::PriceUsd => "(prices->>'usd')::NUMERIC",
+        CardSortKey::PriceEur => "(prices->>'eur')::NUMERIC",
+        CardSortKey::PriceTix => "(prices->>'tix')::NUMERIC",
+        CardSortKey::EdhrecRank => "edhrec_rank",
+        CardSortKey::BestMatch => BEST_MATCH_POPULARITY,
+        CardSortKey::Random => "RANDOM()",
+    }
+}
+
+/// The condition a card search sorted by `key` adds, leaving out cards with no value to sort
+/// on, or `None` when every card has one (or sorts last without one).
+fn sort_null_filter(key: CardSortKey) -> Option<&'static str> {
+    match key {
+        CardSortKey::Power => Some("power IS NOT NULL AND power ~ '^\\d+$'"),
+        CardSortKey::Toughness => Some("toughness IS NOT NULL AND toughness ~ '^\\d+$'"),
+        CardSortKey::PriceUsd => Some("prices->>'usd' IS NOT NULL AND prices->>'usd' != ''"),
+        CardSortKey::PriceEur => Some("prices->>'eur' IS NOT NULL AND prices->>'eur' != ''"),
+        CardSortKey::PriceTix => Some("prices->>'tix' IS NOT NULL AND prices->>'tix' != ''"),
+        CardSortKey::Name
+        | CardSortKey::Cmc
+        | CardSortKey::Rarity
+        | CardSortKey::ReleasedAt
+        | CardSortKey::EdhrecRank
+        | CardSortKey::Random
+        | CardSortKey::BestMatch => None,
+    }
 }
 
 /// The last key of every order the card search builds: the printing id, so cards tied on every
@@ -1868,30 +1947,8 @@ impl CardRepository for MyPostgres {
         }
 
         // Filter out NULLs for sorted field
-        if let Some(order_by) = request.sort() {
-            let null_filter = match order_by {
-                CardSortKey::Power => Some("power IS NOT NULL AND power ~ '^\\d+$'"),
-                CardSortKey::Toughness => Some("toughness IS NOT NULL AND toughness ~ '^\\d+$'"),
-                CardSortKey::PriceUsd => {
-                    Some("prices->>'usd' IS NOT NULL AND prices->>'usd' != ''")
-                }
-                CardSortKey::PriceEur => {
-                    Some("prices->>'eur' IS NOT NULL AND prices->>'eur' != ''")
-                }
-                CardSortKey::PriceTix => {
-                    Some("prices->>'tix' IS NOT NULL AND prices->>'tix' != ''")
-                }
-                CardSortKey::Name
-                | CardSortKey::Cmc
-                | CardSortKey::Rarity
-                | CardSortKey::ReleasedAt
-                | CardSortKey::EdhrecRank
-                | CardSortKey::Random
-                | CardSortKey::BestMatch => None,
-            };
-            if let Some(filter) = null_filter {
-                sep.push(filter);
-            }
+        if let Some(filter) = request.sort().and_then(sort_null_filter) {
+            sep.push(filter);
         }
 
         // ORDER BY
@@ -1949,21 +2006,7 @@ impl CardRepository for MyPostgres {
                 push_tiers(&mut qb, order_by == CardSortKey::BestMatch);
                 qb.push(", ");
             }
-            let col = match order_by {
-                CardSortKey::Name => "name",
-                CardSortKey::Cmc => "cmc",
-                CardSortKey::Power => "CAST(NULLIF(power, '') AS INT)",
-                CardSortKey::Toughness => "CAST(NULLIF(toughness, '') AS INT)",
-                CardSortKey::Rarity => "rarity",
-                CardSortKey::ReleasedAt => "released_at",
-                CardSortKey::PriceUsd => "(prices->>'usd')::NUMERIC",
-                CardSortKey::PriceEur => "(prices->>'eur')::NUMERIC",
-                CardSortKey::PriceTix => "(prices->>'tix')::NUMERIC",
-                CardSortKey::EdhrecRank => "edhrec_rank",
-                CardSortKey::BestMatch => BEST_MATCH_POPULARITY,
-                CardSortKey::Random => "RANDOM()",
-            };
-            qb.push(col);
+            qb.push(sort_column(order_by));
             // Best match is best first, whatever the direction.
             if order_by == CardSortKey::BestMatch {
                 qb.push(" ASC");

@@ -1,9 +1,10 @@
 [
-  { "route": "/api/card/lookup", "path": "", "kind": "status", "reason": "new public route, card lookup (additive; main has no such route)", "approved_by": "composer" },
-  { "route": "/api/card/lookup", "path": "", "kind": "type", "reason": "new public route, card lookup: main's 404 has no body", "approved_by": "composer" },
+  { "route": "/api/card/lookup", "path": "", "kind": "status", "reason": "the lookup takes an optional offset (additive; a body without one reads as before): main refuses the unknown field with 422", "approved_by": "composer" },
+  { "route": "/api/card/lookup", "path": "", "kind": "type", "reason": "the lookup takes an optional offset: main's 422 answers an error object where the candidate answers a page of cards", "approved_by": "composer" },
   { "route": "/api/card/named/{name_slug}", "path": "", "kind": "status", "reason": "new public route, cards by name slug (additive; main has no such route)", "approved_by": "composer" },
   { "route": "/api/card/named/{name_slug}", "path": "", "kind": "type", "reason": "new public route, cards by name slug: main's 404 has no body", "approved_by": "composer" },
   { "route": "/api/commander/deal", "path": "", "kind": "status", "reason": "new signed-in route, the commander deal (additive; main has no such route)", "approved_by": "composer" },
   { "route": "/api/commander/deal", "path": "", "kind": "type", "reason": "new signed-in route, the commander deal: main's 404 has no body", "approved_by": "composer" },
-  { "route": "/api/metrics/anonymous/search", "path": "", "kind": "status", "reason": "new public route, one signed-out zwipe.net card search counted into the public searches total (additive; main has no such route)", "approved_by": "composer" }
+  { "route": "/api/metrics/anonymous/search", "path": "", "kind": "status", "reason": "new public route, one signed-out zwipe.net card search counted into the public searches total (additive; main has no such route)", "approved_by": "composer" },
+  { "step": "commander deal, deck creation sorted by price", "route": "/api/commander/deal", "reason": "the deal orders by the filter's sort when it sets one, the ranking otherwise (675, option A)", "approved_by": "Scotty" }
 ]

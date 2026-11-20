@@ -132,6 +132,32 @@ test("an approval for one field doesn't pass another on the same route", () => {
   assert.deepEqual(verdict.unapproved.map((d) => d.path), ["/email"]);
 });
 
+test("a step approval passes every difference in its one step, and none in another on its route", () => {
+  const sorted = { name: "deal, sorted by price", route: "/api/commander/deal" };
+  const first = { name: "deal, first page", route: "/api/commander/deal" };
+  const diffs = [
+    { path: "/suggestions/0/card/scryfall_data/name", kind: "value" },
+    { path: "/suggestions/3/reasons/tags/2", kind: "removed" },
+  ];
+  const entry = { step: sorted.name, route: sorted.route, reason: "a sort orders the deal", approved_by: "Scotty" };
+  const verdict = judge(
+    [
+      { step: sorted, diffs },
+      { step: first, diffs: [{ path: "/suggestions/0/score", kind: "value" }] },
+    ],
+    [entry],
+  );
+  assert.deepEqual(verdict.approved.map((d) => d.step), [sorted.name, sorted.name]);
+  assert.deepEqual(verdict.unapproved.map((d) => d.step), [first.name], "the same route's other step still shows");
+  assert.deepEqual(verdict.stale, []);
+  const elsewhere = judge([{ step: { ...sorted, route: "/api/card/search" }, diffs }], [entry]);
+  assert.equal(elsewhere.unapproved.length, 2, "a step of that name on another route isn't it");
+  assert.deepEqual(elsewhere.stale, [entry], "matching nothing, it's stale");
+  const unsigned = judge([{ step: sorted, diffs }], [{ ...entry, approved_by: "" }]);
+  assert.equal(unsigned.unapproved.length, 2);
+  assert.equal(unsigned.incomplete.length, 1, "without an approver it's unfinished");
+});
+
 test("an unordered array can sort by a nested field", () => {
   const rules = { sort: [{ path: "", by: "/scryfall_data/id" }] };
   const body = [{ scryfall_data: { id: "b" } }, { scryfall_data: { id: "a" } }];
