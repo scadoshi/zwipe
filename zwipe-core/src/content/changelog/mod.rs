@@ -66,6 +66,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Commander swipes deal cards in the order the filter's sort sets",
         "On Android, opening a card role in a deck's card list no longer leaves doubled pieces of the row behind",
         "Card search results load more as you scroll",
+        "Sorting by Rarity goes from common to mythic instead of alphabetically",
     ],
 }];
 
