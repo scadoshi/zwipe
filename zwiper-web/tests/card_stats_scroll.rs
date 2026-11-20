@@ -25,7 +25,7 @@ fn the_stats_column_scrolls_inside_itself_above_the_docks() {
         ".web-card-stats",
     );
     for declaration in [
-        "max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));",
+        "max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) + var(--web-dock-panel-reach, 0px));",
         "overflow-y: auto;",
         "overscroll-behavior: contain;",
     ] {
@@ -55,5 +55,35 @@ fn each_widget_keeps_its_height_and_the_column_takes_no_entrance() {
     assert!(
         WEB.contains("> :not(.web-swipe-details, .web-examples-details, .web-card-stats) {\n        animation: content-enter"),
         "the column, fixed like the details, skips the swipe body's entrance, which would replace its rise"
+    );
+}
+
+#[test]
+fn the_column_leaves_room_for_a_panel_s_lift_and_outline_and_keeps_its_place() {
+    let stats = rule(
+        "@media (min-width: 900px) {\n    /* The stats and details panels",
+        ".web-card-stats",
+    );
+    for declaration in [
+        "--web-dock-panel-reach: var(--space-2);",
+        "padding: var(--space-2) var(--space-2) 0;",
+        "top: calc(var(--web-dock-panel-top) - var(--web-dock-panel-reach));",
+        "left: calc(1rem - var(--web-dock-panel-reach));",
+        "width: calc(var(--web-dock-panel-width) + 2 * var(--web-dock-panel-reach));",
+        "max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) + var(--web-dock-panel-reach, 0px));",
+    ] {
+        assert!(stats.contains(declaration), "{declaration} in {stats}");
+    }
+    let (_, rise) = WEB
+        .split_once("@keyframes web-dock-panel-rise {")
+        .unwrap_or_else(|| panic!("the rise"));
+    let rise = rise
+        .split_once("\n}")
+        .unwrap_or_else(|| panic!("its end"))
+        .0;
+    assert_eq!(
+        rise.matches("+ var(--web-dock-panel-reach, 0px)").count(),
+        2,
+        "the foot keeps its place while the column rises: {rise}"
     );
 }

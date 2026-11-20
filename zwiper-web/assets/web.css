@@ -247,11 +247,11 @@ body {
 
 @keyframes web-dock-panel-rise {
     from {
-        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) + var(--web-dock-panel-reach, 0px));
     }
 
     to {
-        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) - 100vh);
+        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) - 100vh + var(--web-dock-panel-reach, 0px));
     }
 }
 
@@ -3022,14 +3022,19 @@ body {
         max-width: min(26rem, calc(100vw - 2 * var(--web-dock-panel-width) - 5rem));
     }
 
+    /* The column reaches past its panels' top and sides by a gutter, held
+       as padding, so a panel's hover lift and outline stay inside its
+       scroll box; its foot keeps its place. */
     .web-card-stats {
+        --web-dock-panel-reach: var(--space-2);
         position: fixed;
-        top: var(--web-dock-panel-top);
-        left: 1rem;
+        top: calc(var(--web-dock-panel-top) - var(--web-dock-panel-reach));
+        left: calc(1rem - var(--web-dock-panel-reach));
         z-index: 40;
-        width: var(--web-dock-panel-width);
+        width: calc(var(--web-dock-panel-width) + 2 * var(--web-dock-panel-reach));
         max-width: none;
-        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) + var(--web-dock-panel-reach, 0px));
+        padding: var(--space-2) var(--space-2) 0;
         overflow-y: auto;
         overscroll-behavior: contain;
         box-sizing: border-box;
