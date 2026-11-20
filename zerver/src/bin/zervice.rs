@@ -1,7 +1,9 @@
 //! zervice: the nightly job that syncs Scryfall, removes the printings Scryfall deleted, refreshes
 //! the card views and prunes old rows. Every step records a `zervice_steps` row. `ZERVICE_DRY_RUN=true`
 //! or `--dry-run` previews a whole run: every write rolls back, the view refreshes are skipped, and
-//! there is no healthcheck ping.
+//! there is no healthcheck ping. `--oracle-tags-from <url>` runs only the oracle tag steps and the
+//! card roles, from one dated Scryfall Oracle Tags file, to restore from an earlier night's file;
+//! it sends no healthcheck ping either.
 
 use std::collections::BTreeMap;
 use std::time::Instant;
@@ -73,7 +75,8 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("zervice running v{}", env!("CARGO_PKG_VERSION"));
 
     // ZERVICE_DRY_RUN=true or --dry-run: every step does its work and keeps none of it.
-    let dry_run = config.dry_run || std::env::args().skip(1).any(|arg| arg == "--dry-run");
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let dry_run = config.dry_run || args.iter().any(|arg| arg == "--dry-run");
     let writes = if dry_run {
         Writes::Discard
     } else {
@@ -97,6 +100,24 @@ async fn main() -> anyhow::Result<()> {
         dry_run,
         failures: 0,
     };
+
+    // --oracle-tags-from <url>: only the oracle tag steps and the card roles, from that file.
+    anyhow::ensure!(
+        oracle_tags_file(&args).is_some() || !args.iter().any(|arg| arg == "--oracle-tags-from"),
+        "--oracle-tags-from needs the file's URL after it"
+    );
+    if let Some(url) = oracle_tags_file(&args) {
+        tracing::info!("restoring the oracle tags from {url}");
+        oracle_tag_steps(&card_service, &mut night, Some(url)).await;
+        derive_categories_step(&card_service, &mut night).await;
+        let failures = night.failures;
+        anyhow::ensure!(
+            failures == 0,
+            "the oracle tags restore finished with {failures} failed step(s)"
+        );
+        tracing::info!("oracle tags restored from {url}");
+        return Ok(());
+    }
 
     let clock = begin(Step::CardSync);
     let synced = match card_service.scryfall_sync(BulkEndpoint::DefaultCards).await {
@@ -154,56 +175,8 @@ async fn main() -> anyhow::Result<()> {
     };
     night.record(Step::PrintingRemoval, clock, outcome).await;
 
-    let clock = begin(Step::OracleTags);
-    match card_service.sync_oracle_tags().await {
-        Ok((tags, correlations)) => {
-            let outcome = done(
-                Some(size(tags)),
-                &[("tags", size(tags)), ("correlations", size(correlations))],
-            );
-            night.record(Step::OracleTags, clock, outcome).await;
-            let clock = begin(Step::OracleTagProjection);
-            let outcome = match card_service.refresh_card_oracle_tags().await {
-                Ok(rows) => done(Some(rows), &[]),
-                Err(e) => failed(&e),
-            };
-            night
-                .record(Step::OracleTagProjection, clock, outcome)
-                .await;
-            let clock = begin(Step::OracleTagGrouping);
-            let outcome = match card_service.refresh_oracle_tag_groups().await {
-                Ok(rows) => done(Some(rows), &[]),
-                Err(e) => failed(&e),
-            };
-            night.record(Step::OracleTagGrouping, clock, outcome).await;
-        }
-        Err(e) => {
-            night.record(Step::OracleTags, clock, failed(&e)).await;
-            for step in [Step::OracleTagProjection, Step::OracleTagGrouping] {
-                let clock = begin(step);
-                night
-                    .record(
-                        step,
-                        clock,
-                        StepOutcome::Skipped("the oracle tag sync failed"),
-                    )
-                    .await;
-            }
-        }
-    }
-
-    let clock = begin(Step::DeriveCategories);
-    let outcome = match card_service
-        .derive_card_categories(DERIVE_CATEGORIES_BATCH_SIZE)
-        .await
-    {
-        Ok((otag_rows, merges)) => done(
-            Some(otag_rows),
-            &[("otag_rows", otag_rows), ("straggler_merges", size(merges))],
-        ),
-        Err(e) => failed(&e),
-    };
-    night.record(Step::DeriveCategories, clock, outcome).await;
+    oracle_tag_steps(&card_service, &mut night, None).await;
+    derive_categories_step(&card_service, &mut night).await;
 
     // A refresh only rebuilds what the other steps wrote, and latest_cards refreshes
     // CONCURRENTLY, which can't run in a transaction that rolls back: a dry run skips them.
@@ -328,6 +301,80 @@ impl Night {
     }
 }
 
+/// The oracle tag steps in order: the sync, from Scryfall's latest file or from the dated file at
+/// `file`, then the card projection and the role grouping, which skip when the sync fails.
+async fn oracle_tag_steps(
+    cards: &card::services::Service<Postgres>,
+    night: &mut Night,
+    file: Option<&str>,
+) {
+    let clock = begin(Step::OracleTags);
+    let pulled = match file {
+        Some(url) => cards.sync_oracle_tags_from(url).await,
+        None => cards.sync_oracle_tags().await,
+    };
+    match pulled {
+        Ok((tags, correlations)) => {
+            let outcome = done(
+                Some(size(tags)),
+                &[("tags", size(tags)), ("correlations", size(correlations))],
+            );
+            night.record(Step::OracleTags, clock, outcome).await;
+            let clock = begin(Step::OracleTagProjection);
+            let outcome = match cards.refresh_card_oracle_tags().await {
+                Ok(rows) => done(Some(rows), &[]),
+                Err(e) => failed(&e),
+            };
+            night
+                .record(Step::OracleTagProjection, clock, outcome)
+                .await;
+            let clock = begin(Step::OracleTagGrouping);
+            let outcome = match cards.refresh_oracle_tag_groups().await {
+                Ok(rows) => done(Some(rows), &[]),
+                Err(e) => failed(&e),
+            };
+            night.record(Step::OracleTagGrouping, clock, outcome).await;
+        }
+        Err(e) => {
+            night.record(Step::OracleTags, clock, failed(&e)).await;
+            for step in [Step::OracleTagProjection, Step::OracleTagGrouping] {
+                let clock = begin(step);
+                night
+                    .record(
+                        step,
+                        clock,
+                        StepOutcome::Skipped("the oracle tag sync failed"),
+                    )
+                    .await;
+            }
+        }
+    }
+}
+
+/// Rebuilds the card roles from the oracle tags, then merges the heuristic stragglers.
+async fn derive_categories_step(cards: &card::services::Service<Postgres>, night: &mut Night) {
+    let clock = begin(Step::DeriveCategories);
+    let outcome = match cards
+        .derive_card_categories(DERIVE_CATEGORIES_BATCH_SIZE)
+        .await
+    {
+        Ok((otag_rows, merges)) => done(
+            Some(otag_rows),
+            &[("otag_rows", otag_rows), ("straggler_merges", size(merges))],
+        ),
+        Err(e) => failed(&e),
+    };
+    night.record(Step::DeriveCategories, clock, outcome).await;
+}
+
+/// The URL after `--oracle-tags-from` in `args`, if given.
+fn oracle_tags_file(args: &[String]) -> Option<&str> {
+    args.iter()
+        .position(|arg| arg == "--oracle-tags-from")
+        .and_then(|i| args.get(i.saturating_add(1)))
+        .map(String::as_str)
+}
+
 /// Logs that `step` is starting and starts its clock.
 fn begin(step: Step) -> Clock {
     tracing::info!("step {}: starting", step.as_str());
@@ -388,5 +435,29 @@ async fn ping_healthcheck(url: Option<&str>) {
         Ok(res) if res.status().is_success() => tracing::info!("healthcheck ping: ok"),
         Ok(res) => tracing::warn!("healthcheck ping answered {}", res.status()),
         Err(e) => tracing::warn!("healthcheck ping failed: {e}"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn args(list: &[&str]) -> Vec<String> {
+        list.iter().map(|a| (*a).to_string()).collect()
+    }
+
+    #[test]
+    fn the_restore_file_is_the_argument_after_its_flag() {
+        let url = "https://data.scryfall.io/oracle-tags/oracle-tags-20261118220038.jsonl.gz";
+        assert_eq!(
+            oracle_tags_file(&args(&["--oracle-tags-from", url])),
+            Some(url)
+        );
+        assert_eq!(
+            oracle_tags_file(&args(&["--dry-run", "--oracle-tags-from", url])),
+            Some(url)
+        );
+        assert_eq!(oracle_tags_file(&args(&["--dry-run"])), None);
+        assert_eq!(oracle_tags_file(&args(&["--oracle-tags-from"])), None);
     }
 }

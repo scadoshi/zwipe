@@ -32,7 +32,7 @@ use crate::domain::card::requests::get_oracle_tags::GetOracleTagsError;
 use crate::domain::card::requests::get_oracle_words::GetOracleWordsError;
 use crate::domain::card::requests::get_scryfall_data::{GetScryfallData, ScryfallDataIds};
 use crate::domain::card::requests::get_sets::GetSetsError;
-use crate::inbound::external::scryfall::bulk::BulkEndpoint;
+use crate::inbound::external::scryfall::bulk::{self, BulkEndpoint};
 use crate::outbound::sqlx::card::helpers::scryfall_data_fields;
 
 /// PostgreSQL parameter limit per query (~65k parameters).
@@ -213,6 +213,13 @@ impl<R: CardRepository> CardService for Service<R> {
         tracing::info!("fetched {} oracle tags", tags.len());
         let counts = self.repo.sync_oracle_tags(&tags).await?;
         Ok(counts)
+    }
+
+    async fn sync_oracle_tags_from(&self, url: &str) -> anyhow::Result<(usize, usize)> {
+        tracing::info!("performing oracle tags sync from {url}");
+        let tags = bulk::fetch_oracle_tags_file(url).await?;
+        tracing::info!("fetched {} oracle tags", tags.len());
+        self.repo.sync_oracle_tags(&tags).await
     }
 
     async fn refresh_card_oracle_tags(&self) -> anyhow::Result<u64> {

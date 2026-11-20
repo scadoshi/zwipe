@@ -552,6 +552,14 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Tags bulk file (nightly, zervice). Returns `(catalog_rows, correlation_rows)`.
     fn sync_oracle_tags(&self) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 
+    /// Syncs the catalog and card correlation from one dated Oracle Tags bulk file at `url`, an
+    /// https URL on Scryfall's bulk host, to restore from an earlier night's file. Returns
+    /// `(catalog_rows, correlation_rows)`.
+    fn sync_oracle_tags_from(
+        &self,
+        url: &str,
+    ) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
+
     /// Rebuilds the `card_profiles.oracle_tags` projection (nightly, zervice), returning the
     /// profiles it wrote.
     fn refresh_card_oracle_tags(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;

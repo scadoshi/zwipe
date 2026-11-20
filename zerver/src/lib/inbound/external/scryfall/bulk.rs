@@ -77,16 +77,7 @@ impl BulkEndpoint {
             .await
             .with_context(|| format!("failed to parse BulkDataObject for {what}"))?;
 
-        let request = ScryfallRequest::get(&Client::new(), &bulk_data_object.jsonl_download_uri);
-        let bytes = request
-            .send()
-            .await
-            .with_context(|| format!("failed to get {what} download response with planeswalker"))?
-            .bytes()
-            .await
-            .with_context(|| format!("failed to read {what} download body"))?;
-
-        parse_jsonl_gz(&bytes).with_context(|| format!("failed to parse {what} jsonl"))
+        download_jsonl_gz(&bulk_data_object.jsonl_download_uri, what).await
     }
 
     /// Downloads and parses the bulk card file (`Vec<ScryfallData>`).
@@ -116,6 +107,51 @@ impl BulkEndpoint {
     pub async fn fetch_oracle_tags(&self) -> anyhow::Result<Vec<OracleTag>> {
         self.fetch_jsonl_gz("oracle-tags").await
     }
+}
+
+/// The host Scryfall serves its dated bulk files from, the one host a file fetch by URL reads.
+pub const BULK_FILE_HOST: &str = "data.scryfall.io";
+
+/// Downloads and parses one dated Oracle Tags bulk file by its URL, such as an earlier night's
+/// file when the latest one is bad.
+///
+/// # Errors
+///
+/// Fails when the URL isn't https on [`BULK_FILE_HOST`], Scryfall can't be reached, or any line
+/// of the file isn't a tag.
+pub async fn fetch_oracle_tags_file(url: &str) -> anyhow::Result<Vec<OracleTag>> {
+    check_bulk_file_url(url)?;
+    download_jsonl_gz(url, "oracle-tags file").await
+}
+
+/// Accepts only an https URL on [`BULK_FILE_HOST`].
+///
+/// # Errors
+///
+/// Fails when `url` doesn't parse, isn't https, or names another host.
+pub fn check_bulk_file_url(url: &str) -> anyhow::Result<()> {
+    let parsed = reqwest::Url::parse(url).with_context(|| format!("not a URL: {url}"))?;
+    anyhow::ensure!(
+        parsed.scheme() == "https" && parsed.host_str() == Some(BULK_FILE_HOST),
+        "a bulk file comes from https://{BULK_FILE_HOST}/, not {url}"
+    );
+    Ok(())
+}
+
+/// Downloads a gzipped JSON Lines file from `url` and parses one `T` per line. `what` names it
+/// in errors. A non-success answer fails before its body is read.
+async fn download_jsonl_gz<T: DeserializeOwned>(url: &str, what: &str) -> anyhow::Result<Vec<T>> {
+    let request = ScryfallRequest::get(&Client::new(), url);
+    let bytes = request
+        .send()
+        .await
+        .with_context(|| format!("failed to get {what} download response with planeswalker"))?
+        .error_for_status()
+        .with_context(|| format!("Scryfall refused the {what} download"))?
+        .bytes()
+        .await
+        .with_context(|| format!("failed to read {what} download body"))?;
+    parse_jsonl_gz(&bytes).with_context(|| format!("failed to parse {what} jsonl"))
 }
 
 /// Decompresses a gzipped JSON Lines payload and parses each non-blank line.
@@ -152,6 +188,21 @@ mod tests {
     #[derive(serde::Deserialize, Debug, PartialEq)]
     struct Row {
         name: String,
+    }
+
+    #[test]
+    fn a_file_url_must_be_https_on_scryfalls_bulk_host() {
+        let good = "https://data.scryfall.io/oracle-tags/oracle-tags-20261118220038.jsonl.gz";
+        assert!(super::check_bulk_file_url(good).is_ok());
+        for bad in [
+            "http://data.scryfall.io/oracle-tags/oracle-tags-20261118220038.jsonl.gz",
+            "https://data.scryfall.io.example.com/oracle-tags.jsonl.gz",
+            "https://example.com/oracle-tags-20261118220038.jsonl.gz",
+            "file:///tmp/oracle-tags.jsonl.gz",
+            "data.scryfall.io/oracle-tags.jsonl.gz",
+        ] {
+            assert!(super::check_bulk_file_url(bad).is_err(), "{bad}");
+        }
     }
 
     #[test]
