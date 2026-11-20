@@ -3891,6 +3891,21 @@ footer.site-footer .site-footer-note {
     border-color: var(--accent-primary);
 }
 
+/* The wide nav's box rests with the nav buttons' border, so it sits quiet
+   among them, and takes the input outline only with focus. A deliberate
+   exception to every other field's muted ink edge, so the search reads as
+   part of the nav until it is in use. */
+.card-search-nav:not(.card-search-header) .card-search-input:not(:focus) {
+    border-color: var(--border-primary);
+}
+
+/* Under a mouse it lights as the nav buttons beside it do. */
+@media (hover: hover) {
+    .card-search-nav:not(.card-search-header) .card-search-input:not(:focus):hover {
+        border-color: var(--accent-primary);
+    }
+}
+
 .card-search .card-search-input::placeholder {
     color: var(--ink-text-muted, var(--text-muted));
 }

@@ -232,3 +232,27 @@ fn a_finger_gets_the_glass_s_44px_tap_box_as_its_neighbors_do() {
         );
     }
 }
+
+#[test]
+fn the_wide_nav_box_rests_quiet_and_takes_the_input_outline_on_focus() {
+    let quiet = rule(".card-search-nav:not(.card-search-header) .card-search-input:not(:focus)");
+    assert!(
+        quiet.contains("border-color: var(--border-primary);"),
+        "at rest the box has the nav buttons' border: {quiet}"
+    );
+    assert!(
+        rule(".card-search .card-search-input:focus")
+            .contains("border-color: var(--accent-primary);"),
+        "focused it has the input outline"
+    );
+}
+
+#[test]
+fn the_resting_nav_box_answers_a_mouse_as_the_nav_buttons_do() {
+    assert!(
+        MAGIC.contains(
+            "@media (hover: hover) {\n    .card-search-nav:not(.card-search-header) .card-search-input:not(:focus):hover {\n        border-color: var(--accent-primary);\n    }\n}"
+        ),
+        "a hovered resting box takes the accent border, as the nav buttons do"
+    );
+}
