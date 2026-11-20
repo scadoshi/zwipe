@@ -1284,18 +1284,16 @@ button {
     white-space: nowrap;
 }
 
-/* A hint grows to fit its text: its body keeps no scroll of its own, and
-   the dialog reaches to a margin short of the window. A hint taller than
-   that scrolls as a whole, title and buttons with it, like a page. */
+/* A hint grows to fit its text, up to a margin short of the window. One
+   taller than that keeps its title and buttons in place and scrolls its
+   body between the rules, which stops at either end with no bounce (iOS
+   WebKit otherwise pulls a blank band in past the first or last line). */
 .alert-dialog:has(.hint-body, .hint-line, .hint-bullets) {
     max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 2rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
 }
 
 .alert-dialog:has(.hint-body, .hint-line, .hint-bullets) > .alert-dialog-description {
-    flex: none;
-    overflow: visible;
+    overscroll-behavior: none;
 }
 
 /* A hint's dialog on a phone takes the window's width, less a margin, so
