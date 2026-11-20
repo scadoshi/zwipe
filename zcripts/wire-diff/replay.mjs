@@ -118,14 +118,18 @@ const show = (v) => (v === undefined ? "(absent)" : JSON.stringify(v)?.slice(0, 
 for (const d of verdict.approved) console.log(`approved  ${d.route} ${d.path} ${d.kind}: ${d.reason}`);
 for (const a of verdict.incomplete) {
   console.log(
-    a.data === undefined
+    a.data === undefined && a.step !== undefined
+      ? `incomplete step ${a.step}: a step approval needs step, route, reason and approved_by`
+      : a.data === undefined
       ? `incomplete ${a.route ?? "?"} ${a.path ?? "?"}: an approval needs route, path, kind, reason and approved_by`
       : `incomplete data ${a.data}: a data change needs data "printings", oracle_ids (a list, or "*"), reason and approved_by`,
   );
 }
 for (const a of verdict.stale) {
   console.log(
-    a.data === undefined
+    a.data === undefined && a.step !== undefined
+      ? `stale     step ${a.step} (${a.route}): nothing differs in that step now; remove it from approved.json`
+      : a.data === undefined
       ? `stale     ${a.route} ${a.path} ${a.kind}: nothing differs there now; remove it from approved.json`
       : `stale     data ${a.data} ${a.route ?? "(any route)"}: no card differs that way now; remove it from approved.json`,
   );

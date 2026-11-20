@@ -1,8 +1,9 @@
 //! The commander deal: one page of the merged ranking over every commander a filter matches, the
-//! user's decks and saved commanders leading and popularity ordering what they can't separate.
+//! user's decks and saved commanders leading and popularity ordering what they can't separate. A
+//! filter that sorts orders the page by its sort instead.
 
 use uuid::Uuid;
-use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::card::search_card::card_filter::{CardQuery, CardSortKey, SortDirection};
 use zwipe_core::domain::deck::models::format::Format;
 use zwipe_core::http::contracts::suggestions::{
     HttpCommanderDeal, MAX_DEAL_EXCLUDE, MAX_SUGGESTION_LIMIT, RankedBy,
@@ -44,6 +45,14 @@ impl From<HttpCommanderDeal> for CommanderDeal {
 }
 
 impl CommanderDeal {
+    /// The filter's sort and direction, which order the page in place of the ranking; `None`
+    /// when the filter sets no sort, and the ranking is the order.
+    #[must_use]
+    pub fn sort(&self) -> Option<(CardSortKey, SortDirection)> {
+        let filter = self.filter.as_ref()?;
+        filter.sort().map(|key| (key, filter.direction()))
+    }
+
     /// Whether the ranking spreads across color identities, holding back each identity past its
     /// first few: only when the filter names no color identity, since one named identity has
     /// nothing to spread across.
@@ -125,5 +134,22 @@ mod tests {
         jeskai.set_color_identity_equals(Colors::from([Color::White, Color::Blue, Color::Red]));
         let jeskai = jeskai.build().unwrap();
         assert!(!CommanderDeal::from(deal(Some(jeskai))).caps_identities());
+    }
+    #[test]
+    fn a_filter_s_sort_orders_the_deal_and_no_sort_leaves_the_ranking() {
+        assert_eq!(CommanderDeal::from(deal(None)).sort(), None, "no filter");
+        let mut unsorted = CardQueryBuilder::default();
+        unsorted.set_name_contains("atraxa");
+        let unsorted = unsorted.build().unwrap();
+        assert_eq!(CommanderDeal::from(deal(Some(unsorted))).sort(), None);
+        let mut by_price = CardQueryBuilder::default();
+        by_price.set_name_contains("atraxa");
+        by_price.set_sort(CardSortKey::PriceUsd);
+        by_price.set_direction(SortDirection::Descending);
+        let by_price = by_price.build().unwrap();
+        assert_eq!(
+            CommanderDeal::from(deal(Some(by_price))).sort(),
+            Some((CardSortKey::PriceUsd, SortDirection::Descending))
+        );
     }
 }
