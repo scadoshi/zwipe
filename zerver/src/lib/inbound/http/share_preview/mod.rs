@@ -1,6 +1,6 @@
 //! The generated preview image a shared deck's link unfurls with.
 //!
-//! zwipe.net's `/deck/:token` page points its `og:image` at
+//! The web app's shared deck page, `/<owner>/deck/<slug>/<token>`, points its `og:image` at
 //! `/api/share/deck/{token}/preview.png?v={layout}-{updated_at}`. zerver
 //! draws the image here: [`layout`] turns the shared deck into an SVG in its
 //! owner's theme ([`palette`]), and [`render`] rasterizes it with resvg.
