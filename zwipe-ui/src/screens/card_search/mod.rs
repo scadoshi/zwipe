@@ -25,7 +25,7 @@ use std::time::Duration;
 
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::models::lookup::{LOOKUP_LIMIT, LookupName};
+use zwipe_core::domain::card::models::lookup::{LOOKUP_LIMIT, LookupName, MAX_LOOKUP_NAME_CHARS};
 use zwipe_core::domain::card::slug::{self, CardSlug};
 use zwipe_core::http::contracts::card::HttpCardLookup;
 
@@ -48,6 +48,13 @@ pub const NO_MATCH: &str = "No cards match";
 pub const RATE_LIMITED: &str = "Too many searches, retrying in a moment";
 /// The line when a lookup failed, beside Retry.
 pub const FAILED: &str = "Couldn't search";
+
+/// The most characters the box takes: a bit past the longest card name in print (141), and
+/// within what the lookup keeps ([`MAX_LOOKUP_NAME_CHARS`]).
+pub const MAX_QUERY_CHARS: usize = 150;
+
+// The box never takes more than the lookup keeps.
+const _: () = assert!(MAX_QUERY_CHARS <= MAX_LOOKUP_NAME_CHARS);
 
 /// How many of an answer's cards show as chips under the box, in the answer's order.
 pub const CHIP_LIMIT: usize = 10;

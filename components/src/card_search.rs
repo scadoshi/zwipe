@@ -207,6 +207,7 @@ pub fn CardSearchBar(
                 id: "{input_id}",
                 r#type: "text",
                 placeholder: model::PLACEHOLDER,
+                maxlength: "{model::MAX_QUERY_CHARS}",
                 "aria-label": model::NAME,
                 value: "{query}",
                 autocapitalize: "none",
