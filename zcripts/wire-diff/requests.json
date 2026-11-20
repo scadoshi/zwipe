@@ -261,6 +261,34 @@
    "as": "tester"
   },
   {
+   "name": "commander swipe page 1",
+   "method": "POST",
+   "route": "/api/card/search/commanders",
+   "path": "/api/card/search/commanders",
+   "as": "tester",
+   "body": {
+    "is_commander_in_format": "commander",
+    "legalities_contains_all": ["commander"],
+    "is_token": false,
+    "limit": 25,
+    "offset": 0
+   }
+  },
+  {
+   "name": "commander swipe page 2",
+   "method": "POST",
+   "route": "/api/card/search/commanders",
+   "path": "/api/card/search/commanders",
+   "as": "tester",
+   "body": {
+    "is_commander_in_format": "commander",
+    "legalities_contains_all": ["commander"],
+    "is_token": false,
+    "limit": 25,
+    "offset": 25
+   }
+  },
+  {
    "name": "card",
    "method": "GET",
    "route": "/api/card/{scryfall_data_id}",
