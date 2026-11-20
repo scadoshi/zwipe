@@ -228,7 +228,7 @@ pub static GUIDES: &[Guide] = &[
                 "The deck view shows live stats, charts, and warnings with one-tap fixes. Trim with the remove flow, set a budget or land target, import or export. Each has its own guide below.",
             ),
             Block::Image {
-                file: "getting-started/03-deck-cards.webp",
+                file: "getting-started/03-deck-cards-2.webp",
                 alt: "A built deck's card list: featured commander and MVP images up top, quick add, and the group and filter rows",
                 caption: None,
             },
@@ -488,7 +488,7 @@ pub static GUIDES: &[Guide] = &[
                 "Tap a group header to fold it; Tokens, Lands, Maybeboard, and Sideboard fold too. The last button in the Show row folds every group at once. Collapses last for the visit.",
             ),
             Block::Image {
-                file: "organize-and-browse/02-cards-by-type-collapsed.webp",
+                file: "organize-and-browse/02-cards-by-type-collapsed-2.webp",
                 alt: "A card list grouped by Type with the Creatures section collapsed",
                 caption: None,
             },
@@ -508,7 +508,7 @@ pub static GUIDES: &[Guide] = &[
                 "Quick add at the top of the card list searches by name and adds a result to your mainboard with one tap. It reaches cards you skipped while swiping.",
             ),
             Block::Image {
-                file: "organize-and-browse/03-quick-add-results.webp",
+                file: "organize-and-browse/03-quick-add-results-2.webp",
                 alt: "Quick add results floating over the card list",
                 caption: None,
             },
@@ -822,7 +822,7 @@ pub static GUIDES: &[Guide] = &[
                 "Each column has its own `?`, too.",
             ]),
             Block::Image {
-                file: "playstyle/02-oracle-tag-impact.webp",
+                file: "playstyle/02-oracle-tag-impact-2.webp",
                 alt: "Oracle tags: each tag's Decks, Cards and Impact, the top tag at 100",
                 caption: None,
             },
@@ -927,7 +927,7 @@ pub static GUIDES: &[Guide] = &[
                 "On the Home screen, tap Activity under the counters. Each section has a `?`.",
             ),
             Block::Image {
-                file: "activity/01-heatmap-and-totals.webp",
+                file: "activity/01-heatmap-and-totals-2.webp",
                 alt: "The Activity screen: the counters, a year of days as a heatmap, and Totals for Added, Skipped, Maybeboard and Removed",
                 caption: None,
             },
@@ -941,12 +941,12 @@ pub static GUIDES: &[Guide] = &[
                 "Most skipped lists cards you skip and never add or save, with the skip count and, in an open row, the commanders you skipped it under. Skips are weighed against other players': a card most people pass on needs a lot of skips to show up, one they usually keep needs two.",
             ]),
             Block::Image {
-                file: "activity/02-card-roles.webp",
+                file: "activity/02-card-roles-2.webp",
                 alt: "Card roles with Added picked in the Show row: each role's share of the cards dealt to you",
                 caption: None,
             },
             Block::Image {
-                file: "activity/03-most-skipped.webp",
+                file: "activity/03-most-skipped-2.webp",
                 alt: "Most skipped: cards you keep passing on, each with its skip count",
                 caption: None,
             },
@@ -1209,7 +1209,7 @@ pub static GUIDES: &[Guide] = &[
                 "In a deck's card list, expand a card's row and tap [[star]]. A gold ★ marks the row; tapping [[star]] again frees the slot.",
             ),
             Block::Image {
-                file: "deck-mvps/01-featured-strip.webp",
+                file: "deck-mvps/01-featured-strip-2.webp",
                 alt: "A deck's featured strip: the commander beside three starred MVPs",
                 caption: None,
             },
