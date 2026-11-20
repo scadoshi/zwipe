@@ -454,8 +454,10 @@ pub(crate) fn SuggestedFold(
     } = list;
     // The fold's state, so Show more under the panel hides while it is shut.
     let open = use_signal(|| true);
+    // Show more on its way out, kept until its exit ends.
+    let mut leaving = use_signal(|| false);
     let rows = entries();
-    let more = open() && offers_more(rows.len(), exhausted(), more_used());
+    let more = open() && (leaving() || offers_more(rows.len(), exhausted(), more_used()));
     let line = ranked_by().and_then(deal::ranked_line);
     rsx! {
         // Swipe sits in the list's header, so it says
@@ -501,16 +503,28 @@ pub(crate) fn SuggestedFold(
                 }
             }
         }
-        // Show more sits under the panel, as a chip row sits over one, and deals one page.
+        // Show more sits under the panel, as a chip row sits over one, and deals one page. It
+        // leaves on its exit while the page loads.
         if more {
-            button {
-                r#type: "button",
-                class: "chip card-list-more",
-                onclick: move |_| {
-                    more_used.set(true);
-                    show_more.call(());
+            div {
+                class: if leaving() { "card-list-more card-list-more-leaving" } else { "card-list-more" },
+                onanimationend: move |event: AnimationEvent| {
+                    if ends_leave(&event.animation_name()) {
+                        leaving.set(false);
+                    }
                 },
-                "Show more"
+                div {
+                    button {
+                        r#type: "button",
+                        class: "chip",
+                        onclick: move |_| {
+                            leaving.set(true);
+                            more_used.set(true);
+                            show_more.call(());
+                        },
+                        "Show more"
+                    }
+                }
             }
         }
     }
@@ -520,6 +534,12 @@ pub(crate) fn SuggestedFold(
 /// has not dealt its page since the last fresh deal.
 fn offers_more(rows: usize, exhausted: bool, more_used: bool) -> bool {
     rows > 0 && !exhausted && !more_used
+}
+
+/// Whether `animation` is Show more's exit ending: the fold away, or the fade alone under
+/// reduced motion.
+fn ends_leave(animation: &str) -> bool {
+    matches!(animation, "card-list-more-leave" | "card-list-more-fade")
 }
 
 /// The list's Clear skips dialog and its Swipe select, which starts from the screen's filter.
@@ -578,5 +598,11 @@ mod tests {
             !offers_more(0, false, false),
             "no rows, nothing to show more of"
         );
+    }
+    #[test]
+    fn show_more_goes_when_either_exit_ends_and_not_on_another_animation() {
+        assert!(ends_leave("card-list-more-leave"), "the fold away");
+        assert!(ends_leave("card-list-more-fade"), "the reduced-motion fade");
+        assert!(!ends_leave("row-enter"), "a row easing in under it");
     }
 }
