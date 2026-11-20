@@ -10,7 +10,9 @@
 
 use std::future::Future;
 
+use sqlx::postgres::PgDatabaseError;
 use sqlx::{Acquire, PgTransaction, QueryBuilder, query_as};
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
@@ -225,8 +227,56 @@ async fn upsert_one_in_savepoint(
         }
         Err(e) => {
             savepoint.rollback().await?;
-            Err(e)
+            Err(label_clash(e, tx).await)
         }
+    }
+}
+
+/// The `scryfall_data` columns a clash may name and be looked up by: each one Postgres holds
+/// unique, plus the store ids a clash could plausibly name.
+const CLASH_COLUMNS: &[&str] = &["id", "mtgo_id", "mtgo_foil_id", "arena_id", "tcgplayer_id"];
+
+/// The column and value in a unique violation's detail, `Key (mtgo_id)=(777) already exists.`
+fn clash_of(detail: &str) -> Option<(&str, &str)> {
+    let rest = detail.strip_prefix("Key (")?;
+    let (column, rest) = rest.split_once(")=(")?;
+    let value = rest.strip_suffix(") already exists.")?;
+    Some((column, value))
+}
+
+/// Turns a unique violation into a [`CreateCardError::Clash`] naming the column, its value and
+/// the printing holding it. Any other error, or a detail it can't read, passes through.
+async fn label_clash(error: CreateCardError, tx: &mut PgTransaction<'_>) -> CreateCardError {
+    let CreateCardError::UniqueConstraintViolation(cause) = &error else {
+        return error;
+    };
+    let detail = cause
+        .downcast_ref::<sqlx::Error>()
+        .and_then(sqlx::Error::as_database_error)
+        .and_then(|db| db.try_downcast_ref::<PgDatabaseError>())
+        .and_then(PgDatabaseError::detail)
+        .map(ToOwned::to_owned);
+    let Some((column, value)) = detail.as_deref().and_then(clash_of) else {
+        return error;
+    };
+    let Some(&column) = CLASH_COLUMNS.iter().find(|c| **c == column) else {
+        return error;
+    };
+    // The column comes from CLASH_COLUMNS, never from the error text.
+    let sql = format!("SELECT id, name FROM scryfall_data WHERE {column}::text = $1 LIMIT 1");
+    let holder: Option<(Uuid, String)> = sqlx::query_as(sqlx::AssertSqlSafe(sql))
+        .bind(value)
+        .fetch_optional(&mut **tx)
+        .await
+        .ok()
+        .flatten();
+    CreateCardError::Clash {
+        column: column.to_string(),
+        value: value.to_string(),
+        holder: holder.map_or_else(
+            || "another printing".to_string(),
+            |(id, name)| format!("{name} ({id})"),
+        ),
     }
 }
 
@@ -364,5 +414,23 @@ impl BatchDeltaUpsertWithTx for &[ScryfallData] {
             }
         }
         Ok(cards)
+    }
+}
+
+#[cfg(test)]
+mod clash_tests {
+    use super::clash_of;
+
+    #[test]
+    fn a_unique_violation_detail_reads_as_its_column_and_value() {
+        assert_eq!(
+            clash_of("Key (mtgo_id)=(777) already exists."),
+            Some(("mtgo_id", "777"))
+        );
+        assert_eq!(
+            clash_of("Key (id)=(5a7e0000-0000-0000-0000-000000000002) already exists."),
+            Some(("id", "5a7e0000-0000-0000-0000-000000000002"))
+        );
+        assert_eq!(clash_of("Failing row contains (...)."), None);
     }
 }

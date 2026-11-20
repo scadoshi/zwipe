@@ -74,6 +74,13 @@ async fn a_bad_card_in_a_batch_leaves_the_rest_of_the_night_upserted(pool: sqlx:
     assert_eq!(metrics.error_count(), 1, "the bad printing is recorded");
     let errors = format!("{:?}", metrics.errors());
     assert!(errors.contains("Savepoint Card 2"), "{errors}");
+    let holder = Uuid::from_u128(0x5a7e_0000);
+    assert!(
+        errors.contains(&format!(
+            "mtgo_id 777 is already held by Savepoint Card 0 ({holder})"
+        )),
+        "the error names the clashing column and the card holding it: {errors}"
+    );
 }
 
 #[sqlx::test]
