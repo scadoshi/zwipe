@@ -4245,11 +4245,56 @@ nav:has(> .card-search-header:focus-within) > :not(.card-search-nav, .nav-panel)
     border-radius: 0.75rem;
 }
 
-/* ---- Card stats ----
-   The card page's stats widgets (CardStatsWidget), in the Oracle tags
-   table's grammar. */
+/* ---- Data table (table.data-table) ----
+   A regular table any screen can use: a header row of plain column names
+   in the muted ink, then rows of cells under thin rules, the first and last
+   cells on the panel's own edge padding so the rules run edge to edge.
+   Numbers take .data-table-num: right-aligned, in figures of one width. The
+   card page's stats panels (CardStatsWidget) are its first users. */
 
-.card-stats-table {
-    row-gap: var(--space-2);
-    padding: var(--space-3);
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.data-table :is(th, td) {
+    padding: var(--space-1) var(--space-2);
+    font-weight: 400;
+    text-align: left;
+}
+
+.data-table :is(th, td):first-child {
+    padding-left: var(--space-4);
+}
+
+.data-table :is(th, td):last-child {
+    padding-right: var(--space-4);
+}
+
+.data-table thead th {
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
+.data-table tbody tr {
+    border-top: 1px solid var(--border-secondary);
+}
+
+/* A loading table is all ghost: a skeleton bar on each cell's text line. */
+.data-table .data-table-ghost {
+    display: inline-block;
+    height: 0.8em;
+    vertical-align: middle;
+}
+
+/* Number columns share one width, so tables stacked on a page line their
+   columns up. */
+.data-table .data-table-num {
+    width: 4.5rem;
+    text-align: right;
+    white-space: nowrap;
 }

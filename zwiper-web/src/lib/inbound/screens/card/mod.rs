@@ -9,14 +9,12 @@
 //! printing. `?open=send-to` opens Send to once the card shows: a signed-out Send to goes to
 //! Login and comes back with it.
 
-mod stats;
-
 use std::collections::HashSet;
 
 use components::icons::{DockIcon, SEND, ShareIcon};
 use components::{
-    CardDetailsPanel, CardDetailsPanelSkeleton, CardResultsGrid, FlippableCardImage, LoadFailed,
-    SendTo, USER_PLUS, focus_card_search,
+    CardDetailsPanel, CardDetailsPanelSkeleton, CardResultsGrid, CardStatsWidget,
+    FlippableCardImage, LoadFailed, SendTo, USER_PLUS, focus_card_search,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -32,7 +30,6 @@ use zwipe_ui::screens::card_lookup::{
 };
 use zwipe_ui::telemetry::vocabulary::Screen;
 
-use self::stats::StatsWidget;
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::send_to::{SendToHost, use_send_to};
 use crate::inbound::chrome::shortcuts::{CardPageKey, ShortcutsScreen, card_page_key};
@@ -247,7 +244,7 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
                                 };
                                 rsx! {
                                     for widget in card_lookup::stats::widgets(loaded.as_ref(), leads) {
-                                        StatsWidget { key: "{widget.title}", widget, folded: stats_folded }
+                                        CardStatsWidget { key: "{widget.title}", widget, folded: stats_folded }
                                     }
                                 }
                             }
