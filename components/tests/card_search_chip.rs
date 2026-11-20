@@ -125,3 +125,16 @@ fn the_header_s_box_waits_unseen_but_focusable_and_opens_across_the_header() {
         "{drop}"
     );
 }
+
+#[test]
+fn an_open_header_search_takes_taps_on_its_chips() {
+    assert!(
+        rule(".card-search-nav.card-search-header").contains("pointer-events: none;"),
+        "the header's bar lets taps through where nothing of it shows"
+    );
+    let open = rule(".card-search-header .card-search-slot:focus-within .card-search-drop");
+    assert!(
+        open.contains("pointer-events: auto;"),
+        "the chips under an open header search take taps: {open}"
+    );
+}

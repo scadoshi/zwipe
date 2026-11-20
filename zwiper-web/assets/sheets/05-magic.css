@@ -4184,6 +4184,11 @@ nav:has(> .card-search-header:focus-within) > :not(.card-search-nav, .nav-panel)
     border-radius: 0 0 0.75rem 0.75rem;
 }
 
+/* The bar lets taps through, so the open drop takes them back for its chips. */
+.card-search-header .card-search-slot:focus-within .card-search-drop {
+    pointer-events: auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .card-search-header .card-search-label,
     .card-search-header:focus-within .card-search-label,
