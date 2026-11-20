@@ -2223,6 +2223,32 @@ body {
     margin: 0;
 }
 
+/* The Suggested console's Show row keeps a chip row's gap over the list, as
+   the Maybeboard's rows beside it do. */
+.web-suggested > .deck-controls {
+    margin-bottom: var(--space-2);
+}
+
+/* A card list's Show more sits under its panel as a chip row sits over one:
+   a chip row's gap between them, and the panel's own gap to what follows. */
+.card-group:has(+ .card-list-more) {
+    margin-bottom: var(--space-2);
+}
+
+.card-list-more {
+    display: flex;
+    width: fit-content;
+    margin: 0 0 var(--panel-gap);
+}
+
+/* Stacked under the Maybeboard, the Suggested column keeps a panel gap over
+   its Show row, as Playstyle's chip rows keep under the panel above them. */
+@media (max-width: 899px) {
+    .web-commanders-suggested {
+        margin-top: var(--panel-gap);
+    }
+}
+
 /* The app's column: the list's controls and the list. A wide window gives
    it the page's width, the list and Danger zone as full panels. */
 .web-maybeboard,

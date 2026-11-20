@@ -378,7 +378,7 @@ pub(crate) fn HardPassesPanel(
     rsx! {
         CardListFold {
             title: model::PASSES_TITLE,
-            actions: rsx! {
+            hint: rsx! {
                 InfoButton { topic: HintTopic::HardPasses }
             },
             if let Some(line) = line {
