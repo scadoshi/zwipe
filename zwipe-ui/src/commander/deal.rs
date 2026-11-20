@@ -8,7 +8,9 @@
 //! many has no next page.
 
 use uuid::Uuid;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::models::format::Format;
 use zwipe_core::http::contracts::suggestions::{
     HttpCommanderDeal, HttpCommanderSuggestion, MAX_DEAL_EXCLUDE, RankedBy,
@@ -104,6 +106,29 @@ pub fn oracle_ids(suggestions: &[HttpCommanderSuggestion]) -> Vec<Uuid> {
         .iter()
         .filter_map(|s| s.card.scryfall_data.oracle_id)
         .collect()
+}
+
+/// `saved` narrowed to the commanders that lead a deck in `door`'s format (Commander for
+/// Suggested) by the format's commander rules, are legal in it where the door has a deck format,
+/// as the deal asks the server for, and that `filter` matches. A filter that doesn't build
+/// narrows by the format alone.
+#[must_use]
+pub fn maybeboard_matching(saved: Vec<Card>, filter: &CardQueryBuilder, door: Door) -> Vec<Card> {
+    let format = match door {
+        Door::Suggested => Format::Commander,
+        Door::DeckCreation(format) => format,
+    };
+    let mut narrowed = door_filter(door, filter);
+    narrowed.set_is_commander_in_format(format);
+    let criteria = narrowed.build_criteria().or_else(|_| {
+        let mut format_only = door_filter(door, &CardQueryBuilder::new());
+        format_only.set_is_commander_in_format(format);
+        format_only.build_criteria()
+    });
+    match criteria {
+        Ok(criteria) => Cards::from(saved).matching(&criteria).into(),
+        Err(_) => saved,
+    }
 }
 
 #[cfg(test)]

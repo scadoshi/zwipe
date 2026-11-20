@@ -51,7 +51,6 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 use zwipe_ui::commander::deal::{self, Door};
@@ -245,28 +244,6 @@ async fn deal_page(
         .ok_or(())
 }
 
-/// `saved` narrowed to the commanders that lead a deck in `door`'s format (Commander for
-/// Suggested) by the format's commander rules, are legal in it where the door has a deck format,
-/// as the deal asks the server for, and that `filter` matches. A filter that doesn't build
-/// narrows by the format alone.
-fn maybeboard_matching(saved: Vec<Card>, filter: &CardQueryBuilder, door: Door) -> Vec<Card> {
-    let format = match door {
-        Door::Suggested => Format::Commander,
-        Door::DeckCreation(format) => format,
-    };
-    let mut narrowed = deal::door_filter(door, filter);
-    narrowed.set_is_commander_in_format(format);
-    let criteria = narrowed.build_criteria().or_else(|_| {
-        let mut format_only = deal::door_filter(door, &CardQueryBuilder::new());
-        format_only.set_is_commander_in_format(format);
-        format_only.build_criteria()
-    });
-    match criteria {
-        Ok(criteria) => Cards::from(saved).matching(&criteria).into(),
-        Err(_) => saved,
-    }
-}
-
 /// A Maybe load: how many commanders are saved, and the ones `filter` and the door's format let
 /// through. `Err(())` when it didn't load.
 type MaybeReply = Result<(usize, Vec<Card>), ()>;
@@ -281,18 +258,18 @@ async fn maybeboard_pile(authed: Authed, filter: &CardQueryBuilder, door: Door) 
         .await
         .ok_or(())?;
     let count = saved.len();
-    Ok((count, maybeboard_matching(saved, filter, door)))
+    Ok((count, deal::maybeboard_matching(saved, filter, door)))
 }
 
 /// The line Maybe's empty card carries, as the commander maybeboard's own list words it: the
 /// failed load, nothing saved, or saved commanders none of which pass. `None` with cards to swipe.
 fn maybe_note(reply: &MaybeReply) -> Option<&'static str> {
-    match reply {
-        Err(()) => Some(maybeboard::LOAD_FAILED),
-        Ok((0, _)) => Some(maybeboard::NO_COMMANDERS),
-        Ok((_, matched)) if matched.is_empty() => Some(maybeboard::NO_MATCH),
-        Ok(_) => None,
-    }
+    maybeboard::pile_note(
+        reply
+            .as_ref()
+            .ok()
+            .map(|(saved, matched)| (*saved, matched.len())),
+    )
 }
 
 /// The swipes `mode` takes from `source`, and whether left skips a commander for a week: the
@@ -1152,7 +1129,10 @@ mod tests {
             "Suggested only swipes its deal"
         );
         assert_eq!(
-            from_door(SwipeMode::Commanders(Door::DeckCreation(Format::Brawl)), false),
+            from_door(
+                SwipeMode::Commanders(Door::DeckCreation(Format::Brawl)),
+                false
+            ),
             Some(Door::DeckCreation(Format::Brawl))
         );
         assert_eq!(
@@ -1212,20 +1192,20 @@ mod tests {
         let name = saved.scryfall_data.name.clone();
         let door = Door::Suggested;
         assert_eq!(
-            maybeboard_matching(vec![saved.clone()], &CardQueryBuilder::new(), door).len(),
+            deal::maybeboard_matching(vec![saved.clone()], &CardQueryBuilder::new(), door).len(),
             1,
             "no filter keeps every saved commander"
         );
         let mut miss = CardQueryBuilder::new();
         miss.set_name_contains("zzzzqqq");
         assert_eq!(
-            maybeboard_matching(vec![saved.clone()], &miss, door).len(),
+            deal::maybeboard_matching(vec![saved.clone()], &miss, door).len(),
             0,
             "a name it lacks drops it"
         );
         let mut hit = CardQueryBuilder::new();
         hit.set_name_contains(name);
-        assert_eq!(maybeboard_matching(vec![saved], &hit, door).len(), 1);
+        assert_eq!(deal::maybeboard_matching(vec![saved], &hit, door).len(), 1);
     }
 
     #[test]
@@ -1233,19 +1213,21 @@ mod tests {
         let vehicle = commander("Legendary Artifact — Vehicle");
         let none = CardQueryBuilder::new();
         assert_eq!(
-            maybeboard_matching(vec![vehicle.clone()], &none, Door::Suggested).len(),
+            deal::maybeboard_matching(vec![vehicle.clone()], &none, Door::Suggested).len(),
             1,
             "a legendary vehicle with power and toughness leads in Commander"
         );
         assert_eq!(
-            maybeboard_matching(vec![vehicle], &none, Door::DeckCreation(Format::Brawl)).len(),
+            deal::maybeboard_matching(vec![vehicle], &none, Door::DeckCreation(Format::Brawl))
+                .len(),
             0,
             "but not in Brawl"
         );
         let mut creature = commander("Legendary Creature — Human Wizard");
         creature.scryfall_data.legalities.brawl = Some(LegalityKind::Legal);
         assert_eq!(
-            maybeboard_matching(vec![creature], &none, Door::DeckCreation(Format::Brawl)).len(),
+            deal::maybeboard_matching(vec![creature], &none, Door::DeckCreation(Format::Brawl))
+                .len(),
             1
         );
     }
@@ -1259,13 +1241,14 @@ mod tests {
         meren.scryfall_data.legalities.standardbrawl = Some(LegalityKind::NotLegal);
         let none = CardQueryBuilder::new();
         assert_eq!(
-            maybeboard_matching(vec![meren.clone()], &none, Door::Suggested).len(),
+            deal::maybeboard_matching(vec![meren.clone()], &none, Door::Suggested).len(),
             1,
             "Suggested has no deck format to hold it to"
         );
         for format in [Format::Brawl, Format::StandardBrawl] {
             assert_eq!(
-                maybeboard_matching(vec![meren.clone()], &none, Door::DeckCreation(format)).len(),
+                deal::maybeboard_matching(vec![meren.clone()], &none, Door::DeckCreation(format))
+                    .len(),
                 0,
                 "{format:?}"
             );
@@ -1273,7 +1256,7 @@ mod tests {
         let mut legal = commander("Legendary Creature — Human Wizard");
         legal.scryfall_data.legalities.brawl = Some(LegalityKind::Legal);
         assert_eq!(
-            maybeboard_matching(vec![legal], &none, Door::DeckCreation(Format::Brawl)).len(),
+            deal::maybeboard_matching(vec![legal], &none, Door::DeckCreation(Format::Brawl)).len(),
             1
         );
     }

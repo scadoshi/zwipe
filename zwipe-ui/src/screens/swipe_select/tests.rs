@@ -27,6 +27,7 @@ fn open(mode: Mode) -> Action {
         filter: CardQueryBuilder::new(),
         pile: SuggestedPile::default(),
         excluded: HashSet::new(),
+        from: false,
     }
 }
 
@@ -121,6 +122,7 @@ fn suggested(pile: SuggestedPile) -> State {
         filter: CardQueryBuilder::new(),
         pile,
         excluded: HashSet::new(),
+        from: false,
     });
     assert_eq!(
         effects,
@@ -136,6 +138,7 @@ fn toast(effect: &Effect) -> &Toast {
         other @ (Effect::OfferHint(_)
         | Effect::SearchCommanders { .. }
         | Effect::LoadMore { .. }
+        | Effect::LoadMaybeboard { .. }
         | Effect::DismissCommander(_)
         | Effect::UndismissCommander(_)
         | Effect::AddMaybeboardCard { .. }
@@ -261,6 +264,7 @@ fn opening_with_no_mode_deals_nothing() {
         filter: CardQueryBuilder::new(),
         pile: SuggestedPile::default(),
         excluded: HashSet::new(),
+        from: false,
     });
     assert_eq!(effects, vec![Effect::OfferHint(OneTimeHint::SwipeSelect)]);
     assert_eq!(state.status(), Status::Empty);
@@ -360,6 +364,7 @@ fn excluded_oracle_ids_stay_out_of_the_pile() {
         filter: CardQueryBuilder::new(),
         pile: SuggestedPile::default(),
         excluded: pile[0].scryfall_data.oracle_id.into_iter().collect(),
+        from: false,
     }));
     let _ = state.update(Action::Found {
         ticket,
@@ -377,6 +382,7 @@ fn a_first_page_all_excluded_pulls_the_next() {
         filter: CardQueryBuilder::new(),
         pile: SuggestedPile::default(),
         excluded: pile[0].scryfall_data.oracle_id.into_iter().collect(),
+        from: false,
     }));
     let effects = state.update(Action::Found {
         ticket,
@@ -399,6 +405,7 @@ fn a_partner_pile_with_its_one_card_picked_says_it_is_empty() {
         filter: CardQueryBuilder::new(),
         pile: SuggestedPile::default(),
         excluded: toothy[0].scryfall_data.oracle_id.into_iter().collect(),
+        from: false,
     }));
     let more = ticket_of(&state.update(Action::Found {
         ticket,
@@ -426,6 +433,7 @@ fn an_empty_filtered_pile_blames_the_filter() {
         filter,
         pile: SuggestedPile::default(),
         excluded: HashSet::new(),
+        from: false,
     }));
     let _ = state.update(Action::Found {
         ticket,
@@ -768,6 +776,7 @@ fn a_suggested_reopen_deals_the_host_s_pile_afresh() {
         filter: CardQueryBuilder::new(),
         pile: pile_of(vec![suggestion("Talrand")]),
         excluded: HashSet::new(),
+        from: false,
     });
     assert_eq!(effects, Vec::new());
     assert_eq!(names(state.window()), ["Talrand"]);
@@ -907,4 +916,128 @@ fn the_app_s_commander_swipe_holds_to_the_deck_s_format_legality() {
         builder.legalities_contains_all(),
         Some(["brawl".to_owned()].as_slice())
     );
+}
+
+/// `Open` for the Commander maybeboard's swipe: Commander's commanders, with the From chip.
+fn open_with_from() -> Action {
+    Action::Open {
+        mode: Some(Mode::Commander(Format::Commander)),
+        filter: CardQueryBuilder::new(),
+        pile: SuggestedPile::default(),
+        excluded: HashSet::new(),
+        from: true,
+    }
+}
+
+/// A commander that leads a Commander deck.
+fn legend(name: &str) -> Card {
+    let mut card = card(name);
+    card.scryfall_data.type_line = Some("Legendary Creature — Elf Druid".to_owned());
+    card
+}
+
+/// The ticket of the one maybeboard load among `effects`.
+fn maybe_load_of(effects: &[Effect]) -> Ticket {
+    let loads: Vec<Ticket> = effects
+        .iter()
+        .filter_map(|e| {
+            if let Effect::LoadMaybeboard { ticket } = e {
+                Some(*ticket)
+            } else {
+                None
+            }
+        })
+        .collect();
+    let [one] = loads.as_slice() else {
+        panic!("one maybeboard load: {effects:?}");
+    };
+    *one
+}
+
+#[test]
+fn the_maybeboard_swipe_starts_on_search_and_only_it_has_from() {
+    let mut state = State::new();
+    let effects = state.update(open_with_from());
+    assert_eq!(state.source(), Some(Source::Search));
+    let _ = ticket_of(&effects);
+    let mut picking = State::new();
+    let _ = picking.update(open(Mode::Commander(Format::Commander)));
+    assert_eq!(picking.source(), None, "a command-zone pick has no From");
+    assert_eq!(picking.update(Action::PickSource), Vec::new());
+}
+
+#[test]
+fn from_switches_to_the_saved_commanders_matched_for_commander() {
+    let mut state = State::new();
+    let _ = state.update(open_with_from());
+    let ticket = maybe_load_of(&state.update(Action::PickSource));
+    assert_eq!(state.source(), Some(Source::Maybeboard));
+    assert_eq!(state.status(), Status::Loading);
+    let effects = state.update(Action::MaybeboardLoaded {
+        ticket,
+        saved: vec![legend("Meren of Clan Nel Toth"), card("Llanowar Elves")],
+    });
+    assert!(effects.is_empty(), "{effects:?}");
+    assert_eq!(
+        names(state.window()),
+        ["Meren of Clan Nel Toth"],
+        "only commanders"
+    );
+    assert!(!state.can_save(), "a saved commander can't be saved again");
+    let skipped = state.update(Action::Skip);
+    assert!(
+        !skipped
+            .iter()
+            .any(|e| matches!(e, Effect::LoadMore { .. } | Effect::DismissCommander(_))),
+        "the saved pile is whole and a skip only passes: {skipped:?}"
+    );
+}
+
+#[test]
+fn the_saved_pile_says_why_it_is_empty() {
+    let mut state = State::new();
+    let _ = state.update(open_with_from());
+    let ticket = maybe_load_of(&state.update(Action::PickSource));
+    let _ = state.update(Action::MaybeboardLoaded {
+        ticket,
+        saved: Vec::new(),
+    });
+    assert_eq!(state.message().as_deref(), Some(maybeboard::NO_COMMANDERS));
+    let ticket = maybe_load_of(&state.update(Action::Refresh(CardQueryBuilder::new())));
+    let _ = state.update(Action::MaybeboardLoaded {
+        ticket,
+        saved: vec![card("Llanowar Elves")],
+    });
+    assert_eq!(state.message().as_deref(), Some(maybeboard::NO_MATCH));
+    let ticket = maybe_load_of(&state.update(Action::Refresh(CardQueryBuilder::new())));
+    let _ = state.update(Action::Failed { ticket });
+    assert_eq!(state.message().as_deref(), Some(maybeboard::LOAD_FAILED));
+    assert_eq!(
+        state.status(),
+        Status::Empty,
+        "the line shows in the card's place"
+    );
+}
+
+#[test]
+fn each_source_keeps_its_own_filter() {
+    let mut state = State::new();
+    let _ = state.update(open_with_from());
+    let mut search_filter = CardQueryBuilder::new();
+    search_filter.set_name_contains("meren");
+    let _ = state.update(Action::Filter(search_filter.clone()));
+    let _ = state.update(Action::PickSource);
+    assert_eq!(
+        *state.filter(),
+        CardQueryBuilder::new(),
+        "Maybe starts unfiltered"
+    );
+    let back = state.update(Action::PickSource);
+    assert_eq!(
+        *state.filter(),
+        search_filter,
+        "Search gets its filter back"
+    );
+    assert_eq!(state.source(), Some(Source::Search));
+    let _ = ticket_of(&back);
 }

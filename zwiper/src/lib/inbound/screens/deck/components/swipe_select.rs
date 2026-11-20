@@ -25,8 +25,8 @@ use std::collections::{HashMap, HashSet};
 use components::hint::ContentHintDialog;
 use components::icons::{self, EyeIcon};
 use components::{
-    BottomSheet, DockAction, DockFilter, ToastOptions, Toasts, spawn_in_order, use_overlay_back,
-    use_toast,
+    BottomSheet, Chip, DockAction, DockFilter, ToastOptions, Toasts, spawn_in_order,
+    use_overlay_back, use_toast,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -37,6 +37,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::query::CardQuery;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::hint::{SwipeSelectMode, one_time};
+use zwipe_ui::screens::add_cards;
 use zwipe_ui::screens::swipe_select::{self as model, Action, Destination, Effect, State, Status};
 pub(crate) use zwipe_ui::screens::swipe_select::{Mode as SwipeMode, SuggestedPile};
 use zwipe_ui::stack;
@@ -111,6 +112,7 @@ impl Driver {
             Effect::LoadMore { ticket, query } => {
                 self.search(ticket, *query, "zwipe select load-more failed");
             }
+            Effect::LoadMaybeboard { ticket } => self.load_maybeboard(ticket),
             Effect::DismissCommander(oracle_id) => {
                 // Quiet like a deck skip: the pile already moved on, and a
                 // failed post only means it comes back sooner.
@@ -208,6 +210,25 @@ impl Driver {
                 Ok(cards) => Action::Found { ticket, cards },
                 Err(e) => {
                     tracing::warn!("{failure}: {e}");
+                    Action::Failed { ticket }
+                }
+            });
+        });
+    }
+
+    /// Loads the user's commander maybeboard and answers with [`Action::MaybeboardLoaded`], or
+    /// with [`Action::Failed`] after logging the failure.
+    fn load_maybeboard(self, ticket: Ticket) {
+        let client = self.client;
+        spawn(async move {
+            let reply = match self.fresh().await {
+                Ok(session) => client().fetch_commander_maybeboard(&session).await,
+                Err(e) => Err(e),
+            };
+            self.dispatch(match reply {
+                Ok(saved) => Action::MaybeboardLoaded { ticket, saved },
+                Err(e) => {
+                    tracing::warn!("swipe select maybeboard load failed: {e}");
                     Action::Failed { ticket }
                 }
             });
@@ -336,6 +357,7 @@ pub(crate) fn SwipeSelect(
             filter,
             pile,
             excluded,
+            from: starts_deck,
         });
     });
 
@@ -372,6 +394,17 @@ pub(crate) fn SwipeSelect(
         filter_reset_counter.set(counter);
         let filter = filter_builder.peek().clone();
         driver.dispatch(Action::Refresh(filter));
+    };
+
+    // The From chip: the model parks this source's filter and deals the other, and the filter
+    // sheet shows the filter it took back, its sections reset to it.
+    let mut pick_source = move || {
+        driver.dispatch(Action::PickSource);
+        let taken = driver.model.peek().filter().clone();
+        filter_builder.set(taken);
+        let counter = filter_reset_counter().wrapping_add(1);
+        searched_counter.set(counter);
+        filter_reset_counter.set(counter);
     };
 
     // Stage every user-set filter back to the default (all colors, the
@@ -428,11 +461,49 @@ pub(crate) fn SwipeSelect(
         SwipeSelectMode::Picking(noun)
     };
     let title = hint_mode.title();
+    let source = driver.model.read().source();
     let mut directions = vec![Direction::Left, Direction::Right, Direction::Down];
     if maybe_enabled {
         directions.push(Direction::Up);
     }
     let swipe_config = SwipeConfig::new(directions, SWIPE_DISTANCE_PX, SWIPE_SPEED_PX_PER_MS);
+
+    let dock = rsx! {
+                div { class: if source.is_some() { "action-dock" } else { "action-dock action-dock-right" },
+                    if has_suggested_filter {
+                        DockFilter {
+                            label: model::FILTER,
+                            dot: has_suggested_identity,
+                            onclick: move |()| suggested_filter_open.set(true),
+                        }
+                    } else if !suggested {
+                        // Popularity order is this screen's default (no
+                        // sort), so any user filter or explicit sort lights
+                        // the dot.
+                        DockFilter {
+                            label: model::FILTER,
+                            dot: model::filter_lit(&filter_builder.read()),
+                            onclick: move |()| filters_overlay_open.set(true),
+                        }
+                    }
+                    DockAction {
+                        label: model::REFRESH,
+                        icon: icons::REFRESH,
+                        onclick: move |()| refresh(),
+                    }
+                    span { class: "action-dock-divider" }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Card details",
+                        disabled: !has_cards,
+                        onclick: move |_| {
+                            let mut open = show_details;
+                            open.toggle();
+                        },
+                        EyeIcon {}
+                    }
+                }
+    };
 
     rsx! {
         div { class: "{screen_class}", style: layer().map(|z| format!("--overlay-z: {z};")),
@@ -487,39 +558,18 @@ pub(crate) fn SwipeSelect(
                 // Filter, refresh and card details as the action dock. The
                 // suggested ranking filters by the host's Show chips alone; a
                 // chosen identity lights the dot.
-                div { class: "action-dock action-dock-right",
-                    if has_suggested_filter {
-                        DockFilter {
-                            label: model::FILTER,
-                            dot: has_suggested_identity,
-                            onclick: move |()| suggested_filter_open.set(true),
+                // The Commander maybeboard's swipe has From on the dock's left, as Add does: one
+                // chip naming the pile, a tap switching to the other.
+                if let Some(source) = source {
+                    div { class: "swipe-bottom-row",
+                        div { class: "swipe-bottom-chips",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "{add_cards::FROM}" }
+                            Chip { selected: true, onclick: move |_| pick_source(), "{source.label()}" }
                         }
-                    } else if !suggested {
-                        // Popularity order is this screen's default (no
-                        // sort), so any user filter or explicit sort lights
-                        // the dot.
-                        DockFilter {
-                            label: model::FILTER,
-                            dot: model::filter_lit(&filter_builder.read()),
-                            onclick: move |()| filters_overlay_open.set(true),
-                        }
+                        {dock}
                     }
-                    DockAction {
-                        label: model::REFRESH,
-                        icon: icons::REFRESH,
-                        onclick: move |()| refresh(),
-                    }
-                    span { class: "action-dock-divider" }
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": "Card details",
-                        disabled: !has_cards,
-                        onclick: move |_| {
-                            let mut open = show_details;
-                            open.toggle();
-                        },
-                        EyeIcon {}
-                    }
+                } else {
+                    {dock}
                 }
 
                 // Root-mounted (siblings of the ActionBar) so the bottom sheets
