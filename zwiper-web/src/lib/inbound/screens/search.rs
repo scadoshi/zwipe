@@ -5,8 +5,10 @@
 //!
 //! On a keyboard the deck page's cursor walks the grid as laid out
 //! ([`use_card_grid_cursor`]), Enter opens the cursor's card, and the card keys act on it, else
-//! on the hovered card: `d` its details, `p` its Printings, Shift+P its Send to and `v` its other
-//! face. Shift+H lists them.
+//! on the hovered card, else on the card whose details are open: `d` opens or closes its details
+//! in the deck page's Stacks drawer ([`DeckStackDrawer`]), a side drawer with no scrim that the
+//! cursor keys pass through and that swaps to each card the cursor lands on; `i` its image, `p`
+//! its Printings, Shift+P its Send to and `v` its other face. Shift+H lists them.
 
 use std::collections::HashMap;
 
@@ -14,8 +16,8 @@ use components::deck_cursor::use_card_grid_cursor;
 use components::hint::ContentHintDialog;
 use components::keys::use_page_keys_through;
 use components::{
-    CardResultsGrid, CardResultsGridGhost, LoadFailed, MeldSource, MeldToggle, focus_card_search,
-    next_card_face,
+    CardResultsGrid, CardResultsGridGhost, DeckRowHost, DeckStackDrawer, LoadFailed, MeldSource,
+    MeldToggle, StackDetails, focus_card_search, next_card_face, use_stack_details,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -23,17 +25,20 @@ use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
+use zwipe_ui::deck_cards::stacks::Reveal;
 use zwipe_ui::hint::search_results as hint_copy;
 use zwipe_ui::screens::card_results::{self, Action, Effect, State, Status};
 
-use crate::inbound::cards::card_info::{
-    CardDetailsSheet, DETAILS_DRAWER_CLASS, THROUGH_DRAWER_KEYS,
-};
+use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::card_search::{lookup_cards, route_of};
-use crate::inbound::cards::printing_sheet::PrintingSheet;
-use crate::inbound::cards::row_keys::key_card_js;
+use crate::inbound::cards::row_keys::{ROW_KEYS, key_card_js};
 use crate::inbound::cards::send_to::{SendToHost, use_send_to};
-use crate::inbound::chrome::shortcuts::{SearchResultsKey, ShortcutsScreen, search_results_key};
+use crate::inbound::cards::stack_view::use_stack_details_sync;
+use crate::inbound::chrome::shortcuts::{
+    STACK_DETAILS_CLASS, SearchResultsKey, ShortcutsScreen, search_results_key,
+};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
@@ -99,22 +104,39 @@ pub fn Search(q: String) -> Element {
     let send_to = use_send_to();
     // The face each result shows, which `v` and the details drawer's Flip turn.
     let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
-    // The card whose details or Printings are open, from a key.
-    let mut details_card: Signal<Option<Card>> = use_signal(|| None);
-    let mut details_open = use_signal(|| false);
-    let mut printings_card: Signal<Option<Card>> = use_signal(|| None);
-    let mut printings_open = use_signal(|| false);
+    // The open card's details, in the deck page's Stacks drawer.
+    let reveal = use_signal(Reveal::default);
+    let details_open = use_signal(|| false);
+    let details = use_stack_details(reveal, details_open);
+    let listed = use_memo(move || {
+        driver
+            .model
+            .read()
+            .cards()
+            .iter()
+            .map(|c| c.scryfall_data.id)
+            .collect::<Vec<Uuid>>()
+    });
+    use_stack_details_sync(reveal, details_open, listed);
+    // The image preview and the Printings, to look at only.
+    let overlays = use_card_overlays();
+    let CardOverlays {
+        mut preview,
+        mut printing,
+    } = overlays;
     let mut hint_open = use_signal(|| false);
     let navigator = driver.navigator;
     let on_key = use_callback(
         move |(pressed, card): (SearchResultsKey, Card)| match pressed {
-            SearchResultsKey::Details => {
-                details_card.set(Some(card));
-                details_open.set(true);
-            }
-            SearchResultsKey::Printings => {
-                printings_card.set(Some(card));
-                printings_open.set(true);
+            SearchResultsKey::Details => details.click(card.scryfall_data.id),
+            SearchResultsKey::Printings => printing.set(Some(card)),
+            SearchResultsKey::Image => {
+                let face = faces
+                    .peek()
+                    .get(&card.scryfall_data.id)
+                    .copied()
+                    .unwrap_or(0);
+                preview.set(Some((card.scryfall_data, face)));
             }
             SearchResultsKey::SendTo => {
                 if signed_in() {
@@ -135,6 +157,23 @@ pub fn Search(q: String) -> Element {
     let cards = state.cards().to_vec();
     let title = state.title();
     drop(state);
+    let rows: Vec<RowInfo> = cards
+        .iter()
+        .map(|card| RowInfo {
+            card: card.clone(),
+            qty: 1,
+            kind: RowKind::Main { mvp: false },
+        })
+        .collect();
+    let host = DeckRowHost {
+        on_image: Some(Callback::new(move |shown: (ScryfallData, usize)| {
+            preview.set(Some(shown));
+        })),
+        on_printing: None,
+        on_view_printing: Some(Callback::new(move |card: Card| printing.set(Some(card)))),
+        describe_tag: None,
+        on_examples: None,
+    };
 
     let body = match status {
         Status::Several => rsx! {
@@ -142,8 +181,7 @@ pub fn Search(q: String) -> Element {
                 SearchResultsKeys {
                     model: driver.model,
                     faces,
-                    details_open,
-                    details_card,
+                    details,
                     on_key,
                 }
                 CardResultsGrid {
@@ -185,34 +223,17 @@ pub fn Search(q: String) -> Element {
             on_hint: move |()| hint_open.set(true),
             {body}
         }
-        if let Some(card) = details_card() {
-            CardDetailsSheet {
-                open: details_open,
-                face: faces.read().get(&card.scryfall_data.id).copied().unwrap_or(0),
-                on_face_change: {
-                    let id = card.scryfall_data.id;
-                    let mut faces = faces;
-                    move |next: usize| {
-                        faces.write().insert(id, next);
-                    }
-                },
-                on_printings: {
-                    let card = card.clone();
-                    move |()| {
-                        printings_card.set(Some(card.clone()));
-                        printings_open.set(true);
-                    }
-                },
-                card,
-            }
+        // The open card's details, the deck page's Stacks drawer: no scrim, and the cursor keys
+        // pass through it.
+        DeckStackDrawer {
+            rows,
+            boards: HashMap::new(),
+            details,
+            faces,
+            actions: None,
+            host,
         }
-        if let Some(card) = printings_card() {
-            PrintingSheet {
-                face: faces.read().get(&card.scryfall_data.id).copied().unwrap_or(0),
-                card,
-                open: printings_open,
-            }
-        }
+        CardOverlaysHost { overlays }
         ContentHintDialog { open: hint_open, content: hint_copy::content() }
         if signed_in() {
             SendToHost { send_to }
@@ -220,25 +241,24 @@ pub fn Search(q: String) -> Element {
     }
 }
 
-/// The results' keys while the grid shows: the cursor over it, the card keys and `/`, offered on
-/// Shift+H. A card key acts on `details_card` while its details drawer is open (only `v` reaches
-/// the page through it), else on the cursor's card in `model`'s results after a key, else on the
-/// hovered one. `v` turns the card in `faces`, or toggles a meld half's Meld; every other card key
-/// goes to `on_key`.
+/// The results' keys while the grid shows: the cursor over it, which the details drawer
+/// follows, the card keys and `/`, offered on Shift+H. The card keys reach the page through the
+/// drawer, as on the deck page. A card key acts on the cursor's card in `model`'s results after a
+/// key, else on the hovered one, else on the card whose details are open. `v` turns the card in
+/// `faces`, or toggles a meld half's Meld; every other card key goes to `on_key`.
 #[component]
 fn SearchResultsKeys(
     model: Signal<State>,
     faces: Signal<HashMap<Uuid, usize>>,
-    details_open: Signal<bool>,
-    details_card: Signal<Option<Card>>,
+    details: StackDetails,
     on_key: Callback<(SearchResultsKey, Card)>,
 ) -> Element {
-    use_card_grid_cursor();
+    use_card_grid_cursor(Some(details));
     use_offer_shortcuts(ShortcutsScreen::SearchResults);
     let melds = try_use_context::<MeldSource>();
     use_page_keys_through(
-        DETAILS_DRAWER_CLASS,
-        &THROUGH_DRAWER_KEYS,
+        STACK_DETAILS_CLASS,
+        &ROW_KEYS,
         Callback::new(move |key: String| {
             let Some(pressed) = search_results_key(&key) else {
                 return;
@@ -248,15 +268,14 @@ fn SearchResultsKeys(
                 return;
             }
             spawn(async move {
-                let open = (*details_open.peek())
-                    .then(|| details_card.peek().clone())
-                    .flatten();
-                let card = if let Some(card) = open {
-                    Some(card)
-                } else {
-                    let cards = model.peek().cards().to_vec();
-                    keyed_card(&cards).await
-                };
+                let cards = model.peek().cards().to_vec();
+                let open = details
+                    .reveal
+                    .peek()
+                    .open()
+                    .filter(|_| *details.details_open.peek())
+                    .and_then(|id| cards.iter().find(|c| c.scryfall_data.id == id).cloned());
+                let card = keyed_card(&cards).await.or(open);
                 let Some(card) = card else {
                     return;
                 };
@@ -284,4 +303,36 @@ async fn keyed_card(cards: &[Card]) -> Option<Card> {
     let (_, id) = found.split_once(':')?;
     let id = Uuid::try_parse(id).ok()?;
     cards.iter().find(|c| c.scryfall_data.id == id).cloned()
+}
+
+#[cfg(test)]
+mod tests {
+    /// The page's source, for the wiring it shares with the deck page.
+    const SOURCE: &str = include_str!("search.rs");
+
+    #[test]
+    fn d_opens_the_deck_page_s_stacks_drawer_that_the_cursor_keys_pass_through() {
+        assert!(
+            SOURCE.contains("DeckStackDrawer {"),
+            "the Stacks drawer, not a copy"
+        );
+        assert!(
+            SOURCE.contains("use_card_grid_cursor(Some(details));"),
+            "the drawer follows the cursor"
+        );
+        assert!(
+            SOURCE.contains("STACK_DETAILS_CLASS,\n        &ROW_KEYS,"),
+            "the card keys reach the page through the drawer, as on the deck page"
+        );
+        assert!(
+            SOURCE.contains("SearchResultsKey::Details => details.click(card.scryfall_data.id),"),
+            "d opens the card's details, or closes them where they are open"
+        );
+    }
+
+    #[test]
+    fn i_opens_the_image_view_the_deck_page_s_i_opens() {
+        assert!(SOURCE.contains("CardOverlaysHost { overlays }"));
+        assert!(SOURCE.contains("preview.set(Some((card.scryfall_data, face)));"));
+    }
 }
