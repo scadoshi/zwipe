@@ -541,8 +541,9 @@ mod tests {
             .unwrap();
         let app = haystack(suggested, Surface::App);
         let web = haystack(suggested, Surface::Web);
-        assert!(app.contains("open playstyle"), "{app}");
+        assert!(app.contains("open commanders from the menu"), "{app}");
         assert!(!app.contains("commanders in the nav"), "{app}");
+        assert!(!app.contains("open playstyle"), "{app}");
         assert!(web.contains("tap commanders in the nav"), "{web}");
         assert!(!web.contains("open playstyle"), "{web}");
         for read in [&app, &web] {

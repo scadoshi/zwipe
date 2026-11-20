@@ -27,4 +27,5 @@ pub mod playstyle;
 pub mod printing_sheet;
 pub mod register;
 pub mod remove_cards;
+pub mod suggested_commanders;
 pub mod swipe_select;

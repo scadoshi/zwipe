@@ -1,5 +1,6 @@
+use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
-use zwipe_core::http::contracts::suggestions::HttpSuggestionReasons;
+use zwipe_core::http::contracts::suggestions::{HttpSuggestionReasons, RankedBy};
 
 use super::*;
 use crate::test_support::card;
@@ -25,7 +26,7 @@ fn open(mode: Mode) -> Action {
     Action::Open {
         mode: Some(mode),
         filter: CardQueryBuilder::new(),
-        pile: SuggestedPile::default(),
+        deck_count: 0,
         excluded: HashSet::new(),
         from: false,
     }
@@ -105,30 +106,51 @@ fn suggestion(name: &str) -> HttpCommanderSuggestion {
     }
 }
 
-/// A suggested pile of `suggestions`.
-fn pile_of(suggestions: Vec<HttpCommanderSuggestion>) -> SuggestedPile {
-    SuggestedPile {
-        suggestions,
-        deck_count: 3,
-        identity: None,
+/// The ticket and request of the one deal among `effects`.
+fn deal_of(effects: &[Effect]) -> (Ticket, HttpCommanderDeal) {
+    let deals: Vec<(Ticket, HttpCommanderDeal)> = effects
+        .iter()
+        .filter_map(|e| {
+            if let Effect::DealCommanders { ticket, request } = e {
+                Some((*ticket, (**request).clone()))
+            } else {
+                None
+            }
+        })
+        .collect();
+    let [one] = deals.as_slice() else {
+        panic!("one deal: {effects:?}");
+    };
+    one.clone()
+}
+
+/// The page `suggestions` landing for `ticket`.
+fn dealt(ticket: Ticket, suggestions: Vec<HttpCommanderSuggestion>) -> Action {
+    Action::Dealt {
+        ticket,
+        reply: Ok(HttpCommanderDealPage {
+            suggestions,
+            ranked_by: RankedBy::Playstyle,
+        }),
     }
 }
 
-/// A suggested overlay opened on `pile`.
-fn suggested(pile: SuggestedPile) -> State {
-    let mut state = State::new();
-    let effects = state.update(Action::Open {
+/// `Open` for the suggested pile, counting reasons against three decks.
+fn open_suggested() -> Action {
+    Action::Open {
         mode: Some(Mode::Suggested),
         filter: CardQueryBuilder::new(),
-        pile,
+        deck_count: 3,
         excluded: HashSet::new(),
         from: false,
-    });
-    assert_eq!(
-        effects,
-        vec![Effect::OfferHint(OneTimeHint::SwipeSelect)],
-        "the suggested pile never searches"
-    );
+    }
+}
+
+/// A suggested overlay whose first page dealt `pile`.
+fn suggested(pile: Vec<HttpCommanderSuggestion>) -> State {
+    let mut state = State::new();
+    let (ticket, _) = deal_of(&state.update(open_suggested()));
+    let _ = state.update(dealt(ticket, pile));
     state
 }
 
@@ -139,6 +161,7 @@ fn toast(effect: &Effect) -> &Toast {
         | Effect::SearchCommanders { .. }
         | Effect::LoadMore { .. }
         | Effect::LoadMaybeboard { .. }
+        | Effect::DealCommanders { .. }
         | Effect::DismissCommander(_)
         | Effect::UndismissCommander(_)
         | Effect::AddMaybeboardCard { .. }
@@ -262,7 +285,7 @@ fn opening_with_no_mode_deals_nothing() {
     let effects = state.update(Action::Open {
         mode: None,
         filter: CardQueryBuilder::new(),
-        pile: SuggestedPile::default(),
+        deck_count: 0,
         excluded: HashSet::new(),
         from: false,
     });
@@ -362,7 +385,7 @@ fn excluded_oracle_ids_stay_out_of_the_pile() {
     let ticket = ticket_of(&state.update(Action::Open {
         mode: Some(Mode::Commander(Format::Commander)),
         filter: CardQueryBuilder::new(),
-        pile: SuggestedPile::default(),
+        deck_count: 0,
         excluded: pile[0].scryfall_data.oracle_id.into_iter().collect(),
         from: false,
     }));
@@ -380,7 +403,7 @@ fn a_first_page_all_excluded_pulls_the_next() {
     let ticket = ticket_of(&state.update(Action::Open {
         mode: Some(Mode::Partner(None)),
         filter: CardQueryBuilder::new(),
-        pile: SuggestedPile::default(),
+        deck_count: 0,
         excluded: pile[0].scryfall_data.oracle_id.into_iter().collect(),
         from: false,
     }));
@@ -403,7 +426,7 @@ fn a_partner_pile_with_its_one_card_picked_says_it_is_empty() {
     let ticket = ticket_of(&state.update(Action::Open {
         mode: Some(Mode::Partner(None)),
         filter: CardQueryBuilder::new(),
-        pile: SuggestedPile::default(),
+        deck_count: 0,
         excluded: toothy[0].scryfall_data.oracle_id.into_iter().collect(),
         from: false,
     }));
@@ -431,7 +454,7 @@ fn an_empty_filtered_pile_blames_the_filter() {
     let ticket = ticket_of(&state.update(Action::Open {
         mode: Some(Mode::Background),
         filter,
-        pile: SuggestedPile::default(),
+        deck_count: 0,
         excluded: HashSet::new(),
         from: false,
     }));
@@ -851,8 +874,21 @@ fn back_closes_the_overlay() {
 }
 
 #[test]
-fn the_suggested_pile_deals_the_host_s_ranking() {
-    let state = suggested(pile_of(vec![suggestion("Krenko"), suggestion("Narset")]));
+fn the_suggested_pile_deals_the_merged_ranking() {
+    let mut state = State::new();
+    let effects = state.update(open_suggested());
+    let (ticket, request) = deal_of(&effects);
+    assert_eq!(request.limit, PAGE_SIZE);
+    assert!(
+        !request.keep_maybeboard,
+        "Suggested leaves the maybeboard out"
+    );
+    assert_eq!(request.format, None);
+    assert_eq!(state.status(), Status::Loading);
+    let _ = state.update(dealt(
+        ticket,
+        vec![suggestion("Krenko"), suggestion("Narset")],
+    ));
     assert_eq!(state.title(), SUGGESTED_TITLE);
     assert!(state.is_suggested());
     assert!(state.can_save());
@@ -862,9 +898,51 @@ fn the_suggested_pile_deals_the_host_s_ranking() {
 }
 
 #[test]
+fn the_host_s_saves_stay_out_of_the_deal() {
+    let saved = Uuid::new_v4();
+    let mut state = State::new();
+    let (_, request) = deal_of(&state.update(Action::Open {
+        mode: Some(Mode::Suggested),
+        filter: CardQueryBuilder::new(),
+        deck_count: 3,
+        excluded: HashSet::from([saved]),
+        from: false,
+    }));
+    assert_eq!(request.exclude, vec![saved]);
+}
+
+#[test]
+fn the_next_page_leaves_out_every_card_dealt() {
+    let first: Vec<HttpCommanderSuggestion> = (0..PAGE_SIZE)
+        .map(|i| suggestion(&format!("Commander {i}")))
+        .collect();
+    let ids: Vec<Uuid> = first
+        .iter()
+        .filter_map(|s| s.card.scryfall_data.oracle_id)
+        .collect();
+    let mut state = suggested(first);
+    let mut asked = None;
+    for _ in 0..PAGE_SIZE {
+        let effects = state.update(Action::Skip);
+        if effects
+            .iter()
+            .any(|e| matches!(e, Effect::DealCommanders { .. }))
+        {
+            asked = Some(deal_of(&effects));
+            break;
+        }
+    }
+    let (ticket, request) = asked.expect("a full page deals more as the pile runs low");
+    assert_eq!(request.exclude, ids, "every card dealt so far");
+    let _ = state.update(dealt(ticket, vec![suggestion("Talrand")]));
+    assert!(names(state.window()).contains(&"Talrand"));
+    assert!(state.reasons().is_some());
+}
+
+#[test]
 fn a_suggested_left_swipe_dismisses_and_undo_lifts_it() {
-    let pile = pile_of(vec![suggestion("Krenko"), suggestion("Narset")]);
-    let oracle_id = pile.suggestions[0].card.scryfall_data.oracle_id.unwrap();
+    let pile = vec![suggestion("Krenko"), suggestion("Narset")];
+    let oracle_id = pile[0].card.scryfall_data.oracle_id.unwrap();
     let mut state = suggested(pile);
     assert_eq!(
         state.update(Action::Skip),
@@ -872,7 +950,7 @@ fn a_suggested_left_swipe_dismisses_and_undo_lifts_it() {
             Effect::DismissCommander(oracle_id),
             Effect::Confirm(Toast::quick(ToastKind::Info, SKIPPED)),
         ],
-        "a dealt pile never loads more"
+        "a short page ended the pile, so nothing more loads"
     );
     assert_eq!(
         state.update(Action::Undo),
@@ -885,64 +963,29 @@ fn a_suggested_left_swipe_dismisses_and_undo_lifts_it() {
 }
 
 #[test]
-fn a_suggested_reopen_deals_the_host_s_pile_afresh() {
-    let mut state = suggested(pile_of(vec![suggestion("Krenko"), suggestion("Narset")]));
+fn a_suggested_reopen_keeps_the_pile_and_its_place() {
+    let mut state = suggested(vec![suggestion("Krenko"), suggestion("Narset")]);
     let _ = state.update(Action::Skip);
-    let effects = state.update(Action::Open {
-        mode: Some(Mode::Suggested),
-        filter: CardQueryBuilder::new(),
-        pile: pile_of(vec![suggestion("Talrand")]),
-        excluded: HashSet::new(),
-        from: false,
+    assert_eq!(state.update(open_suggested()), Vec::new());
+    assert_eq!(names(state.window()), ["Narset"]);
+}
+
+#[test]
+fn a_failed_first_deal_fails_the_pile() {
+    let mut state = State::new();
+    let (ticket, _) = deal_of(&state.update(open_suggested()));
+    let _ = state.update(Action::Dealt {
+        ticket,
+        reply: Err(()),
     });
-    assert_eq!(effects, Vec::new());
-    assert_eq!(names(state.window()), ["Talrand"]);
+    assert_eq!(state.status(), Status::Failed);
 }
 
 #[test]
-fn a_redeal_keeps_the_swiped_behind_the_top_card() {
-    let krenko = suggestion("Krenko");
-    let mut state = suggested(pile_of(vec![krenko.clone(), suggestion("Narset")]));
-    let _ = state.update(Action::Skip);
-    let talrand = suggestion("Talrand");
-    let _ = state.update(Action::Redeal(SuggestedPile {
-        suggestions: vec![krenko, talrand],
-        deck_count: 5,
-        identity: Some(vec![Color::Blue]),
-    }));
-    assert_eq!(names(state.window()), ["Talrand"]);
-    assert_eq!(state.deck_count(), 5);
-    assert_eq!(state.identity(), Some([Color::Blue].as_slice()));
-    let _ = state.update(Action::Undo);
-    assert_eq!(names(state.window()), ["Krenko", "Talrand"]);
-    assert!(
-        state.reasons().is_some(),
-        "the swiped card keeps its reasons"
-    );
-}
-
-#[test]
-fn a_redeal_outside_the_suggested_mode_changes_nothing() {
-    let mut state = loaded(&cards(&["Krenko"]));
-    let before = state.clone();
-    let _ = state.update(Action::Redeal(pile_of(vec![suggestion("Talrand")])));
-    assert_eq!(state, before);
-}
-
-#[test]
-fn an_empty_identity_says_so_in_the_host_s_words() {
-    let mut state = suggested(SuggestedPile {
-        suggestions: Vec::new(),
-        deck_count: 3,
-        identity: Some(vec![Color::White, Color::Blue, Color::Red]),
-    });
+fn an_empty_deal_says_so_as_a_search_does() {
+    let state = suggested(Vec::new());
     assert_eq!(state.status(), Status::Empty);
-    assert_eq!(
-        state.message().as_deref(),
-        Some("No Jeskai commanders in your top 100")
-    );
-    let _ = state.update(Action::Redeal(pile_of(Vec::new())));
-    assert_eq!(state.message(), None, "All has no line");
+    assert_eq!(state.message().as_deref(), Some("No commanders to show"));
 }
 
 #[test]
@@ -1040,7 +1083,7 @@ fn open_with_from() -> Action {
     Action::Open {
         mode: Some(Mode::Commander(Format::Commander)),
         filter: CardQueryBuilder::new(),
-        pile: SuggestedPile::default(),
+        deck_count: 0,
         excluded: HashSet::new(),
         from: true,
     }
@@ -1177,7 +1220,7 @@ fn every_fresh_open_starts_on_search_with_its_own_filter() {
     let reopened = state.update(Action::Open {
         mode: Some(Mode::Commander(Format::Commander)),
         filter: maybe_filter.clone(),
-        pile: SuggestedPile::default(),
+        deck_count: 0,
         excluded: HashSet::new(),
         from: true,
     });
@@ -1195,4 +1238,62 @@ fn every_fresh_open_starts_on_search_with_its_own_filter() {
         "Maybe's filter is kept for the next switch"
     );
     let _ = ticket;
+}
+
+/// A suggested overlay that dealt a full first page and was swiped to its end: the ticket of the
+/// next page still out as the last card goes.
+fn suggested_swiped_to_the_end(state: &mut State) -> Ticket {
+    let first: Vec<HttpCommanderSuggestion> = (0..PAGE_SIZE)
+        .map(|i| suggestion(&format!("Commander {i}")))
+        .collect();
+    *state = suggested(first);
+    let mut out = None;
+    while state.current().is_some() {
+        let effects = state.update(Action::Skip);
+        if effects
+            .iter()
+            .any(|e| matches!(e, Effect::DealCommanders { .. }))
+        {
+            out = Some(deal_of(&effects).0);
+        }
+    }
+    out.expect("a full page asks for more as it runs low")
+}
+
+#[test]
+fn a_failed_next_suggested_page_with_no_card_left_shows_failed_and_retry_deals_on() {
+    let mut state = State::new();
+    let ticket = suggested_swiped_to_the_end(&mut state);
+    assert_eq!(state.status(), Status::Loading);
+    let _ = state.update(Action::Dealt {
+        ticket,
+        reply: Err(()),
+    });
+    assert_eq!(state.status(), Status::Failed, "Couldn't load, not spent");
+    let effects = state.update(Action::Retry);
+    let (_, request) = deal_of(&effects);
+    assert_eq!(
+        request.exclude.len(),
+        usize::try_from(PAGE_SIZE).unwrap(),
+        "the next page after every card swiped, not a fresh deal from the top"
+    );
+}
+
+#[test]
+fn a_failed_suggested_page_then_one_that_lands_ends_empty() {
+    let mut state = State::new();
+    let ticket = suggested_swiped_to_the_end(&mut state);
+    let _ = state.update(Action::Dealt {
+        ticket,
+        reply: Err(()),
+    });
+    let (ticket, _) = deal_of(&state.update(Action::Retry));
+    let _ = state.update(dealt(ticket, vec![suggestion("Talrand")]));
+    assert_eq!(names(state.window()), ["Talrand"]);
+    let _ = state.update(Action::Skip);
+    assert_eq!(
+        state.status(),
+        Status::Empty,
+        "a page that lands clears the failure"
+    );
 }

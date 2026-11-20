@@ -10,7 +10,6 @@
 use components::hint::{ContentHintDialog, guide_for_one_time, guide_for_swipe_select};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
-use zwipe_core::content::Surface;
 use zwipe_core::domain::auth::models::session::Session;
 pub use zwipe_core::domain::user::models::hints::OneTimeHint;
 use zwipe_ui::hint::{SwipeSelectMode, one_time};
@@ -75,7 +74,7 @@ pub fn OneTimeHintDialog(hint: OneTimeHint, open: Signal<bool>) -> Element {
         .read()
         .as_ref()
         .is_some_and(|s| s.user.email_verified_at.is_some());
-    let Some(content) = one_time::content_on(hint, verified, Surface::Web) else {
+    let Some(content) = one_time::content_for_user(hint, verified) else {
         return rsx! {};
     };
     rsx! {
@@ -102,7 +101,7 @@ pub fn SwipeSelectHint(open: Signal<bool>, mode: SwipeSelectMode) -> Element {
     rsx! {
         ContentHintDialog {
             open,
-            content: one_time::swipe_select_on(mode, Surface::Web),
+            content: one_time::swipe_select(mode),
             actions: guide_for_swipe_select(mode),
         }
     }

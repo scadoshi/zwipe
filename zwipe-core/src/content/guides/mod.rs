@@ -693,47 +693,9 @@ pub static GUIDES: &[Guide] = &[
             Block::Only(
                 Surface::App,
                 &[
-                    Block::H2("The Commander maybeboard screen"),
+                    Block::H2("The Commanders screen"),
                     Block::P(
-                        "Open Commander maybeboard from the menu. Saves show as card rows with art (the Art chip hides it), newest first; Sort orders them by Newest saved, Name, Mana value, or Color, and its last chip flips the direction. Expand a row for details and four actions:",
-                    ),
-                    Block::Image {
-                        file: "commander-maybeboard/02-saved-commanders.webp",
-                        alt: "The Commander maybeboard screen: saved commanders with power level, price, and color pips",
-                        caption: None,
-                    },
-                    Block::Bullets(&[
-                        "[[image]] shows the card full size.",
-                        "`Printings` swaps the printing, and your pick carries into Create deck.",
-                        "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
-                        "`Remove` takes it off the list.",
-                    ]),
-                    Block::Image {
-                        file: "commander-maybeboard/03-expanded-row.webp",
-                        alt: "A saved commander expanded, with Image, Printings, Create deck, and Remove",
-                        caption: None,
-                    },
-                    Block::H2("Add without swiping"),
-                    Block::P(
-                        "Quick add searches commanders by name; tap a result to save it. The color pips and the `Filter` button narrow the list of saves.",
-                    ),
-                    Block::Image {
-                        file: "commander-maybeboard/04-maybeboard-hint.webp",
-                        alt: "The Commander maybeboard hint: Swipe, Quick add, and Create deck",
-                        caption: None,
-                    },
-                    Block::H2("Swipe from the list"),
-                    Block::P(
-                        "The Swipe button sits on the Commanders panel, even with nothing saved yet, and deals commanders you haven't saved, most played first:",
-                    ),
-                    Block::Swipe(&[
-                        ("left", "skip it"),
-                        ("up", "save it to your commander maybeboard"),
-                        ("right", "start a new deck with it"),
-                        ("down", "undo your last swipe"),
-                    ]),
-                    Block::Note(
-                        "Clear the whole list from the Danger zone panel: tap `Clear` beside Clear maybeboard. It asks first; there's no undo.",
+                        "Open Commanders from the menu. It holds two lists, one under the other: Maybeboard, the commanders you save, then Suggested, the ones that fit your decks. Each list has its own Show row, Swipe and Danger zone. The [[funnel]] at the bottom right narrows both lists at once.",
                     ),
                 ],
             ),
@@ -744,30 +706,30 @@ pub static GUIDES: &[Guide] = &[
                     Block::P(
                         "Tap Commanders in the nav. It holds two lists side by side, stacked on a phone: Maybeboard, the commanders you save, and Suggested, the ones that fit your decks. Each list has its own Show row and Swipe. The [[funnel]] at the bottom right narrows both lists at once.",
                     ),
-                    Block::H2("Maybeboard"),
-                    Block::P(
-                        "Saves show as card rows with art; Art in the Show row hides it. Quick add saves a commander by name, and Sort changes the order. Expand a row for details and four actions:",
-                    ),
-                    Block::Bullets(&[
-                        "[[image]] shows the card full size.",
-                        "`Printings` swaps the printing, and your pick carries into Create deck.",
-                        "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
-                        "`Remove` takes it off the list.",
-                    ]),
-                    Block::H2("Swipe from the Maybeboard"),
-                    Block::P(
-                        "The Maybeboard's Swipe deals commanders you haven't saved, most played first:",
-                    ),
-                    Block::Swipe(&[
-                        ("right", "start a new deck with it"),
-                        ("left", "skip it"),
-                        ("up", "save it to your maybeboard"),
-                        ("down", "undo your last swipe"),
-                    ]),
-                    Block::Note(
-                        "`Clear maybeboard` empties the saved list; it asks first and there's no undo. Suggested, the other list, has its own guide: Suggested commanders.",
-                    ),
                 ],
+            ),
+            Block::H2("Maybeboard"),
+            Block::P(
+                "Saves show as card rows with art; Art in the Show row hides it. Quick add saves a commander by name, and Sort changes the order. Expand a row for details and four actions:",
+            ),
+            Block::Bullets(&[
+                "[[image]] shows the card full size.",
+                "`Printings` swaps the printing, and your pick carries into Create deck.",
+                "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
+                "`Remove` takes it off the list.",
+            ]),
+            Block::H2("Swipe from the Maybeboard"),
+            Block::P(
+                "The Maybeboard's Swipe deals commanders you haven't saved, most played first. Tap From at the bottom left to swipe your saved commanders instead:",
+            ),
+            Block::Swipe(&[
+                ("right", "start a new deck with it"),
+                ("left", "skip it"),
+                ("up", "save it to your maybeboard"),
+                ("down", "undo your last swipe"),
+            ]),
+            Block::Note(
+                "`Clear maybeboard` empties the saved list; it asks first and there's no undo. Suggested, the other list, has its own guide: Suggested commanders.",
             ),
         ],
     },
@@ -782,23 +744,12 @@ pub static GUIDES: &[Guide] = &[
                 "Playstyle reads every deck you have, in any format, and shows what they have in common.",
             ),
             Block::H2("Finding it"),
-            Block::Only(
-                Surface::App,
-                &[Block::Bullets(&[
-                    "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
-                    "Your colors, card roles and Oracle tags come first, then Suggested commanders. See Suggested commanders.",
-                    "Staples, at the bottom, lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
-                ])],
-            ),
-            Block::Only(
-                Surface::Web,
-                &[Block::Bullets(&[
-                    "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
-                    "Your colors, card roles and Oracle tags come first.",
-                    "Staples lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
-                    "Suggested commanders are on the Commanders screen. See Suggested commanders.",
-                ])],
-            ),
+            Block::Bullets(&[
+                "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
+                "Your colors, card roles and Oracle tags come first.",
+                "Staples lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
+                "Suggested commanders are on the Commanders screen. See Suggested commanders.",
+            ]),
             Block::H2("What your decks say"),
             Block::P(
                 "Colors has a bar per color with its mana pip and how many of your cards are that color, colorless last. It's the same panel as on Home. Each section folds; tap its header to open or close it.",
@@ -844,26 +795,17 @@ pub static GUIDES: &[Guide] = &[
             Block::H2("Finding it"),
             Block::Only(
                 Surface::App,
-                &[
-                    Block::P(
-                        "Open Playstyle from the Colors panel on Home or from the menu. Suggested commanders sits under your colors, card roles and Oracle tags: your top 10 as card rows, best fit first. Its `?` explains the ranking.",
-                    ),
-                    Block::P(
-                        "Tap a color identity in the Show row to narrow the list to it; tap again to clear.",
-                    ),
-                ],
+                &[Block::P(
+                    "Open Commanders from the menu. Suggested sits under your Maybeboard: the 10 commanders that fit your decks best, and Show more adds 10 more, once. Its `?` explains the ranking, and the [[funnel]] at the bottom right narrows it along with the Maybeboard.",
+                )],
             ),
             Block::Only(
                 Surface::Web,
-                &[
-                    Block::P(
-                        "Tap Commanders in the nav. Suggested sits beside your Maybeboard, under it on a phone: the 10 commanders that fit your decks best, and Show more adds 10 more, once. Its `?` explains the ranking, and the [[funnel]] at the bottom right narrows it along with the Maybeboard.",
-                    ),
-                    Block::P(
-                        "Until you've built a deck, Suggested shows popular commanders instead.",
-                    ),
-                ],
+                &[Block::P(
+                    "Tap Commanders in the nav. Suggested sits beside your Maybeboard, under it on a phone: the 10 commanders that fit your decks best, and Show more adds 10 more, once. Its `?` explains the ranking, and the [[funnel]] at the bottom right narrows it along with the Maybeboard.",
+                )],
             ),
+            Block::P("Until you've built a deck, Suggested shows popular commanders instead."),
             Block::Image {
                 file: "commander-suggestions/01-suggested-list.webp",
                 alt: "Suggested commanders as card rows, best fit first, under the Show row of color identities",
@@ -885,17 +827,8 @@ pub static GUIDES: &[Guide] = &[
                 "`Remove` hides it for a week and pulls the next one up.",
             ]),
             Block::H2("Swipe the ranking"),
-            Block::Only(
-                Surface::App,
-                &[Block::P(
-                    "Swipe deals the same ranking as a stack, up to 100 deep. Tap the [[funnel]] while you swipe to narrow it to one color identity.",
-                )],
-            ),
-            Block::Only(
-                Surface::Web,
-                &[Block::P(
-                    "Suggested's Swipe deals the ranking as a stack, best fit first, and keeps dealing as you swipe.",
-                )],
+            Block::P(
+                "Suggested's Swipe deals the ranking as a stack, best fit first, and keeps dealing as you swipe.",
             ),
             Block::Swipe(&[
                 ("right", "start a new deck with this commander"),
@@ -903,17 +836,8 @@ pub static GUIDES: &[Guide] = &[
                 ("up", "save it to your commander maybeboard"),
                 ("down", "undo your last swipe"),
             ]),
-            Block::Only(
-                Surface::App,
-                &[Block::P(
-                    "Skipped commanders come back after seven days, or sooner with `Clear` beside Clear skips in the Danger zone panel.",
-                )],
-            ),
-            Block::Only(
-                Surface::Web,
-                &[Block::P(
-                    "Skipped commanders come back after seven days, or sooner with `Clear` beside Clear skips in the Danger zone under Suggested.",
-                )],
+            Block::P(
+                "Skipped commanders come back after seven days, or sooner with `Clear` beside Clear skips in the Danger zone under Suggested.",
             ),
         ],
     },
@@ -1420,17 +1344,55 @@ mod tests {
     }
 
     #[test]
-    fn the_web_s_guides_say_what_the_commander_deal_does() {
-        for guide in GUIDES {
-            for block in guide.blocks_on(Surface::Web) {
-                if let Block::P(text) | Block::Note(text) = block {
-                    assert!(
-                        !text.contains("100 deep") && !text.contains("one color identity"),
-                        "{}: {text}",
-                        guide.slug
-                    );
+    fn every_guide_says_what_the_commander_deal_does() {
+        for surface in [Surface::App, Surface::Web] {
+            for guide in GUIDES {
+                for block in guide.blocks_on(surface) {
+                    if let Block::P(text) | Block::Note(text) = block {
+                        assert!(
+                            !text.contains("100 deep") && !text.contains("one color identity"),
+                            "{surface:?} {}: {text}",
+                            guide.slug
+                        );
+                    }
                 }
             }
+        }
+    }
+
+    #[test]
+    fn the_app_s_guides_send_suggestions_and_saves_to_commanders() {
+        let text_of = |slug: &str| -> String {
+            let Some(guide) = GUIDES.iter().find(|g| g.slug == slug) else {
+                panic!("{slug}");
+            };
+            guide
+                .blocks_on(Surface::App)
+                .iter()
+                .filter_map(|block| match block {
+                    Block::P(text) | Block::Note(text) | Block::Lead(text) => Some(*text),
+                    Block::H2(_)
+                    | Block::Steps(_)
+                    | Block::Bullets(_)
+                    | Block::Swipe(_)
+                    | Block::Diagram(_)
+                    | Block::Only(..)
+                    | Block::Image { .. } => None,
+                })
+                .collect::<Vec<&str>>()
+                .join(" ")
+        };
+        for slug in ["commander-maybeboard", "commander-suggestions"] {
+            let text = text_of(slug);
+            assert!(
+                text.contains("Open Commanders from the menu"),
+                "{slug}: {text}"
+            );
+            assert!(
+                !text.contains("Commander maybeboard from the menu"),
+                "{slug}"
+            );
+            assert!(!text.contains("Open Playstyle"), "{slug}");
         }
     }
 

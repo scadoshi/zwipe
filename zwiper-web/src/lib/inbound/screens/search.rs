@@ -16,6 +16,7 @@ use components::deck_cursor::use_card_grid_cursor;
 use components::hint::ContentHintDialog;
 use components::keys::use_page_keys_through;
 use components::list_end::{ListEnd, use_list_end};
+use components::results_place::{self, KeptPlace, use_results_scroll, use_submits};
 use components::{
     CardResultsGrid, CardResultsGridGhost, DeckRowHost, DeckStackDrawer, LoadFailed, MeldSource,
     MeldToggle, StackDetails, focus_card_search, next_card_face, use_stack_details,
@@ -150,8 +151,44 @@ pub fn Search(q: String) -> Element {
         },
     );
 
-    // Looks up on mount and again whenever the route's text changes in place.
-    use_effect(use_reactive!(|q| dispatch(Action::Load(q))));
+    // Back from a card finds the results it kept, every page loaded, scrolled where they were;
+    // anything else looks the text up.
+    let mut scroll = use_signal(|| 0.0_f64);
+    use_results_scroll(Callback::new(move |y: f64| scroll.set(y)));
+    use_effect(use_reactive!(|q| {
+        let signed_in = driver
+            .session
+            .peek()
+            .as_ref()
+            .is_some_and(|s| !s.is_expired());
+        if let Some(place) = results_place::kept_for(&q, signed_in) {
+            dispatch(Action::Resume(place.kept));
+            results_place::restore_place(place.scroll);
+        } else {
+            results_place::fresh_start();
+            dispatch(Action::Load(q));
+        }
+    }));
+    // A submit of the text already on screen changes no route: it loads page 1 again, at the top.
+    use_submits(Callback::new(move |text: String| {
+        if text == driver.model.peek().query() {
+            results_place::fresh_start();
+            dispatch(Action::Load(text));
+        }
+    }));
+    use_drop(move || {
+        if let Some(kept) = driver.model.peek().kept() {
+            results_place::keep(KeptPlace {
+                kept,
+                scroll: *scroll.peek(),
+                signed_in: driver
+                    .session
+                    .peek()
+                    .as_ref()
+                    .is_some_and(|s| !s.is_expired()),
+            });
+        }
+    });
 
     let state = driver.model.read();
     let status = state.status();

@@ -53,7 +53,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On Android, Send to, Oracle tag examples and the update screen show their header below the status bar",
         "On a card's page, tapping a tag under a card role opens its description and example cards",
         "A toast stamps down harder as it lands, coming in big and settling with a small bounce",
-        "Commanders, a new screen on the web with your commander maybeboard and suggested commanders side by side",
+        "Commanders, a new screen with your commander maybeboard and suggested commanders",
         "A Brawl deck's commander picker only offers commanders legal in Brawl",
         "Playstyle's Oracle tags show Decks, Cards and Impact as colored bars",
         "Card searches and opened tag examples count toward Searches run on Home and Activity while you're logged in",
@@ -67,6 +67,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On Android, opening a card role in a deck's card list no longer leaves doubled pieces of the row behind",
         "Card search results load more as you scroll",
         "Sorting by Rarity goes from common to mythic instead of alphabetically",
+        "Going back from a card to your search results keeps your place",
     ],
 }];
 
