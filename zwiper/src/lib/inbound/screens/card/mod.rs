@@ -24,11 +24,13 @@ use zwipe_ui::screens::card_lookup::{
     self, Action, CardStats, Destination, Effect, Open, State, Status,
 };
 
+use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::screen;
 use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
+use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// `/card/<slug>`: every card with the name.
 #[component]
@@ -167,6 +169,25 @@ fn CardScreen(open: Open) -> Element {
     let mut printings_open = use_signal(|| false);
     // The stats folds the user shut; every one starts open.
     let stats_folded = use_signal(HashSet::<String>::new);
+    // The role tags' descriptions and their example cards.
+    let cache: CatalogCache = use_context();
+    let client = driver.client;
+    use_effect(move || {
+        cache.ensure_oracle_tags(client);
+    });
+    let describe_tag = use_callback(move |slug: String| {
+        cache.oracle_tags.cell().read().loaded().and_then(|tags| {
+            tags.iter()
+                .find(|t| t.slug == slug)
+                .and_then(|t| t.description.clone())
+        })
+    });
+    let mut otag_examples_open = use_signal(|| false);
+    let mut otag_examples_slug = use_signal(String::new);
+    let open_examples = use_callback(move |slug: String| {
+        otag_examples_slug.set(slug);
+        otag_examples_open.set(true);
+    });
 
     // Loads on mount and again whenever the route opens another card in place.
     use_effect(use_reactive!(|open| {
@@ -202,6 +223,8 @@ fn CardScreen(open: Open) -> Element {
                     CardDetailsPanel {
                         card: card.clone(),
                         send_to: false,
+                        describe_tag,
+                        on_examples: open_examples,
                         on_printings: move |()| printings_open.set(true),
                     }
                     div { class: "card-page-stats",
@@ -284,6 +307,9 @@ fn CardScreen(open: Open) -> Element {
         div { class: "screen",
             ScreenHeader { title: header, back: move |()| navigator.go_back() }
             {body}
+        }
+        if otag_examples_open() {
+            OracleTagExamples { open: otag_examples_open, slug: otag_examples_slug() }
         }
     }
 }
