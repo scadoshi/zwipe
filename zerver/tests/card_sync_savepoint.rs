@@ -49,7 +49,7 @@ async fn a_bad_card_in_a_batch_leaves_the_rest_of_the_night_upserted(pool: sqlx:
     let repo = Postgres::from_pool(pool.clone());
     let mut metrics = ZerviceMetrics::new();
     // Printing 0 holds mtgo id 777; printing 2 claims it too, so its batch fails.
-    repo.batch_delta_upsert(&[printing(0, Some(777))], 100, &mut metrics)
+    repo.batch_delta_upsert(&[printing(0, Some(777))], 100, &mut metrics, None)
         .await
         .unwrap();
 
@@ -61,7 +61,7 @@ async fn a_bad_card_in_a_batch_leaves_the_rest_of_the_night_upserted(pool: sqlx:
         printing(4, None),
         printing(5, None),
     ];
-    repo.batch_delta_upsert(&night, 2, &mut metrics)
+    repo.batch_delta_upsert(&night, 2, &mut metrics, None)
         .await
         .unwrap();
 
