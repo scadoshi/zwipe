@@ -68,6 +68,7 @@ mod copy_room;
 mod cover_flow;
 mod danger_zone;
 pub mod data_action;
+mod data_bar;
 mod deck_cards_view;
 pub mod deck_cursor;
 mod deck_group;
@@ -159,6 +160,7 @@ pub use color_bars::{ColorBars, ColorBarsGhost};
 pub use copy_room::{CopyRoom, can_add_copy};
 pub use cover_flow::CoverFlow;
 pub use danger_zone::DangerZoneAction;
+pub use data_bar::{DataBar, DataBarGhost};
 pub use deck_cards_view::{
     CardsViewSwitch, DRAWER_CLASSES, DeckCardsView, DeckEditActions, DeckRow, DeckRowHost,
     DeckStackDrawer, DeckStacks, OnPrinting, StackDetails, deck_sections, use_stack_details,

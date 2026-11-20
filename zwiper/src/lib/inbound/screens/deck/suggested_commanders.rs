@@ -28,7 +28,7 @@
 
 use components::{
     AlertDialog, Bar, BarChart, BarOrientation, Button, ButtonVariant, CardListFold, CardRoleChips,
-    Chip, ColorBars, DialogAction, OtagDef, RoleTags, StapleDecksChip, Toasts, use_toast,
+    Chip, ColorBars, DataBar, DialogAction, OtagDef, RoleTags, StapleDecksChip, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -46,7 +46,7 @@ use zwipe_core::http::contracts::suggestions::{
 use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::playstyle::{
-    self, ProfileSummary, StapleColor, StapleDeck, SummaryValue, TagRow, identity_label,
+    self, ProfileSummary, StapleColor, StapleDeck, SummaryValue, TagBars, TagRow, identity_label,
 };
 use zwipe_ui::screens::playstyle::{
     self as model, Action, Destination, Effect, Section, State, Status,
@@ -203,9 +203,9 @@ fn ShowIdentityChipsGhost() -> Element {
     }
 }
 
-/// The oracle tags as a table: a header row of column labels, each number
-/// column with its "?", then one row per tag with its chip and its Decks,
-/// Cards and Impact. A tapped chip eases its description and Examples open
+/// The oracle tags as a table in the shared data table style: a header row of column names,
+/// each number column with its "?", then one row per tag with its chip and its Decks, Cards and
+/// Impact. A tapped chip eases its description and Examples open
 /// directly under its row in the deck charts' chip grammar, one row at a
 /// time; tapping the open chip closes it.
 #[component]
@@ -218,6 +218,7 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
     let open = open_tag();
     let shown = shown_tag();
     let is_open = |slug: &str| open.as_deref() == Some(slug);
+    let bars = TagBars::of(&rows);
     let tap = move |slug: String| {
         move |evt: MouseEvent| {
             evt.stop_propagation();
@@ -230,49 +231,59 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
         }
     };
     rsx! {
-        div { class: "tag-table",
-            div { class: "tag-table-head",
-                span { class: "settings-row-label", {model::TAG_COLUMN} }
-            }
-            div { class: "tag-table-head tag-table-head-p3",
-                span { class: "settings-row-label", {model::DECKS_COLUMN} }
-                InfoButton { topic: HintTopic::SuggestionTagDecks }
-            }
-            div { class: "tag-table-head tag-table-head-p5",
-                span { class: "settings-row-label", {model::CARDS_COLUMN} }
-                InfoButton { topic: HintTopic::SuggestionTagCards }
-            }
-            div { class: "tag-table-head tag-table-head-p2",
-                span { class: "settings-row-label", {model::IMPACT_COLUMN} }
-                InfoButton { topic: HintTopic::SuggestionTagImpact }
-            }
-            for row in rows.iter() {
-                div { class: "tag-table-tag",
-                    button {
-                        class: if is_open(&row.slug) { "chip selected" } else { "chip" },
-                        onclick: tap(row.slug.clone()),
-                        "{row.slug}"
+        table { class: "data-table tag-data-table",
+            thead {
+                tr {
+                    th { scope: "col", {model::TAG_COLUMN} }
+                    th { scope: "col", class: "data-table-bar",
+                        {model::DECKS_COLUMN}
+                        InfoButton { topic: HintTopic::SuggestionTagDecks }
+                    }
+                    th { scope: "col", class: "data-table-bar",
+                        {model::CARDS_COLUMN}
+                        InfoButton { topic: HintTopic::SuggestionTagCards }
+                    }
+                    th { scope: "col", class: "data-table-bar",
+                        {model::IMPACT_COLUMN}
+                        InfoButton { topic: HintTopic::SuggestionTagImpact }
                     }
                 }
-                span { class: "tag-table-num",
-                    span { class: "stat-chip stat-chip-p3", "{row.decks}" }
-                }
-                span { class: "tag-table-num",
-                    span { class: "stat-chip stat-chip-p5", "{row.cards}" }
-                }
-                span { class: "tag-table-num",
-                    if let Some(impact) = row.impact {
-                        span { class: "stat-chip stat-chip-p2", "{impact}" }
-                    }
-                }
-                // Mounted shut under every row so opening one is a class
-                // change the reveal can ease, not a fresh node.
-                div {
-                    class: if is_open(&row.slug) { "keyword-reveal open" } else { "keyword-reveal" },
-                    style: "grid-column:1 / -1;",
-                    div { class: "keyword-reveal-inner",
-                        if shown.as_deref() == Some(row.slug.as_str()) {
-                            OtagDef { slug: row.slug.clone(), describe_tag, on_examples }
+            }
+            tbody {
+                for (i, row) in rows.iter().enumerate() {
+                    Fragment { key: "{row.slug}",
+                        tr {
+                            th { scope: "row",
+                                button {
+                                    class: if is_open(&row.slug) { "chip selected" } else { "chip" },
+                                    onclick: tap(row.slug.clone()),
+                                    "{row.slug}"
+                                }
+                            }
+                            td { class: "data-table-bar",
+                                DataBar { percent: bars.decks(row), tone: "p3", value: row.decks.to_string(), index: i }
+                            }
+                            td { class: "data-table-bar",
+                                DataBar { percent: bars.cards(row), tone: "p5", value: row.cards.to_string(), index: i }
+                            }
+                            td { class: "data-table-bar",
+                                if let (Some(impact), Some(percent)) = (row.impact, bars.impact(row)) {
+                                    DataBar { percent, tone: "p2", value: impact.to_string(), index: i }
+                                }
+                            }
+                        }
+                        // Mounted shut under every row so opening one is a class
+                        // change the reveal can ease, not a fresh node.
+                        tr { class: "data-table-detail",
+                            td { colspan: "4",
+                                div { class: if is_open(&row.slug) { "keyword-reveal open" } else { "keyword-reveal" },
+                                    div { class: "keyword-reveal-inner",
+                                        if shown.as_deref() == Some(row.slug.as_str()) {
+                                            OtagDef { slug: row.slug.clone(), describe_tag, on_examples }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
