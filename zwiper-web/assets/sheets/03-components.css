@@ -854,7 +854,7 @@ a.nav-dropdown-item.active:visited {
 
 /* A miniature of the theme: its background as the chip, its muted text as the
    border, and the six palette slots inside. */
-.theme-picker-sheet .theme-swatches {
+.theme-swatches {
     display: flex;
     align-items: center;
     gap: var(--space-1);
@@ -863,6 +863,13 @@ a.nav-dropdown-item.active:visited {
     border-radius: 0.35rem;
     background: var(--bg-primary);
     border: 1px solid var(--text-muted);
+}
+
+.theme-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 0.22rem;
+    flex-shrink: 0;
 }
 
 /* A preference row, as the app's theme sheet lists its themes: a filled,
@@ -1003,7 +1010,6 @@ a.nav-dropdown-item.active:visited {
 }
 
 .theme-search-bar + .theme-group-label,
-.theme-picker-sheet .theme-search-bar + .nav-dropdown-label,
 .theme-search-bar + .theme-search-empty + .theme-group-label {
     margin-top: 0;
 }
@@ -1022,63 +1028,10 @@ a.nav-dropdown-item.active:visited {
     text-align: center;
 }
 
-.theme-picker-sheet .theme-dot {
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 0.2rem;
-    flex-shrink: 0;
-}
-
 /* ThemePicker's sheet, a drawer under the bar on a wide window
    (orangui::SheetWide::Drawer). */
 .theme-picker-sheet {
     display: contents;
-}
-
-/* The sheet's rows: filled, bordered pills like the app's settings rows,
-   roomier than a drop-down's for a thumb, the picked one outlined in the
-   accent. */
-/* Soft: the row's gap, padding, radius and font size. */
-:where(.theme-picker-sheet .nav-dropdown-item) {
-    gap: var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: 0.4rem;
-    font-size: 0.95rem;
-}
-
-.theme-picker-sheet .nav-dropdown-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    white-space: nowrap;
-    transition:
-        border-color 0.15s,
-        color 0.15s;
-}
-
-@media (hover: hover) {
-    .theme-picker-sheet .nav-dropdown-item:hover {
-        background-color: var(--bg-primary);
-    }
-}
-
-.theme-picker-sheet .nav-dropdown-item.active {
-    border-color: var(--accent-secondary);
-    color: var(--text-primary);
-}
-
-/* The group chip sits centered above its rows, as the app's sheet has it. */
-.theme-picker-sheet .nav-dropdown-label {
-    margin: var(--space-2) 0 0.1rem;
-    padding: 0;
-}
-
-/* The first chip sits the body's own padding under the title bar, the
-   same distance a later chip sits under the row before it. */
-.theme-picker-sheet .nav-dropdown-label:first-child {
-    margin-top: 0;
 }
 
 /* Section subtitles ("Themes" / "Color blind") that group the picker. The
@@ -2419,7 +2372,7 @@ html:has(.bottom-sheet.show) body,
 }
 
 /* The button is the icon button's box, centered on the field, the × at
-   text size in it. */
+   text size in it, in the clear red. */
 .input-clear-btn {
     flex: 0 0 auto;
     display: flex;
@@ -2438,9 +2391,9 @@ html:has(.bottom-sheet.show) body,
     font-family: "JetBrains Mono", monospace;
     font-size: 1.1rem;
     line-height: 1;
-    color: var(--ink-text-muted, var(--text-muted));
+    color: var(--ink-color-error, var(--color-error));
     background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
+    border: 1px solid var(--color-error);
     border-radius: 0.5rem;
     transition:
         width 0.2s ease,
@@ -3243,8 +3196,7 @@ html[data-wipe="left"]::view-transition-new(root) {
     }
 
     .pref-row:not(:disabled):hover,
-    .collapse-header:not(.collapse-header-quiet):hover,
-    .theme-picker-sheet .nav-dropdown-item:hover {
+    .collapse-header:not(.collapse-header-quiet):hover {
         background-color: var(--border-primary);
         color: var(--text-primary);
     }
@@ -3283,8 +3235,7 @@ html[data-wipe="left"]::view-transition-new(root) {
 
 .pref-row:not(:disabled):focus-visible,
 .collapse-caret:focus-visible,
-.theme-picker-sheet .nav-dropdown-item:focus-visible,
-.bottom-sheet:has(.theme-search:focus) :is(.pref-row, .nav-dropdown-item).enter-target {
+.bottom-sheet:has(.theme-search:focus) .pref-row.enter-target {
     background-color: var(--border-primary);
     color: var(--text-primary);
 }

@@ -1400,10 +1400,3 @@ nav .card-search-label svg {
     }
 }
 
-/* The × beside the box in the apps' clear red, which their filter sheet
-   gives every field's ×. */
-.card-search .input-clear-btn {
-    color: var(--ink-color-error, var(--color-error));
-    border-color: var(--color-error);
-}
-

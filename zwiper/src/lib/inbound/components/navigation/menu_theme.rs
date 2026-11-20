@@ -146,7 +146,7 @@ pub fn MenuTheme() -> Element {
 pub fn MenuThemeSheet() -> Element {
     let driver = use_driver();
     rsx! {
-        // The kit styles the sheet's rows under this class.
+        // The kit's class keeps a folding menu painted while the sheet is up.
         div { class: "theme-picker-sheet",
             ThemeSaveSheet {
                 open: driver.sheet_open,

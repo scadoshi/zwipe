@@ -100,12 +100,33 @@ pub fn ThemeSaveSheet(open: Signal<bool>, on: EventHandler<Action>) -> Element {
     let theme_config: Signal<ThemeConfig> = use_context();
 
     rsx! {
+        // The native app's sheet is the rows alone; the sites and the web app keep the search.
         ThemeSheet {
             open,
             theme: theme_config,
+            search: false,
             on_save: move |picked: ThemeConfig| {
                 on.call(Action::KeepTheme(theme_of(picked)));
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_app_s_theme_sheet_has_no_search() {
+        fn app() -> Element {
+            use_context_provider(|| Signal::new(ThemeConfig::default()));
+            let open = use_signal(|| true);
+            rsx! { ThemeSaveSheet { open, on: |_| {} } }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(html.contains("pref-row"), "the rows: {html}");
+        assert!(!html.contains("theme-search"), "no search field: {html}");
     }
 }

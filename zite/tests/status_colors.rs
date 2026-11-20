@@ -3,10 +3,7 @@
 
 use components::status_uses;
 
-const ALLOWED: [&str; 7] = [
-    // The card search's ×, which clears the box: the apps' clear red, which their filter sheet
-    // gives every field's ×.
-    ".card-search .input-clear-btn",
+const ALLOWED: [&str; 6] = [
     ".dead-end .panel-title",
     ".outcome-error .panel-title",
     ".outcome-success .panel-title",
