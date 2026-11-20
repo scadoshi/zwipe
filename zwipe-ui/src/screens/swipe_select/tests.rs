@@ -898,3 +898,13 @@ fn tymnas_partner_pile_deals_only_plain_partners() {
         ["Thrasios, Triton Hero", "Kraum, Ludevic's Opus"]
     );
 }
+
+#[test]
+fn the_app_s_commander_swipe_holds_to_the_deck_s_format_legality() {
+    let mut builder = CardQueryBuilder::new();
+    Mode::Commander(Format::Brawl).apply(&mut builder);
+    assert_eq!(
+        builder.legalities_contains_all(),
+        Some(["brawl".to_owned()].as_slice())
+    );
+}
