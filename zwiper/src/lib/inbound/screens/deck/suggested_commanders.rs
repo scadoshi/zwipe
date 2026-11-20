@@ -250,7 +250,7 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
                 }
             }
             tbody {
-                for row in rows.iter() {
+                for (i, row) in rows.iter().enumerate() {
                     Fragment { key: "{row.slug}",
                         tr {
                             th { scope: "row",
@@ -261,14 +261,14 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
                                 }
                             }
                             td { class: "data-table-bar",
-                                DataBar { percent: bars.decks(row), tone: "p3", value: row.decks.to_string() }
+                                DataBar { percent: bars.decks(row), tone: "p3", value: row.decks.to_string(), index: i }
                             }
                             td { class: "data-table-bar",
-                                DataBar { percent: bars.cards(row), tone: "p5", value: row.cards.to_string() }
+                                DataBar { percent: bars.cards(row), tone: "p5", value: row.cards.to_string(), index: i }
                             }
                             td { class: "data-table-bar",
                                 if let (Some(impact), Some(percent)) = (row.impact, bars.impact(row)) {
-                                    DataBar { percent, tone: "p2", value: impact.to_string() }
+                                    DataBar { percent, tone: "p2", value: impact.to_string(), index: i }
                                 }
                             }
                         }

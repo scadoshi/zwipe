@@ -4324,13 +4324,18 @@ nav:has(> .card-search-header:focus-within) > :not(.card-search-nav, .nav-panel)
 }
 
 /* A bar cell (.data-table-bar) holds a DataBar: a thin bar in its column's
-   color, its fill the value's share of the column's most, with the value
-   inside in the text color. Bar cells split the room past the label, 1px
+   color, its fill the value's share of the column's most, growing in as a
+   chart's bar does, with the value inside in the text color. Bar cells split the room past the label, 1px
    either side so bars stand 2px apart. */
 .data-table .data-table-bar {
     width: 20%;
     padding-left: 1px;
     padding-right: 1px;
+}
+
+/* A bar column's name and its `?` stay on one line. */
+.data-table thead th.data-table-bar {
+    white-space: nowrap;
 }
 
 .data-bar {
@@ -4343,13 +4348,11 @@ nav:has(> .card-search-header:focus-within) > :not(.card-search-nav, .nav-panel)
     background-color: color-mix(in srgb, var(--data-bar-tone) 14%, transparent);
 }
 
-.data-bar::before {
-    content: "";
+.data-bar-fill {
     position: absolute;
     top: 0;
     bottom: 0;
     left: 0;
-    width: var(--data-bar-fill, 0%);
     border-radius: 4px;
     background-color: color-mix(in srgb, var(--data-bar-tone) 55%, transparent);
 }

@@ -24,10 +24,12 @@ fn rule(selector: &str) -> &'static str {
 
 #[test]
 fn a_bar_carries_its_tone_its_share_and_its_value() {
-    let html = render(|| rsx! { DataBar { percent: 57, tone: "p3", value: "17".to_owned() } });
+    let html =
+        render(|| rsx! { DataBar { percent: 57, tone: "p3", value: "17".to_owned(), index: 2 } });
     assert_eq!(
         html,
-        r#"<span class="data-bar data-bar-p3" style="--data-bar-fill: 57%;"><span class="data-bar-value">17</span></span>"#
+        r#"<span class="data-bar data-bar-p3"><span class="data-bar-fill chart-bar" style="width: 57%; animation-delay:90ms;"></span><span class="data-bar-value chart-value" style="animation-delay:90ms;">17</span></span>"#,
+        "the fill grows in and the value fades in as a chart's bar and value do, staggered by row"
     );
 }
 
@@ -36,7 +38,7 @@ fn a_ghost_bar_is_the_bar_in_its_own_color_with_no_value() {
     let html = render(|| rsx! { DataBarGhost { percent: 40, tone: "p2" } });
     assert_eq!(
         html,
-        r#"<span class="skeleton-bar data-bar data-bar-p2 data-bar-ghost" style="--data-bar-fill: 40%;"></span>"#
+        r#"<span class="skeleton-bar data-bar data-bar-p2 data-bar-ghost"><span class="data-bar-fill" style="width: 40%;"></span></span>"#
     );
 }
 
@@ -65,4 +67,10 @@ fn bars_are_thin_with_4px_ends_and_the_value_in_the_text_color() {
             "{tone}: {rule}"
         );
     }
+}
+
+#[test]
+fn a_bar_column_s_header_keeps_its_name_and_hint_on_one_line() {
+    let head = rule(".data-table thead th.data-table-bar");
+    assert!(head.contains("white-space: nowrap;"), "{head}");
 }

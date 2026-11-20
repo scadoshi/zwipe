@@ -3,15 +3,23 @@
 
 use dioxus::prelude::*;
 
+use crate::charts::bar_delay;
+
 /// `value` as a bar `percent` of its cell long, in the palette slot `tone` (`p3`, `p5`, `p2`
-/// and so on), the value in the text color inside it.
+/// and so on), the value in the text color inside it. The bar grows in and the value fades in
+/// as a chart's do, staggered by `index`, the row's place.
 #[component]
-pub fn DataBar(percent: u32, tone: &'static str, value: String) -> Element {
+pub fn DataBar(
+    percent: u32,
+    tone: &'static str,
+    value: String,
+    #[props(default)] index: usize,
+) -> Element {
+    let delay = bar_delay(index);
     rsx! {
-        span {
-            class: "data-bar data-bar-{tone}",
-            style: "--data-bar-fill: {percent}%;",
-            span { class: "data-bar-value", "{value}" }
+        span { class: "data-bar data-bar-{tone}",
+            span { class: "data-bar-fill chart-bar", style: "width: {percent}%; {delay}" }
+            span { class: "data-bar-value chart-value", style: "{delay}", "{value}" }
         }
     }
 }
@@ -21,9 +29,8 @@ pub fn DataBar(percent: u32, tone: &'static str, value: String) -> Element {
 #[component]
 pub fn DataBarGhost(percent: u32, tone: &'static str) -> Element {
     rsx! {
-        span {
-            class: "skeleton-bar data-bar data-bar-{tone} data-bar-ghost",
-            style: "--data-bar-fill: {percent}%;",
+        span { class: "skeleton-bar data-bar data-bar-{tone} data-bar-ghost",
+            span { class: "data-bar-fill", style: "width: {percent}%;" }
         }
     }
 }
