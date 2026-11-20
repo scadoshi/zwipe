@@ -1385,6 +1385,12 @@ pub static GUIDES: &[Guide] = &[
                 "On your own deck: `m` moves it to the maybeboard, `s` to the sideboard, Shift+S stars it, Shift+F flags it, and `-` and `+` change the count.",
                 "`u` or Ctrl+Z undoes, `f` filters, `/` filters by name, `q` opens Quick add, and `a`, `r`, and `e` open Add, Remove, and Edit deck.",
             ]),
+            Block::H2("Search results"),
+            Block::Bullets(&[
+                "The arrow keys, or `h`, `j`, `k`, and `l`, move between the cards as they're laid out; Home and End jump to the first or last. Enter opens the card.",
+                "On the card under the cursor: `p` Printings, Shift+P Send to, `d` details, `v` flip.",
+                "From the search box, `↓` or `Esc` puts the cursor back on the cards.",
+            ]),
             Block::H2("A card page"),
             Block::Bullets(&[
                 "`p` opens Printings and Shift+P opens Send to.",
