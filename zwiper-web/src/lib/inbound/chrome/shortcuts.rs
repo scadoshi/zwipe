@@ -154,7 +154,8 @@ pub enum ShortcutsScreen {
     CommanderMaybeboard,
     /// A deck's Edit: the keys every page has, and Esc going back to the deck once nothing is open.
     EditDeck,
-    /// A card page showing one card: `p` for its Printings and `/` for the card search.
+    /// A card page showing one card: `p` for its Printings, Shift+P for its Send to and `/` for
+    /// the card search.
     CardPage,
 }
 
@@ -163,16 +164,19 @@ pub enum ShortcutsScreen {
 pub enum CardPageKey {
     /// Opens the card's Printings sheet.
     Printings,
+    /// Opens the card's Send to, or the login page for a visitor.
+    SendTo,
     /// Puts the cursor in the card search box that shows.
     Search,
 }
 
-/// The card page key `key` (a `KeyboardEvent.key`) stands for. Lowercase `p` only, so Shift+P
-/// stays free.
+/// The card page key `key` (a `KeyboardEvent.key`) stands for: `p` Printings, Shift+P (`P`) Send
+/// to, as a deck's card details answer them.
 #[must_use]
 pub fn card_page_key(key: &str) -> Option<CardPageKey> {
     match key {
         shortcuts::PRINTINGS_KEY => Some(CardPageKey::Printings),
+        shortcuts::SEND_TO_KEY => Some(CardPageKey::SendTo),
         shortcuts::CARD_SEARCH_KEY => Some(CardPageKey::Search),
         _ => None,
     }
@@ -686,10 +690,11 @@ mod tests {
     }
 
     #[test]
-    fn the_card_page_answers_p_with_printings_and_slash_with_the_search() {
+    fn the_card_page_answers_p_with_printings_shift_p_with_send_to_and_slash_with_the_search() {
         assert_eq!(card_page_key("p"), Some(CardPageKey::Printings));
+        assert_eq!(card_page_key("P"), Some(CardPageKey::SendTo));
         assert_eq!(card_page_key("/"), Some(CardPageKey::Search));
-        for key in ["P", "i", "d", "v"] {
+        for key in ["i", "d", "v", "S"] {
             assert_eq!(card_page_key(key), None, "{key}");
         }
     }
@@ -698,6 +703,7 @@ mod tests {
     fn every_key_the_card_page_sheet_lists_on_the_page_works_there() {
         let rows = sheet_rows(&ShortcutsScreen::CardPage);
         assert!(rows.contains(&(&["p"][..], "Printings")), "{rows:?}");
+        assert!(rows.contains(&shortcuts::SEND_TO_ROW), "{rows:?}");
         assert!(!claims_steps(&ShortcutsScreen::CardPage));
     }
 }

@@ -223,12 +223,13 @@ pub fn everywhere_groups() -> Vec<SheetGroup> {
     })
 }
 
-/// The groups of a card page showing one card: `p` opens its Printings, beside the keys every
-/// page has ([`everywhere_groups`]), and the keys Printings answers once open.
+/// The groups of a card page showing one card: `p` opens its Printings and Shift+P its Send to,
+/// beside the keys every page has ([`everywhere_groups`]), and the keys Printings answers once
+/// open.
 #[must_use]
 pub fn card_page_groups() -> Vec<SheetGroup> {
     sheet_groups(ScreenKeys {
-        card: vec![PRINTINGS_ROW],
+        card: vec![PRINTINGS_ROW, SEND_TO_ROW],
         page: vec![CARD_SEARCH_ROW],
         steps: true,
         ..ScreenKeys::default()
@@ -708,12 +709,12 @@ mod tests {
     }
 
     #[test]
-    fn a_card_page_lists_p_for_printings_beside_the_keys_every_page_has() {
+    fn a_card_page_lists_p_for_printings_and_shift_p_for_send_to_beside_the_keys_every_page_has() {
         assert_eq!(
             outline(&card_page_groups()),
             vec![
                 ("Navigation", vec!["gg", "Shift+G", "j", "k"]),
-                ("Card", vec!["p"]),
+                ("Card", vec!["p", "Shift+P"]),
                 ("Page", vec!["/", "t", "?", "Shift+H", "Esc"]),
                 ("In printings", vec!["←", "h", "v", "Enter"]),
                 ("In themes", vec!["↑", "h", "gg", "Enter"]),

@@ -216,7 +216,10 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
             let leads = commander_eligibility::is_valid_commander(&card, &Format::Commander);
             rsx! {
                 div { class: "screen-content content-enter web-cards-swipe web-card-page",
-                    CardPageKeys { on_printings: move |()| printings_open.set(true) }
+                    CardPageKeys {
+                        on_printings: move |()| printings_open.set(true),
+                        on_send_to: move |()| dispatch(Action::SendTo { signed_in: signed_in() }),
+                    }
                     div { class: "web-cards-swipe-main",
                         div { class: "web-card-image",
                             FlippableCardImage { sd, size: ImageSize::Large }
@@ -313,14 +316,15 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
     }
 }
 
-/// The keys of a card page showing one card, while it is mounted: `p` opens its Printings and `/`
-/// puts the cursor in the card search, and Shift+H lists both.
+/// The keys of a card page showing one card, while it is mounted: `p` opens its Printings,
+/// Shift+P its Send to and `/` puts the cursor in the card search, and Shift+H lists them.
 #[component]
-fn CardPageKeys(on_printings: EventHandler<()>) -> Element {
+fn CardPageKeys(on_printings: EventHandler<()>, on_send_to: EventHandler<()>) -> Element {
     use_offer_shortcuts(ShortcutsScreen::CardPage);
     components::keys::use_page_keys(Callback::new(move |key: String| {
         match card_page_key(&key) {
             Some(CardPageKey::Printings) => on_printings.call(()),
+            Some(CardPageKey::SendTo) => on_send_to.call(()),
             Some(CardPageKey::Search) => focus_card_search(),
             None => {}
         }
