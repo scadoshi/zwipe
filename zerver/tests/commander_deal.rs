@@ -2,7 +2,8 @@
 //! filter matches. Popularity orders it for a user with nothing to go on, a filter outside the
 //! user's colors still answers, the user's led commanders, maybeboard, dismissals and the
 //! request's own exclusions stay out, pages split one order, a saved commander lifts its
-//! neighbors, and one identity past its first few sorts after the rest.
+//! neighbors, and one identity past its first few sorts after the rest. A filter's sort orders
+//! the page instead, by its key and direction, paging on through what it dealt.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -20,6 +21,7 @@ use serde_json::{Value, json};
 use uuid::Uuid;
 use zwipe_core::domain::card::scryfall_data::colors::{Color, Colors};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::{CardSortKey, SortDirection};
 use zwipe_core::http::paths::{
     COMMANDER_DEAL_ROUTE, COMMANDER_DISMISSALS_ROUTE, DECK_ROUTE,
     add_commander_maybeboard_card_route, deck_route,
@@ -368,5 +370,143 @@ async fn played_colors_break_a_tie_and_saved_colors_count_toward_a_save_s_fit(po
         tied,
         ["Black Peer", "Blue Peer"],
         "the rest tie on popularity"
+    );
+}
+
+/// A filter that only sorts: `key` in `direction`, with nothing narrowing it.
+fn sort_filter(key: CardSortKey, direction: SortDirection) -> Value {
+    let mut filter = CardQueryBuilder::default();
+    filter.set_is_token(false);
+    filter.set_sort(key);
+    filter.set_direction(direction);
+    serde_json::to_value(filter.build().unwrap()).unwrap()
+}
+
+/// Four commanders that order differently under every sort, and a fifth with no price.
+fn sortable() -> Vec<CardFixture> {
+    vec![
+        commander("Bravo", "W", 300).cmc(2.0).power("5").usd("9.00"),
+        commander("Delta", "U", 100).cmc(4.0).power("1").usd("0.50"),
+        commander("Alpha", "B", 400)
+            .cmc(3.0)
+            .power("3")
+            .usd("20.00"),
+        commander("Charlie", "R", 200)
+            .cmc(1.0)
+            .power("2")
+            .usd("3.25"),
+        commander("Echo", "G", 500).cmc(5.0).power("4"),
+    ]
+}
+
+#[sqlx::test]
+async fn each_sort_orders_a_page_as_asked(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let token = user(&app, "sorter").await;
+    seed_cards(&pool, &sortable()).await;
+
+    let cases: [(CardSortKey, SortDirection, &[&str]); 7] = [
+        (
+            CardSortKey::Name,
+            SortDirection::Ascending,
+            &["Alpha", "Bravo", "Charlie", "Delta", "Echo"],
+        ),
+        (
+            CardSortKey::Name,
+            SortDirection::Descending,
+            &["Echo", "Delta", "Charlie", "Bravo", "Alpha"],
+        ),
+        (
+            CardSortKey::Cmc,
+            SortDirection::Ascending,
+            &["Charlie", "Bravo", "Alpha", "Delta", "Echo"],
+        ),
+        (
+            CardSortKey::Power,
+            SortDirection::Descending,
+            &["Bravo", "Echo", "Alpha", "Charlie", "Delta"],
+        ),
+        (
+            CardSortKey::PriceUsd,
+            SortDirection::Descending,
+            &["Alpha", "Bravo", "Charlie", "Delta"],
+        ),
+        (
+            CardSortKey::PriceUsd,
+            SortDirection::Ascending,
+            &["Delta", "Charlie", "Bravo", "Alpha"],
+        ),
+        (
+            CardSortKey::EdhrecRank,
+            SortDirection::Descending,
+            &["Echo", "Alpha", "Bravo", "Charlie", "Delta"],
+        ),
+    ];
+    for (key, direction, want) in cases {
+        let page = deal(
+            &app,
+            &token,
+            json!({ "limit": 10, "filter": sort_filter(key, direction) }),
+        )
+        .await;
+        assert_eq!(names(&page), want, "{key:?} {direction:?}");
+    }
+}
+
+#[sqlx::test]
+async fn a_deal_with_no_sort_keeps_popularity_order(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let token = user(&app, "unsorted").await;
+    seed_cards(&pool, &sortable()).await;
+
+    let mut filter = CardQueryBuilder::default();
+    filter.set_legalities_contains_all(vec!["commander".to_owned()]);
+    let filter = serde_json::to_value(filter.build().unwrap()).unwrap();
+    let page = deal(&app, &token, json!({ "limit": 10, "filter": filter })).await;
+    assert_eq!(
+        names(&page),
+        ["Delta", "Charlie", "Bravo", "Alpha", "Echo"],
+        "popularity, most played first"
+    );
+}
+
+#[sqlx::test]
+async fn a_sorted_deal_pages_by_what_it_dealt_and_spreads_no_identity(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let token = user(&app, "sortpager").await;
+    let cards: Vec<CardFixture> = (1..=6)
+        .map(|n| commander(&format!("Red {n}"), "R", 10 - n).cmc(f64::from(n)))
+        .chain([commander("Green", "G", 100).cmc(7.0)])
+        .collect();
+    let ids: Vec<(String, Uuid)> = cards
+        .iter()
+        .map(|c| (c.name().to_owned(), c.oracle_id().unwrap()))
+        .collect();
+    seed_cards(&pool, &cards).await;
+    let by_cmc = sort_filter(CardSortKey::Cmc, SortDirection::Ascending);
+
+    let first = names(&deal(&app, &token, json!({ "limit": 5, "filter": by_cmc })).await);
+    assert_eq!(
+        first,
+        ["Red 1", "Red 2", "Red 3", "Red 4", "Red 5"],
+        "a sort is the order, with no identity cap"
+    );
+    let dealt: Vec<String> = ids
+        .iter()
+        .filter(|(name, _)| first.contains(name))
+        .map(|(_, id)| id.to_string())
+        .collect();
+    let next = names(
+        &deal(
+            &app,
+            &token,
+            json!({ "limit": 5, "filter": by_cmc, "exclude": dealt }),
+        )
+        .await,
+    );
+    assert_eq!(
+        next,
+        ["Red 6", "Green"],
+        "the next page carries on the sort"
     );
 }

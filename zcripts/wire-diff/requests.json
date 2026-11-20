@@ -428,6 +428,32 @@
    }
   },
   {
+   "name": "commander deal, deck creation sorted by price",
+   "method": "POST",
+   "route": "/api/commander/deal",
+   "path": "/api/commander/deal",
+   "as": "tester",
+   "body": {
+    "filter": {
+     "is_token": false,
+     "is_playable": true,
+     "digital": false,
+     "oversized": false,
+     "content_warning": false,
+     "language": "en",
+     "legalities_contains_all": ["commander"],
+     "is_commander_in_format": "commander",
+     "order_by": "PriceUsd",
+     "direction": "descending",
+     "synergy": false,
+     "include_skipped": false
+    },
+    "format": "commander",
+    "limit": 10,
+    "keep_maybeboard": true
+   }
+  },
+  {
    "name": "deck tags",
    "method": "GET",
    "route": "/api/deck/tags",

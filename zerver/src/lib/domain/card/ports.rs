@@ -456,8 +456,10 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// best match to a saved commander (that commander's tags and colors), and a lean popularity
     /// prior every commander has, so popularity orders only what the rest leave even. While
     /// `deal.caps_identities()`, each exact color identity past its first few sorts after every
-    /// other candidate, over the whole list, so pages are one order. Each result carries its
-    /// shared tags with the best-matching deck, as [`Self::score_commander_suggestions`]'s do.
+    /// other candidate, over the whole list, so pages are one order. A filter that sets a sort
+    /// orders the page by that sort instead, as the card search does, with no identity held back
+    /// and the cards that search drops for the sort left out. Each result carries its shared tags
+    /// with the best-matching deck, as [`Self::score_commander_suggestions`]'s do.
     fn score_commander_deal(
         &self,
         deal: &CommanderDeal,
