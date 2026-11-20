@@ -37,6 +37,9 @@ impl SearchHost for SiteSearch {
     fn open(self, to: Destination) {
         document::eval(&open_js(&app_url(&to)));
     }
+
+    /// Counts nothing: no one signs in on zwipe.net.
+    fn record_search(self) {}
 }
 
 /// `to`'s address on the web app.

@@ -67,6 +67,10 @@ pub trait SearchHost: Copy + 'static {
 
     /// Opens `to`: a card page or the results page, as the host's route or link.
     fn open(self, to: Destination);
+
+    /// Counts one submitted search toward the user's searches, as each [`Destination`] the bar
+    /// opens is one. A host with no one signed in counts nothing.
+    fn record_search(self);
 }
 
 /// The bar's model and the host that performs its effects. Copy, so every handler and task
@@ -122,7 +126,10 @@ impl<H: SearchHost> CardSearch<H> {
                     self.dispatch(Action::CooledDown(ticket));
                 });
             }
-            Effect::Navigate(to) => self.host.open(to),
+            Effect::Navigate(to) => {
+                self.host.record_search();
+                self.host.open(to);
+            }
         }
     }
 }
@@ -435,7 +442,74 @@ fn blur_js(input_id: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::{Cell, RefCell};
+
     use super::*;
+
+    thread_local! {
+        static SEARCH: RefCell<Option<CardSearch<Counting>>> = const { RefCell::new(None) };
+        static RECORDED: Cell<usize> = const { Cell::new(0) };
+        static OPENED: RefCell<Vec<Destination>> = const { RefCell::new(Vec::new()) };
+    }
+
+    /// A host that never answers a wait or a lookup, and counts what it records and opens.
+    #[derive(Clone, Copy)]
+    struct Counting;
+
+    impl SearchHost for Counting {
+        async fn sleep(self, _wait: Duration) {
+            std::future::pending::<()>().await;
+        }
+
+        async fn lookup(self, _lookup: HttpCardLookup) -> Result<Vec<Card>, Failure> {
+            std::future::pending().await
+        }
+
+        fn open(self, to: Destination) {
+            OPENED.with(|opened| opened.borrow_mut().push(to));
+        }
+
+        fn record_search(self) {
+            RECORDED.with(|recorded| recorded.set(recorded.get().saturating_add(1)));
+        }
+    }
+
+    #[component]
+    fn Bar() -> Element {
+        let search = use_card_search(Counting);
+        SEARCH.with(|s| *s.borrow_mut() = Some(search));
+        rsx! {}
+    }
+
+    #[test]
+    fn a_submit_records_one_search_and_typing_records_none() {
+        let mut dom = VirtualDom::new(Bar);
+        dom.rebuild_in_place();
+        let search = SEARCH.with(|s| s.borrow().unwrap());
+        let dispatch = |action: Action| dom.in_scope(ScopeId::APP, || search.dispatch(action));
+        for text in ["l", "li", "lig", "lightning"] {
+            dispatch(Action::Type(text.to_owned()));
+        }
+        assert_eq!(
+            RECORDED.with(Cell::get),
+            0,
+            "suggestions as you type count nothing"
+        );
+        dispatch(Action::Enter);
+        assert_eq!(RECORDED.with(Cell::get), 1, "Enter counts one search");
+        assert_eq!(
+            OPENED.with(|opened| opened.borrow().clone()),
+            [Destination::Results {
+                query: "lightning".to_owned()
+            }]
+        );
+        dispatch(Action::Enter);
+        assert_eq!(
+            RECORDED.with(Cell::get),
+            1,
+            "Enter on the emptied box opens nothing and counts nothing"
+        );
+    }
 
     #[test]
     fn the_grow_script_names_the_box_and_the_grown_width() {

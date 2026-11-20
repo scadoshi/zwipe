@@ -1,6 +1,7 @@
 //! The card search in the app: its lookup, signed in with a fresh session when one is held, so
-//! the user's Universes Beyond setting applies, else signed out; and its routes, the card page
-//! and the results page; and `HeaderSearch`, the chip in every signed-in screen's header that
+//! the user's Universes Beyond setting applies, else signed out; its routes, the card page and
+//! the results page; each submitted search counted in the usage buffer while signed in; and
+//! `HeaderSearch`, the chip in every signed-in screen's header that
 //! opens the box across it.
 
 use std::time::Duration;
@@ -17,15 +18,17 @@ use zwipe_core::http::contracts::card::HttpCardLookup;
 use zwipe_ui::screens::card_search::{Destination, Failure};
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::router::Router;
 
 /// The app's [`SearchHost`]: the runtime's clock, the lookup with the session when one is held,
-/// and the app's routes.
+/// the app's routes, and the usage buffer its searches count in.
 #[derive(Clone, Copy)]
 pub(crate) struct AppSearch {
     session: Signal<Option<Session>>,
     client: Signal<ZwipeClient>,
     navigator: Navigator,
+    usage_buffer: Signal<UsageBuffer>,
 }
 
 impl std::fmt::Debug for AppSearch {
@@ -46,6 +49,12 @@ impl SearchHost for AppSearch {
     fn open(self, to: Destination) {
         if let Some(route) = route_of(to) {
             self.navigator.push(route);
+        }
+    }
+
+    fn record_search(self) {
+        if self.session.peek().is_some() {
+            self.usage_buffer.peek().record_search();
         }
     }
 }
@@ -77,6 +86,7 @@ fn use_app_search() -> CardSearch<AppSearch> {
         session: use_context(),
         client: use_context(),
         navigator: use_navigator(),
+        usage_buffer: use_context(),
     })
 }
 

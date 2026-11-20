@@ -1,6 +1,7 @@
 //! The card search on the web: its lookup, signed in with a fresh session when one is held, so
-//! the user's Universes Beyond setting applies, else signed out; its routes; and the wide nav's
-//! box, which [`NavSearch`] draws.
+//! the user's Universes Beyond setting applies, else signed out; its routes; each submitted
+//! search counted in the usage buffer while signed in; and the wide nav's box, which
+//! [`NavSearch`] draws.
 
 use std::time::Duration;
 
@@ -13,22 +14,25 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::http::contracts::card::HttpCardLookup;
 use zwipe_ui::screens::card_search::{Destination, Failure};
+use zwipe_ui::telemetry::SharedUsageBuffer;
 
 use crate::inbound::chrome::media::NAV_FOLD_MAX_PX;
 use crate::inbound::router::Route;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
+use crate::inbound::telemetry;
 use crate::outbound::timer;
 
 /// The nav box's id.
 const NAV_SEARCH_ID: &str = "nav-card-search";
 
 /// The web app's [`SearchHost`]: the browser's clock, the lookup with the session when one is
-/// held, and the app's routes.
+/// held, the app's routes, and the usage buffer its searches count in.
 #[derive(Clone, Copy)]
 pub struct WebSearch {
     session: Signal<Option<Session>>,
     client: Signal<ZwipeClient>,
     navigator: Navigator,
+    usage: Signal<SharedUsageBuffer>,
 }
 
 impl std::fmt::Debug for WebSearch {
@@ -51,6 +55,12 @@ impl SearchHost for WebSearch {
             self.navigator.push(route);
         }
     }
+
+    fn record_search(self) {
+        if self.session.peek().is_some() {
+            self.usage.peek().record_search();
+        }
+    }
 }
 
 /// A card search bar driven by the web app, for one mount.
@@ -59,6 +69,7 @@ fn use_web_search() -> CardSearch<WebSearch> {
         session: use_context(),
         client: use_context(),
         navigator: use_navigator(),
+        usage: telemetry::use_usage(),
     })
 }
 

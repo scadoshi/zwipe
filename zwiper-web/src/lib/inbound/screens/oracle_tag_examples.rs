@@ -29,6 +29,13 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let describe_tag = use_describe_tag();
     let hint_open = use_one_time_hint(OneTimeHint::OtagExamples);
+    let usage = telemetry::use_usage();
+    // Opening a tag's examples signed in counts one search; its later pages count none.
+    use_hook(move || {
+        if session.peek().is_some() {
+            usage.peek().record_search();
+        }
+    });
     use_printings_source();
     use_context_provider(|| ExamplesSource {
         fetch: Callback::new(move |page: ExamplesPage| {

@@ -31,6 +31,7 @@ use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{OracleTagScreen, Screen, screen};
 use crate::inbound::components::ui_toast;
 use crate::inbound::screens::deck::card::components::card_info::{CardDetailsSheet, CardSkeleton};
@@ -133,10 +134,18 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
     };
     let examples_hint_open = driver.hint_open;
 
-    // Offers the hint and asks for the first page as the browse first draws.
-    // A different tag always remounts (the dictionary sits between them), so
-    // loading once per mount is enough.
-    use_hook(move || driver.dispatch(Action::Load { slug }));
+    let usage_buffer: Signal<UsageBuffer> = use_context();
+
+    // Offers the hint and asks for the first page as the browse first draws,
+    // counting one search; later pages count none. A different tag always
+    // remounts (the dictionary sits between them), so loading once per mount
+    // is enough.
+    use_hook(move || {
+        if driver.session.peek().is_some() {
+            usage_buffer.peek().record_search();
+        }
+        driver.dispatch(Action::Load { slug });
+    });
 
     // Gesture start point for the end-of-stack panel, which accepts a down-swipe
     // to step back into the pile (no card there, so no `SwipeStack`).
