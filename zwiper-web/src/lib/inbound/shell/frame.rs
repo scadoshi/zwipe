@@ -35,7 +35,8 @@ pub fn PublicFrame() -> Element {
 /// The layout over every route but the auth screens: the signed-in nav
 /// with a live session, so the one [`Shell`] stays mounted from screen to
 /// screen. Without one, a route open to everyone (Privacy policy, About,
-/// a shared deck, the guides, Not found) gets the public nav, and an authed route draws nothing while
+/// a shared deck, a card page, the card search's results, the guides, Not
+/// found) gets the public nav, and an authed route draws nothing while
 /// its gate sends the user to Login.
 #[component]
 pub fn OpenFrame() -> Element {
@@ -62,6 +63,7 @@ fn is_open(route: &Route) -> bool {
             | Route::SharedDeck { .. }
             | Route::CardNamed { .. }
             | Route::CardPrinting { .. }
+            | Route::Search { .. }
             | Route::SharedDeckExport { .. }
             | Route::Guides {}
             | Route::GuidePage { .. }
@@ -152,6 +154,33 @@ pub(crate) fn WebFooter() -> Element {
                 href: CONTRIBUTE_URL,
                 "Contribute"
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use uuid::Uuid;
+    use zwipe_core::domain::card::slug;
+    use zwipe_ui::screens::card_search::Destination;
+
+    use super::*;
+    use crate::inbound::cards::card_search::route_of;
+
+    #[test]
+    fn every_page_the_card_search_opens_is_open_signed_out() {
+        let destinations = [
+            Destination::Card(slug::card_slug("Sol Ring").unwrap()),
+            Destination::Printing {
+                path: slug::printing_path("_____", Uuid::new_v4()),
+            },
+            Destination::Results {
+                query: "solemn".to_owned(),
+            },
+        ];
+        for destination in destinations {
+            let route = route_of(destination.clone()).unwrap();
+            assert!(is_open(&route), "{destination:?} opens {route:?}");
         }
     }
 }
