@@ -526,7 +526,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Where it is"),
             Block::P(
-                "On a wide window it's the Card search box in the nav, on app.zwipe.net and on zwipe.net. On a phone it sits at the top of the screen, in the app and on both sites: tap it and the box opens across the header. On the web, `/` puts the cursor in it.",
+                "On a wide window it's the [[search]] and the Card search box in the nav, on app.zwipe.net and on zwipe.net. On a phone, in the app and on both sites, tap the [[search]] at the top of the screen and the box opens across the header. On the web, `/` puts the cursor in it.",
             ),
             Block::Image {
                 file: "card-search/01-search-chips.webp",
@@ -860,7 +860,7 @@ pub static GUIDES: &[Guide] = &[
                         "Tap Commanders in the nav. Suggested sits beside your Maybeboard, under it on a phone: the commanders that fit your decks best, 10 at a time with Show more for the next. Its `?` explains the ranking, and the [[funnel]] at the bottom right narrows it along with the Maybeboard.",
                     ),
                     Block::P(
-                        "With no decks yet, Suggested shows the most played commanders instead.",
+                        "Until you've built a deck, Suggested shows popular commanders instead.",
                     ),
                 ],
             ),

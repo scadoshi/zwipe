@@ -135,11 +135,13 @@ pub enum KeyIcon {
     Light,
     /// Dark mode's moon.
     Dark,
+    /// The card search's magnifying glass, as the header and the nav draw it.
+    Search,
 }
 
 impl KeyIcon {
     /// Every icon, in [`KeyIcon::name`] order.
-    pub const ALL: [Self; 27] = [
+    pub const ALL: [Self; 28] = [
         Self::Plus,
         Self::Minus,
         Self::Funnel,
@@ -167,6 +169,7 @@ impl KeyIcon {
         Self::Home,
         Self::Light,
         Self::Dark,
+        Self::Search,
     ];
 
     /// The icon whose [`KeyIcon::name`] is `name`, or `None` for a name no
@@ -208,6 +211,7 @@ impl KeyIcon {
             Self::Home => "home",
             Self::Light => "light",
             Self::Dark => "dark",
+            Self::Search => "search",
         }
     }
 }
