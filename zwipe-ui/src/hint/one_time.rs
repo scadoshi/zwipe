@@ -579,37 +579,25 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
     content(title, blocks)
 }
 
-/// The Commanders screen: its two lists and what each list's controls do.
+/// The Commanders screen at a glance: its two lists, Show more, Swipe with its directions and
+/// From. The rest of each row's and list's controls are in the guide.
 fn commanders_hint() -> HintContent {
     content(
         "Commanders",
         vec![
-            line(vec![text(
-                "Your saved commanders and the ones that fit your decks",
-            )]),
             bullet(vec![
                 key("Maybeboard"),
                 text(" holds the commanders you save"),
             ]),
             bullet(vec![
                 key("Suggested"),
-                text(" ranks the 10 commanders that fit all your decks best, and "),
+                text(" ranks the 10 that fit your decks best, and "),
                 key("Show more"),
                 text(" adds 10 more, once"),
             ]),
             bullet(vec![
-                key("Create deck"),
-                text(" starts a deck with that commander"),
-            ]),
-            bullet(vec![
-                key_in("Remove", Role::Error),
-                text(" takes a save off Maybeboard, or hides a suggestion for a week"),
-            ]),
-            bullet(vec![
                 key("Swipe"),
-                text(
-                    " on Suggested deals its ranking, and on Maybeboard commanders you haven't saved",
-                ),
+                text(" deals Suggested's ranking, or on Maybeboard commanders you haven't saved"),
             ]),
             bullet(vec![
                 emph("right", Role::Success),
@@ -622,11 +610,6 @@ fn commanders_hint() -> HintContent {
             bullet(vec![
                 key("From"),
                 text(" on the Maybeboard's Swipe switches to your saved commanders"),
-            ]),
-            bullet(vec![key("Quick add"), text(" saves a commander by name")]),
-            bullet(vec![
-                icon_key(KeyIcon::Funnel),
-                text(" narrows both lists at once"),
             ]),
         ],
     )
@@ -913,6 +896,40 @@ mod tests {
     }
 
     #[test]
+    fn the_commanders_hint_keeps_what_a_glance_needs_and_leaves_the_rest_to_the_guide() {
+        let commanders = content_for(OneTimeHint::Commanders).unwrap();
+        let lines: Vec<String> = commanders.blocks.iter().map(Block::plain).collect();
+        assert_eq!(
+            lines.len(),
+            5,
+            "five bullets fit a phone without scrolling: {lines:?}"
+        );
+        for kept in [
+            "Maybeboard",
+            "Suggested",
+            "Show more",
+            "Swipe",
+            "right",
+            "From",
+        ] {
+            assert!(
+                lines.iter().any(|l| l.contains(kept)),
+                "{kept} stays: {lines:?}"
+            );
+        }
+        for dropped in ["Create deck", "Remove", "Quick add", "narrows"] {
+            assert!(
+                !lines.iter().any(|l| l.contains(dropped)),
+                "{dropped} is the guide's: {lines:?}"
+            );
+        }
+        assert!(
+            crate::hint::guide::one_time_slug(OneTimeHint::Commanders).is_some(),
+            "its See guide carries the rest"
+        );
+    }
+
+    #[test]
     fn the_welcome_playstyle_and_commanders_hints_send_suggestions_to_commanders() {
         let plain = |c: HintContent| c.blocks.iter().map(Block::plain).collect::<Vec<String>>();
         let welcome = plain(content_for_user(OneTimeHint::FirstLogin, true).unwrap());
@@ -931,7 +948,13 @@ mod tests {
         let lines = plain(commanders);
         assert_eq!(
             lines.first().map(String::as_str),
-            Some("Your saved commanders and the ones that fit your decks")
+            Some("Maybeboard holds the commanders you save")
+        );
+        assert_eq!(
+            lines.get(1).map(String::as_str),
+            Some(
+                "Suggested ranks the 10 that fit your decks best, and Show more adds 10 more, once"
+            )
         );
         let swipe = lines
             .iter()
@@ -941,7 +964,7 @@ mod tests {
             swipe,
             Some(
                 &[
-                    "Swipe on Suggested deals its ranking, and on Maybeboard commanders you haven't saved".to_owned(),
+                    "Swipe deals Suggested's ranking, or on Maybeboard commanders you haven't saved".to_owned(),
                     "right starts a deck, up saves, left skips".to_owned(),
                 ][..]
             ),
