@@ -234,6 +234,58 @@
     margin-right: auto;
 }
 
+/* A card list's Show more sits under its panel as a chip row sits over one:
+   a chip row's gap between them, and the panel's own gap to what follows. Its
+   one row lets it fold to nothing as it leaves. */
+.card-group:has(+ .card-list-more) {
+    margin-bottom: var(--space-2);
+}
+
+.card-list-more {
+    display: grid;
+    grid-template-rows: 1fr;
+    width: fit-content;
+    margin: 0 0 var(--panel-gap);
+}
+
+/* The chip's box: no line box around it, and no floor on the row it folds. */
+.card-list-more > * {
+    display: flex;
+    min-height: 0;
+}
+
+/* Once it deals its page, Show more fades out; the code drops it when the
+   fade ends. */
+.card-list-more.card-list-more-leaving {
+    pointer-events: none;
+    animation: card-list-more-fade var(--enter-duration) var(--ease-enter) forwards;
+}
+
+/* With motion allowed it also folds away and takes back the chip gap over
+   it, so what sits under it glides up to the panel's own gap. */
+@media (prefers-reduced-motion: no-preference) {
+    .card-list-more.card-list-more-leaving {
+        overflow: hidden;
+        transform-origin: top left;
+        animation-name: card-list-more-leave;
+    }
+}
+
+@keyframes card-list-more-fade {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes card-list-more-leave {
+    to {
+        grid-template-rows: 0fr;
+        margin-top: calc(-1 * var(--space-2));
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+
 /* The "?" button's ghost, its size as a bare chip. */
 .skeleton-info-button {
     flex: none;

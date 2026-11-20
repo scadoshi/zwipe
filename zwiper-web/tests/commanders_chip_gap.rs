@@ -83,25 +83,45 @@ fn show_more_sits_under_the_panel_not_as_a_row_in_it() {
         !fold.contains("Show more\""),
         "no Show more row inside the fold: {fold}"
     );
-    assert!(
-        after.contains(r#"class: "chip card-list-more","#),
-        "{after}"
-    );
+    assert!(after.contains(r#"class: "chip","#), "{after}");
     assert!(body.contains("offers_more("), "{body}");
     assert!(after.contains("if more {"), "{after}");
 }
 
 #[test]
-fn show_more_sits_a_chip_row_s_gap_under_its_panel_and_a_panel_gap_over_the_next() {
+fn show_more_s_rules_are_the_shared_screens_not_the_web_s_own() {
     assert!(
-        WEB.contains(".card-group:has(+ .card-list-more) {\n    margin-bottom: var(--space-2);\n}"),
-        "8px between the panel and its chip, as a chip row keeps over its panel"
+        !WEB.contains(".card-list-more"),
+        "the app draws the same Show more, so its rules sit in the screens CSS"
+    );
+}
+
+#[test]
+fn show_more_leaves_on_its_exit_before_it_goes() {
+    let body = suggested_fold();
+    let (_, after) = body
+        .split_once("// Show more sits under the panel")
+        .unwrap();
+    assert!(
+        body.contains("let more = open() && (leaving() || offers_more("),
+        "a leaving chip stays until its exit ends: {body}"
     );
     assert!(
-        WEB.contains(
-            ".card-list-more {\n    display: flex;\n    width: fit-content;\n    margin: 0 0 var(--panel-gap);\n}"
-        ),
-        "the panel gap to what follows, as the panel itself kept"
+        after.contains(r#""card-list-more card-list-more-leaving""#),
+        "{after}"
+    );
+    assert!(
+        after.contains("onanimationend: move |event: AnimationEvent| {"),
+        "{after}"
+    );
+    assert!(
+        after.contains("if ends_leave(&event.animation_name()) {\n"),
+        "{after}"
+    );
+    assert!(after.contains("leaving.set(true);"), "{after}");
+    assert!(
+        after.contains("},\n                div {\n                    button {"),
+        "the chip sits in a bare box, since its own padding would floor the row it folds: {after}"
     );
 }
 
@@ -119,7 +139,7 @@ fn the_suggested_ghost_draws_show_more_under_its_panel() {
 fn show_more_hides_while_the_panel_is_folded() {
     let body = suggested_fold();
     assert!(
-        body.contains("let more = open() && offers_more("),
+        body.contains("let more = open() && (leaving() || offers_more("),
         "a folded panel offers no Show more: {body}"
     );
     assert!(
