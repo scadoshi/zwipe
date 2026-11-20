@@ -95,7 +95,8 @@ for (const box of document.querySelectorAll('.web-scroll-screen, .screen-content
 window.scrollTo(0, 0);
 ";
 
-/// Starts a fresh search at the top with no keyboard cursor ([`FRESH_START_JS`]).
+/// Starts a fresh search at the top with no keyboard cursor: the cursor's card and order go, and every
+/// box that scrolls the page goes back to its top.
 pub fn fresh_start() {
     document::eval(FRESH_START_JS);
 }
