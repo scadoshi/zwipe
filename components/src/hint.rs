@@ -101,8 +101,8 @@ fn Spans(spans: Vec<Span>) -> Element {
 
 /// A key's icon, drawn as the button it names draws it: the dock icons from
 /// their paths, the eye, pencil, clone and share from their components, the
-/// palette from the theme button's own icon, and the sun or moon from the
-/// kit's mode icon.
+/// palette from the theme button's own icon, the sun or moon from the
+/// kit's mode icon, and the search glass as the card search draws it.
 #[component]
 pub fn KeyGlyph(icon: KeyIcon) -> Element {
     let path = match icon {
@@ -133,8 +133,29 @@ pub fn KeyGlyph(icon: KeyIcon) -> Element {
         KeyIcon::Share => return rsx! { ShareIcon {} },
         KeyIcon::Light => return rsx! { ModeIcon { dark: false } },
         KeyIcon::Dark => return rsx! { ModeIcon { dark: true } },
+        KeyIcon::Search => return rsx! { SearchGlyph {} },
     };
     rsx! { DockIcon { path } }
+}
+
+/// The card search's glass at a key's size: the header's path and its heavier stroke, with
+/// round caps and joins, in the key's ink.
+#[component]
+fn SearchGlyph() -> Element {
+    rsx! {
+        svg {
+            class: "action-dock-icon",
+            view_box: "0 0 24 24",
+            xmlns: "http://www.w3.org/2000/svg",
+            "aria-hidden": "true",
+            path {
+                d: crate::card_search::SEARCH_ICON,
+                stroke_width: crate::card_search::SEARCH_STROKE,
+                stroke_linecap: "round",
+                stroke_linejoin: "round",
+            }
+        }
+    }
 }
 
 /// A colored word inside a hint, such as a swipe direction. `color` names a
@@ -244,7 +265,7 @@ mod tests {
     fn swipe_select_links_by_its_overlay() {
         assert!(matches!(
             guide_for_swipe_select(SwipeSelectMode::Suggested { has_filter: false }).as_slice(),
-            [DialogAction::Link { href, .. }] if href == "https://app.zwipe.net/guides/playstyle"
+            [DialogAction::Link { href, .. }] if href == "https://app.zwipe.net/guides/commander-suggestions"
         ));
     }
 }
