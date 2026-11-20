@@ -57,6 +57,7 @@ use crate::domain::deck::models::deck::commander_suggestions::{
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::commander_scoring::SCORE_COMMANDER_SUGGESTIONS_SQL;
 use crate::outbound::sqlx::card::helpers::oracle_tag_groups::{self, RoleMembershipBinds};
+use crate::outbound::sqlx::card::helpers::rebuild_guard::{self, Column};
 use crate::outbound::sqlx::card::helpers::scryfall_loads;
 use crate::outbound::sqlx::card::helpers::upsert_card::{
     BatchDeltaUpsertWithTx, BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
@@ -595,11 +596,13 @@ impl CardRepository for MyPostgres {
     async fn sync_oracle_tags(
         &self,
         tags: &[crate::inbound::external::scryfall::oracle_tag::OracleTag],
+        load: Option<&ScryfallLoad>,
     ) -> anyhow::Result<(usize, usize)> {
         let mut tx = self.pool.begin().await?;
-        let counts =
-            crate::outbound::sqlx::card::helpers::oracle_tags::sync_oracle_tags(&mut tx, tags)
-                .await?;
+        let counts = crate::outbound::sqlx::card::helpers::oracle_tags::sync_oracle_tags(
+            &mut tx, tags, load,
+        )
+        .await?;
         self.finish(tx).await?;
         Ok(counts)
     }
@@ -608,6 +611,7 @@ impl CardRepository for MyPostgres {
         // Aggregate oracle tags per oracle_id once, then fan out to every printing's
         // card_profile. LEFT JOIN so cards that lost all tags reset to '[]'.
         let mut tx = self.pool.begin().await?;
+        let before = rebuild_guard::before(&mut tx, Column::OracleTags).await?;
         let result = sqlx::query(
             "WITH oracle_agg AS (
                  SELECT oracle_id, jsonb_agg(oracle_tag ORDER BY oracle_tag) AS tags
@@ -623,6 +627,7 @@ impl CardRepository for MyPostgres {
         .execute(&mut *tx)
         .await
         .context("failed to refresh card_profiles.oracle_tags projection")?;
+        rebuild_guard::after(&mut tx, Column::OracleTags, before).await?;
         self.finish(tx).await?;
         Ok(result.rows_affected())
     }
@@ -2610,16 +2615,20 @@ impl CardRepository for MyPostgres {
 
     async fn derive_oracle_tag_categories(&self) -> anyhow::Result<u64> {
         let mut tx = self.pool.begin().await?;
+        let before = rebuild_guard::before(&mut tx, Column::CardRoles).await?;
         let rows =
             crate::outbound::sqlx::card::helpers::derive_categories::derive_categories(&mut tx)
                 .await?;
+        rebuild_guard::after(&mut tx, Column::CardRoles, before).await?;
         self.finish(tx).await?;
         Ok(rows)
     }
 
     async fn refresh_oracle_tag_groups(&self) -> anyhow::Result<u64> {
         let mut tx = self.pool.begin().await?;
+        let before = rebuild_guard::before(&mut tx, Column::TagGroups).await?;
         let rows = oracle_tag_groups::refresh_oracle_tag_groups(&mut tx).await?;
+        rebuild_guard::after(&mut tx, Column::TagGroups, before).await?;
         self.finish(tx).await?;
         Ok(rows)
     }

@@ -180,11 +180,12 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     -> impl Future<Output = anyhow::Result<()>> + Send;
 
     /// Full-replaces the `oracle_tags` catalog and the scryfall-sourced rows of
-    /// `card_oracle_tags` from a fresh Oracle Tags pull. Returns
-    /// `(catalog_rows, correlation_rows)`.
+    /// `card_oracle_tags` from a fresh Oracle Tags pull, recording `load` in the same
+    /// transaction when given. Returns `(catalog_rows, correlation_rows)`.
     fn sync_oracle_tags(
         &self,
         tags: &[ScryfallOracleTag],
+        load: Option<&ScryfallLoad>,
     ) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 
     /// Rebuilds the `card_profiles.oracle_tags` JSONB projection from

@@ -107,19 +107,37 @@ async fn a_dry_run_card_sync_upserts_nothing(pool: sqlx::PgPool) {
 
 #[sqlx::test]
 async fn a_dry_run_tag_projection_reports_rows_and_changes_none(pool: sqlx::PgPool) {
-    // A tagged profile whose card has no tag rows: the projection would reset it to [].
-    seed_cards(&pool, &[card("Sol Ring").oracle_tags(&["ramp"])]).await;
-    let tags = |pool: sqlx::PgPool| async move {
-        sqlx::query_scalar::<_, serde_json::Value>("SELECT oracle_tags FROM card_profiles")
-            .fetch_one(&pool)
+    // A tagged profile whose card has no tag rows: the projection would reset it to []. Four
+    // more keep their tags, so the reset stays inside the rebuild's floor.
+    let sol_ring = card("Sol Ring").oracle_tags(&["ramp"]);
+    let kept: Vec<_> = (0..4)
+        .map(|i| card(&format!("Kept {i}")).oracle_tags(&["ramp"]))
+        .collect();
+    let mut all = vec![sol_ring.clone()];
+    all.extend(kept.iter().cloned());
+    seed_cards(&pool, &all).await;
+    for k in &kept {
+        sqlx::query("INSERT INTO card_oracle_tags (oracle_id, oracle_tag, source) VALUES ($1, 'ramp', 'scryfall')")
+            .bind(k.oracle_id())
+            .execute(&pool)
             .await
-            .unwrap()
+            .unwrap();
+    }
+    let sol_ring_id = sol_ring.id();
+    let tags = move |pool: sqlx::PgPool| async move {
+        sqlx::query_scalar::<_, serde_json::Value>(
+            "SELECT oracle_tags FROM card_profiles WHERE scryfall_data_id = $1",
+        )
+        .bind(sol_ring_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
     };
     let dry = Postgres::from_pool(pool.clone()).with_writes(Writes::Discard);
     assert_eq!(
         dry.refresh_card_oracle_tags().await.unwrap(),
-        1,
-        "one profile would change"
+        5,
+        "every profile is rewritten"
     );
     assert_eq!(
         tags(pool.clone()).await,
@@ -128,7 +146,7 @@ async fn a_dry_run_tag_projection_reports_rows_and_changes_none(pool: sqlx::PgPo
     );
 
     let real = Postgres::from_pool(pool.clone());
-    assert_eq!(real.refresh_card_oracle_tags().await.unwrap(), 1);
+    assert_eq!(real.refresh_card_oracle_tags().await.unwrap(), 5);
     assert_eq!(tags(pool.clone()).await, serde_json::json!([]));
 }
 

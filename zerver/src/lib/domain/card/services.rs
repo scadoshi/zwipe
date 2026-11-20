@@ -231,9 +231,21 @@ impl<R: CardRepository> CardService for Service<R> {
     async fn sync_oracle_tags<S: BulkSource>(&self, source: &S) -> anyhow::Result<(usize, usize)> {
         tracing::info!("performing oracle tags sync");
         let file = source.describe(BulkEndpoint::OracleTags).await?;
-        let tags: Vec<ScryfallOracleTag> = bulk::pull(source, file).await?.items;
-        tracing::info!("fetched {} oracle tags", tags.len());
-        self.repo.sync_oracle_tags(&tags).await
+        if let Some(made) = file.updated_at {
+            let last = self.repo.fetch_scryfall_load(file.kind).await?;
+            scryfall_pull::check_fresh(file.kind, made, last)?;
+        }
+        let pulled = bulk::pull::<ScryfallOracleTag, _>(source, file).await?;
+        tracing::info!("fetched {} oracle tags", pulled.items.len());
+        let load = pulled.file.updated_at.map(|made| ScryfallLoad {
+            kind: pulled.file.kind,
+            updated_at: made,
+            uri: pulled.file.uri.clone(),
+            items: u64::try_from(pulled.items.len()).unwrap_or(u64::MAX),
+        });
+        self.repo
+            .sync_oracle_tags(&pulled.items, load.as_ref())
+            .await
     }
 
     async fn sync_oracle_tags_from<S: BulkSource>(
@@ -246,7 +258,8 @@ impl<R: CardRepository> CardService for Service<R> {
             .await?
             .items;
         tracing::info!("fetched {} oracle tags", tags.len());
-        self.repo.sync_oracle_tags(&tags).await
+        // An explicit older file: no age check, and no load recorded, so the mark never lowers.
+        self.repo.sync_oracle_tags(&tags, None).await
     }
 
     async fn refresh_card_oracle_tags(&self) -> anyhow::Result<u64> {

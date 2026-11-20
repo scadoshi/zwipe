@@ -30,6 +30,7 @@ use zwipe::domain::card::models::scryfall_pull::{RefusedPull, ScryfallLoad};
 use zwipe::domain::card::ports::CardService;
 use zwipe::inbound::external::scryfall::bulk::{self, BulkEndpoint, BulkFile, BulkSource};
 use zwipe::inbound::external::scryfall::oracle_tag::OracleTag;
+use zwipe::outbound::sqlx::card::helpers::derive_categories::CATEGORY_ROOTS;
 use zwipe::outbound::sqlx::card::helpers::scryfall_loads;
 use zwipe::outbound::sqlx::postgres::Postgres;
 
@@ -421,4 +422,205 @@ async fn a_removal_over_its_cap_is_refused_and_removes_nothing(pool: sqlx::PgPoo
         500,
         "exactly the cap goes through"
     );
+}
+
+// == the oracle tag sync and the rebuilds ==
+
+/// An oracle tags file: each `(slug, cards)` a tag on the fixture cards numbered in `cards`.
+fn tags_file(tags: &[(&str, std::ops::Range<u128>)]) -> String {
+    tags.iter()
+        .enumerate()
+        .map(|(i, (slug, cards))| {
+            let taggings: Vec<Value> = cards
+                .clone()
+                .map(|n| serde_json::json!({ "oracle_id": Uuid::from_u128(0x0a1c_0000 | n) }))
+                .collect();
+            serde_json::json!({
+                "object": "tag",
+                "id": Uuid::from_u128(0x7a90_0000 | u128::try_from(i).unwrap()),
+                "slug": slug,
+                "label": slug,
+                "parent_ids": [],
+                "taggings": taggings,
+            })
+            .to_string()
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// The first two role roots, so the derived roles and the grouping have something to show.
+fn roots() -> (&'static str, &'static str) {
+    (CATEGORY_ROOTS[0].1[0], CATEGORY_ROOTS[1].1[0])
+}
+
+/// A good tag file for the ten fixture cards: one root on all ten, the other on five, and a
+/// third tag on all ten.
+fn good_tags() -> String {
+    let (first, second) = roots();
+    tags_file(&[(first, 0..10), (second, 0..5), ("fixture-extra", 0..10)])
+}
+
+/// Stored tags, card tags, and the profiles carrying projected tags, tag groups and roles.
+async fn tag_state(pool: &sqlx::PgPool) -> (i64, i64, i64, i64, i64) {
+    sqlx::query_as(
+        "SELECT (SELECT count(*) FROM oracle_tags),
+                (SELECT count(*) FROM card_oracle_tags WHERE source = 'scryfall'),
+                (SELECT count(*) FROM card_profiles WHERE oracle_tags <> '[]'::jsonb),
+                (SELECT count(*) FROM card_profiles WHERE oracle_tags_by_role <> '{}'::jsonb),
+                (SELECT count(*) FROM card_profiles WHERE card_roles <> '[]'::jsonb)",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap()
+}
+
+/// The steps after the tag sync, in zervice's order: the projection, the grouping and the roles.
+async fn rebuild(pool: &sqlx::PgPool) -> [anyhow::Result<()>; 3] {
+    let service = cards(pool);
+    [
+        service.refresh_card_oracle_tags().await.map(drop),
+        service.refresh_oracle_tag_groups().await.map(drop),
+        service.derive_card_categories(100).await.map(drop),
+    ]
+}
+
+/// Ten cards with good tags synced on day 19 and every rebuild run.
+async fn seed_tagged(pool: &sqlx::PgPool) -> (i64, i64, i64, i64, i64) {
+    seed_catalog(pool, 10).await;
+    let fixture = Fixture::new(BulkEndpoint::OracleTags, &good_tags(), day(19));
+    cards(pool).sync_oracle_tags(&fixture).await.unwrap();
+    for step in rebuild(pool).await {
+        step.unwrap();
+    }
+    let state = tag_state(pool).await;
+    assert_eq!(
+        state,
+        (3, 25, 10, 10, 10),
+        "every card tagged, grouped and given a role"
+    );
+    state
+}
+
+#[sqlx::test]
+async fn a_good_tag_file_loads_and_records_its_date(pool: sqlx::PgPool) {
+    seed_tagged(&pool).await;
+    let mut conn = pool.acquire().await.unwrap();
+    assert_eq!(
+        scryfall_loads::fetch_load(&mut conn, "oracle_tags")
+            .await
+            .unwrap(),
+        Some(day(19))
+    );
+}
+
+#[sqlx::test]
+async fn the_empty_tag_file_fails_its_night_and_every_role_stays(pool: sqlx::PgPool) {
+    let tagged = seed_tagged(&pool).await;
+    let empty = Fixture::new(BulkEndpoint::OracleTags, "", day(20));
+    let error = cards(&pool).sync_oracle_tags(&empty).await.unwrap_err();
+    assert!(
+        matches!(refusal(&error), Some(RefusedPull::Empty { .. })),
+        "{error:#}"
+    );
+    // zervice skips the projection and the grouping after a failed sync; the roles still run.
+    cards(&pool).derive_card_categories(100).await.unwrap();
+    assert_eq!(tag_state(&pool).await, tagged);
+}
+
+#[sqlx::test]
+async fn a_tag_file_under_eighty_percent_or_older_is_refused(pool: sqlx::PgPool) {
+    let tagged = seed_tagged(&pool).await;
+    let (first, second) = roots();
+    let short = Fixture::new(
+        BulkEndpoint::OracleTags,
+        &tags_file(&[(first, 0..10), (second, 0..5)]),
+        day(20),
+    );
+    let error = cards(&pool).sync_oracle_tags(&short).await.unwrap_err();
+    assert!(
+        matches!(refusal(&error), Some(RefusedPull::Shrunk { .. })),
+        "{error:#}"
+    );
+
+    let older = Fixture::new(BulkEndpoint::OracleTags, &good_tags(), day(18));
+    let error = cards(&pool).sync_oracle_tags(&older).await.unwrap_err();
+    assert!(
+        matches!(refusal(&error), Some(RefusedPull::Stale { .. })),
+        "{error:#}"
+    );
+    assert_eq!(tag_state(&pool).await, tagged);
+}
+
+#[sqlx::test]
+async fn a_restore_from_an_older_file_loads_and_never_lowers_the_mark(pool: sqlx::PgPool) {
+    seed_tagged(&pool).await;
+    let older = Fixture::new(BulkEndpoint::OracleTags, &good_tags(), day(18));
+    cards(&pool)
+        .sync_oracle_tags_from(
+            &older,
+            "https://data.scryfall.io/oracle-tags/older.jsonl.gz",
+        )
+        .await
+        .unwrap();
+    let mut conn = pool.acquire().await.unwrap();
+    assert_eq!(
+        scryfall_loads::fetch_load(&mut conn, "oracle_tags")
+            .await
+            .unwrap(),
+        Some(day(19))
+    );
+}
+
+#[sqlx::test]
+async fn every_rebuild_refuses_empty_tag_tables_and_keeps_its_column(pool: sqlx::PgPool) {
+    let tagged = seed_tagged(&pool).await;
+    sqlx::query("DELETE FROM card_oracle_tags")
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM oracle_tags")
+        .execute(&pool)
+        .await
+        .unwrap();
+    for step in rebuild(&pool).await {
+        let error = step.unwrap_err();
+        assert!(
+            matches!(refusal(&error), Some(RefusedPull::NoInput { .. })),
+            "{error:#}"
+        );
+    }
+    let (_, _, projected, grouped, roles) = tag_state(&pool).await;
+    assert_eq!((projected, grouped, roles), (tagged.2, tagged.3, tagged.4));
+}
+
+#[sqlx::test]
+async fn a_rebuild_that_would_strip_most_profiles_rolls_back(pool: sqlx::PgPool) {
+    let tagged = seed_tagged(&pool).await;
+    // Seven of the ten cards lose every tag row: each rebuild would leave three of ten.
+    sqlx::query("DELETE FROM card_oracle_tags WHERE oracle_id <> ALL($1)")
+        .bind(
+            (0..3)
+                .map(|n| Uuid::from_u128(0x0a1c_0000 | n))
+                .collect::<Vec<_>>(),
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+    for step in rebuild(&pool).await {
+        let error = step.unwrap_err();
+        assert!(
+            matches!(
+                refusal(&error),
+                Some(RefusedPull::RebuildShrunk {
+                    after: 3,
+                    before: 10,
+                    ..
+                })
+            ),
+            "{error:#}"
+        );
+    }
+    let (_, _, projected, grouped, roles) = tag_state(&pool).await;
+    assert_eq!((projected, grouped, roles), (tagged.2, tagged.3, tagged.4));
 }
