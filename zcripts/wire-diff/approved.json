@@ -2,5 +2,7 @@
   { "route": "/api/card/lookup", "path": "", "kind": "status", "reason": "new public route, card lookup (additive; main has no such route)", "approved_by": "composer" },
   { "route": "/api/card/lookup", "path": "", "kind": "type", "reason": "new public route, card lookup: main's 404 has no body", "approved_by": "composer" },
   { "route": "/api/card/named/{name_slug}", "path": "", "kind": "status", "reason": "new public route, cards by name slug (additive; main has no such route)", "approved_by": "composer" },
-  { "route": "/api/card/named/{name_slug}", "path": "", "kind": "type", "reason": "new public route, cards by name slug: main's 404 has no body", "approved_by": "composer" }
+  { "route": "/api/card/named/{name_slug}", "path": "", "kind": "type", "reason": "new public route, cards by name slug: main's 404 has no body", "approved_by": "composer" },
+  { "route": "/api/commander/deal", "path": "", "kind": "status", "reason": "new signed-in route, the commander deal (additive; main has no such route)", "approved_by": "composer" },
+  { "route": "/api/commander/deal", "path": "", "kind": "type", "reason": "new signed-in route, the commander deal: main's 404 has no body", "approved_by": "composer" }
 ]
