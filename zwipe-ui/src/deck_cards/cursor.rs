@@ -1,7 +1,8 @@
 //! The deck cards page's keyboard cursor: which card a
 //! move lands on, given the cards as the page draws them, in columns. orangui-core's
 //! [`grid_cursor`](orangui_core::grid_cursor) decides; here a card is named by its Scryfall id.
-//! A screen of card lists side by side walks them as [`Walk::Lists`].
+//! A screen of card lists side by side walks them as [`Walk::Lists`], and a grid of cards (the
+//! card search's results) as [`Walk::Grid`].
 
 pub use orangui_core::grid_cursor::{Cell, MOVE_KEYS, Move, move_for};
 use uuid::Uuid;
@@ -23,6 +24,11 @@ pub enum Walk {
     /// right go to the card at the same place in the next list with cards, else its last card.
     /// One list walks as one column.
     Lists,
+    /// A grid of cards laid out in rows (the card search's results), each column one of its
+    /// columns: left and right go along the row and stop at its ends, up and down go to the card
+    /// above or below in the same column, and down from a column with no card in the next row
+    /// goes to that row's last card. Home and End go to the first and last card in reading order.
+    Grid,
 }
 
 /// The card `step` from card `from` lands on as `walk` moves, or `None` where it stops at an
@@ -46,6 +52,9 @@ pub fn step<I: Copy + PartialEq>(
                     .map(|at| (column, at))
             })
     });
+    if let (Walk::Grid, Some(place)) = (walk, place) {
+        return grid_step(snapshot, place, step);
+    }
     let (Walk::Lists, Some((column, at)), Some(id)) = (walk, place, from) else {
         return snapshot.step(from, step);
     };
@@ -71,6 +80,46 @@ pub fn step<I: Copy + PartialEq>(
         }
         Move::First | Move::Last => snapshot.step(from, step),
     }
+}
+
+/// Where `step` lands in a grid whose columns are `snapshot`'s, from the card at index `at` of
+/// column `column` ([`Walk::Grid`]). A card's index in its column is its row.
+fn grid_step<I: Copy>(
+    snapshot: &Snapshot<I>,
+    (column, at): (usize, usize),
+    step: Move,
+) -> Option<I> {
+    let card = |column: usize, row: usize| {
+        snapshot
+            .columns
+            .get(column)
+            .and_then(|stops| stops.get(row))
+            .map(|stop| stop.id)
+    };
+    match step {
+        Move::Left => card(column.checked_sub(1)?, at),
+        Move::Right => card(column.checked_add(1)?, at),
+        Move::Up => card(column, at.checked_sub(1)?),
+        Move::Down => {
+            let below = at.checked_add(1)?;
+            card(column, below).or_else(|| (0..column).rev().find_map(|left| card(left, below)))
+        }
+        Move::First => card(0, 0),
+        Move::Last => grid_reading_order(snapshot).last().copied(),
+    }
+}
+
+/// A grid's cards in reading order, row by row and each row left to right.
+fn grid_reading_order<I: Copy>(snapshot: &Snapshot<I>) -> Vec<I> {
+    let rows = snapshot.columns.iter().map(Vec::len).max().unwrap_or(0);
+    (0..rows)
+        .flat_map(|row| {
+            snapshot
+                .columns
+                .iter()
+                .filter_map(move |stops| stops.get(row).map(|stop| stop.id))
+        })
+        .collect()
 }
 
 /// One card of the row above the columns (the deck page's featured cards), at its horizontal
@@ -301,6 +350,82 @@ mod tests {
                 "{from:?} {move_to:?}"
             );
         }
+    }
+
+    /// A grid of four columns and three rows, the last row holding two cards: 1 2 3 4, 5 6 7 8,
+    /// 9 10. Each column is a column of the grid, top to bottom.
+    fn grid() -> Snapshot<u128> {
+        Snapshot {
+            columns: vec![
+                vec![stop(1, 100.0), stop(5, 300.0), stop(9, 500.0)],
+                vec![stop(2, 100.0), stop(6, 300.0), stop(10, 500.0)],
+                vec![stop(3, 100.0), stop(7, 300.0)],
+                vec![stop(4, 100.0), stop(8, 300.0)],
+            ],
+        }
+    }
+
+    #[test]
+    fn left_and_right_go_along_the_row_and_stop_at_its_ends() {
+        let page = grid();
+        assert_eq!(step(&page, Some(2), Move::Right, Walk::Grid), Some(3));
+        assert_eq!(step(&page, Some(6), Move::Left, Walk::Grid), Some(5));
+        assert_eq!(
+            step(&page, Some(4), Move::Right, Walk::Grid),
+            None,
+            "the row's end"
+        );
+        assert_eq!(
+            step(&page, Some(5), Move::Left, Walk::Grid),
+            None,
+            "the row's start"
+        );
+        assert_eq!(
+            step(&page, Some(10), Move::Right, Walk::Grid),
+            None,
+            "the short last row ends at its last card"
+        );
+    }
+
+    #[test]
+    fn up_and_down_keep_the_column() {
+        let page = grid();
+        assert_eq!(step(&page, Some(2), Move::Down, Walk::Grid), Some(6));
+        assert_eq!(step(&page, Some(6), Move::Down, Walk::Grid), Some(10));
+        assert_eq!(step(&page, Some(7), Move::Up, Walk::Grid), Some(3));
+        assert_eq!(
+            step(&page, Some(3), Move::Up, Walk::Grid),
+            None,
+            "the top row"
+        );
+        assert_eq!(
+            step(&page, Some(10), Move::Down, Walk::Grid),
+            None,
+            "the last row"
+        );
+    }
+
+    #[test]
+    fn down_into_a_short_last_row_lands_on_its_last_card() {
+        let page = grid();
+        assert_eq!(step(&page, Some(8), Move::Down, Walk::Grid), Some(10));
+        assert_eq!(step(&page, Some(7), Move::Down, Walk::Grid), Some(10));
+    }
+
+    #[test]
+    fn home_and_end_go_to_the_first_and_last_card_in_reading_order() {
+        let page = grid();
+        assert_eq!(step(&page, Some(7), Move::First, Walk::Grid), Some(1));
+        assert_eq!(
+            step(&page, Some(1), Move::Last, Walk::Grid),
+            Some(10),
+            "the last row's last card, not the last column's"
+        );
+        assert_eq!(
+            step(&page, None, Move::Right, Walk::Grid),
+            Some(1),
+            "with no cursor, the first card in view"
+        );
     }
 
     /// Two deck columns, their centers at x 100 and 400, under featured cards 91 (x 80), 92

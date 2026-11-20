@@ -61,7 +61,7 @@ pub(crate) fn row_key(key: &str) -> Option<RowKey> {
 const KEY_CARD_JS: &str = "const keyed = __KEYED__; const under = document.querySelectorAll('[data-row]:hover'); const open = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const card = keyed || (under.length ? under[under.length - 1] : open); dioxus.send(card ? (card.classList.contains('card-stack-slot') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
 
 /// [`KEY_CARD_JS`] with the drawer's class and the cursor's card filled in.
-fn key_card_js() -> String {
+pub(crate) fn key_card_js() -> String {
     KEY_CARD_JS
         .replace("__DRAWER__", STACK_DETAILS_CLASS)
         .replace("__KEYED__", &components::deck_cursor::keyed_js())
