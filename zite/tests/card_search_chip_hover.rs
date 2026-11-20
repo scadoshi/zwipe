@@ -38,10 +38,6 @@ fn folded_the_glass_is_the_persistent_store_icons_size() {
         ),
         "the folded glass takes the persistent store icons' size"
     );
-    assert!(
-        css.contains("    nav .card-search-header .card-search-label svg {\n        width: 1.25em;\n        height: 1.25em;\n    }"),
-        "and its glyph the store glyphs' size"
-    );
 }
 
 #[test]
@@ -59,4 +55,13 @@ fn a_finger_gets_the_glass_s_44px_tap_box_as_the_store_icons_do() {
             "the glass, a label, joins the tap box: {opening}"
         );
     }
+}
+
+#[test]
+fn the_glass_glyph_is_the_store_glyphs_size_at_every_width() {
+    let css = include_str!("../assets/style.css");
+    assert!(
+        css.contains("\nnav .card-search-label svg {\n    width: 1.25em;\n    height: 1.25em;\n}"),
+        "the glass glyph takes the store glyphs' 1.25em, wide and folded"
+    );
 }

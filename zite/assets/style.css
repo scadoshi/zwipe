@@ -1360,6 +1360,14 @@ html.js:not(.splash-skip).splash-over .splash {
 nav .card-search-nav {
     --card-search-glass: 1.85rem;
 }
+
+/* Its glyph is the store glyphs' size in the pill (the kit's
+   :where(.nav-cta-icon svg)), over the kit's own size for a stroked dock
+   icon, at every width. */
+nav .card-search-label svg {
+    width: 1.25em;
+    height: 1.25em;
+}
 @media (max-width: 60rem) {
     nav .card-search-nav {
         top: calc(50% - 0.85rem);
@@ -1384,13 +1392,6 @@ nav .card-search-nav {
         width: 1.7rem;
         height: 1.7rem;
         font-size: 0.7rem;
-    }
-
-    /* Its glyph at the store glyphs' size in the pill (the kit's
-       .nav-cta-icon svg). */
-    nav .card-search-header .card-search-label svg {
-        width: 1.25em;
-        height: 1.25em;
     }
 
     /* The store icons and Log in start clear of the chip and its gap. */
