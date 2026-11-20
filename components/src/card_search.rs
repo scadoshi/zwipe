@@ -28,9 +28,14 @@ use zwipe_ui::shortcuts;
 use crate::ClearWrap;
 use crate::keys::use_page_keys;
 
-/// The search icon: a lens and its handle, Lucide's `search` drawn as one path (ISC,
-/// `components/LICENSE-LUCIDE`).
-pub const SEARCH_ICON: &str = "M11 3a8 8 0 1 0 0 16 8 8 0 1 0 0-16M21 21l-4.3-4.3";
+/// The search icon: a lens and its handle as one path, Lucide's `search` (ISC,
+/// `components/LICENSE-LUCIDE`) with a smaller lens and a shorter handle, so it reads at the
+/// nav's icon size drawn at [`SEARCH_STROKE`].
+pub const SEARCH_ICON: &str = "M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 1 0 0-13M20 20l-4.8-4.8";
+
+/// The search icon's stroke on its 24 box: heavier than the other icons' 2, set on the path so
+/// it holds over the icon class's own width.
+pub const SEARCH_STROKE: &str = "2.75";
 
 /// The nav box's width while it has focus, when the nav has that much room before its links.
 pub const NAV_GROWN_PX: u32 = 320;
@@ -303,7 +308,12 @@ pub fn CardSearchBar(
                     view_box: "0 0 24 24",
                     xmlns: "http://www.w3.org/2000/svg",
                     "aria-hidden": "true",
-                    path { d: SEARCH_ICON }
+                    path {
+                        d: SEARCH_ICON,
+                        stroke_width: SEARCH_STROKE,
+                        stroke_linecap: "round",
+                        stroke_linejoin: "round",
+                    }
                 }
             }
             div {
