@@ -375,13 +375,15 @@ pub static GUIDES: &[Guide] = &[
                 "`Name` and `Flavor text`: contains, or doesn't contain.",
                 "`Oracle text`: rules text, oracle words, or keyword abilities, included or excluded.",
                 "`Types`: the basic card types, or any type-line word like `legendary` or `dragon`.",
-                "`Mana`: mana value, color identity (`exact` or `within` a set of colors), and colors produced.",
+                "`Mana`: mana value, color identity (`Exact`, or a `Range` within a set of colors), and colors produced.",
                 "`Combat`: power and toughness, `exact` or a `range`.",
                 "`Rarity`, `Set`, `Artist`: include or exclude values.",
                 "`Card roles`: 27 roles like `Ramp`, `Removal`, `Draw`, `Wipe`.",
                 "`Oracle tags`: thousands of functional tags (spot removal, ramp, reanimation); include or exclude, with a curated set up front and search for the rest.",
                 "`Format`: `Is commander in` and `Is legal in`.",
                 "`Price`: min and max in `USD`, `EUR`, or `TIX`.",
+                "`Sort`: the order cards come in.",
+                "`Config`: `Is playable`, `Is digital`, `Is oversized`, `Is promo`, and `Has content warning`, each yes, no, or either.",
             ]),
             Block::Image {
                 file: "swipe-to-build/02-filter-sheet.webp",
@@ -393,7 +395,7 @@ pub static GUIDES: &[Guide] = &[
                 "Sections combine with `AND`. A multi-value section's `Any`/`All` toggle sets whether a card needs one selected value or all of them. `include` and `exclude` can run at once.",
             ),
             Block::Note(
-                "The same value in both `include` and `exclude` stops the [[check]] with \"Filter can't both include and exclude\"; the sheet stays open so you can fix it.",
+                "The same value in both `include` and `exclude` stops the [[check]] with \"Filter can't both include and exclude\" and the section's name; the sheet stays open so you can fix it.",
             ),
             Block::Image {
                 file: "filtering/02-filter-hint.webp",
@@ -402,7 +404,7 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("Sorting"),
             Block::P(
-                "Sort by `Name`, `Mana value`, `Power`, `Toughness`, `Rarity`, `Release Date`, `Price`, `Popularity`, or `Random`. Sorting only reorders. Each screen keeps its own filter and sort for the session.",
+                "Sort by `Name`, `Mana value`, `Power`, `Toughness`, `Rarity`, `Release Date`, `Price (USD)`, `Price (EUR)`, `Price (TIX)`, `Popularity (EDHREC)`, or `Random`. Sorting only reorders. Each screen keeps its own filter and sort for the session.",
             ),
             Block::H2("Defaults and Reset"),
             Block::P(
@@ -434,7 +436,7 @@ pub static GUIDES: &[Guide] = &[
             Block::Lead("Your deck list and each deck's card list share the same controls."),
             Block::H2("The deck list"),
             Block::P(
-                "Group by sections your decks by Format, Color, or Tag; a deck with several tags appears under each. None is one collapsible group headed All. Color makes a group per exact color combination, headed by its mana pips. Show narrows the list: color pips keep decks whose identity contains every pip you pick, tag chips match any tag, and All resets.",
+                "Group by sections your decks by Format, Color, or Tag; a deck with several tags appears under each. None is one collapsible group headed All. Color makes a group per exact color combination, headed by its mana pips. Show narrows the list: color pips keep decks whose identity contains every pip you pick, tag chips match any tag, and All resets. Sort orders the decks by Name, Size, Format, Last changed, or Price, and its last chip flips the direction.",
             ),
             Block::Image {
                 file: "organize-and-browse/01-deck-list-by-tag.webp",
@@ -443,7 +445,10 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("A deck's card list"),
             Block::P(
-                "Group by sections cards by Type, Mana value, Color, or Card role; None is one list. Boards is three independent toggles, Main, Maybe, and Side; turn the last one off and Main snaps back on. Show toggles Tokens, the Command zone, and Art.",
+                "View shows the cards as a List or as Stacks. Group by sections them by Type, Mana value, Color, or Card role. Boards is three independent toggles, Main, Maybe, and Side; turn the last one off and Main snaps back on. Show toggles Tokens, the Command zone, and Art, and Flagged narrows the list to the cards you flagged.",
+            ),
+            Block::P(
+                "Tap a card's row to open it. Its actions: [[image]] shows the card full size, [[send]] sends it to another deck, [[star]] makes it an MVP, [[flag]] flags it, and [[minus]] and [[plus]] change how many you run. Printings swaps the printing, and the board buttons move it to the Mainboard, Maybeboard, or Sideboard.",
             ),
             Block::H2("Collapse what you're done with"),
             Block::P(
