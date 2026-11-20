@@ -138,3 +138,12 @@ fn an_open_header_search_takes_taps_on_its_chips() {
         "the chips under an open header search take taps: {open}"
     );
 }
+
+#[test]
+fn a_result_chip_s_entry_lets_go_of_its_transform_once_it_ends() {
+    let chip = rule(".card-search-chip");
+    assert!(
+        chip.contains("animation: card-search-chip-in 0.25s ease-out backwards;"),
+        "a hover's lift can move the chip after it comes in: {chip}"
+    );
+}
