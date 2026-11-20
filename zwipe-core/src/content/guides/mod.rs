@@ -198,7 +198,9 @@ pub static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::H2("Build by swiping"),
-            Block::P("Open the deck, tap Cards, then Add, and act on the top card with a flick:"),
+            Block::P(
+                "Open the deck and tap the [[plus]] in its dock (on a phone, open Cards first), then act on the top card with a flick:",
+            ),
             Block::Swipe(&[
                 ("right", "add the card to your deck"),
                 ("left", "skip it"),
@@ -207,7 +209,7 @@ pub static GUIDES: &[Guide] = &[
             ]),
             Block::Image {
                 file: "getting-started/02-add-cards.webp",
-                alt: "The Add deck cards screen: a Goblin on top of the stack, the From row's Search chip, the bolt lit in the dock",
+                alt: "The Add screen: a Goblin on top of the stack, the From row's Search chip, the bolt lit in the dock",
                 caption: None,
             },
             Block::P(
@@ -235,9 +237,7 @@ pub static GUIDES: &[Guide] = &[
         tags: &["Swiping", "Deck building"],
         related: &["remove-cards", "swipe-memory", "filtering"],
         blocks: &[
-            Block::Lead(
-                "The Add deck cards screen deals cards as a stack, and you decide each with a flick.",
-            ),
+            Block::Lead("The Add screen deals cards as a stack, and you decide each with a flick."),
             Block::H2("The four swipes"),
             Block::P(
                 "A first-visit hint (\"Swipe to build\") covers the gestures, and the `?` in the header reopens it.",
@@ -267,7 +267,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Filter, sort, and the maybeboard"),
             Block::P(
-                "The [[funnel]] decides which cards are dealt; a dot on it marks an active filter. Sorting only reorders. The Maybeboard chip after From deals your maybeboard instead; a right swipe there moves a card to the mainboard. Each source keeps its own filter.",
+                "The [[funnel]] decides which cards are dealt; a dot on it marks an active filter. Sorting only reorders. The Maybe chip after From deals your maybeboard instead; a right swipe there moves a card to the mainboard. Each source keeps its own filter.",
             ),
             Block::Image {
                 file: "swipe-to-build/02-filter-sheet.webp",
@@ -276,7 +276,7 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::Image {
                 file: "swipe-to-build/03-maybeboard-stack.webp",
-                alt: "The From row switched to Maybeboard, its chip lit, dealing saved cards",
+                alt: "The From row switched to Maybe, its chip lit, dealing saved cards",
                 caption: None,
             },
             Block::H2("Undo"),
@@ -285,6 +285,9 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::Note(
                 "At the end of the stack, swipe down on the empty card to step back through your last swipes.",
+            ),
+            Block::Note(
+                "Swipe confirmations in Settings sets how a swipe is confirmed: `Chip` shows it in a small chip at the top left, `Toasts` pops up a message, `Off` says nothing.",
             ),
         ],
     },
@@ -309,11 +312,11 @@ pub static GUIDES: &[Guide] = &[
             ]),
             Block::H2("Boards, filter, and refresh"),
             Block::P(
-                "The Boards row picks the pool: Main, Maybe, Side, or All. The [[funnel]] narrows it. The [[refresh]] restarts the stack and clears your undo history.",
+                "The board chips at the bottom left pick the pool: Main, Maybe, Side, or All. The [[funnel]] narrows it. The [[refresh]] restarts the stack and clears your undo history.",
             ),
             Block::Image {
                 file: "remove-cards/01-remove-swipe.webp",
-                alt: "The Remove deck cards screen mid-swipe, with Boards set to Main",
+                alt: "The Remove screen mid-swipe, with the Main board chip picked",
                 caption: None,
             },
             Block::Note(
@@ -474,7 +477,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Where and how"),
             Block::P(
-                "Synergy is the [[bolt]] in the Add deck cards dock, there when the source is Search and the deck has a commander. On, the stack starts with fitting cards, best first, 25 at a time, shuffled within each batch per deck per day. Off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
+                "Synergy is the [[bolt]] in the Add screen's dock, there when the source is Search and the deck has a commander. On, the stack starts with fitting cards, best first, 25 at a time, shuffled within each batch per deck per day. Off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
             ),
             Block::Image {
                 file: "synergy/01-synergy-on.webp",
