@@ -7,7 +7,7 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 
 use crate::inbound::cards::card_row::ShowRowArt;
-use crate::inbound::chrome::ghost::{GhostShowRow, GhostText};
+use crate::inbound::chrome::ghost::{GhostChipRow, GhostText};
 use crate::inbound::screens::playstyle::{SuggestedFold, Suggestions};
 
 /// The list's header.
@@ -44,7 +44,7 @@ pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uui
             "data-cursor-list": "",
             div { class: "flex-col web-suggested",
                 if is_loading() {
-                    GhostShowRow {}
+                    GhostChipRow { label: 4, chips: vec![3] }
                     div { class: "card-group",
                         div { class: "card-group-header", GhostText { chars: 9 } }
                         for i in 0..3 {

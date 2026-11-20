@@ -33,7 +33,7 @@ use crate::inbound::cards::card_row::{CardRow, ShowRowArt};
 use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::{
-    GhostActionRow, GhostButton, GhostChipRow, GhostList, GhostShowRow, GhostText,
+    GhostActionRow, GhostButton, GhostChipRow, GhostList, GhostText,
 };
 use crate::inbound::router::Route;
 use crate::inbound::telemetry;
@@ -470,7 +470,7 @@ pub(super) fn MaybeboardPanel(
                                 }
                             }
                         }
-                        GhostShowRow {}
+                        GhostChipRow { label: 4, chips: vec![3] }
                         GhostChipRow { label: 4, chips: vec![12, 4, 10, 5, 9] }
                         div { class: "maybeboard-list card-group row-enter",
                             div { class: "card-group-header card-group-header-with-hint",
