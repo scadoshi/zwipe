@@ -5,7 +5,7 @@ pub mod account;
 pub mod activity;
 pub mod auth;
 pub mod card;
-pub mod commander_maybeboard;
+pub mod commanders;
 pub mod config;
 pub mod deck;
 pub mod guides;

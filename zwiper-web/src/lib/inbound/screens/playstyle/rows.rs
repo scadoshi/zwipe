@@ -162,8 +162,7 @@ fn suggestion_actions(
 
 /// The cards in the most of the user's decks, under their own Type and
 /// Color rows; the first ten that match both show. The rows sit above the
-/// panel when `wide`, and inside it under the header otherwise. The filters
-/// start over when the screen mounts again.
+/// panel at every width. The filters start over when the screen mounts again.
 #[component]
 pub fn StaplesPanel(
     staples: Vec<HttpStaple>,
@@ -171,7 +170,6 @@ pub fn StaplesPanel(
     /// The user's decks, which name each staple's deck chips.
     decks: Vec<StapleDeck>,
     expanded_card: Signal<Option<Uuid>>,
-    wide: bool,
 ) -> Element {
     let active_type: Signal<Option<CardType>> = use_signal(|| None);
     let active_color: Signal<Option<StapleColor>> = use_signal(|| None);
@@ -190,17 +188,12 @@ pub fn StaplesPanel(
     };
     rsx! {
         div { class: "web-playstyle-cell web-playstyle-staples", "data-cursor-list": "",
-            if wide {
-                div { class: "deck-controls", {filters.clone()} }
-            }
+            div { class: "deck-controls", {filters} }
             CardListFold {
                 title: STAPLES_TITLE,
                 actions: rsx! {
                     InfoButton { topic: HintTopic::SuggestionStaples }
                 },
-                if !wide {
-                    div { class: "web-card-group-filters", {filters} }
-                }
                 if rows.is_empty() {
                     div { class: "activity-total activity-total-group",
                         span { class: "chip-note", "No staples match" }

@@ -7,3 +7,6 @@
 
 pub mod changelog;
 pub mod guides;
+mod surface;
+
+pub use self::surface::Surface;

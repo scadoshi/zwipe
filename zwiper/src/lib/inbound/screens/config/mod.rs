@@ -99,6 +99,7 @@ impl Driver {
                     | OneTimeHint::CommanderMaybeboard
                     | OneTimeHint::SuggestedCommanders
                     | OneTimeHint::Activity
+                    | OneTimeHint::Commanders
                     | OneTimeHint::SwipeSelect => self.config_hint_open,
                 };
                 hint_dialog::open_and_record_hint(hint.key(), session, client, open);
