@@ -598,9 +598,40 @@ body {
         display: none !important;
     }
 
-    /* Folded, the card search is Home's panel, not the nav's box. */
+    /* Folded, the card search is the header's (magic.css's header card
+       search): its chip right of the back arrow, or in the left corner where
+       a screen has none, and open, the box from the corner to the header's
+       right padding, the chips dropping from the header's foot. It stays out
+       of sight until it knows it is the header's, so a wide box never
+       flashes in the header. */
     .web-app-nav .card-search-nav {
-        display: none;
+        top: var(--space-2);
+        left: calc(var(--space-3) + 2.125rem + var(--space-2));
+        right: var(--space-3);
+        height: 1.7rem;
+        --card-search-open-shift: calc(-1 * (2.125rem + var(--space-2)));
+        --card-search-drop-top: var(--web-nav-h, var(--app-nav-h));
+    }
+
+    .web-app-nav .card-search-nav:not(.card-search-header) {
+        visibility: hidden;
+    }
+
+    .web-app-nav nav:has(> .nav-back-held) > .card-search-nav {
+        left: var(--space-3);
+        --card-search-open-shift: 0px;
+    }
+
+    /* Beside a back arrow the chip takes room from the title's side, so both
+       outer columns grow by the chip and its gap and the title stays
+       centered clear of it. */
+    .web-app-nav .nav-wrapper nav:has(> .app-nav-back:not(.nav-back-held)):has(> .card-search-nav) {
+        grid-template-columns: calc(2.6rem + 2.125rem + var(--space-2)) minmax(0, 1fr) calc(2.6rem + 2.125rem + var(--space-2));
+    }
+
+    /* The header holds still while its search is open. */
+    .web-shell > .web-app-nav:has(.card-search-nav:focus-within) {
+        transform: none !important;
     }
 }
 
@@ -1500,26 +1531,6 @@ body {
     .web-app-nav nav:has(> .card-search-nav) > .nav-panel {
         flex-shrink: 0;
     }
-}
-
-/* Log in's Card search panel, where the nav folds, is spaced by the column's
-   gap alone; from 900px it is as wide as the hero under it. */
-.web-auth > .home-card-search {
-    margin-top: 0;
-}
-
-@media (min-width: 900px) {
-    .web-auth > .home-card-search {
-        width: 100%;
-        max-width: none;
-        box-sizing: border-box;
-    }
-}
-
-/* Home's Card search panel, where the nav folds: the bar spans the panel
-   inside its gutters. */
-.home-card-search .card-search {
-    width: 100%;
 }
 
 @media (max-width: 899px) {

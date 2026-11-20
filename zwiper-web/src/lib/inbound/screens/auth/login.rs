@@ -1,15 +1,12 @@
 //! Login: the form as a panel headed with the screen's name, under the hero
 //! and beside the featured flavor card on a wide window, over it below the
 //! breakpoint: the two fields, `Log in` full width under them, then
-//! `Create account` and `Forgot password` as chips in one centered row. Where the
-//! nav folds, the Card search panel sits first under the header, as on Home,
-//! since a signed-out visitor lands here; above the fold the nav's box holds
-//! the search.
+//! `Create account` and `Forgot password` as chips in one centered row.
 //!
 //! What the screen knows and does is `zwipe_ui::screens::login`; this file
 //! draws its state and performs its effects.
 
-use components::{Button, ButtonVariant, CardSearchPanel, TOAST_NORMAL, TextInput, ThemeConfig};
+use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
@@ -21,7 +18,6 @@ use zwipe_ui::account::Password;
 use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
 use zwipe_ui::telemetry::vocabulary::{AuthScreen, Screen};
 
-use crate::inbound::cards::card_search::use_web_search;
 use crate::inbound::chrome::enter_submit::EnterSubmit;
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
@@ -168,8 +164,6 @@ pub fn Login() -> Element {
         }
     });
 
-    let search = use_web_search();
-
     let model = driver.model.read();
     let is_loading = model.is_loading();
     let submit_label = model.submit_label();
@@ -179,12 +173,6 @@ pub fn Login() -> Element {
         ScreenFrame { title: login::TITLE,
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
-                    CardSearchPanel {
-                        model: search.model(),
-                        on_action: Callback::new(move |action| search.dispatch(action)),
-                        input_id: "login-card-search",
-                        class: "web-nav-narrow",
-                    }
                     PublicHero {}
                     div { class: "web-auth-row",
                     div { class: "container-sm text-center web-form-panel",

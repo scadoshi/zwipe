@@ -1,10 +1,11 @@
 //! The card search in the app: its lookup, signed in with a fresh session when one is held, so
 //! the user's Universes Beyond setting applies, else signed out; and its routes, the card page
-//! and the results page, which `use_app_search` drives Home's Card search panel with.
+//! and the results page; and `HeaderSearch`, the chip in every signed-in screen's header that
+//! opens the box across it.
 
 use std::time::Duration;
 
-use components::{CardSearch, SearchHost, use_card_search};
+use components::{CardSearch, CardSearchBar, HEADER_ALWAYS, SearchHost, use_card_search};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
@@ -48,8 +49,22 @@ impl SearchHost for AppSearch {
     }
 }
 
+/// The header's card search: the chip in the header, a tap on which opens the box across it.
+#[component]
+pub(crate) fn HeaderSearch() -> Element {
+    let search = use_app_search();
+    rsx! {
+        CardSearchBar {
+            model: search.model(),
+            on_action: Callback::new(move |action| search.dispatch(action)),
+            input_id: "header-card-search",
+            header_media: HEADER_ALWAYS,
+        }
+    }
+}
+
 /// A card search bar driven by the app, for one mount.
-pub(crate) fn use_app_search() -> CardSearch<AppSearch> {
+fn use_app_search() -> CardSearch<AppSearch> {
     use_card_search(AppSearch {
         session: use_context(),
         client: use_context(),

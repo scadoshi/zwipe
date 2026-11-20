@@ -435,7 +435,33 @@ body {
     padding: var(--space-5) 0;
 }
 
-/* Home's Card search panel: the bar spans the panel inside its gutters. */
-.home-card-search .card-search {
-    width: 100%;
+/* The header's card search (magic.css's header card search): its chip right
+   of the back arrow, or in the left corner where a screen has none, and
+   open, the box from the corner to the header's right padding, the chips
+   dropping from the header's foot under the status bar's inset. */
+.app-nav .card-search-nav {
+    top: var(--space-2);
+    left: calc(var(--space-3) + 2.125rem + var(--space-2));
+    right: var(--space-3);
+    height: 1.7rem;
+    --card-search-open-shift: calc(-1 * (2.125rem + var(--space-2)));
+    --card-search-drop-top: calc(env(safe-area-inset-top, 0px) + var(--app-nav-h));
+}
+
+.app-nav nav:not(:has(> .app-nav-back)) > .card-search-nav {
+    left: var(--space-3);
+    --card-search-open-shift: 0px;
+}
+
+/* Beside a back arrow the chip takes room from the title's side, so both
+   outer columns grow by the chip and its gap and the title stays centered
+   clear of it. */
+.app-nav .nav-wrapper nav:has(> .app-nav-back):has(> .card-search-nav) {
+    grid-template-columns: calc(2.6rem + 2.125rem + var(--space-2)) minmax(0, 1fr) calc(2.6rem + 2.125rem + var(--space-2));
+}
+
+/* The header holds still and unfaded while its search is open. */
+.screen > .app-nav:has(.card-search-nav:focus-within) {
+    transform: none !important;
+    --nav-fade: 1 !important;
 }

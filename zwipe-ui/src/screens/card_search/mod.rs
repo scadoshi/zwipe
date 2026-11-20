@@ -35,8 +35,8 @@ use crate::timing;
 
 /// The bar's label.
 pub const LABEL: &str = "Search";
-/// Home's panel around the bar on a phone.
-pub const PANEL_TITLE: &str = "Card search";
+/// The box's and its chip's name for assistive tech.
+pub const NAME: &str = "Card search";
 /// The empty box's hint.
 pub const PLACEHOLDER: &str = "Card search";
 /// The line while a lookup is out.

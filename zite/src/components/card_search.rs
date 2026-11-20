@@ -1,14 +1,15 @@
-//! zwipe.net's card search: the nav's box above the fold, Home's Card search panel below it. A
-//! lookup goes out signed out, and a pick opens the card, or the results, on app.zwipe.net.
+//! zwipe.net's card search: the nav's chip and box above the fold, the chip alone in the header
+//! below it, where a tap opens the box across the header. A lookup goes out signed out, and a
+//! pick opens the card, or the results, on app.zwipe.net.
 
 use std::time::Duration;
 
-use components::{CardSearch, CardSearchBar, Panel, SearchHost, SearchPlace, use_card_search};
+use components::{CardSearch, CardSearchBar, SearchHost, use_card_search};
 use dioxus::prelude::*;
 use zwipe_client::card::lookup_cards::LookupError;
 use zwipe_core::domain::card::Card;
 use zwipe_core::http::contracts::card::HttpCardLookup;
-use zwipe_ui::screens::card_search::{self as model, Destination, Failure};
+use zwipe_ui::screens::card_search::{Destination, Failure};
 
 use crate::components::sleep_ms;
 use crate::{APP_BASE, api};
@@ -53,8 +54,10 @@ fn use_site_search() -> CardSearch<SiteSearch> {
     use_card_search(SiteSearch)
 }
 
-/// The nav's card search box. `style.css` hides it where the nav folds, and Home's
-/// [`HomeCardSearch`] holds the bar there.
+/// Where the nav folds, the card search is the header's.
+const HEADER_MEDIA: &str = "(max-width: 60rem)";
+
+/// The nav's card search.
 #[component]
 pub(crate) fn NavCardSearch() -> Element {
     let search = use_site_search();
@@ -62,26 +65,8 @@ pub(crate) fn NavCardSearch() -> Element {
         CardSearchBar {
             model: search.model(),
             on_action: Callback::new(move |action| search.dispatch(action)),
-            place: SearchPlace::Nav,
             input_id: "site-nav-card-search",
-        }
-    }
-}
-
-/// Home's Card search panel, under the header where the nav folds.
-#[component]
-pub(crate) fn HomeCardSearch() -> Element {
-    let search = use_site_search();
-    rsx! {
-        section { class: "site-card-search",
-            Panel { title: model::PANEL_TITLE,
-                CardSearchBar {
-                    model: search.model(),
-                    on_action: Callback::new(move |action| search.dispatch(action)),
-                    place: SearchPlace::Panel,
-                    input_id: "site-card-search",
-                }
-            }
+            header_media: HEADER_MEDIA,
         }
     }
 }

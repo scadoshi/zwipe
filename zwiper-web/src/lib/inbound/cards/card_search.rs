@@ -4,7 +4,7 @@
 
 use std::time::Duration;
 
-use components::{CardSearch, CardSearchBar, SearchHost, SearchPlace, use_card_search};
+use components::{CardSearch, CardSearchBar, SearchHost, use_card_search};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
@@ -53,7 +53,7 @@ impl SearchHost for WebSearch {
 }
 
 /// A card search bar driven by the web app, for one mount.
-pub fn use_web_search() -> CardSearch<WebSearch> {
+fn use_web_search() -> CardSearch<WebSearch> {
     use_card_search(WebSearch {
         session: use_context(),
         client: use_context(),
@@ -73,8 +73,11 @@ pub fn route_of(to: Destination) -> Option<Route> {
     }
 }
 
-/// The wide nav's card search box. Below the nav's fold `web.css` hides it, and Home's Card
-/// search panel holds the bar.
+/// Where the nav folds (media.rs's `NAV_FOLD_MAX_PX`), the card search is the header's.
+const HEADER_MEDIA: &str = "(max-width: 1179px)";
+
+/// The nav's card search: the chip and the box on a wide window, the chip alone in the header
+/// below the nav's fold, where a tap opens the box across the header.
 #[component]
 pub fn NavSearch() -> Element {
     let search = use_web_search();
@@ -82,8 +85,8 @@ pub fn NavSearch() -> Element {
         CardSearchBar {
             model: search.model(),
             on_action: Callback::new(move |action| search.dispatch(action)),
-            place: SearchPlace::Nav,
             input_id: NAV_SEARCH_ID,
+            header_media: HEADER_MEDIA,
         }
     }
 }

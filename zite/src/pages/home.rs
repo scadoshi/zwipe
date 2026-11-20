@@ -5,9 +5,7 @@ use components::{
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
-use crate::components::{
-    FeaturedFlavor, HomeCardSearch, PageMeta, StatsStrip, dismiss_flavor_overlay, sleep_ms,
-};
+use crate::components::{FeaturedFlavor, PageMeta, StatsStrip, dismiss_flavor_overlay, sleep_ms};
 use crate::{Footer, Nav, Route, SiteSplash};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
@@ -252,8 +250,6 @@ pub fn Home() -> Element {
         }
         Nav {}
         main { id: "content", class: "site-main",
-            // Where the nav folds, the card search sits here, under the header.
-            HomeCardSearch {}
             div { class: "banner-stack",
                 Banner {
                     "{latest} is out. "

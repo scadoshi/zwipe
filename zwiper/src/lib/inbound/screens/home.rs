@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
 use chrono::Utc;
-use components::{CardSearchPanel, ThemeConfig, Toasts, use_toast};
+use components::{ThemeConfig, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
@@ -24,7 +24,6 @@ use zwipe_ui::screens::home::{
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::session_upkeep::FlavorCard;
-use crate::inbound::components::card_search::use_app_search;
 use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::home_decks::{CachedDecks, HomeDecks};
 use crate::inbound::components::home_flavor::FlavorPanel;
@@ -434,7 +433,6 @@ pub fn Home() -> Element {
         caches,
     };
     let first_login_hint_open = driver.hint_open;
-    let search = use_app_search();
 
     // Refreshes the user (then greets with `home::greeting`), the
     // settings, the counters, the summary and the flavor card as the
@@ -467,11 +465,6 @@ pub fn Home() -> Element {
             div { class: "screen",
                 ScreenHeader { title: home::TITLE, hint: first_login_hint_open }
                 div { class: "screen-content home-content",
-                CardSearchPanel {
-                    model: search.model(),
-                    on_action: Callback::new(move |action| search.dispatch(action)),
-                    input_id: "home-card-search",
-                }
                 HomeHeroScoped {
                     figures,
                     tag,
