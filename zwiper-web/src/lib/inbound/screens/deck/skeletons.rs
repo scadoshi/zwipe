@@ -260,12 +260,20 @@ mod tests {
 
     #[test]
     fn decks_and_the_maybeboard_start_where_every_screen_does() {
-        for selector in [".web-deck-list", ".web-maybeboard"] {
+        // The Maybeboard column carries no side padding either, so it meets Suggested at the
+        // grid's panel gap.
+        for (selector, padding) in [
+            (
+                ".web-deck-list",
+                "padding: 0 var(--space-5) var(--space-6);",
+            ),
+            (".web-maybeboard", "padding: 0 0 var(--space-6);"),
+        ] {
             assert_eq!(query_for(selector), "@media (min-width: 900px)");
             let at = WEB_CSS.find(&format!("    {selector} {{")).unwrap();
             let body = WEB_CSS.get(at..).unwrap().split('}').next().unwrap();
             assert!(
-                body.contains("padding: 0 var(--space-5) var(--space-6);"),
+                body.contains(padding),
                 "{selector} adds no space above its first panel: {body:?}"
             );
         }
