@@ -734,7 +734,7 @@ pub static GUIDES: &[Guide] = &[
                 "Summary shows how many decks were read, your most built color combination and your top single color.",
                 "Card roles shows how many of your decks fill each role, like ramp or removal. Tap a role to see its tags.",
                 "Oracle tags lists your 10 most impactful tags. Tap a tag to see what it means.",
-                "Card roles and Oracle tags each have a `?` in their header.",
+                "Colors, Card roles and Oracle tags each have a `?` in their header.",
             ]),
             Block::H2("How a tag's impact adds up"),
             Block::Bullets(&[
