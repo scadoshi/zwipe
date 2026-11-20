@@ -12,6 +12,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::scryfall_data::prices::Prices;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::slug::CardSlug;
 use zwipe_core::http::contracts::card::HttpCardLookup;
@@ -19,6 +20,7 @@ use zwipe_core::http::contracts::card::HttpCardLookup;
 use crate::domain::card::models::printing_removal::{
     Printing, References, RemovalCounts, RemovalMode, RemovalPlan, RemovalReport, Survivors,
 };
+use crate::domain::card::models::scryfall_pull::{CatalogCounts, ScryfallLoad};
 use crate::domain::card::models::search_card::error::{LookupCardsError, SearchCardsError};
 use crate::domain::card::models::zervice_metrics::{SyncedCards, ZerviceMetrics};
 use crate::domain::card::models::zervice_step::StepRecord;
@@ -39,7 +41,7 @@ use crate::domain::deck::models::deck::commander_deal::{CommanderDeal, DealSigna
 use crate::domain::deck::models::deck::commander_suggestions::{
     CommanderSuggestionsError, DeckTagProfile, ScoredCommander,
 };
-use crate::inbound::external::scryfall::bulk::BulkEndpoint;
+use crate::inbound::external::scryfall::bulk::BulkSource;
 use crate::inbound::external::scryfall::oracle_tag::OracleTag as ScryfallOracleTag;
 
 /// The optional deck-serving inputs threaded into the deck-aware search entry
@@ -104,13 +106,30 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         zervice_metrics: &mut ZerviceMetrics,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
-    /// Delta upserts: only updates cards newer than database version.
+    /// Delta upserts: only updates cards newer than database version. With `load`, records the
+    /// bulk file in `scryfall_loads` in the same transaction.
     fn batch_delta_upsert(
         &self,
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         zervice_metrics: &mut ZerviceMetrics,
+        load: Option<&ScryfallLoad>,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
+
+    /// What the stored card catalog holds: printings, distinct cards and USD-priced printings.
+    fn fetch_catalog_counts(&self) -> impl Future<Output = anyhow::Result<CatalogCounts>> + Send;
+
+    /// The stored prices of the printings among `ids` the catalog holds.
+    fn fetch_stored_prices(
+        &self,
+        ids: &[uuid::Uuid],
+    ) -> impl Future<Output = anyhow::Result<HashMap<uuid::Uuid, Prices>>> + Send;
+
+    /// When Scryfall made the `kind` bulk file loaded last, or `None` before any load.
+    fn fetch_scryfall_load(
+        &self,
+        kind: &str,
+    ) -> impl Future<Output = anyhow::Result<Option<DateTime<Utc>>>> + Send;
 
     /// Records sync metrics to database.
     fn record_zervice_metrics(
@@ -169,11 +188,12 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     -> impl Future<Output = anyhow::Result<()>> + Send;
 
     /// Full-replaces the `oracle_tags` catalog and the scryfall-sourced rows of
-    /// `card_oracle_tags` from a fresh Oracle Tags pull. Returns
-    /// `(catalog_rows, correlation_rows)`.
+    /// `card_oracle_tags` from a fresh Oracle Tags pull, recording `load` in the same
+    /// transaction when given. Returns `(catalog_rows, correlation_rows)`.
     fn sync_oracle_tags(
         &self,
         tags: &[ScryfallOracleTag],
+        load: Option<&ScryfallLoad>,
     ) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 
     /// Rebuilds the `card_profiles.oracle_tags` JSONB projection from
@@ -520,9 +540,9 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Syncs database with Scryfall bulk data, returning the run's metrics and every printing id
     /// the bulk file listed.
-    fn scryfall_sync(
+    fn scryfall_sync<S: BulkSource>(
         &self,
-        bulk_endpoint: BulkEndpoint,
+        source: &S,
     ) -> impl Future<Output = anyhow::Result<SyncedCards>> + Send;
 
     /// Records one step of a zervice run in `zervice_steps`.
@@ -571,13 +591,17 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Syncs the `oracle_tag` catalog + card correlation from Scryfall's Oracle
     /// Tags bulk file (nightly, zervice). Returns `(catalog_rows, correlation_rows)`.
-    fn sync_oracle_tags(&self) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
+    fn sync_oracle_tags<S: BulkSource>(
+        &self,
+        source: &S,
+    ) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 
     /// Syncs the catalog and card correlation from one dated Oracle Tags bulk file at `url`, an
     /// https URL on Scryfall's bulk host, to restore from an earlier night's file. Returns
     /// `(catalog_rows, correlation_rows)`.
-    fn sync_oracle_tags_from(
+    fn sync_oracle_tags_from<S: BulkSource>(
         &self,
+        source: &S,
         url: &str,
     ) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 

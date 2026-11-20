@@ -54,7 +54,7 @@ async fn sync_populates_catalog_and_correlations(pool: sqlx::PgPool) {
         tag(0x2, "test-null-desc", None, &[card_a]),
     ];
 
-    let (catalog, correlations) = repo.sync_oracle_tags(&tags).await.unwrap();
+    let (catalog, correlations) = repo.sync_oracle_tags(&tags, None).await.unwrap();
     assert_eq!(catalog, 2);
     assert_eq!(correlations, 3);
 
@@ -95,30 +95,44 @@ async fn re_sync_fully_replaces_scryfall_rows(pool: sqlx::PgPool) {
     let repo = Postgres::from_pool(pool.clone());
     let card = Uuid::from_u128(0xc);
 
-    // First sync: two oracle tags on the card.
-    repo.sync_oracle_tags(&[
-        tag(0x1, "removal", None, &[card]),
-        tag(0x2, "ramp", None, &[card]),
-    ])
+    // First sync: five oracle tags on the card.
+    repo.sync_oracle_tags(
+        &[
+            tag(0x1, "removal", None, &[card]),
+            tag(0x2, "ramp", None, &[card]),
+            tag(0x3, "draw", None, &[card]),
+            tag(0x4, "tutor", None, &[card]),
+            tag(0x5, "wipe", None, &[card]),
+        ],
+        None,
+    )
     .await
     .unwrap();
     assert_eq!(
         count(&pool, "SELECT count(*) FROM card_oracle_tags").await,
-        2
+        5
     );
 
-    // Second sync drops 'ramp' and re-sends 'removal': a full replace, no dupes.
+    // Second sync drops 'ramp' and re-sends the rest: a full replace, no dupes.
     let (catalog, correlations) = repo
-        .sync_oracle_tags(&[tag(0x1, "removal", None, &[card])])
+        .sync_oracle_tags(
+            &[
+                tag(0x1, "removal", None, &[card]),
+                tag(0x3, "draw", None, &[card]),
+                tag(0x4, "tutor", None, &[card]),
+                tag(0x5, "wipe", None, &[card]),
+            ],
+            None,
+        )
         .await
         .unwrap();
-    assert_eq!(catalog, 1);
-    assert_eq!(correlations, 1);
+    assert_eq!(catalog, 4);
+    assert_eq!(correlations, 4);
     assert_eq!(
         count(&pool, "SELECT count(*) FROM card_oracle_tags").await,
-        1
+        4
     );
-    assert_eq!(count(&pool, "SELECT count(*) FROM oracle_tags").await, 1);
+    assert_eq!(count(&pool, "SELECT count(*) FROM oracle_tags").await, 4);
     assert_eq!(
         count(
             &pool,
@@ -152,7 +166,7 @@ async fn re_sync_preserves_heuristic_rows(pool: sqlx::PgPool) {
     .unwrap();
 
     // A scryfall sync of a different tag must leave the heuristic row intact.
-    repo.sync_oracle_tags(&[tag(0x1, "removal", None, &[card])])
+    repo.sync_oracle_tags(&[tag(0x1, "removal", None, &[card])], None)
         .await
         .unwrap();
 
@@ -180,14 +194,17 @@ async fn re_sync_preserves_heuristic_rows(pool: sqlx::PgPool) {
 async fn an_empty_pull_fails_and_keeps_the_stored_tags(pool: sqlx::PgPool) {
     let repo = Postgres::from_pool(pool.clone());
     let card = Uuid::from_u128(0xe);
-    repo.sync_oracle_tags(&[
-        tag(0x1, "removal", None, &[card]),
-        tag(0x2, "ramp", None, &[card]),
-    ])
+    repo.sync_oracle_tags(
+        &[
+            tag(0x1, "removal", None, &[card]),
+            tag(0x2, "ramp", None, &[card]),
+        ],
+        None,
+    )
     .await
     .unwrap();
 
-    let refused = repo.sync_oracle_tags(&[]).await;
+    let refused = repo.sync_oracle_tags(&[], None).await;
 
     assert!(refused.is_err(), "an empty pull replaces nothing");
     assert_eq!(count(&pool, "SELECT count(*) FROM oracle_tags").await, 2);
@@ -197,35 +214,41 @@ async fn an_empty_pull_fails_and_keeps_the_stored_tags(pool: sqlx::PgPool) {
     );
 }
 
-/// A pull under half the stored tags or card tags fails and keeps them, while a first
+/// A pull under 80% of the stored tags or card tags fails and keeps them, while a first
 /// pull into an empty catalog goes through whatever its size.
 #[sqlx::test]
-async fn a_pull_under_half_the_stored_tags_fails_and_keeps_them(pool: sqlx::PgPool) {
+async fn a_pull_under_80_percent_of_the_stored_tags_fails_and_keeps_them(pool: sqlx::PgPool) {
     let repo = Postgres::from_pool(pool.clone());
     let cards: Vec<Uuid> = (0x10..0x18).map(Uuid::from_u128).collect();
-    repo.sync_oracle_tags(&[
-        tag(0x1, "removal", None, &cards),
-        tag(0x2, "ramp", None, &cards),
-        tag(0x3, "draw", None, &cards),
-        tag(0x4, "tutor", None, &cards),
-    ])
+    repo.sync_oracle_tags(
+        &[
+            tag(0x1, "removal", None, &cards),
+            tag(0x2, "ramp", None, &cards),
+            tag(0x3, "draw", None, &cards),
+            tag(0x4, "tutor", None, &cards),
+        ],
+        None,
+    )
     .await
     .unwrap();
 
     let fewer_tags = repo
-        .sync_oracle_tags(&[tag(0x1, "removal", None, &cards)])
+        .sync_oracle_tags(&[tag(0x1, "removal", None, &cards)], None)
         .await;
     let fewer_cards = repo
-        .sync_oracle_tags(&[
-            tag(0x1, "removal", None, &cards[..1]),
-            tag(0x2, "ramp", None, &cards[..1]),
-            tag(0x3, "draw", None, &cards[..1]),
-            tag(0x4, "tutor", None, &cards[..1]),
-        ])
+        .sync_oracle_tags(
+            &[
+                tag(0x1, "removal", None, &cards[..1]),
+                tag(0x2, "ramp", None, &cards[..1]),
+                tag(0x3, "draw", None, &cards[..1]),
+                tag(0x4, "tutor", None, &cards[..1]),
+            ],
+            None,
+        )
         .await;
 
-    assert!(fewer_tags.is_err(), "1 tag of 4 is under half");
-    assert!(fewer_cards.is_err(), "4 card tags of 32 is under half");
+    assert!(fewer_tags.is_err(), "1 tag of 4 is under 80%");
+    assert!(fewer_cards.is_err(), "4 card tags of 32 is under 80%");
     assert_eq!(count(&pool, "SELECT count(*) FROM oracle_tags").await, 4);
     assert_eq!(
         count(&pool, "SELECT count(*) FROM card_oracle_tags").await,
@@ -530,15 +553,18 @@ async fn sync_overlays_authored_descriptions(pool: sqlx::PgPool) {
     let passthrough_desc = "Scryfall's own words";
     let card = Uuid::from_u128(0xf);
 
-    repo.sync_oracle_tags(&[
-        tag(
-            0x1,
-            authored_slug,
-            Some("scryfall placeholder, should be overwritten"),
-            &[card],
-        ),
-        tag(0x2, passthrough_slug, Some(passthrough_desc), &[card]),
-    ])
+    repo.sync_oracle_tags(
+        &[
+            tag(
+                0x1,
+                authored_slug,
+                Some("scryfall placeholder, should be overwritten"),
+                &[card],
+            ),
+            tag(0x2, passthrough_slug, Some(passthrough_desc), &[card]),
+        ],
+        None,
+    )
     .await
     .unwrap();
 

@@ -50,7 +50,7 @@ use zwipe::domain::email::ports::{EmailSender, SendEmailFuture};
 use zwipe::domain::user::models::account_summary::AccountSummary;
 use zwipe::domain::{auth, card, metrics, user};
 use zwipe::inbound::admin::{self, NoticeOutcome, RenameNotice};
-use zwipe::inbound::external::scryfall::bulk::BulkEndpoint;
+use zwipe::inbound::external::scryfall::bulk::{self, BulkEndpoint, BulkSource, Scryfall};
 use zwipe::outbound::resend::Resend;
 use zwipe::outbound::sqlx::postgres::{Jit, Postgres};
 use zwipe::wiring::{Auth, Cards, Metrics, Users};
@@ -562,10 +562,14 @@ async fn run(command: Command) -> anyhow::Result<()> {
 /// A failed download or parse, or a database failure.
 async fn preview_removed_printings(cards: &Cards) -> anyhow::Result<()> {
     report("downloading Scryfall's default_cards bulk file");
-    let bulk = BulkEndpoint::DefaultCards
-        .fetch_cards()
+    let file = Scryfall
+        .describe(BulkEndpoint::DefaultCards)
         .await
-        .context("downloading the bulk file")?;
+        .context("listing the bulk file")?;
+    let bulk = bulk::pull_cards(&Scryfall, file)
+        .await
+        .context("downloading the bulk file")?
+        .items;
     let ids: HashSet<uuid::Uuid> = bulk.iter().map(|sd| sd.id).collect();
     report(&format!("the bulk file lists {} printing(s)", ids.len()));
     let preview = cards
@@ -573,6 +577,9 @@ async fn preview_removed_printings(cards: &Cards) -> anyhow::Result<()> {
         .await?;
     for line in preview.plan.lines() {
         report(&line);
+    }
+    if let Some(refusal) = &preview.refused {
+        report(&format!("zervice would refuse to apply this: {refusal}"));
     }
     report("preview only: nothing changed");
     Ok(())

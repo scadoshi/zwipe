@@ -26,6 +26,7 @@ use zwipe_ui::screens::card_search::{
 use zwipe_ui::shortcuts;
 
 use crate::ClearWrap;
+use crate::deck_cursor::HAND_BACK_JS;
 use crate::keys::use_page_keys;
 
 /// The search icon: a lens and its handle as one path, Lucide's `search` (ISC,
@@ -230,6 +231,15 @@ pub fn CardSearchBar(
                 oninput: move |event| on_action.call(Action::Type(event.value())),
                 onkeydown: move |event: Event<KeyboardData>| {
                     let action = match event.key() {
+                        // With no chips to step through, `↓` hands the keys back to the page's
+                        // cards where the page has a cursor over them, landing on its card
+                        // rather than moving from it.
+                        Key::ArrowDown if model.peek().results().is_empty() => {
+                            event.prevent_default();
+                            event.stop_propagation();
+                            document::eval(HAND_BACK_JS);
+                            return;
+                        }
                         Key::ArrowDown => Action::Step(Step::Down),
                         Key::ArrowUp => Action::Step(Step::Up),
                         Key::Enter => Action::Enter,
@@ -242,6 +252,7 @@ pub fn CardSearchBar(
                             }
                             if escape_lets_go(empty, header()) {
                                 let_go.call(());
+                                document::eval(HAND_BACK_JS);
                             }
                             return;
                         }
@@ -544,6 +555,20 @@ mod tests {
         assert!(js.contains("dioxus.send(q.matches)"), "{js}");
         assert!(js.contains("addEventListener('change', on)"), "{js}");
         assert!(media_drop_js(id).contains("removeEventListener('change'"));
+    }
+
+    #[test]
+    fn down_out_of_the_box_lands_on_the_page_s_card_without_moving_it() {
+        let source = include_str!("card_search.rs");
+        let (_, branch) = source
+            .split_once("Key::ArrowDown if model.peek().results().is_empty() => {")
+            .unwrap_or_default();
+        let branch = branch.split_once("return;").map_or("", |(body, _)| body);
+        assert!(
+            branch.contains("event.stop_propagation();"),
+            "the page's cursor keys never see the same down: {branch}"
+        );
+        assert!(branch.contains("document::eval(HAND_BACK_JS);"), "{branch}");
     }
 
     #[test]

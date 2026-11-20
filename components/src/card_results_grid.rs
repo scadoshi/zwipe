@@ -1,6 +1,9 @@
 //! A list of whole cards under a heading: the card page's several cards that share a name, and
 //! the card search's results page. Each card is a one-card stack in the deck page's Stacks grid,
-//! and a tap opens it.
+//! and a tap opens it. The grid carries [`GRID_ATTR`](crate::deck_cursor::GRID_ATTR), so a page with the keyboard cursor
+//! ([`use_card_grid_cursor`](crate::deck_cursor::use_card_grid_cursor)) walks it as laid out.
+
+use std::collections::HashMap;
 
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -8,22 +11,28 @@ use zwipe_core::domain::card::Card;
 
 use crate::{CardSkeleton, CardStack, StackCard};
 
-/// `cards` under the heading `title`, each calling `on_select` with its printing id.
+/// `cards` under the heading `title`, each calling `on_select` with its printing id and showing
+/// the face `faces` holds for it, else its front.
 #[component]
-pub fn CardResultsGrid(title: String, cards: Vec<Card>, on_select: EventHandler<Uuid>) -> Element {
+pub fn CardResultsGrid(
+    title: String,
+    cards: Vec<Card>,
+    on_select: EventHandler<Uuid>,
+    #[props(default)] faces: HashMap<Uuid, usize>,
+) -> Element {
     rsx! {
         h1 { class: "card-list-title",
             span { class: "chip-note", "{title}" }
         }
-        div { class: "deck-stacks card-list-results",
+        div { class: "deck-stacks card-list-results", "data-cursor-grid": "",
             for listed in cards {
                 div { key: "{listed.scryfall_data.id}",
                     CardStack {
                         cards: vec![
                             StackCard {
+                                face: faces.get(&listed.scryfall_data.id).copied().unwrap_or(0),
                                 card: listed,
                                 qty: 1,
-                                face: 0,
                                 board: None,
                                 starred: false,
                             },
@@ -50,5 +59,19 @@ pub fn CardResultsGridGhost() -> Element {
                 div { key: "{i}", CardSkeleton {} }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::deck_cursor::GRID_ATTR;
+
+    #[test]
+    fn the_grid_is_marked_for_the_cursor() {
+        let source = include_str!("card_results_grid.rs");
+        assert!(
+            source.contains(&format!("\"{GRID_ATTR}\": \"\"")),
+            "the results grid carries the cursor's grid mark"
+        );
     }
 }

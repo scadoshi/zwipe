@@ -1,0 +1,4 @@
+{"object":"tag","id":"00000000-0000-0000-0000-0000000000a1","slug":"removal","label":"Removal","type":"oracle","description":"Removes things.","parent_ids":[],"child_ids":[],"taggings":[{"oracle_id":"00000000-0000-0000-0000-00000000c001"},{"oracle_id":"00000000-0000-0000-0000-00000000c002"}]}
+{"object":"tag","id":"00000000-0000-0000-0000-0000000000a2","slug":"ramp","label":"Ramp","type":"oracle","description":null,"parent_ids":[],"child_ids":[],"taggings":[{"oracle_id":"00000000-0000-0000-0000-00000000c001"}]}
+
+{"object":"tag","id":"00000000-0000-0000-0000-0000000000a3","slug":"draw","label":"Draw","type":"oracle","parent_ids":[],"taggings":[{"oracle_id":"00000000-0000-0000-0000-00000000c003"},{}]}

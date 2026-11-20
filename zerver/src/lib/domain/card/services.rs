@@ -17,6 +17,7 @@ use zwipe_core::domain::card::slug::CardSlug;
 use zwipe_core::http::contracts::card::HttpCardLookup;
 
 use crate::domain::card::models::printing_removal::{self, RemovalMode, RemovalReport};
+use crate::domain::card::models::scryfall_pull::{self, CatalogCounts, ScryfallLoad};
 use crate::domain::card::models::search_card::error::{LookupCardsError, SearchCardsError};
 use crate::domain::card::models::zervice_metrics::{self, SyncedCards, ZerviceMetrics};
 use crate::domain::card::models::zervice_step::StepRecord;
@@ -32,7 +33,8 @@ use crate::domain::card::requests::get_oracle_tags::GetOracleTagsError;
 use crate::domain::card::requests::get_oracle_words::GetOracleWordsError;
 use crate::domain::card::requests::get_scryfall_data::{GetScryfallData, ScryfallDataIds};
 use crate::domain::card::requests::get_sets::GetSetsError;
-use crate::inbound::external::scryfall::bulk::{self, BulkEndpoint};
+use crate::inbound::external::scryfall::bulk::{self, BulkEndpoint, BulkSource};
+use crate::inbound::external::scryfall::oracle_tag::OracleTag as ScryfallOracleTag;
 use crate::outbound::sqlx::card::helpers::scryfall_data_fields;
 
 /// PostgreSQL parameter limit per query (~65k parameters).
@@ -97,17 +99,45 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.upsert(&scryfall_data).await
     }
 
-    async fn scryfall_sync(&self, bulk_endpoint: BulkEndpoint) -> anyhow::Result<SyncedCards> {
-        tracing::info!(
-            "performing scryfall sync with {}",
-            bulk_endpoint.to_snake_case()
-        );
+    async fn scryfall_sync<S: BulkSource>(&self, source: &S) -> anyhow::Result<SyncedCards> {
+        let file = source.describe(BulkEndpoint::DefaultCards).await?;
+        tracing::info!("performing scryfall sync with {}", file.kind);
+        if let Some(made) = file.updated_at {
+            let last = self.repo.fetch_scryfall_load(file.kind).await?;
+            scryfall_pull::check_fresh(file.kind, made, last)?;
+        }
         let mut zervice_metrics = ZerviceMetrics::new();
         let batch_size = batch_size();
-        let scryfall_data: Vec<ScryfallData> = bulk_endpoint.fetch_cards().await?;
+        let pulled = bulk::pull_cards(source, file).await?;
+        let mut scryfall_data: Vec<ScryfallData> = pulled.items;
         zervice_metrics.set_received_count(zervice_metrics::count_column(scryfall_data.len()));
+        let stored = self.repo.fetch_catalog_counts().await?;
+        scryfall_pull::check_cards(&scryfall_data, stored)?;
+        let kept_prices =
+            scryfall_pull::prices_collapsed(CatalogCounts::of(&scryfall_data), stored);
+        if let Some(collapse) = &kept_prices {
+            tracing::error!("{collapse}");
+            let ids: Vec<Uuid> = scryfall_data.iter().map(|sd| sd.id).collect();
+            let mut stored_prices = self.repo.fetch_stored_prices(&ids).await?;
+            for card in &mut scryfall_data {
+                if let Some(prices) = stored_prices.remove(&card.id) {
+                    card.prices = prices;
+                }
+            }
+        }
+        let load = pulled.file.updated_at.map(|made| ScryfallLoad {
+            kind: pulled.file.kind,
+            updated_at: made,
+            uri: pulled.file.uri.clone(),
+            items: u64::try_from(scryfall_data.len()).unwrap_or(u64::MAX),
+        });
         self.repo
-            .batch_delta_upsert(&scryfall_data, batch_size, &mut zervice_metrics)
+            .batch_delta_upsert(
+                &scryfall_data,
+                batch_size,
+                &mut zervice_metrics,
+                load.as_ref(),
+            )
             .await?;
         zervice_metrics.mark_as_completed();
         let zervice_metrics = self.repo.record_zervice_metrics(&zervice_metrics).await?;
@@ -115,6 +145,7 @@ impl<R: CardRepository> CardService for Service<R> {
         Ok(SyncedCards {
             metrics: zervice_metrics,
             printing_ids: scryfall_data.iter().map(|sd| sd.id).collect(),
+            kept_prices,
         })
     }
 
@@ -145,11 +176,21 @@ impl<R: CardRepository> CardService for Service<R> {
             .await?;
         let references = self.repo.fetch_printing_references(&removed).await?;
         let plan = printing_removal::plan(gone, &survivors, &references);
-        let counts = match mode {
-            RemovalMode::Apply => Some(self.repo.apply_printing_removals(&plan).await?),
-            RemovalMode::Preview => None,
+        let refused = scryfall_pull::check_removal(
+            u64::try_from(plan.removals.len()).unwrap_or(u64::MAX),
+            u64::try_from(stored.len()).unwrap_or(u64::MAX),
+        )
+        .err();
+        let counts = match (mode, &refused) {
+            (RemovalMode::Apply, Some(refusal)) => return Err(refusal.clone().into()),
+            (RemovalMode::Apply, None) => Some(self.repo.apply_printing_removals(&plan).await?),
+            (RemovalMode::Preview, _) => None,
         };
-        Ok(RemovalReport { plan, counts })
+        Ok(RemovalReport {
+            plan,
+            counts,
+            refused,
+        })
     }
 
     async fn derive_card_categories(&self, batch_size: usize) -> anyhow::Result<(u64, usize)> {
@@ -207,19 +248,38 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.refresh_otag_context_signal_rollup().await
     }
 
-    async fn sync_oracle_tags(&self) -> anyhow::Result<(usize, usize)> {
+    async fn sync_oracle_tags<S: BulkSource>(&self, source: &S) -> anyhow::Result<(usize, usize)> {
         tracing::info!("performing oracle tags sync");
-        let tags = BulkEndpoint::OracleTags.fetch_oracle_tags().await?;
-        tracing::info!("fetched {} oracle tags", tags.len());
-        let counts = self.repo.sync_oracle_tags(&tags).await?;
-        Ok(counts)
+        let file = source.describe(BulkEndpoint::OracleTags).await?;
+        if let Some(made) = file.updated_at {
+            let last = self.repo.fetch_scryfall_load(file.kind).await?;
+            scryfall_pull::check_fresh(file.kind, made, last)?;
+        }
+        let pulled = bulk::pull::<ScryfallOracleTag, _>(source, file).await?;
+        tracing::info!("fetched {} oracle tags", pulled.items.len());
+        let load = pulled.file.updated_at.map(|made| ScryfallLoad {
+            kind: pulled.file.kind,
+            updated_at: made,
+            uri: pulled.file.uri.clone(),
+            items: u64::try_from(pulled.items.len()).unwrap_or(u64::MAX),
+        });
+        self.repo
+            .sync_oracle_tags(&pulled.items, load.as_ref())
+            .await
     }
 
-    async fn sync_oracle_tags_from(&self, url: &str) -> anyhow::Result<(usize, usize)> {
+    async fn sync_oracle_tags_from<S: BulkSource>(
+        &self,
+        source: &S,
+        url: &str,
+    ) -> anyhow::Result<(usize, usize)> {
         tracing::info!("performing oracle tags sync from {url}");
-        let tags = bulk::fetch_oracle_tags_file(url).await?;
+        let tags: Vec<ScryfallOracleTag> = bulk::pull(source, bulk::oracle_tags_file(url)?)
+            .await?
+            .items;
         tracing::info!("fetched {} oracle tags", tags.len());
-        self.repo.sync_oracle_tags(&tags).await
+        // An explicit older file: no age check, and no load recorded, so the mark never lowers.
+        self.repo.sync_oracle_tags(&tags, None).await
     }
 
     async fn refresh_card_oracle_tags(&self) -> anyhow::Result<u64> {

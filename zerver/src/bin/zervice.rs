@@ -20,7 +20,7 @@ use zwipe::domain::card::models::zervice_step::{Step, StepOutcome, StepRecord};
 use zwipe::domain::card::ports::CardService;
 use zwipe::domain::upkeep::ports::UpkeepService;
 use zwipe::domain::{card, upkeep};
-use zwipe::inbound::external::scryfall::bulk::BulkEndpoint;
+use zwipe::inbound::external::scryfall::bulk::Scryfall;
 use zwipe::outbound::sqlx::postgres::{Jit, Postgres, Writes};
 use zwipe_core::domain::logo;
 
@@ -120,18 +120,23 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let clock = begin(Step::CardSync);
-    let synced = match card_service.scryfall_sync(BulkEndpoint::DefaultCards).await {
+    let synced = match card_service.scryfall_sync(&Scryfall).await {
         Ok(synced) => {
             let m = &synced.metrics;
-            let outcome = done(
-                Some(count(m.received_count())),
-                &[
-                    ("received", count(m.received_count())),
-                    ("upserted", count(m.upserted_count())),
-                    ("skipped", count(m.skipped_count())),
-                    ("failed", count(m.error_count())),
-                ],
-            );
+            // A price collapse fails the step, so the run alerts, but the cards loaded and the
+            // removal still runs on the complete file.
+            let outcome = match &synced.kept_prices {
+                Some(collapse) => failed(&anyhow::Error::new(collapse.clone())),
+                None => done(
+                    Some(count(m.received_count())),
+                    &[
+                        ("received", count(m.received_count())),
+                        ("upserted", count(m.upserted_count())),
+                        ("skipped", count(m.skipped_count())),
+                        ("failed", count(m.error_count())),
+                    ],
+                ),
+            };
             night.record(Step::CardSync, clock, outcome).await;
             Some(synced)
         }
@@ -156,17 +161,21 @@ async fn main() -> anyhow::Result<()> {
                         tracing::info!("printing removal ({mode:?}): {line}");
                     }
                     let applied = report.counts.unwrap_or_default();
-                    done(
-                        Some(applied.removed),
-                        &[
-                            ("to_remove", size(report.plan.removals.len())),
-                            ("kept", size(report.plan.kept.len())),
-                            ("removed", applied.removed),
-                            ("moved_deck_cards", applied.remapped_deck_cards),
-                            ("moved_slots", applied.remapped_slots),
-                            ("applied", u64::from(report.counts.is_some())),
-                        ],
-                    )
+                    if let Some(refusal) = report.refused {
+                        failed(&anyhow::Error::new(refusal))
+                    } else {
+                        done(
+                            Some(applied.removed),
+                            &[
+                                ("to_remove", size(report.plan.removals.len())),
+                                ("kept", size(report.plan.kept.len())),
+                                ("removed", applied.removed),
+                                ("moved_deck_cards", applied.remapped_deck_cards),
+                                ("moved_slots", applied.remapped_slots),
+                                ("applied", u64::from(report.counts.is_some())),
+                            ],
+                        )
+                    }
                 }
                 Err(e) => failed(&e),
             }
@@ -310,8 +319,8 @@ async fn oracle_tag_steps(
 ) {
     let clock = begin(Step::OracleTags);
     let pulled = match file {
-        Some(url) => cards.sync_oracle_tags_from(url).await,
-        None => cards.sync_oracle_tags().await,
+        Some(url) => cards.sync_oracle_tags_from(&Scryfall, url).await,
+        None => cards.sync_oracle_tags(&Scryfall).await,
     };
     match pulled {
         Ok((tags, correlations)) => {
