@@ -147,12 +147,14 @@ a:not([class]) {
     /* Chip hover lives here rather than in the shared components.css so the
        app never inherits it: WebView hover styles can stick after a tap.
        Same lift vocabulary as the panels, scaled to chip size. */
-    .chip:not(.disabled):not(.selected):hover {
+    .chip:not(.disabled):not(.selected):hover,
+    .card-search-chip:hover {
         border-color: var(--accent-primary);
         color: var(--ink-accent-primary, var(--accent-primary));
     }
 
-    .chip:not(.disabled):hover {
+    .chip:not(.disabled):hover,
+    .card-search-chip:hover {
         transform: translateY(-2px);
     }
 
@@ -188,6 +190,7 @@ a:not([class]) {
         body .panel-card:hover,
         .hero-card:hover,
         .chip:hover,
+        .card-search-chip:hover,
         a:hover .ext {
             transform: none;
         }

@@ -3922,7 +3922,7 @@ footer.site-footer .site-footer-note {
     font-family: inherit;
     line-height: inherit;
     cursor: pointer;
-    animation: card-search-chip-in 0.25s ease-out both;
+    animation: card-search-chip-in 0.25s ease-out backwards;
     border-radius: var(--radius-control);
 }
 
