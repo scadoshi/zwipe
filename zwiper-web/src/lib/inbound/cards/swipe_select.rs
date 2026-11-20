@@ -40,8 +40,8 @@ use components::swipe_stack::{
 };
 use components::{
     BackArrow, CardDetailsPanelSkeleton, CardGhost, Chip, DockEye, DockFilter, MeldSource,
-    PageHeader, PrintingsFace, Surface, TOAST_QUICK, open_on_shown_face, spawn_write_in_order,
-    turn_face, use_details_eye, use_mounted, use_overlay_back,
+    PageHeader, PrintingsFace, Surface, TOAST_LONG, TOAST_QUICK, open_on_shown_face,
+    spawn_write_in_order, turn_face, use_details_eye, use_mounted, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -55,6 +55,7 @@ use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 use zwipe_ui::commander::deal::{self, Door};
+use zwipe_ui::commander::maybeboard;
 use zwipe_ui::deck::form::{self, Slot};
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
@@ -244,28 +245,46 @@ async fn deal_page(
         .ok_or(())
 }
 
-/// `saved` narrowed to the commanders `filter` matches, all of them under no filter or one that
-/// doesn't build.
-fn maybeboard_matching(saved: Vec<Card>, filter: &CardQueryBuilder) -> Vec<Card> {
-    if filter.is_empty() {
-        return saved;
-    }
-    match filter.build_criteria() {
+/// `saved` narrowed to the commanders that lead a deck in `door`'s format (Commander for
+/// Suggested), by the format's commander rules as the deal applies them, and that `filter`
+/// matches. A filter that doesn't build narrows by the format alone.
+fn maybeboard_matching(saved: Vec<Card>, filter: &CardQueryBuilder, door: Door) -> Vec<Card> {
+    let format = match door {
+        Door::Suggested => Format::Commander,
+        Door::DeckCreation(format) => format,
+    };
+    let mut narrowed = filter.clone();
+    narrowed.set_is_commander_in_format(format);
+    let criteria = narrowed.build_criteria().or_else(|_| {
+        let mut format_only = CardQueryBuilder::new();
+        format_only.set_is_commander_in_format(format);
+        format_only.build_criteria()
+    });
+    match criteria {
         Ok(criteria) => Cards::from(saved).matching(&criteria).into(),
         Err(_) => saved,
     }
 }
 
-/// The user's commander maybeboard under `filter`, matched on the device: `Err(())` when it
-/// didn't load (logged quietly).
-async fn maybeboard_pile(authed: Authed, filter: &CardQueryBuilder) -> Result<Vec<Card>, ()> {
+/// The user's commander maybeboard under `filter` for `door`, matched on the device: `Err(())`
+/// when it didn't load (logged quietly; the caller says so).
+async fn maybeboard_pile(
+    authed: Authed,
+    filter: &CardQueryBuilder,
+    door: Door,
+) -> Result<Vec<Card>, ()> {
     let saved = authed
         .run_quiet("swipe_select_maybeboard", |c, s| async move {
             c.fetch_commander_maybeboard(&s).await
         })
         .await
         .ok_or(())?;
-    Ok(maybeboard_matching(saved, filter))
+    Ok(maybeboard_matching(saved, filter, door))
+}
+
+/// What a maybeboard load lands as: its commanders, or the line a failed load toasts.
+fn maybeboard_landing(reply: Result<Vec<Card>, ()>) -> Result<Vec<Card>, &'static str> {
+    reply.map_err(|()| maybeboard::LOAD_FAILED)
 }
 
 /// The swipes `mode` takes from `source`, and whether left skips a commander for a week: the
@@ -543,15 +562,23 @@ pub fn SwipeSelect(
                     land_deal(&pile, reply, /* first */ true);
                     return;
                 }
-                let reply = maybeboard_pile(authed, &applied).await;
+                let reply = maybeboard_pile(authed, &applied, door).await;
                 if !loads.peek().is_current(ticket) {
                     return;
                 }
                 loading.set(false);
-                if let Ok(saved) = reply {
-                    searched.set(true);
-                    exhausted.set(true);
-                    stack.write().replace(saved);
+                match maybeboard_landing(reply) {
+                    Ok(saved) => {
+                        searched.set(true);
+                        exhausted.set(true);
+                        stack.write().replace(saved);
+                    }
+                    Err(line) => {
+                        toast.error(
+                            line.to_owned(),
+                            ToastOptions::default().duration(TOAST_LONG),
+                        );
+                    }
                 }
             });
             return;
@@ -1090,23 +1117,54 @@ mod tests {
 
     #[test]
     fn maybe_deals_the_maybeboard_under_the_filter() {
-        let saved = card();
+        let saved = commander("Legendary Creature — Human Wizard");
         let name = saved.scryfall_data.name.clone();
+        let door = Door::Suggested;
         assert_eq!(
-            maybeboard_matching(vec![saved.clone()], &CardQueryBuilder::new()).len(),
+            maybeboard_matching(vec![saved.clone()], &CardQueryBuilder::new(), door).len(),
             1,
             "no filter keeps every saved commander"
         );
         let mut miss = CardQueryBuilder::new();
         miss.set_name_contains("zzzzqqq");
         assert_eq!(
-            maybeboard_matching(vec![saved.clone()], &miss).len(),
+            maybeboard_matching(vec![saved.clone()], &miss, door).len(),
             0,
             "a name it lacks drops it"
         );
         let mut hit = CardQueryBuilder::new();
         hit.set_name_contains(name);
-        assert_eq!(maybeboard_matching(vec![saved], &hit).len(), 1);
+        assert_eq!(maybeboard_matching(vec![saved], &hit, door).len(), 1);
+    }
+
+    #[test]
+    fn maybe_deals_only_commanders_that_lead_in_the_door_s_format() {
+        let vehicle = commander("Legendary Artifact — Vehicle");
+        let none = CardQueryBuilder::new();
+        assert_eq!(
+            maybeboard_matching(vec![vehicle.clone()], &none, Door::Suggested).len(),
+            1,
+            "a legendary vehicle with power and toughness leads in Commander"
+        );
+        assert_eq!(
+            maybeboard_matching(vec![vehicle], &none, Door::DeckCreation(Format::Brawl)).len(),
+            0,
+            "but not in Brawl"
+        );
+        let creature = commander("Legendary Creature — Human Wizard");
+        assert_eq!(
+            maybeboard_matching(vec![creature], &none, Door::DeckCreation(Format::Brawl)).len(),
+            1
+        );
+    }
+
+    #[test]
+    fn a_failed_maybeboard_load_says_so() {
+        assert_eq!(
+            maybeboard_landing(Err(())).err(),
+            Some(maybeboard::LOAD_FAILED)
+        );
+        assert_eq!(maybeboard_landing(Ok(vec![card()])).map(|c| c.len()), Ok(1));
     }
 
     #[test]
@@ -1123,6 +1181,13 @@ mod tests {
             swipes(mode, Some(Source::Maybeboard)),
             (vec![Swipe::Left, Swipe::Right, Swipe::Down], false)
         );
+    }
+
+    /// The fixture card with `type_line`, for the commander rules.
+    fn commander(type_line: &str) -> Card {
+        let mut card = card();
+        card.scryfall_data.type_line = Some(type_line.to_owned());
+        card
     }
 
     #[test]
