@@ -619,6 +619,10 @@ fn commanders_hint() -> HintContent {
                 emph("left", Role::Error),
                 text(" skips"),
             ]),
+            bullet(vec![
+                key("From"),
+                text(" on the Maybeboard's Swipe switches to your saved commanders"),
+            ]),
             bullet(vec![key("Quick add"), text(" saves a commander by name")]),
             bullet(vec![
                 icon_key(KeyIcon::Funnel),
@@ -942,6 +946,12 @@ mod tests {
                 ][..]
             ),
             "Swipe's bullet names what each list deals, then the directions"
+        );
+        assert!(
+            lines.contains(
+                &"From on the Maybeboard's Swipe switches to your saved commanders".to_owned()
+            ),
+            "the hint names From, as the guide does: {lines:?}"
         );
     }
 }
