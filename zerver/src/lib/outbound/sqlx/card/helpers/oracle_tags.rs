@@ -2,7 +2,8 @@
 //!
 //! Full-replaces the `oracle_tags` catalog and the `scryfall`-sourced rows of
 //! `card_oracle_tags` from a fresh Oracle Tags pull, all in one transaction. Rows
-//! with a non-`scryfall` `source` are left untouched.
+//! with a non-`scryfall` `source` are left untouched. A pull that is empty or under
+//! half the stored rows is refused before anything is deleted.
 
 use anyhow::Context;
 use sqlx::{PgConnection, QueryBuilder};
@@ -28,17 +29,92 @@ fn flatten_correlations(tags: &[OracleTag]) -> Vec<(uuid::Uuid, &str)> {
     correlations
 }
 
-/// Replaces the `oracle_tag` catalog and the scryfall-sourced card correlations
-/// from `tags`, inside the caller's transaction `tx`. Returns `(catalog_rows, correlation_rows)`.
+/// How many tags and card tags a pull carries, or the database holds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TagCounts {
+    /// Rows in the tag catalog.
+    pub tags: u64,
+    /// Scryfall-sourced card tags.
+    pub card_tags: u64,
+}
+
+/// A pull the sync refuses before it replaces anything, so the stored tags stay.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum RefusedPullError {
+    /// The pull carries no tags or no card tags.
+    #[error(
+        "the oracle tags pull is empty ({} tags, {} card tags), so the stored {} tags and {} card tags stay",
+        pulled.tags, pulled.card_tags, stored.tags, stored.card_tags
+    )]
+    Empty {
+        /// What the pull carries.
+        pulled: TagCounts,
+        /// What the database holds.
+        stored: TagCounts,
+    },
+    /// The pull carries under half the stored tags or card tags.
+    #[error(
+        "the oracle tags pull has {} tags and {} card tags, under half the stored {} and {}, so the stored rows stay",
+        pulled.tags, pulled.card_tags, stored.tags, stored.card_tags
+    )]
+    Shrunk {
+        /// What the pull carries.
+        pulled: TagCounts,
+        /// What the database holds.
+        stored: TagCounts,
+    },
+}
+
+/// Accepts a pull unless it is empty or carries under half the stored tags or card tags.
+/// Any non-empty pull into an empty catalog is accepted.
 ///
 /// # Errors
 ///
-/// Returns an error if any of its statements fails.
+/// Returns [`RefusedPullError`] naming both counts when the pull is refused.
+pub fn check_pull(pulled: TagCounts, stored: TagCounts) -> Result<(), RefusedPullError> {
+    if pulled.tags == 0 || pulled.card_tags == 0 {
+        return Err(RefusedPullError::Empty { pulled, stored });
+    }
+    let under_half = |pulled: u64, stored: u64| pulled.saturating_mul(2) < stored;
+    if under_half(pulled.tags, stored.tags) || under_half(pulled.card_tags, stored.card_tags) {
+        return Err(RefusedPullError::Shrunk { pulled, stored });
+    }
+    Ok(())
+}
+
+/// What the database holds now, read inside the sync's transaction.
+async fn stored_counts(tx: &mut PgConnection) -> anyhow::Result<TagCounts> {
+    let (tags, card_tags): (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM oracle_tags), \
+                (SELECT count(*) FROM card_oracle_tags WHERE source = 'scryfall')",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .context("failed to count the stored oracle tags")?;
+    Ok(TagCounts {
+        tags: u64::try_from(tags).unwrap_or_default(),
+        card_tags: u64::try_from(card_tags).unwrap_or_default(),
+    })
+}
+
+/// Replaces the `oracle_tag` catalog and the scryfall-sourced card correlations
+/// from `tags`, inside the caller's transaction `tx`. Returns `(catalog_rows, correlation_rows)`.
+/// A pull [`check_pull`] refuses changes nothing.
+///
+/// # Errors
+///
+/// Returns [`RefusedPullError`] when the pull is empty or under half the stored rows, and
+/// an error if any of its statements fails.
 pub async fn sync_oracle_tags(
     tx: &mut PgConnection,
     tags: &[OracleTag],
 ) -> anyhow::Result<(usize, usize)> {
     let correlations = flatten_correlations(tags);
+    let pulled = TagCounts {
+        tags: u64::try_from(tags.len()).unwrap_or(u64::MAX),
+        card_tags: u64::try_from(correlations.len()).unwrap_or(u64::MAX),
+    };
+    check_pull(pulled, stored_counts(&mut *tx).await?)?;
 
     // Catalog: full replace.
     sqlx::query("DELETE FROM oracle_tags")
@@ -164,6 +240,59 @@ mod tests {
                 .map(|&oracle_id| Tagging { oracle_id })
                 .collect(),
         }
+    }
+
+    fn counts(tags: u64, card_tags: u64) -> TagCounts {
+        TagCounts { tags, card_tags }
+    }
+
+    #[test]
+    fn an_empty_pull_is_refused_even_into_an_empty_catalog() {
+        let night = counts(4_606, 241_000);
+        assert!(matches!(
+            check_pull(counts(0, 0), night),
+            Err(RefusedPullError::Empty { .. })
+        ));
+        assert!(matches!(
+            check_pull(counts(4_606, 0), night),
+            Err(RefusedPullError::Empty { .. })
+        ));
+        assert!(matches!(
+            check_pull(counts(0, 0), counts(0, 0)),
+            Err(RefusedPullError::Empty { .. })
+        ));
+    }
+
+    #[test]
+    fn a_pull_under_half_is_refused_and_half_or_more_goes_through() {
+        let stored = counts(4_606, 241_000);
+        assert!(matches!(
+            check_pull(counts(2_302, 241_000), stored),
+            Err(RefusedPullError::Shrunk { .. })
+        ));
+        assert!(matches!(
+            check_pull(counts(4_606, 120_499), stored),
+            Err(RefusedPullError::Shrunk { .. })
+        ));
+        assert_eq!(check_pull(counts(2_303, 120_500), stored), Ok(()));
+        assert_eq!(check_pull(counts(4_590, 240_100), stored), Ok(()));
+        assert_eq!(check_pull(counts(9_000, 500_000), stored), Ok(()));
+    }
+
+    #[test]
+    fn a_first_pull_into_an_empty_catalog_goes_through() {
+        assert_eq!(check_pull(counts(3, 7), counts(0, 0)), Ok(()));
+    }
+
+    #[test]
+    fn a_refusal_names_both_counts() {
+        let refused = check_pull(counts(0, 0), counts(4_606, 241_000));
+        let message = refused.map_err(|e| e.to_string()).err().unwrap_or_default();
+        assert!(message.contains("0 tags, 0 card tags"), "{message}");
+        assert!(
+            message.contains("4606 tags and 241000 card tags stay"),
+            "{message}"
+        );
     }
 
     #[test]

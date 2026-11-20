@@ -174,6 +174,65 @@ async fn re_sync_preserves_heuristic_rows(pool: sqlx::PgPool) {
     );
 }
 
+/// An empty pull, as Scryfall served for one night, fails and leaves the stored catalog
+/// and card tags as they were.
+#[sqlx::test]
+async fn an_empty_pull_fails_and_keeps_the_stored_tags(pool: sqlx::PgPool) {
+    let repo = Postgres::from_pool(pool.clone());
+    let card = Uuid::from_u128(0xe);
+    repo.sync_oracle_tags(&[
+        tag(0x1, "removal", None, &[card]),
+        tag(0x2, "ramp", None, &[card]),
+    ])
+    .await
+    .unwrap();
+
+    let refused = repo.sync_oracle_tags(&[]).await;
+
+    assert!(refused.is_err(), "an empty pull replaces nothing");
+    assert_eq!(count(&pool, "SELECT count(*) FROM oracle_tags").await, 2);
+    assert_eq!(
+        count(&pool, "SELECT count(*) FROM card_oracle_tags").await,
+        2
+    );
+}
+
+/// A pull under half the stored tags or card tags fails and keeps them, while a first
+/// pull into an empty catalog goes through whatever its size.
+#[sqlx::test]
+async fn a_pull_under_half_the_stored_tags_fails_and_keeps_them(pool: sqlx::PgPool) {
+    let repo = Postgres::from_pool(pool.clone());
+    let cards: Vec<Uuid> = (0x10..0x18).map(Uuid::from_u128).collect();
+    repo.sync_oracle_tags(&[
+        tag(0x1, "removal", None, &cards),
+        tag(0x2, "ramp", None, &cards),
+        tag(0x3, "draw", None, &cards),
+        tag(0x4, "tutor", None, &cards),
+    ])
+    .await
+    .unwrap();
+
+    let fewer_tags = repo
+        .sync_oracle_tags(&[tag(0x1, "removal", None, &cards)])
+        .await;
+    let fewer_cards = repo
+        .sync_oracle_tags(&[
+            tag(0x1, "removal", None, &cards[..1]),
+            tag(0x2, "ramp", None, &cards[..1]),
+            tag(0x3, "draw", None, &cards[..1]),
+            tag(0x4, "tutor", None, &cards[..1]),
+        ])
+        .await;
+
+    assert!(fewer_tags.is_err(), "1 tag of 4 is under half");
+    assert!(fewer_cards.is_err(), "4 card tags of 32 is under half");
+    assert_eq!(count(&pool, "SELECT count(*) FROM oracle_tags").await, 4);
+    assert_eq!(
+        count(&pool, "SELECT count(*) FROM card_oracle_tags").await,
+        32
+    );
+}
+
 /// `refresh_card_oracle_tags` aggregates a card's correlations into the sorted
 /// JSONB projection on its `card_profiles` row.
 #[sqlx::test]
@@ -469,15 +528,16 @@ async fn sync_overlays_authored_descriptions(pool: sqlx::PgPool) {
     // A slug absent from the const: Scryfall's text must pass through untouched.
     let passthrough_slug = "zzz-unauthored-test-tag";
     let passthrough_desc = "Scryfall's own words";
+    let card = Uuid::from_u128(0xf);
 
     repo.sync_oracle_tags(&[
         tag(
             0x1,
             authored_slug,
             Some("scryfall placeholder, should be overwritten"),
-            &[],
+            &[card],
         ),
-        tag(0x2, passthrough_slug, Some(passthrough_desc), &[]),
+        tag(0x2, passthrough_slug, Some(passthrough_desc), &[card]),
     ])
     .await
     .unwrap();
