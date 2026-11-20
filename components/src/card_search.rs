@@ -139,8 +139,10 @@ pub fn use_card_search<H: SearchHost>(host: H) -> CardSearch<H> {
 /// The bar: the glass's icon button, the box beside it and what shows under it. `input_id` names
 /// the box, unique on the page. `on_action` takes everything the bar does, for
 /// [`CardSearch::dispatch`]. `header_media` is the media query under which the bar is the
-/// header's search ([`HEADER_ALWAYS`] in the app, empty where it never is): the chip alone in
-/// the header until a tap opens the box across it.
+/// header's search ([`HEADER_ALWAYS`] in the app, empty where it never is): the glass alone in
+/// the header until a tap opens the box across it. The glass wears the classes of the buttons
+/// beside it: a nav icon's in a wide nav, the back arrow's in a header, or `glass_class`, a
+/// host's own icon buttons', in both.
 #[component]
 #[expect(
     clippy::wildcard_enum_match_arm,
@@ -151,6 +153,7 @@ pub fn CardSearchBar(
     on_action: Callback<Action>,
     input_id: String,
     #[props(default)] header_media: String,
+    #[props(default)] glass_class: Option<&'static str>,
 ) -> Element {
     // `/` puts the cursor in the card search, while no field has focus and the screen answers no
     // keys of its own; a screen that does registers after the bar, so its keys win.
@@ -274,6 +277,11 @@ pub fn CardSearchBar(
         }
     };
 
+    let (glass, glyph) = match (glass_class, header()) {
+        (Some(own), _) => (own, "action-dock-icon"),
+        (None, false) => ("btn-action nav-icon", "action-dock-icon"),
+        (None, true) => ("app-nav-back", "app-nav-back-icon"),
+    };
     let mut class = String::from("card-search card-search-nav");
     if filled {
         class.push_str(" has-text");
@@ -287,11 +295,11 @@ pub fn CardSearchBar(
             // opens the box in the same tap, so a phone raises its keyboard. Where there is room
             // only for an icon, it shows alone.
             label {
-                class: "btn-action nav-icon card-search-label",
+                class: "{glass} card-search-label",
                 r#for: "{label_for}",
                 "aria-label": model::NAME,
                 svg {
-                    class: "card-search-icon",
+                    class: "{glyph}",
                     view_box: "0 0 24 24",
                     xmlns: "http://www.w3.org/2000/svg",
                     "aria-hidden": "true",

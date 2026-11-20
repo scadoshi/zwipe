@@ -1354,6 +1354,11 @@ html.js:not(.splash-skip).splash-over .splash {
    search (components' magic.css): the chip right of the Z mark, and open,
    the box from the left corner to the nav's right padding. It stays out of
    sight until it knows it is the header's. */
+
+/* The glass is a store icon's twin (GLASS_CLASS), so it is their width. */
+nav .card-search-nav {
+    --card-search-glass: 1.85rem;
+}
 @media (max-width: 60rem) {
     nav .card-search-nav {
         top: calc(50% - 0.85rem);
@@ -1366,6 +1371,25 @@ html.js:not(.splash-skip).splash-over .splash {
 
     nav .card-search-nav:not(.card-search-header) {
         visibility: hidden;
+    }
+
+    /* Folded, the glass is the persistent store icons' size, the toggle's
+       height (the kit's .nav-persistent .nav-cta-icon). */
+    nav .card-search-nav {
+        --card-search-glass: 1.7rem;
+    }
+
+    nav .card-search-header .card-search-label {
+        width: 1.7rem;
+        height: 1.7rem;
+        font-size: 0.7rem;
+    }
+
+    /* Its glyph at the store glyphs' size in the pill (the kit's
+       .nav-cta-icon svg). */
+    nav .card-search-header .card-search-label svg {
+        width: 1.25em;
+        height: 1.25em;
     }
 
     /* The store icons and Log in start clear of the chip and its gap. */

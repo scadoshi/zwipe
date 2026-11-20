@@ -39,8 +39,8 @@ fn the_glass_is_a_label_chip_for_the_box_left_of_it() {
         .find(r#"<label class="btn-action nav-icon card-search-label" for="nav-card-search""#)
         .unwrap_or_else(|| panic!("the glass is a nav icon button for the box: {html}"));
     let glass = html
-        .find("card-search-icon")
-        .unwrap_or_else(|| panic!("the glass: {html}"));
+        .find(r#"<svg class="action-dock-icon""#)
+        .unwrap_or_else(|| panic!("the glyph is a nav icon's: {html}"));
     let field = html
         .find("card-search-field")
         .unwrap_or_else(|| panic!("the field: {html}"));
@@ -59,7 +59,9 @@ fn the_chip_sits_a_chip_row_gap_from_the_box() {
     let nav = rule(".card-search-nav");
     assert!(nav.contains("gap: var(--space-2);"), "{nav}");
     assert!(
-        nav.contains("flex: 0 1000 calc(2.2rem + var(--space-2) + 120px);"),
+        nav.contains(
+            "flex: 0 1000 calc(var(--card-search-glass, 2.2rem) + var(--space-2) + 120px);"
+        ),
         "{nav}"
     );
 }
@@ -89,6 +91,45 @@ fn the_app_s_bar_is_always_the_header_s() {
         html.contains(r#"class="card-search card-search-nav card-search-header""#),
         "{html}"
     );
+    assert!(
+        html.contains(r#"<label class="app-nav-back card-search-label""#),
+        "in the header the glass is a button like the back arrow beside it: {html}"
+    );
+    assert!(
+        html.contains(r#"<svg class="app-nav-back-icon""#),
+        "with the back arrow's glyph size: {html}"
+    );
+}
+
+#[test]
+fn a_host_can_dress_the_glass_as_its_own_nav_icons() {
+    for header_media in [String::new(), HEADER_ALWAYS.to_owned()] {
+        let html = {
+            let mut dom = VirtualDom::new_with_props(
+                |media: String| {
+                    let model = use_signal(State::new);
+                    rsx! {
+                        CardSearchBar {
+                            model,
+                            on_action: move |_: Action| {},
+                            input_id: "nav-card-search".to_owned(),
+                            header_media: media,
+                            glass_class: "nav-cta nav-cta-icon",
+                        }
+                    }
+                },
+                header_media,
+            );
+            dom.rebuild_in_place();
+            dom.render_immediate(&mut NoOpMutations);
+            dioxus_ssr::render(&dom)
+        };
+        assert!(
+            html.contains(r#"<label class="nav-cta nav-cta-icon card-search-label""#),
+            "{html}"
+        );
+        assert!(html.contains(r#"<svg class="action-dock-icon""#), "{html}");
+    }
 }
 
 #[test]
@@ -148,13 +189,25 @@ fn a_result_chip_s_entry_lets_go_of_its_transform_once_it_ends() {
 }
 
 #[test]
-fn the_glass_keeps_the_nav_icon_s_own_box() {
+fn the_glass_keeps_its_neighbors_own_box() {
+    assert!(
+        !MAGIC.contains("\n.card-search-icon {"),
+        "the glyph takes its size from the button it sits in"
+    );
     for selector in [
         ".card-search-label",
         ".card-search-header .card-search-label",
     ] {
         let glass = rule(selector);
-        for property in ["width:", "height:", "padding:", "border", "background"] {
+        for property in [
+            "width:",
+            "height:",
+            "padding:",
+            "border",
+            "background",
+            "opacity",
+            "font-size",
+        ] {
             assert!(
                 !glass.contains(property),
                 "{selector} leaves {property} to the nav icon: {glass}"

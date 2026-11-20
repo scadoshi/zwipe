@@ -57,7 +57,10 @@ fn use_site_search() -> CardSearch<SiteSearch> {
 /// Where the nav folds, the card search is the header's.
 const HEADER_MEDIA: &str = "(max-width: 60rem)";
 
-/// The nav's card search.
+/// The class of the site nav's icon buttons, the store icons, which the glass wears too.
+pub(crate) const GLASS_CLASS: &str = "nav-cta nav-cta-icon";
+
+/// The nav's card search, its glass one of the nav's icon buttons.
 #[component]
 pub(crate) fn NavCardSearch() -> Element {
     let search = use_site_search();
@@ -67,6 +70,7 @@ pub(crate) fn NavCardSearch() -> Element {
             on_action: Callback::new(move |action| search.dispatch(action)),
             input_id: "site-nav-card-search",
             header_media: HEADER_MEDIA,
+            glass_class: GLASS_CLASS,
         }
     }
 }

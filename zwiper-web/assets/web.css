@@ -606,10 +606,11 @@ body {
        flashes in the header. */
     .web-app-nav .card-search-nav {
         top: var(--space-2);
-        left: calc(var(--space-3) + 2.2rem + var(--space-2));
+        --card-search-glass: 2.1rem;
+        left: calc(var(--space-3) + 2.1rem + var(--space-2));
         right: var(--space-3);
         height: 1.7rem;
-        --card-search-open-shift: calc(-1 * (2.2rem + var(--space-2)));
+        --card-search-open-shift: calc(-1 * (2.1rem + var(--space-2)));
         --card-search-drop-top: var(--web-nav-h, var(--app-nav-h));
     }
 
@@ -626,7 +627,7 @@ body {
        outer columns grow by the chip and its gap and the title stays
        centered clear of it. */
     .web-app-nav .nav-wrapper nav:has(> .app-nav-back:not(.nav-back-held)):has(> .card-search-nav) {
-        grid-template-columns: calc(2.6rem + 2.2rem + var(--space-2)) minmax(0, 1fr) calc(2.6rem + 2.2rem + var(--space-2));
+        grid-template-columns: calc(2.6rem + 2.1rem + var(--space-2)) minmax(0, 1fr) calc(2.6rem + 2.1rem + var(--space-2));
     }
 
     /* The header holds still while its search is open. */
