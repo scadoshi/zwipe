@@ -2342,6 +2342,13 @@ button {
     margin: calc(-1 * var(--space-1)) 0;
 }
 
+/* A card list's "?" right after its title, taking the free room after it so
+   the list's own actions keep the right end. */
+.card-group-header-with-hint .card-list-fold-hint {
+    display: flex;
+    margin-right: auto;
+}
+
 /* The "?" button's ghost, its size as a bare chip. */
 .skeleton-info-button {
     flex: none;

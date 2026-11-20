@@ -452,7 +452,7 @@ fn StaplesPanel(
         } else {
             CardListFold {
                 title: model::STAPLES_TITLE,
-                actions: rsx! {
+                hint: rsx! {
                     InfoButton { topic: HintTopic::SuggestionStaples }
                 },
                 for staple in rows {
@@ -1014,7 +1014,9 @@ pub fn SuggestedCommanders() -> Element {
                             div { class: "maybeboard-list card-group row-enter",
                                 div { class: "card-group-header card-group-header-with-hint",
                                     div { class: "skeleton-bar skeleton-card-bar-header-wide" }
-                                    div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
+                                    span { class: "card-list-fold-hint",
+                                        div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
+                                    }
                                 }
                                 for i in 0..6 {
                                     div { key: "{i}", class: "skeleton-card-row",
@@ -1062,6 +1064,9 @@ pub fn SuggestedCommanders() -> Element {
                                 // what gets swiped.
                                 CardListFold {
                                     title: model::LIST_TITLE,
+                                    hint: rsx! {
+                                        InfoButton { topic: HintTopic::SuggestionList }
+                                    },
                                     actions: rsx! {
                                         if shows_swipe {
                                             Button {
@@ -1070,7 +1075,6 @@ pub fn SuggestedCommanders() -> Element {
                                                 {model::SWIPE}
                                             }
                                         }
-                                        InfoButton { topic: HintTopic::SuggestionList }
                                     },
                                     for suggestion in rows {
                                         SuggestionRow {
