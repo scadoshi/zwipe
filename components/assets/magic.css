@@ -4328,20 +4328,43 @@ nav:has(> .card-search-header:focus-within) > :not(.card-search-nav, .nav-panel)
 /* A bar cell (.data-table-bar) holds a DataBar: a thin bar in its column's
    color, its fill the value's share of the column's most, growing in as a
    chart's bar does, with the value inside in the text color. Bar cells
-   split the room past the label, 1px either side so bars stand 2px apart,
-   and give way first when the table is narrow. */
+   split the room past the label where there is room for it, 1px either
+   side so bars stand 2px apart; narrower, they size to their content and
+   give way first. */
 .data-table .data-table-bar {
-    width: 20%;
     padding-left: 1px;
     padding-right: 1px;
 }
 
-/* A bar column's name and its `?` stay on one line where a phone leaves
-   room; narrower, the `?` may drop under the name so the bars can shrink. */
-@media (min-width: 360px) {
+@media (min-width: 400px) {
+    .data-table .data-table-bar {
+        width: 20%;
+    }
+}
+
+/* A bar column's name and its `?` stay on one line where a wide phone
+   leaves room; narrower, the `?` may drop under the name so the bars can
+   shrink. */
+@media (min-width: 400px) {
     .data-table thead th.data-table-bar {
         white-space: nowrap;
     }
+}
+
+/* An Oracle tags table's tag cell keeps room for a usual word and its
+   hyphen (repeatable-, additional-) with a floor no column share can take
+   (an empty line its width), so a tag wraps at its hyphens first;
+   only a word too long for the cell (planeswalkerfall) breaks inside, so
+   the table never runs past its panel. A short chip still hugs its text. */
+.tag-data-table tbody th::before {
+    content: "";
+    display: block;
+    width: 6.25rem;
+    height: 0;
+}
+
+.tag-data-table tbody th .chip {
+    overflow-wrap: anywhere;
 }
 
 .data-bar {

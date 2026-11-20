@@ -72,20 +72,29 @@ fn bars_are_thin_with_4px_ends_and_the_value_in_the_text_color() {
 #[test]
 fn a_bar_column_s_header_keeps_its_name_and_hint_on_one_line_where_it_fits() {
     assert!(
-        MAGIC.contains("@media (min-width: 360px) {\n    .data-table thead th.data-table-bar {\n        white-space: nowrap;\n    }\n}"),
-        "one line from a phone's usual width up; at 320 the hint may drop under the name"
+        MAGIC.contains("@media (min-width: 400px) {\n    .data-table thead th.data-table-bar {\n        white-space: nowrap;\n    }\n}"),
+        "one line from 400px up; narrower, the hint may drop under the name"
     );
 }
 
 #[test]
-fn a_chip_label_keeps_its_longest_word_whole_so_its_column_sizes_to_it() {
-    let chip = rule(".data-table th .chip");
+fn a_tag_breaks_at_its_hyphens_first_and_mid_word_only_when_a_word_cannot_fit() {
+    let floor = rule(".tag-data-table tbody th::before");
     assert!(
-        chip.contains("overflow-wrap: break-word;") && !chip.contains("anywhere"),
-        "break-word leaves the cell's min-content at the longest word: {chip}"
+        floor.contains("width: 6.25rem;") && floor.contains("height: 0;"),
+        "room for a usual word and its hyphen: {floor}"
     );
     assert!(
-        !MAGIC.contains(".tag-data-table tbody th .chip {"),
-        "no floor: a short chip hugs its text"
+        MAGIC.contains("@media (min-width: 400px) {\n    .data-table .data-table-bar {\n        width: 20%;\n    }\n}"),
+        "bar columns take their share only where the room is; narrower, they give way to the tag"
+    );
+    let chip = rule(".tag-data-table tbody th .chip");
+    assert!(
+        chip.contains("overflow-wrap: anywhere;"),
+        "a word too long for the cell breaks: {chip}"
+    );
+    assert!(
+        !chip.contains("min-width"),
+        "a short chip hugs its text: {chip}"
     );
 }
