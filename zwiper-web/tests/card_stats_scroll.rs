@@ -66,7 +66,7 @@ fn the_column_leaves_room_for_a_panel_s_lift_and_outline_and_keeps_its_place() {
     );
     for declaration in [
         "--web-dock-panel-reach: var(--space-2);",
-        "padding: var(--space-2) var(--space-2) 0;",
+        "padding: var(--web-dock-panel-reach) var(--web-dock-panel-reach) 0;",
         "top: calc(var(--web-dock-panel-top) - var(--web-dock-panel-reach));",
         "left: calc(1rem - var(--web-dock-panel-reach));",
         "width: calc(var(--web-dock-panel-width) + 2 * var(--web-dock-panel-reach));",
