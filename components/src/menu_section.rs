@@ -13,9 +13,9 @@ pub enum MenuSection {
     Home,
     /// The deck list, and every screen inside a deck.
     Decks,
-    /// Playstyle, with its suggested commanders.
+    /// Playstyle.
     Playstyle,
-    /// The commander maybeboard.
+    /// Commanders: the commander maybeboard and the suggested commanders.
     Maybeboard,
     /// Activity.
     Activity,
@@ -58,7 +58,7 @@ impl MenuSection {
             Self::Home => "Home",
             Self::Decks => "Decks",
             Self::Playstyle => "Playstyle",
-            Self::Maybeboard => "Commander maybeboard",
+            Self::Maybeboard => "Commanders",
             Self::Activity => "Activity",
             Self::Account => "Account",
             Self::Config => "Settings",
@@ -83,6 +83,11 @@ impl MenuSection {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_maybeboard_s_entry_names_the_commanders_screen() {
+        assert_eq!(MenuSection::Maybeboard.label(), "Commanders");
+    }
 
     #[test]
     fn the_listed_and_footer_sections_partition_all() {

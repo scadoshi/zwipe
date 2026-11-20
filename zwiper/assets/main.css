@@ -484,3 +484,8 @@ body {
     transform: none !important;
     --nav-fade: 1 !important;
 }
+
+/* Under the Maybeboard, Suggested keeps a panel gap over its Show row. */
+.commanders-suggested {
+    margin-top: var(--panel-gap);
+}

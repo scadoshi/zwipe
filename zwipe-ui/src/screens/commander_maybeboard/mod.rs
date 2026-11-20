@@ -27,6 +27,13 @@ use crate::{deck, timing};
 /// The screen's title, also the hint's.
 pub const TITLE: &str = "Commander maybeboard";
 
+/// The Commanders screen's title, the screen that holds the maybeboard and the suggested
+/// commanders.
+pub const SCREEN_TITLE: &str = "Commanders";
+
+/// The maybeboard list's header on the Commanders screen.
+pub const BOARD_TITLE: &str = "Maybeboard";
+
 /// The Quick add row's label.
 pub const QUICK_ADD: &str = "Quick add";
 

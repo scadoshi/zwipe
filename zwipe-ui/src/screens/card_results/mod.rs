@@ -51,6 +51,9 @@ pub enum Status {
 pub enum Action {
     /// The route's text, on mount and whenever the route changes it.
     Load(String),
+    /// Back on the page for results it kept ([`State::kept`]): its loaded pages show again with
+    /// nothing looked up, and the next page follows on from them.
+    Resume(Kept),
     /// The lookup answered.
     Loaded {
         /// The [`Effect::Lookup`] ticket.
@@ -88,6 +91,23 @@ pub enum Effect {
     Replace(Destination),
     /// Opens a card.
     Navigate(Destination),
+}
+
+/// The results a page showed for one text, kept so Back from a card opens on them as they were:
+/// every page loaded, and whether the lookup had more.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Kept {
+    query: String,
+    cards: Vec<Card>,
+    exhausted: bool,
+}
+
+impl Kept {
+    /// The text the results matched.
+    #[must_use]
+    pub fn query(&self) -> &str {
+        &self.query
+    }
 }
 
 /// The page for one text.
@@ -188,6 +208,16 @@ impl State {
                 Vec::new()
             }
             Action::LoadMore => self.load_more(),
+            Action::Resume(kept) => {
+                let _ = self.tickets.next_ticket();
+                self.query = kept.query;
+                self.cards = kept.cards;
+                self.exhausted = kept.exhausted;
+                self.more = None;
+                self.dealt_from = None;
+                self.status = Status::Several;
+                Vec::new()
+            }
             Action::Failed { ticket, failure } => {
                 if self.is_answer(ticket) {
                     self.status = match failure {
@@ -266,8 +296,18 @@ impl State {
     /// Where the newest next page's cards start in [`State::cards`], so they deal in as they
     /// land; `None` while the cards are a first page.
     #[must_use]
-    pub fn newest_page_from(&self) -> Option<usize> {
+    pub fn dealt_from(&self) -> Option<usize> {
         self.dealt_from
+    }
+
+    /// The results to keep for Back from a card, while they show.
+    #[must_use]
+    pub fn kept(&self) -> Option<Kept> {
+        (self.status == Status::Several).then(|| Kept {
+            query: self.query.clone(),
+            cards: self.cards.clone(),
+            exhausted: self.exhausted,
+        })
     }
 
     /// Whether a next page is out.
