@@ -3451,14 +3451,16 @@ button {
 
 /* A section's one-line note, such as a rate with nothing to show. */
 .activity-total {
-    padding: var(--space-2) var(--space-3) 0;
+    padding: 0 var(--space-3);
     font-size: 0.7rem;
     color: var(--ink-text-muted, var(--text-muted));
     text-align: center;
 }
 
-/* The same note alone under a card group's header, spaced off the frame. */
+/* The same note alone under a card group's header, as much room above it
+   as below. */
 .activity-total-group {
+    padding-top: var(--space-3);
     padding-bottom: var(--space-3);
 }
 
