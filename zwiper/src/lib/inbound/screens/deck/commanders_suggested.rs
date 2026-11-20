@@ -202,87 +202,90 @@ pub(crate) fn SuggestedSection(
     drop(state);
 
     rsx! {
-        if is_loading {
-            ChipRowGhost {
-                label: maybeboard_model::SHOW,
-                chips: vec![ChipGhost::Text(maybeboard_model::ART.to_string())],
-            }
-            div { class: "maybeboard-list card-group row-enter",
-                div { class: "card-group-header card-group-header-with-hint",
-                    div { class: "skeleton-bar skeleton-card-bar-header" }
-                    span { class: "card-list-fold-hint",
-                        div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
+        // Its own column, a panel gap under the Maybeboard's Danger zone.
+        div { class: "flex-col commanders-suggested",
+            if is_loading {
+                ChipRowGhost {
+                    label: maybeboard_model::SHOW,
+                    chips: vec![ChipGhost::Text(maybeboard_model::ART.to_string())],
+                }
+                div { class: "maybeboard-list card-group row-enter",
+                    div { class: "card-group-header card-group-header-with-hint",
+                        div { class: "skeleton-bar skeleton-card-bar-header" }
+                        span { class: "card-list-fold-hint",
+                            div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
+                        }
+                    }
+                    for i in 0..3 {
+                        div { key: "{i}", class: "skeleton-card-row",
+                            div { class: "skeleton-bar skeleton-card-thumb" }
+                            div { class: "skeleton-bar skeleton-card-bar-row" }
+                        }
                     }
                 }
-                for i in 0..3 {
-                    div { key: "{i}", class: "skeleton-card-row",
-                        div { class: "skeleton-bar skeleton-card-thumb" }
-                        div { class: "skeleton-bar skeleton-card-bar-row" }
+            } else if load_failed {
+                div { class: "message-empty",
+                    span { class: "chip-note", {model::LOAD_FAILED} }
+                }
+            } else {
+                // The console's Show row, Art alone: colors come from the screen's filter.
+                div { class: "chip-row",
+                    span { class: "stat-chip stat-chip-p1 chip-row-label", {maybeboard_model::SHOW} }
+                    Chip {
+                        selected: show_row_art(),
+                        onclick: move |_| show_row_art.set(!show_row_art()),
+                        {maybeboard_model::ART}
                     }
                 }
-            }
-        } else if load_failed {
-            div { class: "message-empty",
-                span { class: "chip-note", {model::LOAD_FAILED} }
-            }
-        } else {
-            // The console's Show row, Art alone: colors come from the screen's filter.
-            div { class: "chip-row",
-                span { class: "stat-chip stat-chip-p1 chip-row-label", {maybeboard_model::SHOW} }
-                Chip {
-                    selected: show_row_art(),
-                    onclick: move |_| show_row_art.set(!show_row_art()),
-                    {maybeboard_model::ART}
-                }
-            }
-            // Swipe sits in the list's header, so it says what gets swiped.
-            CardListFold {
-                title: model::LIST_TITLE,
-                open: fold_open,
-                hint: rsx! {
-                    InfoButton { topic: HintTopic::SuggestionList }
-                },
-                actions: rsx! {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| swipe_open.set(true),
-                        {maybeboard_model::SWIPE}
+                // Swipe sits in the list's header, so it says what gets swiped.
+                CardListFold {
+                    title: model::LIST_TITLE,
+                    open: fold_open,
+                    hint: rsx! {
+                        InfoButton { topic: HintTopic::SuggestionList }
+                    },
+                    actions: rsx! {
+                        Button {
+                            variant: ButtonVariant::Action,
+                            onclick: move |_| swipe_open.set(true),
+                            {maybeboard_model::SWIPE}
+                        }
+                    },
+                    if let Some(line) = line {
+                        div { class: "card-row card-row-note", {line} }
                     }
-                },
-                if let Some(line) = line {
-                    div { class: "card-row card-row-note", {line} }
-                }
-                if let Some(empty) = empty {
-                    div { class: "card-row card-row-note", {empty} }
-                }
-                for suggestion in rows {
-                    SuggestionRow {
-                        key: "{suggestion.card.scryfall_data.id}",
-                        suggestion,
-                        deck_count: deck_count(),
-                        expanded_card,
-                        preview_card,
-                        preview_dismissing,
-                        on_start: move |card: Card| on_create.call(card),
-                        on_maybe,
-                        on_dismiss,
-                        on_printing: move |card: Card| on_printing.call(card),
+                    if let Some(empty) = empty {
+                        div { class: "card-row card-row-note", {empty} }
+                    }
+                    for suggestion in rows {
+                        SuggestionRow {
+                            key: "{suggestion.card.scryfall_data.id}",
+                            suggestion,
+                            deck_count: deck_count(),
+                            expanded_card,
+                            preview_card,
+                            preview_dismissing,
+                            on_start: move |card: Card| on_create.call(card),
+                            on_maybe,
+                            on_dismiss,
+                            on_printing: move |card: Card| on_printing.call(card),
+                        }
                     }
                 }
-            }
-            // Show more sits under the panel, as a chip row sits over one, and deals one page.
-            if more {
-                button {
-                    r#type: "button",
-                    class: "chip card-list-more",
-                    onclick: move |_| driver.dispatch(Action::ShowMore),
-                    {model::SHOW_MORE}
+                // Show more sits under the panel, as a chip row sits over one, and deals one page.
+                if more {
+                    button {
+                        r#type: "button",
+                        class: "chip card-list-more",
+                        onclick: move |_| driver.dispatch(Action::ShowMore),
+                        {model::SHOW_MORE}
+                    }
                 }
-            }
-            DangerZoneAction {
-                label: model::CLEAR_SKIPS,
-                button: maybeboard_model::CLEAR,
-                onclick: move |()| clear_open.set(true),
+                DangerZoneAction {
+                    label: model::CLEAR_SKIPS,
+                    button: maybeboard_model::CLEAR,
+                    onclick: move |()| clear_open.set(true),
+                }
             }
         }
 

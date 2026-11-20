@@ -481,3 +481,8 @@ body {
     width: fit-content;
     margin: 0 0 var(--panel-gap);
 }
+
+/* Under the Maybeboard, Suggested keeps a panel gap over its Show row. */
+.commanders-suggested {
+    margin-top: var(--panel-gap);
+}

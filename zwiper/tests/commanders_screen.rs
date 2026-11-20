@@ -68,3 +68,17 @@ fn playstyle_keeps_only_its_profile() {
     assert!(PLAYSTYLE.contains("BuilderProfileSections {"));
     assert!(PLAYSTYLE.contains("StaplesPanel {"));
 }
+
+const MAIN_CSS: &str = include_str!("../assets/main.css");
+
+#[test]
+fn suggested_keeps_a_panel_gap_under_the_maybeboard_s_danger_zone() {
+    assert!(
+        SUGGESTED.contains(r#"div { class: "flex-col commanders-suggested","#),
+        "Suggested's list sits in its own column"
+    );
+    assert!(
+        MAIN_CSS.contains(".commanders-suggested {\n    margin-top: var(--panel-gap);\n}"),
+        "a panel gap over its Show row, as the web's stacked Suggested keeps"
+    );
+}
