@@ -143,32 +143,22 @@
     /* `both` holds the `from` state before the first frame paints, so the
        toast never flashes at its final position first. No `transition` on
        translate or scale here: a transition on a property the animation
-       drives fights it. The rise takes --enter-duration and the settle after its
-       stamp 120ms more. */
-    animation: toast-rise-in calc(var(--enter-duration, 280ms) + 120ms) var(--ease-enter, ease-out) both;
+       drives fights it. */
+    animation: toast-rise-in var(--enter-duration, 280ms) var(--ease-enter, ease-out) both;
 }
 
-/* Shoots up from below the screen's bottom edge, moving and growing alone: its own
-   height, the corner gap and the keyboard below its spot, and its shadow's
-   reach. It carries a little past its spot, growing only as it lands, a stamp
-   as a stack badge pops, and settles, all one motion: `translate` and `scale`
-   keep their own stops, which a minifier leaves apart where it would fold
-   `transform` and `scale` into one. Leaving, it drifts up a little and
-   fades out, like a puff of smoke (toast-leave.js, or the timed keyframes
-   below). */
+/* Shoots up from below the screen's bottom edge: its own height, the corner gap
+   and the keyboard below its spot, and its shadow's reach. It starts a little
+   larger than its size and shrinks to it as it rises, a stamp coming down,
+   both on the one curve, so it arrives at its size and nothing moves once it
+   is there. `translate` and `scale` keep their own properties, which a
+   minifier leaves apart where it would fold `transform` and `scale` into one.
+   Leaving, it drifts up a little and fades out, like a puff of smoke
+   (toast-leave.js, or the timed keyframes below). */
 @keyframes toast-rise-in {
     from {
         translate: 0 calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4));
-        scale: 1;
-    }
-
-    55% {
-        scale: 1;
-    }
-
-    70% {
-        translate: 0 -2px;
-        scale: 1.04;
+        scale: 1.08;
     }
 
     to {
@@ -294,28 +284,19 @@
  * keyframe cannot serve both lives: the stops that give a 3s toast a 200ms
  * fade give a 5s toast a 330ms one. Hence a keyframe per life, worked back
  * from the same wall-clock feel, about 200ms up and 250ms out either way.
- * Each rises from below the bottom edge and leaves drifting up as it fades,
- * as an untimed toast does. */
+ * Each rises from below the bottom edge, large and shrinking to its size on
+ * the enter curve as an untimed toast does, and leaves drifting up as it
+ * fades. */
 
 @keyframes toast-life-3000 {
     0% {
         translate: 0 calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4));
-        scale: 1;
+        scale: 1.08;
+        animation-timing-function: var(--ease-enter, ease-out);
     }
 
-    /* 150ms, still its own size as it nears its spot */
-    5% {
-        scale: 1;
-    }
-
-    /* 210ms, the rise carried into its stamp */
+    /* 210ms, in its spot at its size */
     7% {
-        translate: 0 -2px;
-        scale: 1.04;
-    }
-
-    /* 330ms, settled */
-    11% {
         translate: 0;
         scale: 1;
     }
@@ -335,22 +316,12 @@
 @keyframes toast-life-5000 {
     0% {
         translate: 0 calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4));
-        scale: 1;
+        scale: 1.08;
+        animation-timing-function: var(--ease-enter, ease-out);
     }
 
-    /* 150ms, still its own size as it nears its spot */
-    3% {
-        scale: 1;
-    }
-
-    /* 200ms, the rise carried into its stamp */
+    /* 200ms, in its spot at its size */
     4% {
-        translate: 0 -2px;
-        scale: 1.04;
-    }
-
-    /* 325ms, settled */
-    6.5% {
         translate: 0;
         scale: 1;
     }
