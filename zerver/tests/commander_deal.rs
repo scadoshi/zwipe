@@ -475,7 +475,7 @@ async fn a_sorted_deal_pages_by_what_it_dealt_and_spreads_no_identity(pool: sqlx
     let app = TestApp::new(pool.clone());
     let token = user(&app, "sortpager").await;
     let cards: Vec<CardFixture> = (1..=6)
-        .map(|n| commander(&format!("Red {n}"), "R", 10 - n).cmc(f64::from(n)))
+        .map(|n| commander(&format!("Red {n}"), "R", 10_i32.saturating_sub(n)).cmc(f64::from(n)))
         .chain([commander("Green", "G", 100).cmc(7.0)])
         .collect();
     let ids: Vec<(String, Uuid)> = cards
