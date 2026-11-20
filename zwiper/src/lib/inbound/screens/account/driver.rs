@@ -230,7 +230,7 @@ impl Driver {
             Effect::CancelEmailChange(ticket) => self.cancel_change(ticket),
             Effect::Wait(ticket) => {
                 spawn(async move {
-                    tokio::time::sleep(TICK).await;
+                    crate::outbound::timer::sleep(TICK).await;
                     self.dispatch(Action::Tick { ticket });
                 });
             }

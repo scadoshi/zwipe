@@ -37,3 +37,5 @@ pub mod session;
 pub mod shake_to_edit;
 /// Local theme cache so pre-auth screens render in the last-used theme.
 pub mod theme_store;
+/// Waiting the same way on every target: tokio natively, the browser's timers on the web.
+pub mod timer;

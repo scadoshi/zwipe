@@ -39,7 +39,7 @@ impl std::fmt::Debug for AppSearch {
 
 impl SearchHost for AppSearch {
     async fn sleep(self, wait: Duration) {
-        tokio::time::sleep(wait).await;
+        crate::outbound::timer::sleep(wait).await;
     }
 
     async fn lookup(self, lookup: HttpCardLookup) -> Result<Vec<Card>, Failure> {

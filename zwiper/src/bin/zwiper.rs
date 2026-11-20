@@ -2,6 +2,7 @@
 
 use components::{DialogHostView, ThemeConfig, ToastStack, use_dialog_host};
 use dioxus::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
 use tracing_subscriber::EnvFilter;
 use zwipe_core::domain::logo;
 use zwipe_core::domain::user::settings::PipStyle;
@@ -32,9 +33,14 @@ const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
 fn main() -> anyhow::Result<()> {
     logo::Zwiper::print();
     let config = Config::from_env()?;
+    // The web build logs to the browser's console: tracing_subscriber's formatter stamps each
+    // line from std's clock, which panics on wasm32 before anything draws.
+    #[cfg(not(target_arch = "wasm32"))]
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::new(&config.rust_log))
         .init();
+    #[cfg(target_arch = "wasm32")]
+    let _ = dioxus::logger::init(tracing::Level::INFO);
     tracing::info!("zwiper v{} starting", env!("CARGO_PKG_VERSION"));
     // Crash capture: a panic writes its report to disk; the next launch posts
     // it (session_upkeep) and clears the file on a 2xx. Native-only.

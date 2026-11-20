@@ -218,7 +218,7 @@ pub fn SwipeStack(
     use_effect(use_reactive!(|painting_now| {
         if let Some(id) = painting_now {
             spawn(async move {
-                tokio::time::sleep(TOP_PAINT_GRACE).await;
+                crate::outbound::timer::sleep(TOP_PAINT_GRACE).await;
                 if *painting.peek() == Some(id) {
                     painting.set(None);
                 }
