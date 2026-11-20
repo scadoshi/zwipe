@@ -1270,7 +1270,7 @@ pub static GUIDES: &[Guide] = &[
                 "Same dialog, Stop sharing. The link stops working right away, and sharing again makes a new one.",
             ),
             Block::Image {
-                file: "share-your-deck/03-stop-share.webp",
+                file: "share-your-deck/03-stop-share-2.webp",
                 alt: "The dialog once shared, offering Copy link and Stop sharing",
                 caption: None,
             },
