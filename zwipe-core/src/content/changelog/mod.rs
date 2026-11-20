@@ -56,6 +56,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Commanders, a new screen on the web with your commander maybeboard and suggested commanders side by side",
         "A Brawl deck's commander picker only offers commanders legal in Brawl",
         "Playstyle's Oracle tags show Decks, Cards and Impact as colored bars",
+        "Card searches you run while logged in count toward Searches run on Home and Activity",
     ],
 }];
 
