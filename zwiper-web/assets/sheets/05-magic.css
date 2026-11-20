@@ -3899,6 +3899,13 @@ footer.site-footer .site-footer-note {
     border-color: var(--border-primary);
 }
 
+/* Under a mouse it lights as the nav buttons beside it do. */
+@media (hover: hover) {
+    .card-search-nav:not(.card-search-header) .card-search-input:not(:focus):hover {
+        border-color: var(--accent-primary);
+    }
+}
+
 .card-search .card-search-input::placeholder {
     color: var(--ink-text-muted, var(--text-muted));
 }

@@ -246,3 +246,13 @@ fn the_wide_nav_box_rests_quiet_and_takes_the_input_outline_on_focus() {
         "focused it has the input outline"
     );
 }
+
+#[test]
+fn the_resting_nav_box_answers_a_mouse_as_the_nav_buttons_do() {
+    assert!(
+        MAGIC.contains(
+            "@media (hover: hover) {\n    .card-search-nav:not(.card-search-header) .card-search-input:not(:focus):hover {\n        border-color: var(--accent-primary);\n    }\n}"
+        ),
+        "a hovered resting box takes the accent border, as the nav buttons do"
+    );
+}
