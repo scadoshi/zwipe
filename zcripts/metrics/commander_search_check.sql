@@ -10,6 +10,8 @@
 --   psql "$DATABASE_URL" -f zcripts/metrics/commander_search_check.sql
 -- or on the server:
 --   sudo -u postgres psql zwipe -f zcripts/metrics/commander_search_check.sql
+-- The sudo -u postgres form is the one that counts everything in section 5: run as the app role,
+-- without pg_read_all_stats, other roles' rows show no state there, so its counts read low.
 --
 -- Read-only: one READ ONLY transaction with a statement timeout. No user id, name or query
 -- parameter in the output, only settings, counts and times. A statement the timeout cancels
@@ -35,7 +37,7 @@ SELECT now() AS generated_at_utc, version() AS server;
 \echo
 \echo ── 1. Memory and timeout settings ──
 -- shared_buffers is the cache the catalog has to fit in; work_mem is what a sort gets before it
--- spills to disk (the search sets its own, transaction-local, from this branch on).
+-- spills to disk. The search sets its own work_mem, transaction-local.
 SELECT name, setting, unit, source
 FROM pg_settings
 WHERE name IN ('shared_buffers', 'effective_cache_size', 'work_mem', 'statement_timeout',
