@@ -40,7 +40,7 @@ dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "0
 tokio = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-tokio = { version = "1.47.1", default-features = false, features = ["macros", "rt", "sync", "time"] }
+tokio = { version = "1.54.1", default-features = false, features = ["macros", "rt", "sync", "time"] }
 
 # Android-only: keyring has no Android backend, so we persist the session to a
 # file in the app's private internal storage, reached via JNI (Context.getFilesDir()).
