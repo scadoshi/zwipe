@@ -385,17 +385,39 @@ fn sort_filter(key: CardSortKey, direction: SortDirection) -> Value {
 /// Four commanders that order differently under every sort, and a fifth with no price.
 fn sortable() -> Vec<CardFixture> {
     vec![
-        commander("Bravo", "W", 300).cmc(2.0).power("5").usd("9.00"),
-        commander("Delta", "U", 100).cmc(4.0).power("1").usd("0.50"),
+        commander("Bravo", "W", 300)
+            .cmc(2.0)
+            .power("5")
+            .toughness("1")
+            .rarity("uncommon")
+            .usd("9.00")
+            .eur("1.00"),
+        commander("Delta", "U", 100)
+            .cmc(4.0)
+            .power("1")
+            .toughness("4")
+            .rarity("common")
+            .usd("0.50")
+            .eur("7.00"),
         commander("Alpha", "B", 400)
             .cmc(3.0)
             .power("3")
-            .usd("20.00"),
+            .toughness("2")
+            .rarity("rare")
+            .usd("20.00")
+            .eur("3.00"),
         commander("Charlie", "R", 200)
             .cmc(1.0)
             .power("2")
-            .usd("3.25"),
-        commander("Echo", "G", 500).cmc(5.0).power("4"),
+            .toughness("5")
+            .rarity("mythic")
+            .usd("3.25")
+            .eur("2.00"),
+        commander("Echo", "G", 500)
+            .cmc(5.0)
+            .power("4")
+            .toughness("3")
+            .rarity("rare"),
     ]
 }
 
@@ -405,7 +427,7 @@ async fn each_sort_orders_a_page_as_asked(pool: sqlx::PgPool) {
     let token = user(&app, "sorter").await;
     seed_cards(&pool, &sortable()).await;
 
-    let cases: [(CardSortKey, SortDirection, &[&str]); 7] = [
+    let cases: [(CardSortKey, SortDirection, &[&str]); 11] = [
         (
             CardSortKey::Name,
             SortDirection::Ascending,
@@ -440,6 +462,26 @@ async fn each_sort_orders_a_page_as_asked(pool: sqlx::PgPool) {
             CardSortKey::EdhrecRank,
             SortDirection::Descending,
             &["Echo", "Alpha", "Bravo", "Charlie", "Delta"],
+        ),
+        (
+            CardSortKey::Toughness,
+            SortDirection::Ascending,
+            &["Bravo", "Alpha", "Echo", "Delta", "Charlie"],
+        ),
+        (
+            CardSortKey::Rarity,
+            SortDirection::Ascending,
+            &["Delta", "Charlie", "Alpha", "Echo", "Bravo"],
+        ),
+        (
+            CardSortKey::PriceEur,
+            SortDirection::Descending,
+            &["Delta", "Alpha", "Charlie", "Bravo"],
+        ),
+        (
+            CardSortKey::BestMatch,
+            SortDirection::Descending,
+            &["Delta", "Charlie", "Bravo", "Alpha", "Echo"],
         ),
     ];
     for (key, direction, want) in cases {
