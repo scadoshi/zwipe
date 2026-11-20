@@ -38,6 +38,7 @@ Read-only usage reports you run against the production database, then paste the 
 | `totals_check.sql` | Why would the public lifetime totals on Home go down? The API's totals and their parts, the retire trigger, write statistics, the biggest accounts, and counter rows lower than their own records | When the totals look wrong |
 | `card_signal_size.sql` | What would per-card swipe numbers cost? The swipe signal tables' rows and sizes, rows per card, writes per day, timed rollup aggregates, and size estimates for a per-card table and a per-card index | Before building the card screen's metrics |
 | `jit_check.sql` | Does Postgres spend longer compiling zerver's per-user queries (JIT) than running them? The JIT settings, then fetch_profiled_decks for the user with the most decks, as configured and with JIT off | Before turning JIT off for zerver (631) |
+| `oracle_tags_check.sql` | Why is the Activity screen's Oracle tags panel empty while Card roles has data? The tag columns across the catalog, the nightly steps that write them, and for one account (`-v who=<username>`, never printed) how many swiped cards carry tags, how many tags pass the bar of 10, where its swipes went and the daily signal budget | When the Oracle tags panel looks wrong |
 
 All of them are **read-only** (no writes, no locks) and print `── header ──` sections so the output is self-describing. Run any of them the same way:
 
