@@ -324,6 +324,7 @@ fn land_deal(pile: &Pile, reply: Result<Option<Vec<HttpCommanderSuggestion>>, ()
         Ok(Some(page)) => page,
         Ok(None) => {
             exhausted.set(true);
+            failed.set(false);
             return;
         }
         Err(()) => {
@@ -1190,6 +1191,12 @@ mod tests {
         assert!(
             !dom.in_runtime(|| *pile.failed.peek()),
             "a later page that lands clears the failure"
+        );
+        dom.in_runtime(|| land_deal(&pile, Err(()), /* first */ false));
+        dom.in_runtime(|| land_deal(&pile, Ok(None), /* first */ false));
+        assert!(
+            !dom.in_runtime(|| *pile.failed.peek()),
+            "nothing left to ask for ends the pile without a Retry"
         );
     }
 
