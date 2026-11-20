@@ -19,7 +19,7 @@ use axum::http::{Method, StatusCode, header};
 use common::{TestApp, card, seed_cards};
 use serde_json::{Value, json};
 use uuid::Uuid;
-use zwipe_core::domain::card::models::lookup::LOOKUP_LIMIT;
+use zwipe_core::domain::card::models::lookup::{LOOKUP_LIMIT, MAX_LOOKUP_OFFSET};
 use zwipe_core::http::paths::{CARD_LOOKUP_ROUTE, SETTINGS_ROUTE};
 
 /// The names in a lookup's answer, sorted.
@@ -66,12 +66,11 @@ async fn a_signed_out_lookup_answers_at_most_30_cards_one_per_card(pool: sqlx::P
 }
 
 #[sqlx::test]
-async fn paging_sorting_and_every_other_search_field_are_refused(pool: sqlx::PgPool) {
+async fn a_limit_a_sort_and_every_other_search_field_are_refused(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     seed_cards(&pool, &[card("Lightning Bolt").mono("R")]).await;
     for (field, value) in [
         ("limit", json!(1000)),
-        ("offset", json!(30)),
         ("order_by", json!("Name")),
         ("direction", json!("descending")),
         ("synergy", json!(true)),
@@ -87,6 +86,28 @@ async fn paging_sorting_and_every_other_search_field_are_refused(pool: sqlx::PgP
             "{field}: {answer}"
         );
     }
+}
+
+#[sqlx::test]
+async fn an_offset_pages_the_lookup_up_to_its_last_page(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    seed_cards(&pool, &[card("Lightning Bolt").mono("R")]).await;
+    let (status, answer) = app
+        .post(
+            CARD_LOOKUP_ROUTE,
+            json!({ "name": "bolt", "offset": 0 }),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{answer}");
+    let (status, answer) = app
+        .post(
+            CARD_LOOKUP_ROUTE,
+            json!({ "name": "bolt", "offset": MAX_LOOKUP_OFFSET + 1 }),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{answer}");
 }
 
 #[sqlx::test]
