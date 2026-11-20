@@ -1,4 +1,4 @@
-//! Show more's ghost rows on Commanders' Suggested list, so a press answers at once: the ghosts
+//! Show more's ghost rows on the Commanders screen's lists, so a press answers at once: the ghosts
 //! ease in at the foot of the list the moment Show more is pressed, and once its page has landed
 //! and they have finished easing in, they lie over the page's first rows and fade as those rows
 //! ease in over them. Under reduced motion every step is a fade.
@@ -151,6 +151,23 @@ impl MoreGhosts {
     #[must_use]
     pub fn shows_dealt(&self) -> bool {
         !matches!(self.phase, Phase::Entering | Phase::Waiting)
+    }
+
+    /// `rows` as the two runs the list draws around the ghosts: the rows held before Show more,
+    /// then the rows its page dealt, empty while those wait on the ghosts ([`Self::split`],
+    /// [`Self::shows_dealt`]). `oracle_id` reads a row's oracle id.
+    #[must_use]
+    pub fn runs<'a, T>(
+        &self,
+        rows: &'a [T],
+        oracle_id: impl Fn(&T) -> Option<Uuid>,
+    ) -> (&'a [T], &'a [T]) {
+        let (held, dealt) = rows.split_at(self.split(rows, oracle_id));
+        if self.shows_dealt() {
+            (held, dealt)
+        } else {
+            (held, &[])
+        }
     }
 }
 

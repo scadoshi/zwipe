@@ -1,6 +1,6 @@
 //! The Commanders screen's Suggested list: the merged commander ranking ([`deal`]) dealt a page at
 //! a time under the screen's filter, with a row's Maybeboard and Remove, Clear skips, and Show
-//! more once per deal.
+//! more once per deal, whose ghost rows ([`MoreGhosts`]) answer its press while its page is out.
 //!
 //! The client keeps a [`State`] while the screen is up. It sends [`Action::Load`] on mount and on
 //! every change of the screen's filter, [`Action::Redeal`] when the list's Swipe select closes, and
@@ -23,6 +23,7 @@ use zwipe_core::http::contracts::suggestions::{
 };
 
 use crate::commander::deal::{self, Door, LIST_PAGE};
+use crate::commander::more_ghosts::MoreGhosts;
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
 
@@ -39,7 +40,7 @@ pub const NO_SUGGESTIONS: &str = "No suggestions right now";
 pub const NO_MATCH: &str = "No commanders match";
 
 /// The button under the list that deals the next page.
-pub const SHOW_MORE: &str = "Show more";
+pub const SHOW_MORE: &str = crate::commander::more_page::SHOW_MORE;
 
 /// The toast once a row's Maybeboard saved it.
 pub const SAVED: &str = "Added to your commander maybeboard";
@@ -72,8 +73,11 @@ pub enum Action {
         /// The page, or `Err(())` when the request failed.
         reply: Result<HttpCommanderDealPage, ()>,
     },
-    /// Show more was tapped: the next page, and Show more goes until the next fresh deal.
+    /// Show more was tapped: its ghost rows ease in, it deals the next page, and Show more goes
+    /// until the next fresh deal.
     ShowMore,
+    /// An animation with this name ended on Show more's ghost rows.
+    GhostsEnded(String),
     /// A row's Maybeboard: saves the commander.
     Maybeboard(Uuid),
     /// A row's Remove: skips the commander for a week.
@@ -143,6 +147,8 @@ pub struct State {
     exhausted: bool,
     /// Whether Show more has dealt its page since the last fresh deal.
     more_used: bool,
+    /// Show more's ghost rows, which answer its press while its page is out.
+    ghosts: MoreGhosts,
     first: FirstPage,
     /// The newest deal out, if any.
     out: Option<(Ticket, Page)>,
@@ -157,6 +163,7 @@ impl Default for State {
             ranked_by: None,
             exhausted: false,
             more_used: false,
+            ghosts: MoreGhosts::new(),
             first: FirstPage::Loading,
             out: None,
             generation: Generation::default(),
@@ -193,11 +200,21 @@ impl State {
                 Vec::new()
             }
             Action::ShowMore => {
-                if !self.offers_more() {
-                    return Vec::new();
+                self.ghosts.ask();
+                let effects = if self.offers_more() {
+                    self.more_used = true;
+                    self.more()
+                } else {
+                    Vec::new()
+                };
+                if effects.is_empty() {
+                    self.ghosts.failed();
                 }
-                self.more_used = true;
-                self.more()
+                effects
+            }
+            Action::GhostsEnded(animation) => {
+                self.ghosts.animation_ended(&animation);
+                Vec::new()
             }
             Action::Maybeboard(oracle_id) => vec![Effect::AddMaybeboard(oracle_id)],
             Action::Dismiss(oracle_id) => vec![Effect::Dismiss(oracle_id)],
@@ -215,11 +232,12 @@ impl State {
         }
     }
 
-    /// Deals the first page afresh under the filter; Show more is offered again, and a list whose
-    /// last load failed ghosts again while the deal is out.
+    /// Deals the first page afresh under the filter; Show more is offered again, its ghost rows
+    /// go at once, and a list whose last load failed ghosts again while the deal is out.
     fn deal(&mut self) -> Vec<Effect> {
         let ticket = self.generation.next_ticket();
         self.more_used = false;
+        self.ghosts.reset();
         if self.first == FirstPage::Failed {
             self.first = FirstPage::Loading;
         }
@@ -278,9 +296,10 @@ impl State {
             }
             (Page::More, Ok(found)) => {
                 self.exhausted = deal::is_last_page(found.suggestions.len(), LIST_PAGE);
+                self.ghosts.landed(deal::oracle_ids(&found.suggestions));
                 self.entries.extend(found.suggestions);
             }
-            (Page::More, Err(())) => {}
+            (Page::More, Err(())) => self.ghosts.failed(),
         }
     }
 
@@ -296,6 +315,20 @@ impl State {
     #[must_use]
     pub fn entries(&self) -> &[HttpCommanderSuggestion] {
         &self.entries
+    }
+
+    /// Show more's ghost rows.
+    #[must_use]
+    pub fn ghosts(&self) -> &MoreGhosts {
+        &self.ghosts
+    }
+
+    /// The rows as the two runs the list draws around Show more's ghost rows: those held before
+    /// it, then those its page dealt, empty while they wait on the ghosts.
+    #[must_use]
+    pub fn runs(&self) -> (&[HttpCommanderSuggestion], &[HttpCommanderSuggestion]) {
+        self.ghosts
+            .runs(&self.entries, |s| s.card.scryfall_data.oracle_id)
     }
 
     /// The rows' cards, in order.

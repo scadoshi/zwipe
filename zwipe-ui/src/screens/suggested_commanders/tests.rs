@@ -251,3 +251,41 @@ fn a_redeal_after_a_failed_load_ghosts_the_list_again_while_it_is_out() {
     assert!(!state.is_loading());
     assert_eq!(state.entries().len(), 10);
 }
+
+#[test]
+fn show_more_eases_ghosts_in_and_its_page_lands_under_them() {
+    use crate::commander::more_ghosts::{ENTER_ANIMATION, Phase};
+    let mut state = loaded();
+    let (ticket, _) = deal_of(&state.update(Action::ShowMore));
+    assert_eq!(state.ghosts().phase(), Phase::Entering, "at once");
+    let _ = state.update(landed(ticket, page("More", 10)));
+    let (held, dealt) = state.runs();
+    assert_eq!(
+        (held.len(), dealt.len()),
+        (10, 0),
+        "the page waits on the ghosts"
+    );
+    let _ = state.update(Action::GhostsEnded(ENTER_ANIMATION.to_owned()));
+    assert_eq!(state.ghosts().phase(), Phase::Leaving);
+    let (held, dealt) = state.runs();
+    assert_eq!((held.len(), dealt.len()), (10, 10));
+}
+
+#[test]
+fn a_fresh_deal_takes_the_ghosts_away_and_a_failed_page_sends_them_off() {
+    use crate::commander::more_ghosts::{ENTER_ANIMATION, LEAVE_ANIMATION, Phase};
+    let mut state = loaded();
+    let _ = state.update(Action::ShowMore);
+    let _ = state.update(Action::Redeal);
+    assert_eq!(state.ghosts().phase(), Phase::Off);
+
+    let mut state = loaded();
+    let (ticket, _) = deal_of(&state.update(Action::ShowMore));
+    let _ = state.update(Action::Page {
+        ticket,
+        reply: Err(()),
+    });
+    let _ = state.update(Action::GhostsEnded(ENTER_ANIMATION.to_owned()));
+    let _ = state.update(Action::GhostsEnded(LEAVE_ANIMATION.to_owned()));
+    assert_eq!(state.ghosts().phase(), Phase::Off, "gone over no rows");
+}

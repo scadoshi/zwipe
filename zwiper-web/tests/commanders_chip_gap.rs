@@ -90,12 +90,14 @@ fn show_more_sits_under_the_panel_not_as_a_row_in_it() {
         .split_once("// Show more sits under the panel")
         .unwrap();
     assert!(
-        !fold.contains("Show more\""),
-        "no Show more row inside the fold: {fold}"
+        !fold.contains("ListMore"),
+        "no Show more inside the fold: {fold}"
     );
-    assert!(after.contains(r#"class: "chip","#), "{after}");
-    assert!(body.contains("offers_more("), "{body}");
-    assert!(after.contains("if more {"), "{after}");
+    assert!(
+        after.contains("ListMore {\n            offers,"),
+        "the shared Show more, while the model offers more: {after}"
+    );
+    assert!(body.contains("let offers = state.offers_more();"), "{body}");
 }
 
 #[test]
@@ -107,32 +109,9 @@ fn show_more_s_rules_are_the_shared_screens_not_the_web_s_own() {
 }
 
 #[test]
-fn show_more_leaves_on_its_exit_before_it_goes() {
+fn show_more_leaves_on_its_exit_since_it_deals_once() {
     let body = suggested_fold();
-    let (_, after) = body
-        .split_once("// Show more sits under the panel")
-        .unwrap();
-    assert!(
-        body.contains("let more = open() && (leaving() || state.offers_more());"),
-        "a leaving chip stays until its exit ends: {body}"
-    );
-    assert!(
-        after.contains(r#""card-list-more card-list-more-leaving""#),
-        "{after}"
-    );
-    assert!(
-        after.contains("onanimationend: move |event: AnimationEvent| {"),
-        "{after}"
-    );
-    assert!(
-        after.contains("if ends_leave(&event.animation_name()) {\n"),
-        "{after}"
-    );
-    assert!(after.contains("leaving.set(true);"), "{after}");
-    assert!(
-        after.contains("},\n                div {\n                    button {"),
-        "the chip sits in a bare box, since its own padding would floor the row it folds: {after}"
-    );
+    assert!(body.contains("leaves: true,"), "{body}");
 }
 
 #[test]
@@ -149,7 +128,7 @@ fn the_suggested_ghost_draws_show_more_under_its_panel() {
 fn show_more_hides_while_the_panel_is_folded() {
     let body = suggested_fold();
     assert!(
-        body.contains("let more = open() && (leaving() || state.offers_more());"),
+        body.contains("open: open(),"),
         "a folded panel offers no Show more: {body}"
     );
     assert!(

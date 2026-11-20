@@ -3,7 +3,7 @@
 //! orangui is the generic kit: themes, panels, nav, charts, the entrance
 //! effects and the app and site kits. This crate re-exports, by name, the
 //! orangui items `zwiper` (the app) and `zite` (the site) use, so they keep one
-//! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`] and the [`CardListFold`] that holds a list of them, with Show more's [`MoreGhostRows`],
+//! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`] and the [`CardListFold`] that holds a list of them, with Show more ([`ListMore`]) and its [`MoreGhostRows`],
 //! [`CardRoleChips`], [`RoleTags`], [`OtagDef`], [`KeywordChips`],
 //! [`OracleText`], [`FlippableCardImage`], [`ChangelogFilters`] and
 //! [`ChangelogReleases`], the deck charts ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
@@ -95,6 +95,7 @@ pub mod keys;
 mod keyword_chips;
 mod layer_presence;
 pub mod list_end;
+mod list_more;
 mod load_failed;
 mod media;
 mod media_frame;
@@ -198,6 +199,7 @@ pub use hover_stack::{HoverStack, HoverStackHost, use_hover_stack};
 pub use identity_pips::IdentityPips;
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use layer_presence::{LAYER_OUT, LayerPresence, use_layer_presence};
+pub use list_more::{ListMore, ends_list_more_leave};
 pub use load_failed::LoadFailed;
 pub use media::{
     COMPUTER_QUERY, KIT_MODAL_PX, POINTER_QUERY, WIDE_PX, use_computer, use_min_width, use_pointer,

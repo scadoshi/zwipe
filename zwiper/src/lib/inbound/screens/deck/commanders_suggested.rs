@@ -6,8 +6,8 @@
 //! Commanders screen runs on too; this file draws its state and performs its effects.
 
 use components::{
-    AlertDialog, Button, ButtonVariant, CardListFold, Chip, DialogAction, LoadFailed, Toasts,
-    use_toast,
+    AlertDialog, Button, ButtonVariant, CardListFold, Chip, DialogAction, ListMore, LoadFailed,
+    MoreGhostRows, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -155,8 +155,6 @@ pub(crate) fn SuggestedSection(
     // The open state of the list's fold, so Show more under it hides while it is shut.
     let fold_open = use_signal(|| true);
     let mut deck_count = use_signal(|| 0u32);
-    // Show more on its way out, kept until its exit ends.
-    let mut leaving = use_signal(|| false);
 
     // The first page on mount, and again whenever the filter sheet applies.
     use_effect(move || {
@@ -198,10 +196,12 @@ pub(crate) fn SuggestedSection(
     let state = model.read();
     let is_loading = state.is_loading();
     let load_failed = state.load_failed();
-    let rows = state.entries().to_vec();
+    let (held, dealt) = state.runs();
+    let (rows, dealt) = (held.to_vec(), dealt.to_vec());
+    let ghosts = state.ghosts().clone();
     let line = state.ranked_line();
     let empty = state.empty_line();
-    let more = fold_open() && (leaving() || state.offers_more());
+    let offers = state.offers_more();
     drop(state);
 
     rsx! {
@@ -272,28 +272,36 @@ pub(crate) fn SuggestedSection(
                             on_printing: move |card: Card| on_printing.call(card),
                         }
                     }
-                }
-                // Show more sits under the panel, as a chip row sits over one, and deals one page.
-                if more {
-                    div {
-                        class: if leaving() { "card-list-more card-list-more-leaving" } else { "card-list-more" },
-                        onanimationend: move |event: AnimationEvent| {
-                            if ends_leave(&event.animation_name()) {
-                                leaving.set(false);
-                            }
-                        },
-                        div {
-                            button {
-                                r#type: "button",
-                                class: "chip",
-                                onclick: move |_| {
-                                    leaving.set(true);
-                                    driver.dispatch(Action::ShowMore);
-                                },
-                                {model::SHOW_MORE}
-                            }
+                    // Show more's ghost rows answer its press while its page is out, then lie
+                    // under the rows it dealt as they ease in.
+                    if ghosts.drawn() {
+                        MoreGhostRows {
+                            ghosts,
+                            on_animation_end: move |name: String| driver.dispatch(Action::GhostsEnded(name)),
                         }
                     }
+                    for suggestion in dealt {
+                        SuggestionRow {
+                            key: "{suggestion.card.scryfall_data.id}",
+                            suggestion,
+                            deck_count: deck_count(),
+                            expanded_card,
+                            preview_card,
+                            preview_dismissing,
+                            on_start: move |card: Card| on_create.call(card),
+                            on_maybe,
+                            on_dismiss,
+                            on_printing: move |card: Card| on_printing.call(card),
+                        }
+                    }
+                }
+                // Show more sits under the panel, as a chip row sits over one, and deals one page.
+                // Once per deal, so it leaves on its exit while the page loads.
+                ListMore {
+                    offers,
+                    open: fold_open(),
+                    leaves: true,
+                    onclick: move |()| driver.dispatch(Action::ShowMore),
                 }
                 DangerZoneAction {
                     label: model::CLEAR_SKIPS,
@@ -332,10 +340,4 @@ pub(crate) fn SuggestedSection(
             on_close: move |()| swipe_open.set(false),
         }
     }
-}
-
-/// Whether `animation` is Show more's exit ending: the fold away, or the fade alone under reduced
-/// motion.
-fn ends_leave(animation: &str) -> bool {
-    matches!(animation, "card-list-more-leave" | "card-list-more-fade")
 }

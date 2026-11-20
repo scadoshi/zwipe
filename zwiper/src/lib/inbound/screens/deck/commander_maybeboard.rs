@@ -17,7 +17,7 @@ use std::iter;
 
 use components::{
     AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap, DialogAction, DockFilter,
-    Toasts, use_toast,
+    ListMore, MoreGhostRows, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -30,6 +30,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::commander::maybeboard::{Sort, SortBy};
+use zwipe_ui::commander::more_page::MorePage;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::commander_maybeboard::{
     self as model, Action, Destination, Effect, QuickAddResults, State, Status,
@@ -383,6 +384,21 @@ pub fn CommanderMaybeboard() -> Element {
     let filtered = view.shown(&builder);
     drop(view);
 
+    // The list shows ten at a time; a new sort or an applied filter shows the first ten again.
+    let mut more_page = use_signal(MorePage::new);
+    let list_view = use_memo(move || (driver.model.read().sort(), filter_reset_counter()));
+    use_effect(move || {
+        let _view = list_view();
+        more_page.write().reset();
+    });
+    let list_open = use_signal(|| true);
+    let page = more_page.read().clone();
+    let (held, dealt) = page.runs(&filtered, |c| c.scryfall_data.oracle_id);
+    let (held, dealt) = (held.to_vec(), dealt.to_vec());
+    let ghosts = page.ghosts().clone();
+    let offers_more = page.offers_more(filtered.len());
+    let leaves = page.next_shows_the_rest(filtered.len());
+
     rsx! {
         div { class: "screen",
             ScreenHeader { title: model::SCREEN_TITLE, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
@@ -513,6 +529,7 @@ pub fn CommanderMaybeboard() -> Element {
                         // swiped; with nothing to list, one row says why.
                         CardListFold {
                             title: model::BOARD_TITLE,
+                            open: list_open,
                             actions: rsx! {
                                 Button {
                                     variant: ButtonVariant::Action,
@@ -523,7 +540,7 @@ pub fn CommanderMaybeboard() -> Element {
                             if let Some(message) = message {
                                 div { class: "card-row card-row-note", {message} }
                             }
-                            for card in filtered {
+                            for card in held {
                                 MaybeboardRow {
                                     key: "{card.scryfall_data.id}",
                                     card,
@@ -538,6 +555,39 @@ pub fn CommanderMaybeboard() -> Element {
                                     },
                                 }
                             }
+                            // Show more's ghost rows, then the ten it showed easing in over them.
+                            if ghosts.drawn() {
+                                MoreGhostRows {
+                                    ghosts,
+                                    on_animation_end: move |name: String| more_page.write().animation_ended(&name),
+                                }
+                            }
+                            for card in dealt {
+                                MaybeboardRow {
+                                    key: "{card.scryfall_data.id}",
+                                    card,
+                                    expanded_card,
+                                    preview_card,
+                                    preview_dismissing,
+                                    on_create,
+                                    on_remove,
+                                    on_printing: move |c: Card| {
+                                        printing_card.set(Some(c));
+                                        printing_open.set(true);
+                                    },
+                                }
+                            }
+                        }
+                        // Show more sits under the panel and shows ten more rows; the press that
+                        // shows the last of them sends it away on its exit.
+                        ListMore {
+                            offers: offers_more,
+                            open: list_open(),
+                            leaves,
+                            onclick: move |()| {
+                                let rows = driver.model.peek().shown(&filter_builder.peek());
+                                more_page.write().show_more(&rows, |c| c.scryfall_data.oracle_id);
+                            },
                         }
                         DangerZoneAction {
                             label: model::CLEAR_MAYBEBOARD,

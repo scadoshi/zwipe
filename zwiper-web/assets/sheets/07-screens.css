@@ -2349,9 +2349,9 @@ button {
     margin-right: auto;
 }
 
-/* A card list's Show more sits under its panel as a chip row sits over one:
-   a chip row's gap between them, and the panel's own gap to what follows. Its
-   one row lets it fold to nothing as it leaves. */
+/* A card list's Show more sits centered under its panel as a chip row sits
+   over one: a chip row's gap between them, and the panel's own gap to what
+   follows. Its one row lets it fold to nothing as it leaves. */
 .card-group:has(+ .card-list-more) {
     margin-bottom: var(--space-2);
 }
@@ -2360,7 +2360,7 @@ button {
     display: grid;
     grid-template-rows: 1fr;
     width: fit-content;
-    margin: 0 0 var(--panel-gap);
+    margin: 0 auto var(--panel-gap);
 }
 
 /* The chip's box: no line box around it, and no floor on the row it folds. */
@@ -2381,7 +2381,7 @@ button {
 @media (prefers-reduced-motion: no-preference) {
     .card-list-more.card-list-more-leaving {
         overflow: hidden;
-        transform-origin: top left;
+        transform-origin: top center;
         animation-name: card-list-more-leave;
     }
 }
