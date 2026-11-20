@@ -509,6 +509,14 @@ fn up_saves() -> Block {
 /// The Swipe select hint, which changes with its overlay.
 #[must_use]
 pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
+    swipe_select_on(mode, Surface::App)
+}
+
+/// [`swipe_select`] as `surface` shows it: the web's Suggested swipe pages the deal under the
+/// screen's filter, so it keeps dealing and its funnel narrows by anything, where the app's deals
+/// a fixed ranking.
+#[must_use]
+pub fn swipe_select_on(mode: SwipeSelectMode, surface: Surface) -> HintContent {
     let mut blocks = match mode {
         SwipeSelectMode::Suggested { .. } => vec![
             bullet(vec![
@@ -567,16 +575,23 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
     ]));
     let title = match mode {
         SwipeSelectMode::Suggested { has_filter } => {
+            let (depth, narrows) = match surface {
+                Surface::App => (
+                    "Best fit first, 100 deep. ",
+                    " narrows the stack to one color identity",
+                ),
+                Surface::Web => (
+                    "Best fit first, and it keeps dealing as you swipe. ",
+                    " narrows what it deals",
+                ),
+            };
             blocks.push(line(vec![
-                text("Best fit first, 100 deep. "),
+                text(depth),
                 icon_key(KeyIcon::Eye),
                 text(" shows why each one was suggested"),
             ]));
             if has_filter {
-                blocks.push(line(vec![
-                    icon_key(KeyIcon::Funnel),
-                    text(" narrows the stack to one color identity"),
-                ]));
+                blocks.push(line(vec![icon_key(KeyIcon::Funnel), text(narrows)]));
             }
             "Suggested commanders"
         }
@@ -915,6 +930,39 @@ mod tests {
         let narrow = first_deck(DeckLayout::Narrow);
         assert_eq!(narrow.blocks[0].spans()[0], key("Cards"));
         assert_eq!(content_for(OneTimeHint::FirstDeck), Some(narrow));
+    }
+
+    #[test]
+    fn the_web_s_suggested_swipe_reads_as_the_deal_does() {
+        let web = swipe_select_on(
+            SwipeSelectMode::Suggested { has_filter: true },
+            Surface::Web,
+        );
+        let lines: Vec<String> = web.blocks.iter().map(Block::plain).collect();
+        assert!(
+            lines
+                .iter()
+                .all(|l| !l.contains("100 deep") && !l.contains("one color identity")),
+            "{lines:?}"
+        );
+        assert_eq!(
+            lines.get(lines.len().saturating_sub(2)).map(String::as_str),
+            Some(
+                "Best fit first, and it keeps dealing as you swipe. eye shows why each one was suggested"
+            )
+        );
+        assert_eq!(
+            lines.last().map(String::as_str),
+            Some("funnel narrows what it deals")
+        );
+        assert_eq!(
+            swipe_select_on(
+                SwipeSelectMode::Suggested { has_filter: true },
+                Surface::App
+            ),
+            swipe_select(SwipeSelectMode::Suggested { has_filter: true }),
+            "the app's swipe reads as it does"
+        );
     }
 
     #[test]

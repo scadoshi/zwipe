@@ -45,3 +45,17 @@ fn maybeboard_shows_only_art() {
     assert!(!row.contains("ms-cost"), "no mana pips: {row}");
     assert_eq!(labels(row), ["Art"], "{row}");
 }
+
+#[test]
+fn each_list_s_loading_ghost_shows_its_show_row_as_it_loads() {
+    for (list, src) in [("Suggested", SUGGESTED), ("Maybeboard", MAYBEBOARD)] {
+        assert!(
+            !src.contains("GhostShowRow {"),
+            "{list}: no ghost of the old color row's All and pips"
+        );
+        assert!(
+            src.contains("GhostChipRow { label: 4, chips: vec![3] }"),
+            "{list}: Show and its one Art chip"
+        );
+    }
+}

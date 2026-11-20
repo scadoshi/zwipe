@@ -102,7 +102,7 @@ pub fn SwipeSelectHint(open: Signal<bool>, mode: SwipeSelectMode) -> Element {
     rsx! {
         ContentHintDialog {
             open,
-            content: one_time::swipe_select(mode),
+            content: one_time::swipe_select_on(mode, Surface::Web),
             actions: guide_for_swipe_select(mode),
         }
     }
