@@ -147,14 +147,21 @@ const completeData = (entry) =>
   ["reason", "approved_by"].every((k) => typeof entry[k] === "string" && entry[k].trim() !== "") &&
   (entry.route === undefined || typeof entry.route === "string");
 
+/** Whether a step entry names its step and route, with a reason and an approver. */
+const completeStep = (entry) =>
+  ["step", "route", "reason", "approved_by"].every((k) => typeof entry[k] === "string" && entry[k].trim() !== "");
+
 /**
- * Whether `entry` is a usable approval: every field of a path entry or a data change filled in. A
- * path entry's `path` may be "", the reply's root, which a new route's status and body differ at.
+ * Whether `entry` is a usable approval: every field of a path entry, a step entry or a data change
+ * filled in. A path entry's `path` may be "", the reply's root, which a new route's status and
+ * body differ at.
  */
 const complete = (entry) =>
   entry.data !== undefined
     ? completeData(entry)
-    : typeof entry.path === "string" &&
+    : entry.step !== undefined
+      ? completeStep(entry)
+      : typeof entry.path === "string" &&
       ["route", "kind", "reason", "approved_by"].every((k) => typeof entry[k] === "string" && entry[k].trim() !== "");
 
 /** The oracle id of a card object: its own, its `scryfall_data`'s, or its `card`'s. */
@@ -280,7 +287,8 @@ export const alignCards = (main, cand, approved) => {
 /**
  * Sorts every difference in `results` (`[{step: {name, route}, diffs, main, cand}]`, `main` and
  * `cand` the compared replies) into approved and unapproved. A path entry approves a difference
- * by its route, path and kind; a data change (`"data": "printings"`) approves one inside a card
+ * by its route, path and kind; a step entry approves every difference in the one step it names,
+ * on its route; a data change (`"data": "printings"`) approves one inside a card
  * whose oracle id it lists (or `"*"` for any), the same card on both sides. Lists the entries
  * missing a field as incomplete, and the complete ones that matched nothing as stale.
  */
@@ -292,9 +300,11 @@ export const judge = (results, approved) => {
   for (const { step, diffs, main, cand } of results) {
     for (const d of diffs) {
       const entry = usable.find((a) =>
-        a.data === undefined
-          ? a.route === step.route && a.kind === d.kind && matches(a.path, d.path)
-          : coversData(a, step.route, d, main, cand, printings),
+        a.data !== undefined
+          ? coversData(a, step.route, d, main, cand, printings)
+          : a.step !== undefined
+            ? a.step === step.name && a.route === step.route
+            : a.route === step.route && a.kind === d.kind && matches(a.path, d.path),
       );
       const row = { step: step.name, route: step.route, ...d };
       if (entry) {
