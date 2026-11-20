@@ -349,6 +349,16 @@
    }
   },
   {
+   "name": "card lookup, a page from an offset",
+   "method": "POST",
+   "route": "/api/card/lookup",
+   "path": "/api/card/lookup",
+   "body": {
+    "name": "a",
+    "offset": 20
+   }
+  },
+  {
    "name": "named cards, signed out",
    "method": "GET",
    "route": "/api/card/named/{name_slug}",

@@ -150,3 +150,104 @@ fn picking_a_card_opens_its_card_page() {
     );
     assert_eq!(state.update(Action::Pick(uuid::Uuid::new_v4())), []);
 }
+
+/// `n` cards named `prefix` 1 to `n`.
+fn many(prefix: &str, n: usize) -> Vec<Card> {
+    (1..=n).map(|i| card(&format!("{prefix} {i}"))).collect()
+}
+
+/// A page showing a full first page of results for "a".
+fn first_page() -> State {
+    let mut state = State::new();
+    let (ticket, _) = loading(&mut state, "a");
+    let _ = state.update(Action::Loaded {
+        ticket,
+        cards: many("First", 20),
+    });
+    state
+}
+
+#[test]
+fn the_page_asks_for_the_first_page_of_twenty() {
+    let mut state = State::new();
+    let (_, lookup) = loading(&mut state, "a");
+    assert_eq!(lookup.offset(), Some(0), "a paged lookup, so pages of 20");
+    assert!(
+        first_page().has_more(),
+        "a full page may have more behind it"
+    );
+}
+
+#[test]
+fn load_more_asks_for_the_next_page_once_and_it_joins_the_list() {
+    let mut state = first_page();
+    let effects = state.update(Action::LoadMore);
+    let [Effect::Lookup { ticket, lookup }] = effects.as_slice() else {
+        panic!("one lookup: {effects:?}");
+    };
+    assert_eq!(lookup.offset(), Some(20));
+    assert_eq!(
+        state.update(Action::LoadMore),
+        [],
+        "one next page at a time"
+    );
+    let _ = state.update(Action::Loaded {
+        ticket: *ticket,
+        cards: many("Second", 20),
+    });
+    assert_eq!(state.cards().len(), 40);
+    assert_eq!(state.status(), Status::Several);
+    let effects = state.update(Action::LoadMore);
+    let [Effect::Lookup { lookup, .. }] = effects.as_slice() else {
+        panic!("one lookup: {effects:?}");
+    };
+    assert_eq!(lookup.offset(), Some(40));
+}
+
+#[test]
+fn a_short_page_is_the_last() {
+    let mut state = first_page();
+    let effects = state.update(Action::LoadMore);
+    let [Effect::Lookup { ticket, .. }] = effects.as_slice() else {
+        panic!("one lookup: {effects:?}");
+    };
+    let _ = state.update(Action::Loaded {
+        ticket: *ticket,
+        cards: many("Last", 7),
+    });
+    assert_eq!(state.cards().len(), 27);
+    assert!(!state.has_more());
+    assert_eq!(state.update(Action::LoadMore), []);
+}
+
+#[test]
+fn a_failed_next_page_keeps_the_list_and_the_next_scroll_asks_again() {
+    let mut state = first_page();
+    let effects = state.update(Action::LoadMore);
+    let [Effect::Lookup { ticket, .. }] = effects.as_slice() else {
+        panic!("one lookup: {effects:?}");
+    };
+    let _ = state.update(Action::Failed {
+        ticket: *ticket,
+        failure: Failure::Other,
+    });
+    assert_eq!(state.status(), Status::Several);
+    assert_eq!(state.cards().len(), 20);
+    assert_eq!(state.update(Action::LoadMore).len(), 1, "asks again");
+}
+
+#[test]
+fn a_new_text_drops_a_next_page_still_out() {
+    let mut state = first_page();
+    let effects = state.update(Action::LoadMore);
+    let [Effect::Lookup { ticket: old, .. }] = effects.as_slice() else {
+        panic!("one lookup: {effects:?}");
+    };
+    let (_, _) = loading(&mut state, "b");
+    let _ = state.update(Action::Loaded {
+        ticket: *old,
+        cards: many("Stale", 20),
+    });
+    assert_eq!(state.status(), Status::Loading);
+    assert_eq!(state.cards().len(), 0);
+}

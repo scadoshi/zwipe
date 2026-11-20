@@ -6,8 +6,15 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-/// The most cards one lookup answers, one per card (oracle id).
+/// The most cards one lookup with no offset answers, one per card (oracle id): the first and only
+/// page of a lookup from a client that doesn't page.
 pub const LOOKUP_LIMIT: u32 = 30;
+
+/// How many cards one page of a paged lookup answers, a lookup with an offset.
+pub const LOOKUP_PAGE: u32 = 20;
+
+/// The furthest a paged lookup reaches: the offset of its last page.
+pub const MAX_LOOKUP_OFFSET: u32 = 1000;
 
 /// The most characters a lookup's name keeps: well past the longest card name in print (141),
 /// and past what a search box takes, so anything longer is a request no client makes.
