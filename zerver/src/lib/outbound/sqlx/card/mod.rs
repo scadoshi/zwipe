@@ -496,6 +496,10 @@ const PRINTING_TIEBREAK: &str = "substring(sd.collector_number FROM '^[0-9]+')::
 /// tokens, so it cuts nothing real and keeps a public, cached answer small.
 const NAMED_CARDS_LIMIT: i64 = 50;
 
+/// The sort memory a search runs with: room for the commander pool's ranking to sort in memory
+/// rather than spilling to disk at the server's 4MB default.
+const SEARCH_WORK_MEM: &str = "16MB";
+
 /// Base ranking for the commander-select ordering: decks-helmed popularity
 /// first (`commander_popularity`, written by the synergy worker), then
 /// `edhrec_rank` as the fallback for commanders the table doesn't cover, then
@@ -1746,8 +1750,10 @@ impl CardRepository for MyPostgres {
             // to the daily shuffle alone. Both
             // joins are 1:1 (PK on oracle_id) and aliased so no bare
             // `name`/`oracle_id` collides with the shared WHERE filters.
+            // The pool carries only the id and the sort keys; the served rows join
+            // latest_cards back by id, so the window sorts narrow rows.
             let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
-                "WITH pool AS (SELECT latest_cards.*, row_number() OVER (ORDER BY ",
+                "WITH pool AS (SELECT latest_cards.id, latest_cards.name, row_number() OVER (ORDER BY ",
             );
             qb.push(POPULARITY_RANK);
             qb.push(
@@ -2005,8 +2011,14 @@ impl CardRepository for MyPostgres {
             // is not guaranteed): band cards in band order, probes last;
             // the Rust splice below lifts them to WILDCARD_POSITION.
             let window = WildcardWindow::new(request.limit(), request.offset());
+            // The commander pool holds keys only, so its page joins the printings back.
+            let served = if popularity_ordering {
+                "SELECT latest_cards.* FROM"
+            } else {
+                "SELECT * FROM"
+            };
             qb.push(format!(
-                ") SELECT * FROM ((SELECT *, 0 AS slice FROM pool \
+                ") {served} ((SELECT *, 0 AS slice FROM pool \
                  ORDER BY pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC, id LIMIT "
             ));
             qb.push_bind(window.band_limit);
@@ -2017,9 +2029,17 @@ impl CardRepository for MyPostgres {
                  ORDER BY pool_returned, pool_shown ASC, shuffle, id LIMIT {WILDCARD_SLOTS} OFFSET "
             ));
             qb.push_bind(window.deep_offset);
-            qb.push(format!(
-                ")) AS combined ORDER BY slice ASC, pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC, id"
-            ));
+            if popularity_ordering {
+                qb.push(format!(
+                    ")) AS combined JOIN latest_cards ON latest_cards.id = combined.id \
+                     ORDER BY combined.slice ASC, combined.pool_returned, (combined.rn - 1) / {BAND_SIZE}, \
+                     combined.shuffle, combined.name ASC, combined.id"
+                ));
+            } else {
+                qb.push(format!(
+                    ")) AS combined ORDER BY slice ASC, pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC, id"
+                ));
+            }
         } else if let Some(scores) = synergy_scores {
             // Default synergy ordering: band shuffle over (base + signal).
             //   score: the commander's synergy score (unscored cards anchor
@@ -2088,13 +2108,16 @@ impl CardRepository for MyPostgres {
             qb.push_bind(clamped_offset(request.offset()));
         }
 
-        // The timeout is transaction-local, so the pooled connection keeps the
-        // default once the search ends.
+        // The timeout and the sort memory are transaction-local, so the pooled
+        // connection keeps the defaults once the search ends.
         let mut tx = self.pool.begin().await?;
-        sqlx::query("SELECT set_config('statement_timeout', $1, true)")
-            .bind(format!("{}ms", self.search_timeout.as_millis()))
-            .execute(&mut *tx)
-            .await?;
+        sqlx::query(
+            "SELECT set_config('statement_timeout', $1, true), set_config('work_mem', $2, true)",
+        )
+        .bind(format!("{}ms", self.search_timeout.as_millis()))
+        .bind(SEARCH_WORK_MEM)
+        .execute(&mut *tx)
+        .await?;
         let db_rows: Vec<DatabaseScryfallData> = qb.build_query_as().fetch_all(&mut *tx).await?;
         tx.commit().await?;
         let mut scryfall_data: Vec<ScryfallData> = db_rows
