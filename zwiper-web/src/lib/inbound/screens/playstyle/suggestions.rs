@@ -59,6 +59,11 @@ impl Suggestions {
         self.clear_open.set(true);
     }
 
+    /// Deals the first page again, for the failed load's Retry.
+    pub(crate) fn retry(self) {
+        self.dispatch.call(Action::Redeal);
+    }
+
     /// Whether the first page is still out.
     pub(crate) fn is_loading(self) -> bool {
         self.model.read().is_loading()
@@ -187,7 +192,7 @@ fn use_create_gate() -> (Signal<Option<Vec<DeckProfile>>>, Callback<Card>) {
     let create_with = use_callback(move |card: Card| {
         if at_deck_limit() {
             toast.warning(
-                "Verify your email to create more than one deck".to_string(),
+                components::carry_title("Verify your email to create more than one deck"),
                 ToastOptions::default().duration(TOAST_LONG),
             );
         } else {
@@ -374,9 +379,11 @@ pub(crate) fn SuggestedFold(
     } = list;
     // The fold's state, so Show more under the panel hides while it is shut.
     let open = use_signal(|| true);
+    // Show more on its way out, kept until its exit ends.
+    let mut leaving = use_signal(|| false);
     let state = model.read();
     let rows = state.entries().to_vec();
-    let more = open() && state.offers_more();
+    let more = open() && (leaving() || state.offers_more());
     let line = state.ranked_line();
     let empty = state.empty_line();
     drop(state);
@@ -421,16 +428,36 @@ pub(crate) fn SuggestedFold(
                 }
             }
         }
-        // Show more sits under the panel, as a chip row sits over one, and deals one page.
+        // Show more sits under the panel, as a chip row sits over one, and deals one page. It
+        // leaves on its exit while the page loads.
         if more {
-            button {
-                r#type: "button",
-                class: "chip card-list-more",
-                onclick: move |_| dispatch.call(Action::ShowMore),
-                {suggested::SHOW_MORE}
+            div {
+                class: if leaving() { "card-list-more card-list-more-leaving" } else { "card-list-more" },
+                onanimationend: move |event: AnimationEvent| {
+                    if ends_leave(&event.animation_name()) {
+                        leaving.set(false);
+                    }
+                },
+                div {
+                    button {
+                        r#type: "button",
+                        class: "chip",
+                        onclick: move |_| {
+                            leaving.set(true);
+                            dispatch.call(Action::ShowMore);
+                        },
+                        {suggested::SHOW_MORE}
+                    }
+                }
             }
         }
     }
+}
+
+/// Whether `animation` is Show more's exit ending: the fold away, or the fade alone under
+/// reduced motion.
+fn ends_leave(animation: &str) -> bool {
+    matches!(animation, "card-list-more-leave" | "card-list-more-fade")
 }
 
 /// The list's Clear skips dialog and its Swipe select, which starts from the screen's filter.
@@ -471,5 +498,17 @@ pub(crate) fn SuggestedOverlays(list: Suggestions) -> Element {
             },
             on_close: move |()| swipe_open.set(false),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn show_more_goes_when_either_exit_ends_and_not_on_another_animation() {
+        assert!(ends_leave("card-list-more-leave"), "the fold away");
+        assert!(ends_leave("card-list-more-fade"), "the reduced-motion fade");
+        assert!(!ends_leave("row-enter"), "a row easing in under it");
     }
 }

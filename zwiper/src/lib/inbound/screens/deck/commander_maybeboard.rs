@@ -21,7 +21,6 @@ use components::{
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use tokio::time;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
@@ -58,7 +57,7 @@ use crate::inbound::screens::deck::card::components::printing_sheet::PrintingShe
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::inbound::screens::deck::create::CreateDeckCommanderSeed;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
-use crate::outbound::maybeboard_sort_store;
+use crate::outbound::{maybeboard_sort_store, timer};
 
 /// One maybeboard entry: the shared expandable card row, with this screen's
 /// Create deck / Remove pair riding the row's own action bar (`extra_actions`)
@@ -176,7 +175,7 @@ impl Driver {
             }
             Effect::Debounce { ticket, wait } => {
                 spawn(async move {
-                    time::sleep(wait).await;
+                    timer::sleep(wait).await;
                     self.dispatch(Action::Debounced { ticket });
                 });
             }

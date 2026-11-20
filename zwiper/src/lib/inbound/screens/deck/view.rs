@@ -290,7 +290,7 @@ impl Driver {
                         &e,
                     );
                     toast.error(
-                        e.to_user_message(),
+                        components::carry_title(&e.to_user_message()),
                         ToastOptions::default().duration(TOAST_NORMAL),
                     );
                     None
@@ -367,7 +367,7 @@ impl Driver {
                         &e,
                     );
                     toast.error(
-                        e.to_user_message(),
+                        components::carry_title(&e.to_user_message()),
                         ToastOptions::default().duration(TOAST_NORMAL),
                     );
                     None

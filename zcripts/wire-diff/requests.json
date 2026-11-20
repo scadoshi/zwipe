@@ -105,6 +105,12 @@
    }
   },
   {
+   "name": "anonymous search",
+   "method": "POST",
+   "route": "/api/metrics/anonymous/search",
+   "path": "/api/metrics/anonymous/search"
+  },
+  {
    "name": "crash report",
    "method": "POST",
    "route": "/api/metrics/crash",
@@ -253,6 +259,34 @@
     "commander_oracle": "/0/scryfall_data/oracle_id"
    },
    "as": "tester"
+  },
+  {
+   "name": "commander swipe page 1",
+   "method": "POST",
+   "route": "/api/card/search/commanders",
+   "path": "/api/card/search/commanders",
+   "as": "tester",
+   "body": {
+    "is_commander_in_format": "commander",
+    "legalities_contains_all": ["commander"],
+    "is_token": false,
+    "limit": 25,
+    "offset": 0
+   }
+  },
+  {
+   "name": "commander swipe page 2",
+   "method": "POST",
+   "route": "/api/card/search/commanders",
+   "path": "/api/card/search/commanders",
+   "as": "tester",
+   "body": {
+    "is_commander_in_format": "commander",
+    "legalities_contains_all": ["commander"],
+    "is_token": false,
+    "limit": 25,
+    "offset": 25
+   }
   },
   {
    "name": "card",

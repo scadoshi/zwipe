@@ -2,10 +2,10 @@ use std::time::Duration;
 
 use components::use_overlay_back_action;
 use dioxus::prelude::*;
-use tokio::time;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 use super::flippable_card_image::FlippableCardImage;
+use crate::outbound::timer;
 
 /// Milliseconds the dismiss animation plays before the preview clears.
 const DISMISS_MS: u64 = 200;
@@ -22,7 +22,7 @@ pub(crate) fn ImagePreview(
     let dismiss = use_callback(move |()| {
         dismissing.set(true);
         spawn(async move {
-            time::sleep(Duration::from_millis(DISMISS_MS)).await;
+            timer::sleep(Duration::from_millis(DISMISS_MS)).await;
             card.set(None);
             dismissing.set(false);
         });

@@ -2,7 +2,7 @@
 //! Swipe and Clear skips, its Show row over the list at every width. The
 //! screen's one filter narrows it.
 
-use components::{Chip, DangerZoneAction};
+use components::{Chip, DangerZoneAction, LoadFailed};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_ui::screens::suggested_commanders as suggested;
@@ -56,9 +56,7 @@ pub(super) fn SuggestedPanel(list: Suggestions, expanded_card: Signal<Option<Uui
                     }
                     div { class: "card-list-more", GhostChip { chars: 9, button: true } }
                 } else if list.load_failed() {
-                    div { class: "message-empty",
-                        span { class: "chip-note", {suggested::LOAD_FAILED} }
-                    }
+                    LoadFailed { message: suggested::LOAD_FAILED, on_retry: move |()| list.retry() }
                 } else {
                     // The console sits over the list at every width, as Staples' and the
                     // Maybeboard's do.

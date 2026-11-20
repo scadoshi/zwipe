@@ -215,10 +215,14 @@ impl State {
         }
     }
 
-    /// Deals the first page afresh under the filter; Show more is offered again.
+    /// Deals the first page afresh under the filter; Show more is offered again, and a list whose
+    /// last load failed ghosts again while the deal is out.
     fn deal(&mut self) -> Vec<Effect> {
         let ticket = self.generation.next_ticket();
         self.more_used = false;
+        if self.first == FirstPage::Failed {
+            self.first = FirstPage::Loading;
+        }
         let Some(request) = deal::next_page(Door::Suggested, &self.filter, &[], LIST_PAGE) else {
             self.out = None;
             return Vec::new();

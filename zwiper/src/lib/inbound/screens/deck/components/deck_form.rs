@@ -7,7 +7,6 @@ use components::{
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use tokio::time;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -37,6 +36,7 @@ use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, comp
 use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::missing_deck;
+use crate::outbound::timer;
 
 /// The form's model with the handles that perform its effects. Copy, so every handler and task holds its own.
 #[derive(Clone, Copy)]
@@ -121,7 +121,7 @@ impl Driver {
             } => self.fetch_card(ticket, slot, card_id),
             Effect::Debounce { ticket, wait } => {
                 spawn(async move {
-                    time::sleep(wait).await;
+                    timer::sleep(wait).await;
                     self.dispatch(Action::Debounced { ticket });
                 });
             }
@@ -221,7 +221,7 @@ impl Driver {
                         &e,
                     );
                     self.toast.error(
-                        e.to_user_message(),
+                        components::carry_title(&e.to_user_message()),
                         ToastOptions::default().duration(TOAST_NORMAL),
                     );
                     self.dispatch(Action::Failed { ticket });

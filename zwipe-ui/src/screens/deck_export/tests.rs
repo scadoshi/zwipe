@@ -179,7 +179,7 @@ fn copy_copies_the_decklist_and_toasts() {
         state.update(Action::Copy),
         [Effect::Copy {
             text: "// Deck\n1 Sol Ring (M15) 77".to_owned(),
-            done: Toast::new(ToastKind::Info, "Copied to clipboard", QUICK),
+            done: Toast::new(ToastKind::Info, "Copied to clipboard", QUICK).carried(),
         }]
     );
 }

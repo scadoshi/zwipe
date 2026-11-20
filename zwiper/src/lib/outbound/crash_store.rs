@@ -11,6 +11,7 @@
 //! The `crash_id` is stamped at panic time, so however many launches retry
 //! the send, the server stores exactly one row per crash.
 
+#[cfg(not(target_arch = "wasm32"))]
 use zwipe_core::http::contracts::metrics::HttpCrashReport;
 
 /// Installs the panic hook (chaining the previous one). The hook does exactly

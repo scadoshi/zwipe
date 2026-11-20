@@ -48,14 +48,14 @@ fn suggested_has_its_console_swipe_question_mark_show_more_and_danger_zone() {
     }
     let fold = SUGGESTED.find("CardListFold {").expect("the fold");
     let more = SUGGESTED
-        .find(r#"class: "chip card-list-more","#)
-        .expect("Show more");
+        .find(r#"class: if leaving() { "card-list-more card-list-more-leaving" } else { "card-list-more" },"#)
+        .expect("Show more, in the web's exit markup");
     let danger = SUGGESTED
         .find("label: model::CLEAR_SKIPS,")
         .expect("Clear skips");
     assert!(fold < more && more < danger, "Show more under the panel");
     assert!(
-        SUGGESTED.contains("let more = fold_open() && state.offers_more();"),
+        SUGGESTED.contains("let more = fold_open() && (leaving() || state.offers_more());"),
         "once per deal, and not while the panel is shut"
     );
 }

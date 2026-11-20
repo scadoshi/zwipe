@@ -58,8 +58,8 @@ impl HintTopic {
             | Self::SuggestionTagDecks
             | Self::SuggestionTagCards
             | Self::SuggestionTagImpact
-            | Self::SuggestionList
             | Self::SuggestionStaples => Some("playstyle"),
+            Self::SuggestionList => Some("commander-suggestions"),
             Self::Activity | Self::TagRates | Self::HardPasses => Some("activity"),
             Self::Password
             | Self::Email
@@ -82,7 +82,8 @@ impl HintTopic {
 pub const fn one_time_slug(hint: OneTimeHint) -> Option<&'static str> {
     match hint {
         OneTimeHint::FirstLogin => Some("getting-started"),
-        OneTimeHint::DeckList | OneTimeHint::DeckCards => Some("organize-and-browse"),
+        OneTimeHint::DeckList => Some("organize-and-browse"),
+        OneTimeHint::DeckCards => Some("deck-card-list"),
         OneTimeHint::CreateDeck | OneTimeHint::EditDeck => Some("commander-and-formats"),
         OneTimeHint::FirstDeck => Some("deck-stats"),
         OneTimeHint::AddDeckCards => Some("swipe-to-build"),
@@ -93,7 +94,7 @@ pub const fn one_time_slug(hint: OneTimeHint) -> Option<&'static str> {
             Some("oracle-tag-dictionary")
         }
         OneTimeHint::CommanderMaybeboard | OneTimeHint::Commanders => Some("commander-maybeboard"),
-        OneTimeHint::SuggestedCommanders => Some("playstyle"),
+        OneTimeHint::SuggestedCommanders => Some("commander-suggestions"),
         OneTimeHint::Activity => Some("activity"),
         OneTimeHint::Profile
         | OneTimeHint::Config
@@ -104,13 +105,13 @@ pub const fn one_time_slug(hint: OneTimeHint) -> Option<&'static str> {
 
 /// The slug of the guide for the Swipe select hint over `mode`'s overlay:
 /// picking a command-zone card goes with the commander guide, swiping
-/// Playstyle's suggestions with the Playstyle guide.
+/// the suggested commanders with the Suggested commanders guide.
 #[must_use]
 pub const fn swipe_select_slug(mode: SwipeSelectMode) -> &'static str {
     match mode {
         SwipeSelectMode::Picking(_) => "commander-and-formats",
         SwipeSelectMode::StartsDeck => "commander-maybeboard",
-        SwipeSelectMode::Suggested { .. } => "playstyle",
+        SwipeSelectMode::Suggested { .. } => "commander-suggestions",
     }
 }
 
@@ -201,7 +202,7 @@ mod tests {
     #[test]
     fn zite_lists_its_guides() {
         let slugs = zite_slugs();
-        assert_eq!(slugs.len(), 22, "zite's guide count: {slugs:?}");
+        assert_eq!(slugs.len(), 26, "zite's guide count: {slugs:?}");
         assert!(slugs.contains(&"getting-started"));
     }
 
@@ -254,6 +255,26 @@ mod tests {
     }
 
     #[test]
+    fn the_split_guides_take_their_own_hints() {
+        assert_eq!(
+            one_time_slug(OneTimeHint::DeckList),
+            Some("organize-and-browse")
+        );
+        assert_eq!(
+            one_time_slug(OneTimeHint::DeckCards),
+            Some("deck-card-list")
+        );
+        assert_eq!(
+            one_time_slug(OneTimeHint::SuggestedCommanders),
+            Some("commander-suggestions")
+        );
+        assert_eq!(
+            HintTopic::SuggestionList.guide_slug(),
+            Some("commander-suggestions")
+        );
+    }
+
+    #[test]
     fn the_role_charts_link_the_card_roles_guide() {
         for topic in [
             HintTopic::RoleChart,
@@ -272,7 +293,7 @@ mod tests {
         );
         assert_eq!(
             swipe_select_slug(SwipeSelectMode::Suggested { has_filter: true }),
-            "playstyle"
+            "commander-suggestions"
         );
         assert_eq!(one_time_slug(OneTimeHint::SwipeSelect), None);
     }

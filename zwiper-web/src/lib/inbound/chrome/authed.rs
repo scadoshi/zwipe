@@ -253,12 +253,15 @@ impl Authed {
         }
     }
 
-    /// Raises the error toast for `e`, unless one saying the same is up.
+    /// Raises the error toast for `e`, unless one saying the same is up. It carries over to the
+    /// next screen, as every failure does.
     fn toast_error(&self, e: &ClientError) {
         let message = e.to_user_message();
         if admit_error_toast(&message) {
-            self.toast
-                .error(message, ToastOptions::default().duration(TOAST_NORMAL));
+            self.toast.error(
+                components::carry_title(&message),
+                ToastOptions::default().duration(TOAST_NORMAL),
+            );
         }
     }
 }

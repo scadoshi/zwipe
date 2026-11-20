@@ -121,7 +121,7 @@ impl State {
                 self.sent = true;
                 vec![
                     Effect::Prefill(self.email.clone()),
-                    Effect::Toast(Toast::normal(ToastKind::Info, LINK_SENT)),
+                    Effect::Toast(Toast::normal(ToastKind::Info, LINK_SENT).carried()),
                     Effect::Navigate(Destination::Login),
                 ]
             }

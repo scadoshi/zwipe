@@ -126,6 +126,8 @@ pub fn App() -> Element {
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
     use_context_provider(|| LoginPrefill(Signal::new(None)));
+    // The screen the toast stack is told about, moved as each route lands.
+    let screen = use_signal(String::new);
     // The session's writes whose answer was lost, for every screen's run_write.
     use_context_provider(|| Signal::new(zwipe_ui::write_repeat::Unconfirmed::default()));
     // The `?` buttons post here and the HintHost draws the topic.
@@ -177,7 +179,8 @@ pub fn App() -> Element {
             } else {
                 ToastStack {
                     default_duration: components::TOAST_NORMAL,
-                    Router::<Route> {}
+                    screen: Some(ReadSignal::from(screen)),
+                    Router::<Route> { config: move |()| components::moving_screen(screen) }
                     ShortcutsSheet { open: shortcuts_open }
                     HintHost {}
                     DialogHostView {}

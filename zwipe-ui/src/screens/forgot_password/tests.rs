@@ -64,7 +64,7 @@ fn the_email_is_sent_as_typed() {
 fn leaves_for_login(email: &str) -> Vec<Effect> {
     vec![
         Effect::Prefill(email.to_owned()),
-        Effect::Toast(Toast::new(ToastKind::Info, LINK_SENT, NORMAL)),
+        Effect::Toast(Toast::new(ToastKind::Info, LINK_SENT, NORMAL).carried()),
         Effect::Navigate(Destination::Login),
     ]
 }

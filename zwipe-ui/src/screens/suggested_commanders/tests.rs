@@ -231,3 +231,23 @@ fn a_picked_printing_swaps_into_its_row() {
     );
     assert!(!state.swap_printing(&card("Elsewhere")), "a card on no row");
 }
+
+#[test]
+fn a_redeal_after_a_failed_load_ghosts_the_list_again_while_it_is_out() {
+    let mut state = State::new();
+    let (ticket, _) = deal_of(&state.update(Action::Load(Box::default())));
+    let _ = state.update(Action::Page {
+        ticket,
+        reply: Err(()),
+    });
+    assert!(state.load_failed());
+    let (ticket, _) = deal_of(&state.update(Action::Redeal));
+    assert!(
+        state.is_loading(),
+        "Retry ghosts the list while the deal is out"
+    );
+    assert!(!state.load_failed());
+    let _ = state.update(landed(ticket, page("Back", 10)));
+    assert!(!state.is_loading());
+    assert_eq!(state.entries().len(), 10);
+}

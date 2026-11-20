@@ -158,7 +158,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                     Err(e) => {
                         tracing::warn!("load_commander failed: {e}");
                         toast.error(
-                            e.to_user_message(),
+                            components::carry_title(&e.to_user_message()),
                             ToastOptions::default().duration(TOAST_NORMAL),
                         );
                     }
@@ -279,7 +279,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                             &telemetry::failure(&e),
                         );
                         toast.error(
-                            e.to_user_message(),
+                            components::carry_title(&e.to_user_message()),
                             ToastOptions::default().duration(TOAST_NORMAL),
                         );
                     }

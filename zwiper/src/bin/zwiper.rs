@@ -2,6 +2,7 @@
 
 use components::{DialogHostView, ThemeConfig, ToastStack, use_dialog_host};
 use dioxus::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
 use tracing_subscriber::EnvFilter;
 use zwipe_core::domain::logo;
 use zwipe_core::domain::user::settings::PipStyle;
@@ -32,9 +33,14 @@ const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
 fn main() -> anyhow::Result<()> {
     logo::Zwiper::print();
     let config = Config::from_env()?;
+    // The web build logs to the browser's console: tracing_subscriber's formatter stamps each
+    // line from std's clock, which panics on wasm32 before anything draws.
+    #[cfg(not(target_arch = "wasm32"))]
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::new(&config.rust_log))
         .init();
+    #[cfg(target_arch = "wasm32")]
+    let _ = dioxus::logger::init(tracing::Level::INFO);
     tracing::info!("zwiper v{} starting", env!("CARGO_PKG_VERSION"));
     // Crash capture: a panic writes its report to disk; the next launch posts
     // it (session_upkeep) and clears the file on a 2xx. Native-only.
@@ -167,6 +173,8 @@ fn App() -> Element {
     let upgrade_required = session_upkeep::spawn_upkeeper();
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
+    // The screen the toast stack is told about, moved as each route lands.
+    let screen = use_signal(String::new);
     // The session's writes whose answer was lost, for every screen's run_write.
     use_context_provider(|| Signal::new(zwipe_ui::write_repeat::Unconfirmed::default()));
     // Closed until the splash starts to fade; the entrances wait on it.
@@ -219,7 +227,8 @@ fn App() -> Element {
             } else {
                 ToastStack {
                     default_duration: components::TOAST_NORMAL,
-                    Router::<Router> {}
+                    screen: Some(ReadSignal::from(screen)),
+                    Router::<Router> { config: move |()| components::moving_screen(screen) }
                     // App-root receiver for on-demand "?" hints.
                     HintHost {}
                     // The menu's Themes sheet, outside every header.

@@ -11,7 +11,6 @@ use components::{
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use tokio::time;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -63,7 +62,7 @@ use crate::inbound::screens::deck::components::skeletons::{
 use crate::inbound::screens::deck::missing_deck;
 use crate::inbound::screens::deck::view::{HeldDeck, OpenOnCards};
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
-use crate::outbound::cards_view_store;
+use crate::outbound::{cards_view_store, timer};
 
 /// The app's copy of a shared undo entry, for the screen's live log.
 fn to_app_undo(action: SharedUndo) -> UndoAction {
@@ -311,7 +310,7 @@ impl Driver {
             } => self.undo_send(ticket, deck_id, card_id, board, copies),
             Effect::Debounce { ticket, wait } => {
                 spawn(async move {
-                    time::sleep(wait).await;
+                    timer::sleep(wait).await;
                     self.dispatch(Action::Debounced { ticket });
                 });
             }
@@ -1018,7 +1017,7 @@ pub fn View(deck_id: Uuid) -> Element {
         if deal_cue.write().on(shown, ready) {
             dealing.set(true);
             spawn(async move {
-                time::sleep(deal_delay(DEAL_STAGGER_CAP).saturating_add(DEAL_DURATION)).await;
+                timer::sleep(deal_delay(DEAL_STAGGER_CAP).saturating_add(DEAL_DURATION)).await;
                 dealing.set(false);
             });
         }

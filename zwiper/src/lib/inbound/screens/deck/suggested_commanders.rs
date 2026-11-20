@@ -13,8 +13,8 @@
 //! file draws its state and performs its effects.
 
 use components::{
-    Bar, BarChart, BarOrientation, CardListFold, CardRoleChips, Chip, ColorBars, DataBar, OtagDef,
-    RoleTags, StapleDecksChip, Toasts, use_toast,
+    Bar, BarChart, BarOrientation, CardListFold, CardRoleChips, Chip, ColorBars, DataBar,
+    LoadFailed, OtagDef, RoleTags, StapleDecksChip, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -847,6 +847,8 @@ pub fn SuggestedCommanders() -> Element {
                         div { style: "width:100%;display:flex;flex-direction:column;gap:var(--panel-gap);",
                             BuilderProfileSkeleton {}
                         }
+                    } else if status == Status::Failed {
+                        LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Load) }
                     } else if let Some(message) = message {
                         div { class: "message-empty",
                             span { class: "chip-note", {message} }

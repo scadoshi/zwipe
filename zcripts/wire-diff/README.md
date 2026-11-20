@@ -18,7 +18,7 @@ It builds committed trees, so commit what you want tested: uncommitted changes i
 | Builds each zerver in its own target dir | ~1 min cold, seconds warm |
 | Copies the dev database, migrates it with main's migrations, seeds it with main's `zcripts/seed/seed.sh small --reset` (the checkout's until main has one) | ~15s |
 | Copies that twice and migrates each copy with its own ref's migrations, so a migration change shows as a wire change | ~10s |
-| Starts both zervers (:3201 and :3202) and replays `requests.json` (87 steps) | ~20s |
+| Starts both zervers (:3201 and :3202) and replays `requests.json` (99 steps) | ~20s |
 | Stops both and drops the three databases (`KEEP=1` keeps them) | ~1s |
 
 It uses the verify skill's template lookup and the seed's local-only guard, so it refuses any database that isn't on this machine. The template is `VERIFY_TEMPLATE_URL`, else `zerver/.env`'s `DATABASE_URL`. Like the verify skill, it can't copy the dev database while something is connected to it, and it says so. The template has to be main's schema: one that ran another branch's migrations is refused, naming them, with the commands that build a matching template from main's migrations and `fixture/load.sh`, as CI does. A migration that fails shows sqlx's own error.

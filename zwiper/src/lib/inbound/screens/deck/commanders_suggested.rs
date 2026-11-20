@@ -6,7 +6,8 @@
 //! Commanders screen runs on too; this file draws its state and performs its effects.
 
 use components::{
-    AlertDialog, Button, ButtonVariant, CardListFold, Chip, DialogAction, Toasts, use_toast,
+    AlertDialog, Button, ButtonVariant, CardListFold, Chip, DialogAction, LoadFailed, Toasts,
+    use_toast,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -154,6 +155,8 @@ pub(crate) fn SuggestedSection(
     // The open state of the list's fold, so Show more under it hides while it is shut.
     let fold_open = use_signal(|| true);
     let mut deck_count = use_signal(|| 0u32);
+    // Show more on its way out, kept until its exit ends.
+    let mut leaving = use_signal(|| false);
 
     // The first page on mount, and again whenever the filter sheet applies.
     use_effect(move || {
@@ -198,7 +201,7 @@ pub(crate) fn SuggestedSection(
     let rows = state.entries().to_vec();
     let line = state.ranked_line();
     let empty = state.empty_line();
-    let more = fold_open() && state.offers_more();
+    let more = fold_open() && (leaving() || state.offers_more());
     drop(state);
 
     rsx! {
@@ -224,9 +227,7 @@ pub(crate) fn SuggestedSection(
                     }
                 }
             } else if load_failed {
-                div { class: "message-empty",
-                    span { class: "chip-note", {model::LOAD_FAILED} }
-                }
+                LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Redeal) }
             } else {
                 // The console's Show row, Art alone: colors come from the screen's filter.
                 div { class: "chip-row",
@@ -274,11 +275,24 @@ pub(crate) fn SuggestedSection(
                 }
                 // Show more sits under the panel, as a chip row sits over one, and deals one page.
                 if more {
-                    button {
-                        r#type: "button",
-                        class: "chip card-list-more",
-                        onclick: move |_| driver.dispatch(Action::ShowMore),
-                        {model::SHOW_MORE}
+                    div {
+                        class: if leaving() { "card-list-more card-list-more-leaving" } else { "card-list-more" },
+                        onanimationend: move |event: AnimationEvent| {
+                            if ends_leave(&event.animation_name()) {
+                                leaving.set(false);
+                            }
+                        },
+                        div {
+                            button {
+                                r#type: "button",
+                                class: "chip",
+                                onclick: move |_| {
+                                    leaving.set(true);
+                                    driver.dispatch(Action::ShowMore);
+                                },
+                                {model::SHOW_MORE}
+                            }
+                        }
                     }
                 }
                 DangerZoneAction {
@@ -318,4 +332,10 @@ pub(crate) fn SuggestedSection(
             on_close: move |()| swipe_open.set(false),
         }
     }
+}
+
+/// Whether `animation` is Show more's exit ending: the fold away, or the fade alone under reduced
+/// motion.
+fn ends_leave(animation: &str) -> bool {
+    matches!(animation, "card-list-more-leave" | "card-list-more-fade")
 }

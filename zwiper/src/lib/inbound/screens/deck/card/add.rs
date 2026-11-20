@@ -13,7 +13,6 @@ use components::{
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
-use tokio::time;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -56,6 +55,7 @@ use crate::inbound::screens::deck::card::components::flippable_card_image;
 use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::inbound::screens::deck::missing_deck;
+use crate::outbound::timer;
 
 /// Pixels a swipe travels to commit.
 const SWIPE_DISTANCE_PX: f64 = 90.0;
@@ -423,7 +423,10 @@ impl Driver {
                         tracing::warn!("undo add (delete deck card) failed: {e}");
                     }
                     tracing::warn!("undo failed: {e}");
-                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
+                    toast.error(
+                        components::carry_title(undo::UNDO_FAILED),
+                        ToastOptions::default(),
+                    );
                     self.dispatch(Action::Failed { ticket });
                 }
             }
@@ -448,7 +451,10 @@ impl Driver {
                 .await;
             if let Err(e) = &moved {
                 tracing::warn!("undo promote failed: {e}");
-                toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
+                toast.error(
+                    components::carry_title(undo::UNDO_FAILED),
+                    ToastOptions::default(),
+                );
             }
             if self.mounted.get() {
                 self.dispatch(match moved {
@@ -478,7 +484,10 @@ impl Driver {
                     operation,
                     &e,
                 );
-                toast.error(e.to_user_message(), ToastOptions::default());
+                toast.error(
+                    components::carry_title(&e.to_user_message()),
+                    ToastOptions::default(),
+                );
                 None
             }
         }
@@ -648,7 +657,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     use_effect(use_reactive!(|revealing| {
         if let Some(ticket) = revealing {
             spawn(async move {
-                time::sleep(PILE_REVEAL_FALLBACK).await;
+                timer::sleep(PILE_REVEAL_FALLBACK).await;
                 driver.dispatch(Action::TopShown { ticket });
             });
         }

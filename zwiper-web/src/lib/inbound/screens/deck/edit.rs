@@ -92,7 +92,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     Err(e) => {
                         tracing::warn!("load {slot:?} failed: {e}");
                         toast.error(
-                            e.to_user_message(),
+                            components::carry_title(&e.to_user_message()),
                             ToastOptions::default().duration(TOAST_NORMAL),
                         );
                     }

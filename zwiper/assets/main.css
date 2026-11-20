@@ -373,12 +373,19 @@ body {
    card page at phone width: one column, the card over its details and its
    stats widgets, room left under them for the action dock. */
 .card-page {
+    --card-page-gap: var(--space-4);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-4);
+    gap: var(--card-page-gap);
     padding: var(--space-3) var(--space-4) calc(var(--space-4) + var(--space-7));
     box-sizing: border-box;
+}
+
+/* The kit's header spacer is the column's first flex item, so the gap would
+   open under it too; the spacer takes it back, as the card list's does. */
+.screen > .app-nav ~ .screen-content.card-page::before {
+    margin-bottom: calc(-1 * var(--card-page-gap));
 }
 
 /* The page scrolls as one: nothing in its column shrinks to fit the screen,
@@ -426,11 +433,19 @@ body {
 }
 
 .card-page-list {
+    --card-page-list-gap: var(--space-2);
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: var(--card-page-list-gap);
     padding: var(--space-3) var(--space-4);
     box-sizing: border-box;
+}
+
+/* The kit's header spacer is the column's first flex item, so the gap would
+   open under it too; the spacer takes it back, and the heading sits the
+   kit's 1rem under the header as every screen's first element does. */
+.screen > .app-nav ~ .screen-content.card-page-list::before {
+    margin-bottom: calc(-1 * var(--card-page-list-gap));
 }
 
 .card-page-message {
@@ -468,18 +483,6 @@ body {
 .screen > .app-nav:has(.card-search-nav:focus-within) {
     transform: none !important;
     --nav-fade: 1 !important;
-}
-
-/* A card list's Show more sits under its panel as a chip row sits over one:
-   a chip row's gap between them, and the panel's own gap to what follows. */
-.card-group:has(+ .card-list-more) {
-    margin-bottom: var(--space-2);
-}
-
-.card-list-more {
-    display: flex;
-    width: fit-content;
-    margin: 0 0 var(--panel-gap);
 }
 
 /* Under the Maybeboard, Suggested keeps a panel gap over its Show row. */

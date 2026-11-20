@@ -89,6 +89,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                 undo.write().clear(deck_id);
             }
             let (tone, message) = import_outcome(reply.imported.len(), reply.unresolved.len());
+            let message = components::carry_title(&message);
             let quick = ToastOptions::default().duration(TOAST_QUICK);
             match tone {
                 ImportTone::Info => toast.info(message, quick),

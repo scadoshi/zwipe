@@ -223,7 +223,9 @@ fn a_check_toasts_what_it_found() {
     });
     assert_eq!(
         effects,
-        vec![Effect::Toast(Toast::normal(ToastKind::Info, NOT_VERIFIED))]
+        vec![Effect::Toast(
+            Toast::normal(ToastKind::Info, NOT_VERIFIED).carried()
+        )]
     );
     assert!(!state.is_checking());
 
@@ -272,7 +274,7 @@ fn resend_holds_the_cooldown_from_the_press_and_runs_it_from_the_reply() {
     assert_eq!(
         effects,
         vec![
-            Effect::Toast(Toast::normal(ToastKind::Success, VERIFICATION_SENT)),
+            Effect::Toast(Toast::normal(ToastKind::Success, VERIFICATION_SENT).carried()),
             Effect::Wait(wait),
         ]
     );
@@ -295,7 +297,7 @@ fn a_limited_resend_keeps_the_cooldown_with_an_info_toast() {
     assert_eq!(
         effects,
         vec![
-            Effect::Toast(Toast::normal(ToastKind::Info, RESEND_LIMITED)),
+            Effect::Toast(Toast::normal(ToastKind::Info, RESEND_LIMITED).carried()),
             Effect::Wait(wait),
         ]
     );
@@ -509,10 +511,13 @@ fn an_email_change_takes_the_whole_user_and_names_the_typed_address() {
     assert_eq!(
         effects,
         vec![
-            Effect::Toast(Toast::normal(
-                ToastKind::Success,
-                "Check new@zwipe.net for a link to confirm the change"
-            )),
+            Effect::Toast(
+                Toast::normal(
+                    ToastKind::Success,
+                    "Check new@zwipe.net for a link to confirm the change"
+                )
+                .carried()
+            ),
             Effect::CloseSheet(Sheet::Email),
         ]
     );
@@ -590,10 +595,9 @@ fn forgot_password_sends_a_reset_link_to_the_account_email_then_closes_the_sheet
     assert_eq!(
         state.update(Action::ResetLinkSent { ticket }),
         vec![
-            Effect::Toast(Toast::normal(
-                ToastKind::Success,
-                "Reset link sent to scotty@zwipe.net",
-            )),
+            Effect::Toast(
+                Toast::normal(ToastKind::Success, "Reset link sent to scotty@zwipe.net",).carried()
+            ),
             Effect::CloseSheet(Sheet::Password),
         ]
     );
@@ -974,10 +978,9 @@ fn the_pending_row_resends_its_link_behind_its_own_cooldown() {
     assert_eq!(
         effects,
         vec![
-            Effect::Toast(Toast::normal(
-                ToastKind::Success,
-                "Check new@zwipe.net for a new link"
-            )),
+            Effect::Toast(
+                Toast::normal(ToastKind::Success, "Check new@zwipe.net for a new link").carried()
+            ),
             Effect::Wait(wait),
         ]
     );
@@ -995,7 +998,7 @@ fn a_limited_or_failed_change_resend_answers_like_the_verification_one() {
     assert_eq!(
         effects,
         vec![
-            Effect::Toast(Toast::normal(ToastKind::Info, RESEND_LIMITED)),
+            Effect::Toast(Toast::normal(ToastKind::Info, RESEND_LIMITED).carried()),
             Effect::Wait(wait),
         ]
     );
@@ -1024,10 +1027,9 @@ fn the_pending_check_says_whether_the_change_went_through() {
     });
     assert_eq!(
         effects,
-        vec![Effect::Toast(Toast::normal(
-            ToastKind::Info,
-            "Not confirmed yet. Check new@zwipe.net"
-        ))]
+        vec![Effect::Toast(
+            Toast::normal(ToastKind::Info, "Not confirmed yet. Check new@zwipe.net").carried()
+        )]
     );
     assert!(!state.is_checking_pending());
 
@@ -1040,10 +1042,9 @@ fn the_pending_check_says_whether_the_change_went_through() {
     });
     assert_eq!(
         effects,
-        vec![Effect::Toast(Toast::normal(
-            ToastKind::Success,
-            "Email changed to new@zwipe.net"
-        ))]
+        vec![Effect::Toast(
+            Toast::normal(ToastKind::Success, "Email changed to new@zwipe.net").carried()
+        )]
     );
     assert!(!state.rows().contains(&Row::Pending));
 }
@@ -1180,10 +1181,9 @@ fn password_failed(ticket: Ticket, answer: FormAnswer, message: &str) -> Action 
 fn a_lost_password_change_and_its_refused_retry_say_it_may_have_gone_through() {
     let mut state = opened();
     let ticket = changing(&mut state);
-    let unconfirmed = vec![Effect::Toast(Toast::normal(
-        ToastKind::Error,
-        write_repeat::PASSWORD_UNCONFIRMED,
-    ))];
+    let unconfirmed = vec![Effect::Toast(
+        Toast::normal(ToastKind::Error, write_repeat::PASSWORD_UNCONFIRMED).carried(),
+    )];
     assert_eq!(
         state.update(password_failed(
             ticket,
@@ -1213,10 +1213,9 @@ fn a_wrong_current_password_with_no_lost_try_says_so() {
             FormAnswer::RepeatRefused,
             "Invalid credentials"
         )),
-        vec![Effect::Toast(Toast::normal(
-            ToastKind::Error,
-            "Invalid credentials"
-        ))]
+        vec![Effect::Toast(
+            Toast::normal(ToastKind::Error, "Invalid credentials").carried()
+        )]
     );
     assert_eq!(
         state.update(password_failed(
@@ -1246,9 +1245,8 @@ fn a_retry_with_another_current_password_is_its_own_refusal() {
             FormAnswer::RepeatRefused,
             "Invalid credentials"
         )),
-        vec![Effect::Toast(Toast::normal(
-            ToastKind::Error,
-            "Invalid credentials"
-        ))]
+        vec![Effect::Toast(
+            Toast::normal(ToastKind::Error, "Invalid credentials").carried()
+        )]
     );
 }

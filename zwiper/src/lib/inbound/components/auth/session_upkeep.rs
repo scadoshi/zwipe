@@ -9,7 +9,6 @@ use std::time::Duration;
 use chrono::{DateTime, Utc};
 use components::{KeywordReminders, ThemeConfig, use_on_resume, use_overlay_back_stack};
 use dioxus::prelude::*;
-use tokio::time::{self, MissedTickBehavior};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
@@ -39,6 +38,7 @@ use crate::outbound::app_icon;
 use crate::outbound::count_scope_store::CountScope;
 use crate::outbound::session::Persist;
 use crate::outbound::theme_store::PersistTheme;
+use crate::outbound::timer::Ticker;
 
 /// The running app version, baked in at compile time (matches
 /// `CFBundleShortVersionString`).
@@ -383,9 +383,8 @@ fn use_version_gate(
     // the gate flipping re-renders the root, which re-runs this function.
     use_future(move || async move {
         // first tick fires immediately; this is the cold-start refresh
-        let mut interval = time::interval(UPKEEP_INTERVAL);
+        let mut interval = Ticker::new(UPKEEP_INTERVAL);
         // Ticks missed in the background come back as one, not a burst.
-        interval.set_missed_tick_behavior(MissedTickBehavior::Delay);
         loop {
             interval.tick().await;
             upkeep_once(session, client, upgrade_required).await;

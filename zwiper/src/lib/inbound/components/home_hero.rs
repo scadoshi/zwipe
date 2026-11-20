@@ -3,12 +3,13 @@
 //! auth screens show everyone's counts; home's scope button switches between
 //! everyone's and the user's own.
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 use components::{Decode, Panel, StatsStrip};
 use dioxus::prelude::*;
 use uuid::Uuid;
+use web_time::Instant;
 use zwipe_client::ZwipeClient;
 use zwipe_client::call::Dated;
 use zwipe_core::domain::auth::models::session::Session;

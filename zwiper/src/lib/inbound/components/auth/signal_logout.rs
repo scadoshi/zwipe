@@ -8,12 +8,12 @@ use std::future::Future;
 use std::time::Duration;
 
 use dioxus::prelude::*;
-use tokio::time;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::outbound::session::Persist;
+use crate::outbound::timer;
 
 /// How long logout waits on the server before clearing the session anyway.
 /// Long enough for a slow mobile round trip, short enough that an offline
@@ -66,12 +66,12 @@ async fn server_first<E: Display>(
     timeout: Duration,
     clear: impl FnOnce(),
 ) {
-    match time::timeout(timeout, server).await {
-        Ok(Ok(())) => {}
-        Ok(Err(e)) => {
+    match timer::timeout(timeout, server).await {
+        Some(Ok(())) => {}
+        Some(Err(e)) => {
             tracing::warn!("server-side logout failed (token will expire naturally): {e}");
         }
-        Err(_) => tracing::warn!("server-side logout timed out after {timeout:?}"),
+        None => tracing::warn!("server-side logout timed out after {timeout:?}"),
     }
     clear();
 }
@@ -81,6 +81,8 @@ mod tests {
     use std::cell::RefCell;
     use std::future;
     use std::rc::Rc;
+
+    use tokio::time;
 
     use super::*;
 

@@ -20,11 +20,11 @@
 
 use components::keys::{DICTIONARY, focus_by_id, use_modal_keys};
 use components::{
-    BackArrow, Button, ButtonVariant, ClearWrap, PageHeader, SheetFrame, SheetWide, TOAST_NORMAL,
+    BackArrow, Button, ButtonVariant, ClearWrap, PageHeader, SheetFrame, SheetWide,
     use_overlay_back,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::use_toast;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_ui::dictionary;
@@ -64,9 +64,9 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
     use_effect(move || {
         if cache.0.read().oracle_tags.is_failed() && !*warned.peek() {
             warned.set(true);
-            toast.error(
-                "Couldn't load the Oracle tags dictionary".to_string(),
-                ToastOptions::default().duration(TOAST_NORMAL),
+            crate::inbound::chrome::toast::raise(
+                toast,
+                &zwipe_ui::screens::oracle_tag_dictionary::load_failed_toast(),
             );
         }
     });

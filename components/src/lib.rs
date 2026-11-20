@@ -118,6 +118,7 @@ mod stacks_ghost;
 mod staple_decks_chip;
 pub mod swipe_stack;
 mod theme;
+mod toast_screen;
 
 pub use activity_heat::{ACTIVITY_HEAT_PARTS, HeatMonths};
 pub use architecture::ZwipeArchitecture;
@@ -216,11 +217,11 @@ pub use orangui::{
     PaletteIcon, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS, Replay, SCROLL_FADE_JS, SITE_CSS,
     SheetDim, SheetFrame, SheetWide, SiteMeta, Splash, SplashGate, StatsStrip, THEME_GROUPS,
     THEMES_CSS, TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput, ThemeConfig, ThemePicker,
-    ThemeSheet, heat_span, icons, open_on_newest_js, overlay_z, peak_indices, status_uses,
-    use_app_lifecycle, use_app_lifecycle_root, use_collapse_set, use_dialog_host, use_heat_pick,
-    use_on_resume, use_open_on_newest, use_os_back, use_overlay_back, use_overlay_back_action,
-    use_overlay_back_stack, use_page_kill_recovery, use_persisted_theme, use_theme_follow,
-    use_theme_wipe, with_separators,
+    ThemeSheet, carry_title, heat_span, icons, open_on_newest_js, overlay_z, peak_indices,
+    status_uses, use_app_lifecycle, use_app_lifecycle_root, use_collapse_set, use_dialog_host,
+    use_heat_pick, use_on_resume, use_open_on_newest, use_os_back, use_overlay_back,
+    use_overlay_back_action, use_overlay_back_stack, use_page_kill_recovery, use_persisted_theme,
+    use_theme_follow, use_theme_wipe, with_separators,
 };
 #[cfg(feature = "links")]
 pub use orangui::{OpenUrlError, open_url, use_in_app_links};
@@ -245,6 +246,7 @@ pub use site_footer::SiteFooter;
 pub use stacks_ghost::DeckStacksGhost;
 pub use staple_decks_chip::StapleDecksChip;
 pub use theme::{pip_style_class, theme_from_settings};
+pub use toast_screen::moving_screen;
 
 /// The `JetBrains Mono` faces at 400, 500 and 700, from the complete font files,
 /// which each client bundles unhashed at `/assets/`. Load it before every

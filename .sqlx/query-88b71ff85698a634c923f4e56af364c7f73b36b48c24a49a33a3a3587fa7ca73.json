@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE anonymous_searches SET searches = searches + 1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "88b71ff85698a634c923f4e56af364c7f73b36b48c24a49a33a3a3587fa7ca73"
+}

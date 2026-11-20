@@ -13,13 +13,13 @@ pub const VERIFY_TO_CREATE: &str = "Verify your email to create more than one de
 ///
 /// # Errors
 ///
-/// An unverified account holding [`UNVERIFIED_MAX_DECKS_PER_USER`] decks or more gets the [`VERIFY_TO_CREATE`] warning, up for [`LONG`].
+/// An unverified account holding [`UNVERIFIED_MAX_DECKS_PER_USER`] decks or more gets the [`VERIFY_TO_CREATE`] warning, up for [`LONG`], a block that carries over to the next screen.
 pub fn create_gate(verified: bool, deck_count: usize) -> Result<(), Toast> {
     let at_limit = i64::try_from(deck_count).map_or(true, |n| n >= UNVERIFIED_MAX_DECKS_PER_USER);
     if verified || !at_limit {
         return Ok(());
     }
-    Err(Toast::new(ToastKind::Warning, VERIFY_TO_CREATE, LONG))
+    Err(Toast::new(ToastKind::Warning, VERIFY_TO_CREATE, LONG).carried())
 }
 
 #[cfg(test)]
@@ -40,7 +40,7 @@ mod tests {
 
     #[test]
     fn an_unverified_account_at_or_over_the_cap_is_warned() {
-        let warning = Toast::new(ToastKind::Warning, VERIFY_TO_CREATE, LONG);
+        let warning = Toast::new(ToastKind::Warning, VERIFY_TO_CREATE, LONG).carried();
         for count in [1, 2, 20, usize::MAX] {
             assert_eq!(
                 create_gate(false, count),

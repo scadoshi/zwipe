@@ -52,7 +52,7 @@ impl Driver {
                         Err(e) => {
                             tracing::warn!("password reset request failed: {e}");
                             self.toast.error(
-                                e.to_user_message(),
+                                components::carry_title(&e.to_user_message()),
                                 ToastOptions::default().duration(TOAST_NORMAL),
                             );
                             Action::Failed { ticket }
