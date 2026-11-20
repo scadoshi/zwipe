@@ -25,7 +25,7 @@ fn a_chip_label_wraps_inside_its_cell() {
     for declaration in [
         "max-width: 100%;",
         "white-space: normal;",
-        "overflow-wrap: anywhere;",
+        "overflow-wrap: break-word;",
     ] {
         assert!(chip.contains(declaration), "{declaration} in {chip}");
     }

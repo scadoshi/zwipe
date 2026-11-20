@@ -4300,12 +4300,14 @@ nav:has(> .card-search-header:focus-within) > :not(.card-search-nav, .nav-panel)
 }
 
 /* A row's label may be a chip to tap, such as an Oracle tag that opens its
-   description; a long one wraps inside the chip. */
+   description; a long one wraps inside the chip at its hyphens. Its
+   longest word stays whole, so the column sizes to it and a short chip
+   hugs its text. */
 .data-table th .chip {
     max-width: 100%;
     text-align: left;
     white-space: normal;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
 }
 
 /* A header's `?` sits beside its name. */
@@ -4340,13 +4342,6 @@ nav:has(> .card-search-header:focus-within) > :not(.card-search-nav, .nav-panel)
     .data-table thead th.data-table-bar {
         white-space: nowrap;
     }
-}
-
-/* An Oracle tags table's tag chip keeps room for a slug's longest usual
-   word and its hyphen (repeatable-, additional-), so it wraps at the
-   hyphens and the bars shrink before a chip breaks mid-word. */
-.tag-data-table tbody th .chip {
-    min-width: calc(12ch + 2 * var(--space-2));
 }
 
 .data-bar {

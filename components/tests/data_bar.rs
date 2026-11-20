@@ -78,10 +78,14 @@ fn a_bar_column_s_header_keeps_its_name_and_hint_on_one_line_where_it_fits() {
 }
 
 #[test]
-fn the_tag_column_keeps_room_to_wrap_a_chip_at_its_hyphens() {
-    let tag = rule(".tag-data-table tbody th .chip");
+fn a_chip_label_keeps_its_longest_word_whole_so_its_column_sizes_to_it() {
+    let chip = rule(".data-table th .chip");
     assert!(
-        tag.contains("min-width: calc(12ch + 2 * var(--space-2));"),
-        "{tag}"
+        chip.contains("overflow-wrap: break-word;") && !chip.contains("anywhere"),
+        "break-word leaves the cell's min-content at the longest word: {chip}"
+    );
+    assert!(
+        !MAGIC.contains(".tag-data-table tbody th .chip {"),
+        "no floor: a short chip hugs its text"
     );
 }
