@@ -38,10 +38,13 @@ const GUIDE_SLUGS: &[&str] = &[
     "swipe-memory",
     "filtering",
     "organize-and-browse",
+    "deck-card-list",
+    "card-search",
     "synergy",
     "commander-and-formats",
     "commander-maybeboard",
     "playstyle",
+    "commander-suggestions",
     "activity",
     "budgeting",
     "land-targets",
@@ -54,6 +57,7 @@ const GUIDE_SLUGS: &[&str] = &[
     "share-your-deck",
     "deck-stats",
     "import-export",
+    "keyboard-shortcuts",
 ];
 
 fn main() {

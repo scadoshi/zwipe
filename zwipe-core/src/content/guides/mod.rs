@@ -33,6 +33,10 @@ pub fn image_size(file: &str) -> Pixels {
             width: 1236,
             height: 1213,
         },
+        "keyboard-shortcuts/01-shortcuts-sheet.webp" => Pixels {
+            width: 1440,
+            height: 900,
+        },
         _ => PHONE_CAPTURE,
     }
 }
@@ -428,37 +432,77 @@ pub static GUIDES: &[Guide] = &[
     },
     Guide {
         slug: "organize-and-browse",
-        title: "Group, filter, and browse your lists",
-        summary: "The deck list and card lists use the same controls: Group by sorts into sections, Show narrows the list, and headers collapse.",
-        tags: &["Deck building", "Cards"],
-        related: &["filtering", "deck-tags", "swipe-to-build"],
+        title: "Group, filter, and sort your decks",
+        summary: "The deck list sorts your decks into sections with Group by, narrows them with Show, and orders them with Sort.",
+        tags: &["Deck building"],
+        related: &["deck-card-list", "deck-tags", "filtering"],
         blocks: &[
-            Block::Lead("Your deck list and each deck's card list share the same controls."),
-            Block::H2("The deck list"),
+            Block::Lead("Group by, Show, and Sort keep a long deck list easy to read."),
+            Block::H2("Group by"),
             Block::P(
-                "Group by sections your decks by Format, Color, or Tag; a deck with several tags appears under each. None is one collapsible group headed All. Color makes a group per exact color combination, headed by its mana pips. Show narrows the list: color pips keep decks whose identity contains every pip you pick, tag chips match any tag, and All resets. Sort orders the decks by Name, Size, Format, Last changed, or Price, and its last chip flips the direction.",
+                "Group by sections your decks by Format, Color, or Tag; a deck with several tags appears under each. None is one collapsible group headed All. Color makes a group per exact color combination, headed by its mana pips.",
             ),
             Block::Image {
                 file: "organize-and-browse/01-deck-list-by-tag.webp",
                 alt: "The deck list grouped by Tag, with the Show pips and tag chips above",
                 caption: None,
             },
-            Block::H2("A deck's card list"),
+            Block::H2("Show and Sort"),
             Block::P(
-                "View shows the cards as a List or as Stacks. Group by sections them by Type, Mana value, Color, or Card role. Boards is three independent toggles, Main, Maybe, and Side; turn the last one off and Main snaps back on. Show toggles Tokens, the Command zone, and Art, and Flagged narrows the list to the cards you flagged.",
+                "Show narrows the list: color pips keep decks whose identity contains every pip you pick, tag chips match any tag, and All resets. Sort orders the decks by Name, Size, Format, Last changed, or Price, and its last chip flips the direction.",
             ),
+            Block::H2("Collapse what you're done with"),
+            Block::P("Tap a group header to fold it. Collapses last for the visit."),
+            Block::Note(
+                "A deck's own card list has its own controls. See Work a deck's card list.",
+            ),
+        ],
+    },
+    Guide {
+        slug: "deck-card-list",
+        title: "Work a deck's card list",
+        summary: "A deck's cards as a list or stacks: group and narrow them, then open a row to star, flag, count, move, or send a card.",
+        tags: &["Deck building", "Cards"],
+        related: &[
+            "organize-and-browse",
+            "deck-mvps",
+            "filtering",
+            "keyboard-shortcuts",
+        ],
+        blocks: &[
+            Block::Lead(
+                "A deck's card list is where you read the deck and fix it one card at a time.",
+            ),
+            Block::H2("The rows above the list"),
+            Block::Bullets(&[
+                "View shows the cards as a List or as Stacks.",
+                "Group by sections them by Type, Mana value, Color, or Card role.",
+                "Boards is three independent toggles, Main, Maybe, and Side; turn the last one off and Main snaps back on.",
+                "Show toggles Tokens, the Command zone, and Art, and Flagged narrows the list to the cards you flagged.",
+            ]),
             Block::P(
-                "Tap a card's row to open it. Its actions: [[image]] shows the card full size, [[send]] sends it to another deck, [[star]] makes it an MVP, [[flag]] flags it, and [[minus]] and [[plus]] change how many you run. Printings swaps the printing, and the board buttons move it to the Mainboard, Maybeboard, or Sideboard.",
+                "The [[funnel]] in the dock filters the list like the swipe screens' filter. See Filter the card pool.",
             ),
             Block::H2("Collapse what you're done with"),
             Block::P(
-                "Tap a group header on either list to fold it. On the card list, Tokens, Lands, Maybeboard, and Sideboard fold too. Collapses last for the visit.",
+                "Tap a group header to fold it; Tokens, Lands, Maybeboard, and Sideboard fold too. The last button in the Show row folds every group at once. Collapses last for the visit.",
             ),
             Block::Image {
                 file: "organize-and-browse/02-cards-by-type-collapsed.webp",
                 alt: "A card list grouped by Type with the Creatures section collapsed",
                 caption: None,
             },
+            Block::H2("A card's row"),
+            Block::P("Tap a row to open it. Under the card's details are its actions:"),
+            Block::Bullets(&[
+                "[[image]] shows the card full size.",
+                "[[send]] sends it to another of your decks, on the board you pick.",
+                "[[star]] makes it one of the deck's three MVPs. See Star your deck's MVPs.",
+                "[[flag]] flags it, for the Flagged chip to find later.",
+                "[[minus]] and [[plus]] change how many you run.",
+                "`Printings` swaps the printing.",
+                "The board buttons move it to the `Mainboard`, `Maybeboard`, or `Sideboard`.",
+            ]),
             Block::H2("Quick add"),
             Block::P(
                 "Quick add at the top of the card list searches by name and adds a result to your mainboard with one tap. It reaches cards you skipped while swiping.",
@@ -468,6 +512,59 @@ pub static GUIDES: &[Guide] = &[
                 alt: "Quick add results floating over the card list",
                 caption: None,
             },
+        ],
+    },
+    Guide {
+        slug: "card-search",
+        title: "Search for a card",
+        summary: "Look any card up by name, signed in or out, and open its page: printings, how decks use it, and Send to.",
+        tags: &["Cards"],
+        related: &["deck-card-list", "keyboard-shortcuts"],
+        blocks: &[
+            Block::Lead(
+                "Card search finds any Magic card by name and opens its card page, signed in or out.",
+            ),
+            Block::H2("Where it is"),
+            Block::P(
+                "On a wide window it's the Card search box in the nav, on app.zwipe.net and on zwipe.net. On a phone it sits at the top of the screen, in the app and on both sites: tap it and the box opens across the header. On the web, `/` puts the cursor in it.",
+            ),
+            Block::Image {
+                file: "card-search/01-search-chips.webp",
+                alt: "The card search open across a phone's header, its first matches as chips under the box",
+                caption: None,
+            },
+            Block::H2("Searching"),
+            Block::Bullets(&[
+                "Type part of a name. The first 10 matches show as chips under the box; tap one to open its card.",
+                "Punctuation between words counts as a space, so `fire ice` finds Fire // Ice.",
+                "Enter opens the card when only one matches. With several it opens Cards matching your text, a page of every match, each opening its card.",
+                "The ✕ empties the box.",
+            ]),
+            Block::Note("On zwipe.net a pick opens the card on app.zwipe.net."),
+            Block::H2("The card page"),
+            Block::P(
+                "A card page shows the card and its details, with its card roles and prices, and how Zwipe's players use it:",
+            ),
+            Block::Bullets(&[
+                "Decks: how many decks run it, and how many star it as an MVP.",
+                "Swipes: how often it was dealt, and how often it was added, skipped, saved to a maybeboard, or added and later removed.",
+                "As a commander, for a card that can lead a Commander deck: the decks it leads, and how often it was picked when offered.",
+            ]),
+            Block::Image {
+                file: "card-search/02-card-page.webp",
+                alt: "A card page on a phone: the card, its details and Printings, and its Decks and Swipes tables",
+                caption: None,
+            },
+            Block::P(
+                "When several cards share a name, the page shows them all, each opening its own page.",
+            ),
+            Block::H2("Printings, Send to, and Share"),
+            Block::Bullets(&[
+                "`Printings` steps through the card's printings, each with its set, artist, and prices. On the web, `p` opens it.",
+                "[[send]] adds the card to one of your decks: pick a board, then a deck. Zwipe says Already in when the deck has it. On the web, Shift+P opens it.",
+                "[[share]] copies the card's link.",
+            ]),
+            Block::Note("Signed out, Create account takes Send to's place in the dock."),
         ],
     },
     Guide {
@@ -562,7 +659,11 @@ pub static GUIDES: &[Guide] = &[
         title: "Save commanders for later",
         summary: "One account-wide list of commanders you might build someday: swipe up to save, then start decks straight from it.",
         tags: &["Commander", "Deck building"],
-        related: &["commander-and-formats", "swipe-to-build"],
+        related: &[
+            "commander-and-formats",
+            "commander-suggestions",
+            "swipe-to-build",
+        ],
         blocks: &[
             Block::Lead(
                 "Swipe up while picking a commander and it lands on your commander maybeboard, one list shared across your account.",
@@ -653,21 +754,9 @@ pub static GUIDES: &[Guide] = &[
                         "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
                         "`Remove` takes it off the list.",
                     ]),
-                    Block::H2("Suggested"),
+                    Block::H2("Swipe from the Maybeboard"),
                     Block::P(
-                        "The commanders that fit your decks best, ranked against every deck you have in any format, 10 at a time with Show more for the next. Its `?` explains the ranking.",
-                    ),
-                    Block::P(
-                        "Expand a row and tap Why this commander? for the Oracle tags it shares with your decks and the colors you keep building in. While you swipe, the card's details sheet shows the same reasons.",
-                    ),
-                    Block::Bullets(&[
-                        "`Create deck` starts a new deck with it as your commander.",
-                        "`Maybeboard` saves it to the Maybeboard list.",
-                        "`Remove` hides it for a week and pulls the next one up.",
-                    ]),
-                    Block::H2("Swipe from either list"),
-                    Block::P(
-                        "Each list's Swipe deals a stack. Suggested deals its ranking, best fit first, and keeps dealing as you swipe; Maybeboard deals commanders you haven't saved, most played first.",
+                        "The Maybeboard's Swipe deals commanders you haven't saved, most played first:",
                     ),
                     Block::Swipe(&[
                         ("right", "start a new deck with it"),
@@ -676,7 +765,7 @@ pub static GUIDES: &[Guide] = &[
                         ("down", "undo your last swipe"),
                     ]),
                     Block::Note(
-                        "Skipped commanders come back after seven days, or sooner with `Clear skips` under Suggested. `Clear maybeboard` empties the saved list; it asks first and there's no undo.",
+                        "`Clear maybeboard` empties the saved list; it asks first and there's no undo. Suggested, the other list, has its own guide: Suggested commanders.",
                     ),
                 ],
             ),
@@ -687,28 +776,17 @@ pub static GUIDES: &[Guide] = &[
         title: "Playstyle",
         summary: "What your decks say about how you play: your colors, card roles, Oracle tags and staples.",
         tags: &["Commander"],
-        related: &["commander-maybeboard", "synergy", "activity"],
+        related: &["commander-suggestions", "synergy", "activity"],
         blocks: &[
-            Block::Only(
-                Surface::App,
-                &[Block::Lead(
-                    "Playstyle reads every deck you have, in any format, and ranks commanders you haven't built yet.",
-                )],
-            ),
-            Block::Only(
-                Surface::Web,
-                &[Block::Lead(
-                    "Playstyle reads every deck you have, in any format, and shows what they have in common.",
-                )],
+            Block::Lead(
+                "Playstyle reads every deck you have, in any format, and shows what they have in common.",
             ),
             Block::H2("Finding it"),
             Block::Only(
                 Surface::App,
                 &[Block::Bullets(&[
                     "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
-                    "Your colors, card roles and Oracle tags come first.",
-                    "Under them, Suggested commanders lists your top 10 as card rows, best fit first. Its `?` explains the ranking.",
-                    "Tap a color identity in the Show row to narrow the list to it; tap again to clear.",
+                    "Your colors, card roles and Oracle tags come first, then Suggested commanders. See Suggested commanders.",
                     "Staples, at the bottom, lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
                 ])],
             ),
@@ -718,7 +796,7 @@ pub static GUIDES: &[Guide] = &[
                     "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
                     "Your colors, card roles and Oracle tags come first.",
                     "Staples lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
-                    "Suggested commanders are on the Commanders screen.",
+                    "Suggested commanders are on the Commanders screen. See Suggested commanders.",
                 ])],
             ),
             Block::H2("What your decks say"),
@@ -748,41 +826,89 @@ pub static GUIDES: &[Guide] = &[
                 alt: "Oracle tags: each tag's Decks, Cards and Impact, the top tag at 100",
                 caption: None,
             },
+            Block::Note(
+                "You need a deck with some cards in it before anything shows up. Any format counts.",
+            ),
+        ],
+    },
+    Guide {
+        slug: "commander-suggestions",
+        title: "Suggested commanders",
+        summary: "Commanders you haven't built yet, ranked against every deck you have: see why each one fits, then start a deck, save it, or swipe the ranking.",
+        tags: &["Commander", "Deck building"],
+        related: &["playstyle", "commander-maybeboard", "commander-and-formats"],
+        blocks: &[
+            Block::Lead(
+                "Suggested commanders ranks commanders you haven't built yet against every deck you have, in any format, best fit first.",
+            ),
+            Block::H2("Finding it"),
             Block::Only(
                 Surface::App,
                 &[
-                    Block::H2("Why this commander"),
                     Block::P(
-                        "Expand a row and tap Why this commander? for the Oracle tags it shares with your decks and the colors you keep building in. While you swipe, the card's details sheet shows the same reasons.",
+                        "Open Playstyle from the Colors panel on Home or from the menu. Suggested commanders sits under your colors, card roles and Oracle tags: your top 10 as card rows, best fit first. Its `?` explains the ranking.",
                     ),
-                    Block::Image {
-                        file: "playstyle/03-why-this-commander.webp",
-                        alt: "An expanded suggestion's Why this commander?: the Oracle tags it shares with your decks and a color you keep building in",
-                        caption: None,
-                    },
-                    Block::H2("What you can do with one"),
-                    Block::Bullets(&[
-                        "Create deck starts a new deck with it as your commander.",
-                        "Maybeboard saves it for later.",
-                        "Remove hides it for a week and pulls the next one up.",
-                    ]),
-                    Block::H2("Swipe deeper"),
                     Block::P(
-                        "Swipe deals the same ranking as a stack, up to 100 deep. Tap the [[funnel]] while you swipe to narrow it to one color identity.",
-                    ),
-                    Block::Swipe(&[
-                        ("right", "start a new deck with this commander"),
-                        ("left", "skip it for a week"),
-                        ("up", "save it to your commander maybeboard"),
-                        ("down", "undo your last swipe"),
-                    ]),
-                    Block::P(
-                        "Skipped commanders come back after seven days, or sooner with `Clear` beside Clear skips in the Danger zone panel.",
+                        "Tap a color identity in the Show row to narrow the list to it; tap again to clear.",
                     ),
                 ],
             ),
-            Block::Note(
-                "You need a deck with some cards in it before anything shows up. Any format counts.",
+            Block::Only(
+                Surface::Web,
+                &[
+                    Block::P(
+                        "Tap Commanders in the nav. Suggested sits beside your Maybeboard, under it on a phone: the commanders that fit your decks best, 10 at a time with Show more for the next. Its `?` explains the ranking, and the [[funnel]] at the bottom right narrows it along with the Maybeboard.",
+                    ),
+                    Block::P(
+                        "With no decks yet, Suggested shows the most played commanders instead.",
+                    ),
+                ],
+            ),
+            Block::H2("Why this commander"),
+            Block::P(
+                "Expand a row and tap Why this commander? for the Oracle tags it shares with your decks and the colors you keep building in. While you swipe, the card's details sheet shows the same reasons.",
+            ),
+            Block::Image {
+                file: "playstyle/03-why-this-commander.webp",
+                alt: "An expanded suggestion's Why this commander?: the Oracle tags it shares with your decks and a color you keep building in",
+                caption: None,
+            },
+            Block::H2("What you can do with one"),
+            Block::Bullets(&[
+                "`Create deck` starts a new deck with it as your commander.",
+                "`Maybeboard` saves it to your commander maybeboard. See Save commanders for later.",
+                "`Remove` hides it for a week and pulls the next one up.",
+            ]),
+            Block::H2("Swipe the ranking"),
+            Block::Only(
+                Surface::App,
+                &[Block::P(
+                    "Swipe deals the same ranking as a stack, up to 100 deep. Tap the [[funnel]] while you swipe to narrow it to one color identity.",
+                )],
+            ),
+            Block::Only(
+                Surface::Web,
+                &[Block::P(
+                    "Suggested's Swipe deals the ranking as a stack, best fit first, and keeps dealing as you swipe.",
+                )],
+            ),
+            Block::Swipe(&[
+                ("right", "start a new deck with this commander"),
+                ("left", "skip it for a week"),
+                ("up", "save it to your commander maybeboard"),
+                ("down", "undo your last swipe"),
+            ]),
+            Block::Only(
+                Surface::App,
+                &[Block::P(
+                    "Skipped commanders come back after seven days, or sooner with `Clear` beside Clear skips in the Danger zone panel.",
+                )],
+            ),
+            Block::Only(
+                Surface::Web,
+                &[Block::P(
+                    "Skipped commanders come back after seven days, or sooner with `Clear` beside Clear skips in the Danger zone under Suggested.",
+                )],
             ),
         ],
     },
@@ -1221,6 +1347,50 @@ pub static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::Note("The export pastes straight back into the importer."),
+        ],
+    },
+    Guide {
+        slug: "keyboard-shortcuts",
+        title: "Keyboard shortcuts",
+        summary: "On a computer, app.zwipe.net answers the keyboard: swipe, move between cards, and act on one without the mouse. Shift+H lists every key a page knows.",
+        tags: &["Getting started"],
+        related: &["swipe-to-build", "deck-card-list", "card-search"],
+        blocks: &[
+            Block::Lead(
+                "On a computer, the web app at app.zwipe.net answers the keyboard. Shift+H lists every key the page you're on knows.",
+            ),
+            Block::Image {
+                file: "keyboard-shortcuts/01-shortcuts-sheet.webp",
+                alt: "The keyboard shortcuts sheet over a deck's cards, its keys grouped under Navigation, Card, and Page",
+                caption: None,
+            },
+            Block::H2("On every page"),
+            Block::Bullets(&[
+                "`/` puts the cursor in the card search.",
+                "`t` opens the themes, `?` the page's hint, and Shift+H this list.",
+                "`Esc` closes the open sheet, or goes back.",
+                "`gg` and Shift+G jump to the top or the bottom; `j` and `k` scroll.",
+            ]),
+            Block::H2("Add and Remove"),
+            Block::Bullets(&[
+                "The arrow keys swipe the top card, and so do `l` (right), `h` (left), `k` (up), and `j` (down). `u` undoes too.",
+                "`f` opens the filter and `/` filters by name.",
+                "`d` shows the card's details, `v` flips it, `p` opens its Printings, and Shift+P its Send to.",
+                "`r` deals a fresh stack, and on Add `s` turns Synergy on or off.",
+            ]),
+            Block::H2("A deck's cards"),
+            Block::Bullets(&[
+                "The arrow keys, or `h`, `j`, `k`, and `l`, move between cards; Home and End jump to the first or last. Enter opens the card.",
+                "On the card under the cursor: `p` Printings, Shift+P Send to, `i` its image, `v` flip, `d` details.",
+                "On your own deck: `m` moves it to the maybeboard, `s` to the sideboard, Shift+S stars it, Shift+F flags it, and `-` and `+` change the count.",
+                "`u` or Ctrl+Z undoes, `f` filters, `/` filters by name, `q` opens Quick add, and `a`, `r`, and `e` open Add, Remove, and Edit deck.",
+            ]),
+            Block::H2("A card page"),
+            Block::Bullets(&[
+                "`p` opens Printings and Shift+P opens Send to.",
+                "In Printings, `←` and `→`, or `h` and `l`, step through the printings, `v` flips one, and Enter picks it.",
+            ]),
+            Block::Note("The app on a phone and zwipe.net don't take these keys."),
         ],
     },
 ];

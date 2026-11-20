@@ -244,7 +244,7 @@ mod tests {
     fn swipe_select_links_by_its_overlay() {
         assert!(matches!(
             guide_for_swipe_select(SwipeSelectMode::Suggested { has_filter: false }).as_slice(),
-            [DialogAction::Link { href, .. }] if href == "https://app.zwipe.net/guides/playstyle"
+            [DialogAction::Link { href, .. }] if href == "https://app.zwipe.net/guides/commander-suggestions"
         ));
     }
 }
