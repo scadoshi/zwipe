@@ -3,6 +3,7 @@
 //! results grid, each opening its card page, and a ghost of the grid while they load. A text
 //! only one card matches opens that card's page in this page's place.
 
+use components::list_end::{ListEnd, use_list_end};
 use components::{CardResultsGrid, CardResultsGridGhost, LoadFailed};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -79,15 +80,21 @@ pub fn Search(q: String) -> Element {
     let status = state.status();
     let cards = state.cards().to_vec();
     let title = state.title();
+    let has_more = state.has_more();
     drop(state);
 
     let body = match status {
         Status::Several => rsx! {
             div { class: "screen-content content-enter card-page-list",
+                NextPageOnEnd { on_end: move |()| dispatch(Action::LoadMore) }
                 CardResultsGrid {
                     title: title.clone(),
                     cards,
                     on_select: move |id: Uuid| dispatch(Action::Pick(id)),
+                }
+                // Scrolling to it loads the next page.
+                if has_more {
+                    ListEnd {}
                 }
             }
         },
@@ -127,4 +134,12 @@ pub fn Search(q: String) -> Element {
             {body}
         }
     }
+}
+
+/// Calls `on_end` as the results' end scrolls near the view ([`use_list_end`]), while the grid
+/// shows.
+#[component]
+fn NextPageOnEnd(on_end: Callback<()>) -> Element {
+    use_list_end(on_end);
+    rsx! {}
 }

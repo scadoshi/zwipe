@@ -25,7 +25,7 @@ use std::time::Duration;
 
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::models::lookup::{LOOKUP_LIMIT, LookupName, MAX_LOOKUP_NAME_CHARS};
+use zwipe_core::domain::card::models::lookup::{LookupName, MAX_LOOKUP_NAME_CHARS};
 use zwipe_core::domain::card::slug::{self, CardSlug};
 use zwipe_core::http::contracts::card::HttpCardLookup;
 
@@ -410,11 +410,6 @@ impl State {
         self.results.clear();
         self.status = Status::Idle;
     }
-}
-
-/// [`LOOKUP_LIMIT`] as a count of cards.
-pub(crate) fn limit() -> usize {
-    usize::try_from(LOOKUP_LIMIT).unwrap_or(usize::MAX)
 }
 
 /// The lookup for `text` as a name, or `None` when the server would refuse it (empty once

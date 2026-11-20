@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use components::deck_cursor::use_card_grid_cursor;
 use components::hint::ContentHintDialog;
 use components::keys::use_page_keys_through;
+use components::list_end::{ListEnd, use_list_end};
 use components::{
     CardResultsGrid, CardResultsGridGhost, LoadFailed, MeldSource, MeldToggle, focus_card_search,
     next_card_face,
@@ -134,6 +135,7 @@ pub fn Search(q: String) -> Element {
     let status = state.status();
     let cards = state.cards().to_vec();
     let title = state.title();
+    let has_more = state.has_more();
     drop(state);
 
     let body = match status {
@@ -145,12 +147,17 @@ pub fn Search(q: String) -> Element {
                     details_open,
                     details_card,
                     on_key,
+                    on_end: move |()| dispatch(Action::LoadMore),
                 }
                 CardResultsGrid {
                     title: title.clone(),
                     cards,
                     faces: faces(),
                     on_select: move |id: Uuid| dispatch(Action::Pick(id)),
+                }
+                // Reaching it, by scroll or End, loads the next page.
+                if has_more {
+                    ListEnd {}
                 }
             }
         },
@@ -224,7 +231,7 @@ pub fn Search(q: String) -> Element {
 /// Shift+H. A card key acts on `details_card` while its details drawer is open (only `v` reaches
 /// the page through it), else on the cursor's card in `model`'s results after a key, else on the
 /// hovered one. `v` turns the card in `faces`, or toggles a meld half's Meld; every other card key
-/// goes to `on_key`.
+/// goes to `on_key`. Reaching the list's end, by scroll or End, calls `on_end`.
 #[component]
 fn SearchResultsKeys(
     model: Signal<State>,
@@ -232,9 +239,12 @@ fn SearchResultsKeys(
     details_open: Signal<bool>,
     details_card: Signal<Option<Card>>,
     on_key: Callback<(SearchResultsKey, Card)>,
+    on_end: Callback<()>,
 ) -> Element {
     use_card_grid_cursor();
     use_offer_shortcuts(ShortcutsScreen::SearchResults);
+    // The list's end, scrolled to or reached with End, loads the next page.
+    use_list_end(on_end);
     let melds = try_use_context::<MeldSource>();
     use_page_keys_through(
         DETAILS_DRAWER_CLASS,

@@ -1,10 +1,12 @@
 //! The card search's results page, `/search?q=<text>`: every card the lookup matches for the
 //! text, drawn in the card page's several-cards grid, each opening its card page.
 //!
-//! Enter in the card search opens it with several matches. It looks the text up once on load,
-//! the same lookup the bar sends, and an answer with a single card opens that card's page in its
-//! place, so a link to a text only one card matches lands on the card. Text no card could have
-//! matches nothing without asking.
+//! Enter in the card search opens it with several matches. It looks the text up on load, the
+//! same lookup the bar sends but paged, [`LOOKUP_PAGE`] cards at a time, and an answer with a
+//! single card opens that card's page in its place, so a link to a text only one card matches
+//! lands on the card. Scrolling to the end of the list, or the keyboard cursor's End, asks for the
+//! next page ([`Action::LoadMore`]) until a short page ends it. Text no card could have matches
+//! nothing without asking.
 //!
 //! The model holds the text and what came back; the client sends the lookup, with the session's
 //! token when one is held, and draws the grid.
@@ -14,10 +16,11 @@ mod tests;
 
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::models::lookup::{LOOKUP_PAGE, MAX_LOOKUP_OFFSET};
 use zwipe_core::http::contracts::card::HttpCardLookup;
 
 use crate::generation::{Generation, Ticket};
-use crate::screens::card_search::{self, destination, limit, name_lookup};
+use crate::screens::card_search::{self, destination, name_lookup};
 pub use crate::screens::card_search::{Destination, Failure};
 
 /// The line when no card matches.
@@ -64,6 +67,9 @@ pub enum Action {
     },
     /// Retry after a failure.
     Retry,
+    /// The list scrolled to its end, or the keyboard cursor's End: the next page, while the
+    /// lookup may have more and no next page is out.
+    LoadMore,
     /// A card tapped, by its printing id.
     Pick(Uuid),
 }
@@ -91,6 +97,10 @@ pub struct State {
     status: Status,
     cards: Vec<Card>,
     tickets: Generation,
+    /// Whether the last page was short, so the lookup has no more.
+    exhausted: bool,
+    /// The ticket of the next page out, if one is.
+    more: Option<Ticket>,
 }
 
 impl State {
@@ -112,7 +122,7 @@ impl State {
         self.status
     }
 
-    /// The matches while [`Status::Several`] shows, at most the lookup's limit.
+    /// The matches while [`Status::Several`] shows, every page dealt so far.
     #[must_use]
     pub fn cards(&self) -> &[Card] {
         if self.status == Status::Several {
@@ -134,13 +144,31 @@ impl State {
             Action::Load(text) => {
                 text.trim().clone_into(&mut self.query);
                 self.cards.clear();
+                self.more = None;
+                self.exhausted = false;
                 self.lookup()
+            }
+            Action::Loaded { ticket, cards } if self.more == Some(ticket) => {
+                self.more = None;
+                self.exhausted = is_last_page(cards.len());
+                let fresh: Vec<Card> = cards
+                    .into_iter()
+                    .filter(|card| {
+                        !self
+                            .cards
+                            .iter()
+                            .any(|held| held.scryfall_data.id == card.scryfall_data.id)
+                    })
+                    .collect();
+                self.cards.extend(fresh);
+                Vec::new()
             }
             Action::Loaded { ticket, cards } => {
                 if !self.is_answer(ticket) {
                     return Vec::new();
                 }
-                self.cards = cards.into_iter().take(limit()).collect();
+                self.exhausted = is_last_page(cards.len());
+                self.cards = cards;
                 if let [only] = self.cards.as_slice() {
                     return vec![Effect::Replace(destination(only))];
                 }
@@ -151,6 +179,11 @@ impl State {
                 };
                 Vec::new()
             }
+            Action::Failed { ticket, .. } if self.more == Some(ticket) => {
+                self.more = None;
+                Vec::new()
+            }
+            Action::LoadMore => self.load_more(),
             Action::Failed { ticket, failure } => {
                 if self.is_answer(ticket) {
                     self.status = match failure {
@@ -188,6 +221,52 @@ impl State {
             return Vec::new();
         };
         self.status = Status::Loading;
-        vec![Effect::Lookup { ticket, lookup }]
+        vec![Effect::Lookup {
+            ticket,
+            lookup: lookup.paged(0),
+        }]
     }
+
+    /// Asks for the next page, from as many cards as the list holds, while it may have more and
+    /// none is out.
+    fn load_more(&mut self) -> Vec<Effect> {
+        if !self.has_more() || self.more.is_some() {
+            return Vec::new();
+        }
+        let Some(lookup) = name_lookup(&self.query) else {
+            return Vec::new();
+        };
+        let Ok(offset) = u32::try_from(self.cards.len()) else {
+            self.exhausted = true;
+            return Vec::new();
+        };
+        if offset > MAX_LOOKUP_OFFSET {
+            self.exhausted = true;
+            return Vec::new();
+        }
+        let ticket = self.tickets.next_ticket();
+        self.more = Some(ticket);
+        vec![Effect::Lookup {
+            ticket,
+            lookup: lookup.paged(offset),
+        }]
+    }
+
+    /// Whether the list may hold more past what it shows: it shows matches and the last page was
+    /// full.
+    #[must_use]
+    pub fn has_more(&self) -> bool {
+        self.status == Status::Several && !self.exhausted
+    }
+
+    /// Whether a next page is out.
+    #[must_use]
+    pub fn loading_more(&self) -> bool {
+        self.more.is_some()
+    }
+}
+
+/// Whether a page of `got` cards was the lookup's last: shorter than a page.
+fn is_last_page(got: usize) -> bool {
+    u32::try_from(got).is_ok_and(|got| got < LOOKUP_PAGE)
 }
