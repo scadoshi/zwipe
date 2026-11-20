@@ -4,6 +4,7 @@
 use dioxus::prelude::*;
 use dioxus_primitives::toast::use_toast;
 use zwipe_core::domain::card::Card;
+use zwipe_ui::commander::deal::Door;
 use zwipe_ui::deck::command_zone;
 use zwipe_ui::deck::form::Slot;
 
@@ -12,6 +13,7 @@ use super::command_zone::autofill_named_partner;
 use super::pickers::{DeckTagPicker, FormatPicker, OracleTagPicker};
 use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::screens::playstyle::use_deck_profiles;
 
 /// The pickers and the Swipe selects. The commander's Swipe select is keyed
 /// by the format, and each pile that depends on the commander (partner and
@@ -22,6 +24,14 @@ use crate::inbound::chrome::authed::use_authed;
 pub fn DeckFormOverlays(form: DeckForm) -> Element {
     let authed = use_authed();
     let toast = use_toast();
+    // The user's deck count, which the commander Swipe's reasons count against.
+    let deck_profiles = use_deck_profiles();
+    let deck_count = use_memo(move || {
+        deck_profiles
+            .read()
+            .as_ref()
+            .map_or(0, |decks| u32::try_from(decks.len()).unwrap_or(u32::MAX))
+    });
     let format = (form.format)();
     let commander = form.commander.card.read().clone();
     let commander_key = commander
@@ -57,7 +67,8 @@ pub fn DeckFormOverlays(form: DeckForm) -> Element {
             SwipeSelect {
                 key: "{format.to_legality_key()}",
                 open: form.commander.swipe_open,
-                mode: SwipeMode::Commander(format),
+                mode: SwipeMode::Commanders(Door::DeckCreation(format)),
+                reasons_deck_count: Some(deck_count.into()),
                 exclude_oracle_ids: Some(zone_ids.into()),
                 on_select: move |card: Card| pick(Slot::Commander, card),
                 on_close: move |()| close(Slot::Commander),

@@ -13,6 +13,17 @@ pub enum CreateCardError {
     /// Card ID already exists (should use update/upsert instead).
     #[error("id already exists")]
     UniqueConstraintViolation(anyhow::Error),
+    /// A unique column's value belongs to another printing already.
+    #[error("{column} {value} is already held by {holder}")]
+    Clash {
+        /// The unique column.
+        column: String,
+        /// The value both printings carry.
+        value: String,
+        /// The printing holding it, as its name and id, or "another printing" when the lookup
+        /// finds none.
+        holder: String,
+    },
     /// Database operation failed.
     #[error(transparent)]
     Database(anyhow::Error),

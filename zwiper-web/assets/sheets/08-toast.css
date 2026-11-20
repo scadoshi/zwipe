@@ -143,37 +143,51 @@
     /* `both` holds the `from` state before the first frame paints, so the
        toast never flashes at its final position first. No `transition` on
        translate or scale here: a transition on a property the animation
-       drives fights it. The rise takes --enter-duration and the settle after its
-       stamp 120ms more. */
-    animation: toast-rise-in calc(var(--enter-duration, 280ms) + 120ms) var(--ease-enter, ease-out) both;
+       drives fights it. */
+    animation: toast-rise-in 400ms both;
 }
 
-/* Shoots up from below the screen's bottom edge, moving and growing alone: its own
+/* A stamp coming down: it shoots up from below the screen's bottom edge (its own
    height, the corner gap and the keyboard below its spot, and its shadow's
-   reach. It carries a little past its spot, growing only as it lands, a stamp
-   as a stack badge pops, and settles, all one motion: `translate` and `scale`
-   keep their own stops, which a minifier leaves apart where it would fold
-   `transform` and `scale` into one. Leaving, it drifts up a little and
-   fades out, like a puff of smoke (toast-leave.js, or the timed keyframes
-   below). */
+   reach) well over its size and lifted off the page, a long shadow under it,
+   speeding into its spot. It lands at its size with its shadow pressed short,
+   squashes a touch under it, rebounds a touch over it and settles, one set of
+   keyframes with a curve per stretch, so it reads as one hit. `translate` and `scale` keep their own properties, which a
+   minifier leaves apart where it would fold `transform` and `scale` into one.
+   Leaving, it drifts up a little and fades out, like a puff of smoke
+   (toast-leave.js, or the timed keyframes below). */
 @keyframes toast-rise-in {
     from {
         translate: 0 calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4));
-        scale: 1;
+        scale: 1.28;
+        box-shadow: var(--shadow-lg);
+        animation-timing-function: cubic-bezier(0.35, 0.2, 0.85, 0.7);
     }
 
-    55% {
+    /* 160ms, the impact: in its spot at its size, pressed flat */
+    40% {
+        translate: 0;
         scale: 1;
+        box-shadow: var(--shadow-sm);
+        animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
     }
 
-    70% {
-        translate: 0 -2px;
-        scale: 1.04;
+    /* 232ms, squashed a touch under its size */
+    58% {
+        scale: 0.96;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
+    /* 312ms, rebounded a touch over it */
+    78% {
+        scale: 1.02;
+        animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
     }
 
     to {
         translate: 0;
         scale: 1;
+        box-shadow: var(--shadow-md);
     }
 }
 
@@ -294,30 +308,43 @@
  * keyframe cannot serve both lives: the stops that give a 3s toast a 200ms
  * fade give a 5s toast a 330ms one. Hence a keyframe per life, worked back
  * from the same wall-clock feel, about 200ms up and 250ms out either way.
- * Each rises from below the bottom edge and leaves drifting up as it fades,
- * as an untimed toast does. */
+ * Each comes in as an untimed toast does, a stamp over its size that lands,
+ * squashes, rebounds and settles in the first 400ms, and leaves drifting up
+ * as it fades. */
 
 @keyframes toast-life-3000 {
     0% {
         translate: 0 calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4));
-        scale: 1;
+        scale: 1.28;
+        box-shadow: var(--shadow-lg);
+        animation-timing-function: cubic-bezier(0.35, 0.2, 0.85, 0.7);
     }
 
-    /* 150ms, still its own size as it nears its spot */
-    5% {
-        scale: 1;
-    }
-
-    /* 210ms, the rise carried into its stamp */
-    7% {
-        translate: 0 -2px;
-        scale: 1.04;
-    }
-
-    /* 330ms, settled */
-    11% {
+    /* 160ms, the impact: in its spot at its size, pressed flat */
+    5.33% {
         translate: 0;
         scale: 1;
+        box-shadow: var(--shadow-sm);
+        animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+    }
+
+    /* 232ms, squashed a touch under its size */
+    7.73% {
+        scale: 0.96;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
+    /* 312ms, rebounded a touch over it */
+    10.4% {
+        scale: 1.02;
+        animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+    }
+
+    /* 400ms, settled */
+    13.33% {
+        translate: 0;
+        scale: 1;
+        box-shadow: var(--shadow-md);
     }
 
     /* 2750ms, so the leave takes the last 250ms */
@@ -335,24 +362,36 @@
 @keyframes toast-life-5000 {
     0% {
         translate: 0 calc(100% + var(--corner-gap) + var(--keyboard-inset, 0px) + var(--space-4));
-        scale: 1;
+        scale: 1.28;
+        box-shadow: var(--shadow-lg);
+        animation-timing-function: cubic-bezier(0.35, 0.2, 0.85, 0.7);
     }
 
-    /* 150ms, still its own size as it nears its spot */
-    3% {
-        scale: 1;
-    }
-
-    /* 200ms, the rise carried into its stamp */
-    4% {
-        translate: 0 -2px;
-        scale: 1.04;
-    }
-
-    /* 325ms, settled */
-    6.5% {
+    /* 160ms, the impact: in its spot at its size, pressed flat */
+    3.2% {
         translate: 0;
         scale: 1;
+        box-shadow: var(--shadow-sm);
+        animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+    }
+
+    /* 232ms, squashed a touch under its size */
+    4.64% {
+        scale: 0.96;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
+    /* 312ms, rebounded a touch over it */
+    6.24% {
+        scale: 1.02;
+        animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+    }
+
+    /* 400ms, settled */
+    8% {
+        translate: 0;
+        scale: 1;
+        box-shadow: var(--shadow-md);
     }
 
     /* 4750ms */

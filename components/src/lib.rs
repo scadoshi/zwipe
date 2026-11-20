@@ -143,7 +143,7 @@ pub use card_results_grid::{CardResultsGrid, CardResultsGridGhost};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use card_search::{
-    CardSearch, CardSearchBar, HEADER_ALWAYS, NAV_GROWN_PX, SEARCH_ICON, SearchHost,
+    CardSearch, CardSearchBar, HEADER_ALWAYS, NAV_GROWN_PX, SEARCH_ICON, SEARCH_STROKE, SearchHost,
     focus_card_search, use_card_search,
 };
 pub use card_skeleton::CardSkeleton;

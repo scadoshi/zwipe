@@ -1,72 +1,56 @@
-//! Commander maybeboard: the commanders a user saved for later, with Quick
-//! add by name, the Show row's color pips, the Sort row, and Create deck or
-//! Remove on each.
+//! The Commanders screen's Maybeboard list: the commanders a user saved for
+//! later, with Quick add by name, the Show row's Art, the Sort row,
+//! and Create deck or Remove on each. The screen's one filter narrows it too.
 //!
-//! On a wide window the Quick add, Show and list column sits on the left,
-//! `q` focuses Quick add, `/` opens the filter at its name, and ↑ and ↓
-//! move through Quick add's result chips with
-//! Enter adding the highlighted one. Below the breakpoint it is the app's
-//! screen. Swipe sits in the list's header, Filter floats in the dock and
-//! Clear maybeboard is the Danger zone panel under the list.
+//! `q` focuses Quick add, `/` opens the screen's filter at its name, and ↑
+//! and ↓ move through Quick add's result chips with Enter adding the
+//! highlighted one. Swipe sits in the list's header and Clear maybeboard is
+//! the Danger zone panel under the list.
 
 use std::collections::HashSet;
 
-use components::deck_cursor::use_card_list_cursor;
-use components::keys::focus_by_id;
 use components::{
-    ActionDock, AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap,
-    DangerZoneAction, DialogAction, DockFilter, HoverStackHost, TOAST_LONG, TOAST_QUICK,
-    spawn_write, use_hover_stack, use_mounted,
+    AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap, DangerZoneAction,
+    DialogAction, TOAST_LONG, TOAST_QUICK, spawn_write, use_mounted,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::commander::maybeboard::{self, Sort, SortBy, Step};
-use zwipe_ui::filter;
-use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::screens::deck_list;
-use zwipe_ui::telemetry::vocabulary::Screen;
 use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
 
 use crate::domain::commander_maybeboard;
 use crate::inbound::caches::CreateDeckSeed;
-use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_row::{CardOverlaysHost, CardRow, ShowRowArt, use_card_overlays};
-use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
-use crate::inbound::cards::row_keys::use_card_row_keys_and;
-use crate::inbound::cards::stack_view::use_row_faces;
+use crate::inbound::cards::card_row::{CardRow, ShowRowArt};
 use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::{
-    GhostActionRow, GhostButton, GhostChipRow, GhostList, GhostShowRow, GhostText,
+    GhostActionRow, GhostButton, GhostChipRow, GhostList, GhostText,
 };
-use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
 use crate::inbound::router::Route;
-use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
 use crate::outbound::maybeboard_sort_store::MaybeboardSortStore;
 use crate::outbound::timer;
 
 /// The saved commanders' header.
-const LIST_TITLE: &str = "Commanders";
+const LIST_TITLE: &str = "Maybeboard";
 
 /// The Quick add input's id, for `q`.
-const QUICK_ADD_ID: &str = "commander-maybeboard-search";
+pub(super) const QUICK_ADD_ID: &str = "commander-maybeboard-search";
 
 /// The saved list and its load state. Entries live in a signal so Remove
 /// and Quick add edit the list in place. Each load takes a ticket, and an
 /// edit made while a load is out starts a new one: that reply left before
 /// the edit reached the server and could bring a removed row back.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 struct SavedList {
     entries: Signal<Vec<Card>>,
     is_loading: Signal<bool>,
@@ -131,77 +115,42 @@ impl SavedList {
     }
 }
 
-/// What a key does on the commander maybeboard.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ScreenKey {
-    /// Focuses Quick add's search.
-    QuickAdd,
-    /// Opens the filter.
-    Filter,
-    /// Opens the filter at its Name section, the name field focused.
-    FilterByName,
+/// The Maybeboard list's state that its overlays share with it: the saved list and its load,
+/// Swipe and the Clear maybeboard dialog, and Create deck. The screen holds it, so the overlays
+/// render at its root, outside the page, whose entrance animation would otherwise be their
+/// containing block.
+#[derive(Clone, Copy, PartialEq)]
+pub(super) struct Board {
+    list: SavedList,
+    saved_oracles: Memo<HashSet<Uuid>>,
+    swipe_open: Signal<bool>,
+    show_clear_dialog: Signal<bool>,
+    create_with: Callback<Card>,
+    clear_maybeboard: Callback<()>,
 }
 
-/// The screen action `key` stands for: `q` Quick add, `f` the filter and `/` the filter at its name
-/// field ([`shortcuts::card_key`]).
-fn screen_key(key: &str) -> Option<ScreenKey> {
-    match shortcuts::card_key(key) {
-        Some(CardKey::Filter) => Some(ScreenKey::Filter),
-        Some(CardKey::FilterByName) => Some(ScreenKey::FilterByName),
-        _ => (key == shortcuts::QUICK_ADD_KEY).then_some(ScreenKey::QuickAdd),
-    }
-}
-
-/// The commander maybeboard screen.
-#[component]
-#[expect(
-    clippy::wildcard_enum_match_arm,
-    reason = "keyboard_types::Key is a foreign enum of every key; only the keys handled act"
-)]
-pub fn CommanderMaybeboard() -> Element {
-    telemetry::use_telemetry_screen(Screen::CommanderMaybeboard);
+/// The [`Board`] over `entries`, the screen's copy of the saved commanders: loads them, and
+/// reloads once a save or remove from Swipe select lands.
+pub(super) fn use_board(entries: Signal<Vec<Card>>) -> Board {
     let navigator = use_navigator();
     let session: Signal<Option<Session>> = use_context();
     let seed: CreateDeckSeed = use_context();
     let stores = try_use_context::<CardStores>();
     let toast = use_toast();
-    // A save or remove lands even after the screen goes; its list update waits on this.
+    // A clear lands even after the screen goes; its list update waits on this.
     let mounted = use_mounted();
     let authed = use_authed();
-    let usage = telemetry::use_usage();
-    let hint_open = use_one_time_hint(OneTimeHint::CommanderMaybeboard);
-    let mut show_clear_dialog = use_signal(|| false);
-
-    let mut show_row_art = use_signal(|| true);
-    use_context_provider(|| ShowRowArt(show_row_art));
-    let examples = use_otag_reveals();
-    let overlays = use_card_overlays();
-    let hover_stack = use_hover_stack();
-    let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
-    use_row_faces();
-
-    let mut query = use_signal(String::new);
-    let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
-    let mut filter = use_signal(CardQueryBuilder::new);
-    let mut filter_open = use_signal(|| false);
-    let mut highlight: Signal<Option<usize>> = use_signal(|| None);
-    let mut sort: Signal<Sort> = use_signal(|| MaybeboardSortStore::browser().load());
+    let show_clear_dialog = use_signal(|| false);
 
     let mut list = SavedList {
-        entries: use_signal(Vec::new),
+        entries,
         is_loading: use_signal(|| true),
         load_failed: use_signal(|| false),
         reload: use_signal(|| 0u32),
         loads: use_signal(Generation::default),
         load_out: use_signal(|| false),
     };
-    let SavedList {
-        mut entries,
-        is_loading,
-        load_failed,
-        reload,
-        ..
-    } = list;
+    let reload = list.reload;
     // A save or remove from Swipe select or Playstyle reloads the list once it has landed, so
     // the list never reads the server ahead of the write.
     use_effect(move || {
@@ -217,6 +166,160 @@ pub fn CommanderMaybeboard() -> Element {
             list.land(ticket, reply.ok());
         });
     });
+
+    let saved_oracles = use_memo(move || -> HashSet<Uuid> {
+        entries()
+            .iter()
+            .filter_map(|c| c.scryfall_data.oracle_id)
+            .collect()
+    });
+
+    // The create gate: an unverified account with a deck already is at its
+    // limit. Quiet; a failure leaves the gate open.
+    let deck_profiles = use_resource(move || async move {
+        authed
+            .run_quiet("load_deck_profiles", |c, s| async move {
+                c.fetch_deck_profiles(&s).await
+            })
+            .await
+    });
+    let swipe_open = use_signal(|| false);
+    let create_with = use_callback(move |card: Card| {
+        let at_limit = session.peek().as_ref().is_some_and(|s| {
+            s.user.email_verified_at.is_none()
+                && deck_profiles
+                    .peek()
+                    .as_ref()
+                    .and_then(Option::as_ref)
+                    .is_some_and(|p| !p.is_empty())
+        });
+        if at_limit {
+            toast.warning(
+                "Verify your email to create more than one deck".to_string(),
+                ToastOptions::default().duration(TOAST_LONG),
+            );
+        } else {
+            let mut slot = seed.0;
+            slot.set(Some(card));
+            navigator.push(Route::CreateDeck {});
+        }
+    });
+
+    let clear_maybeboard = use_callback(move |()| {
+        spawn_write(async move {
+            if authed
+                .run("clear_commander_maybeboard", |c, s| async move {
+                    c.clear_commander_maybeboard(&s).await
+                })
+                .await
+                .is_some()
+            {
+                if mounted.get() {
+                    list.clear();
+                }
+                toast.info(
+                    "Maybeboard cleared".to_string(),
+                    ToastOptions::default().duration(TOAST_QUICK),
+                );
+            }
+        });
+    });
+
+    Board {
+        list,
+        saved_oracles,
+        swipe_open,
+        show_clear_dialog,
+        create_with,
+        clear_maybeboard,
+    }
+}
+
+/// The Maybeboard list's Clear maybeboard dialog and its Swipe select, at the screen's root.
+#[component]
+pub(super) fn MaybeboardOverlays(board: Board) -> Element {
+    let Board {
+        mut list,
+        saved_oracles,
+        mut swipe_open,
+        show_clear_dialog,
+        create_with,
+        clear_maybeboard,
+    } = board;
+    rsx! {
+        AlertDialog {
+            open: show_clear_dialog,
+            title: "Clear maybeboard",
+            actions: vec![
+                DialogAction::Dismiss("Cancel".into()),
+                DialogAction::Confirm {
+                    label: "Clear".into(),
+                    danger: true,
+                    on_confirm: clear_maybeboard,
+                },
+            ],
+            "Every commander on your maybeboard will be removed. This can't be undone."
+        }
+        // Commanders not saved yet: up saves one here, right starts a deck
+        // with it.
+        SwipeSelect {
+            open: swipe_open,
+            mode: SwipeMode::Commander(Format::Commander),
+            exclude_oracle_ids: Some(saved_oracles.into()),
+            starts_deck: true,
+            on_select: move |card: Card| {
+                swipe_open.set(false);
+                list.refetch();
+                create_with.call(card);
+            },
+            on_close: move |()| {
+                swipe_open.set(false);
+                list.refetch();
+            },
+        }
+    }
+}
+
+/// The Maybeboard list over `board`'s saved commanders, narrowed by the
+/// screen's `filter`; its overlays are [`MaybeboardOverlays`]. A row opens into
+/// `expanded_card`, which the screen's card keys share.
+#[component]
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "keyboard_types::Key is a foreign enum of every key; only the keys handled act"
+)]
+pub(super) fn MaybeboardPanel(
+    board: Board,
+    filter: Signal<CardQueryBuilder>,
+    expanded_card: Signal<Option<Uuid>>,
+) -> Element {
+    let toast = use_toast();
+    // A save or remove lands even after the screen goes; its list update waits on this.
+    let mounted = use_mounted();
+    let authed = use_authed();
+    let usage = telemetry::use_usage();
+    let Board {
+        mut list,
+        saved_oracles,
+        mut swipe_open,
+        mut show_clear_dialog,
+        create_with,
+        ..
+    } = board;
+
+    let mut show_row_art = use_signal(|| true);
+    use_context_provider(|| ShowRowArt(show_row_art));
+
+    let mut query = use_signal(String::new);
+    let mut highlight: Signal<Option<usize>> = use_signal(|| None);
+    let mut sort: Signal<Sort> = use_signal(|| MaybeboardSortStore::browser().load());
+
+    let SavedList {
+        mut entries,
+        is_loading,
+        load_failed,
+        ..
+    } = list;
 
     // The debounced commander search feeding the result chips. Every edit
     // takes a ticket, so a reply for an older query never lands over a newer
@@ -260,12 +363,6 @@ pub fn CommanderMaybeboard() -> Element {
         });
     });
 
-    let saved_oracles = use_memo(move || -> HashSet<Uuid> {
-        entries()
-            .iter()
-            .filter_map(|c| c.scryfall_data.oracle_id)
-            .collect()
-    });
     let shown_results = use_memo(move || -> Vec<Card> {
         let saved = saved_oracles();
         search_results()
@@ -316,37 +413,6 @@ pub fn CommanderMaybeboard() -> Element {
         });
     });
 
-    // The create gate: an unverified account with a deck already is at its
-    // limit. Quiet; a failure leaves the gate open.
-    let deck_profiles = use_resource(move || async move {
-        authed
-            .run_quiet("load_deck_profiles", |c, s| async move {
-                c.fetch_deck_profiles(&s).await
-            })
-            .await
-    });
-    let mut swipe_open = use_signal(|| false);
-    let create_with = use_callback(move |card: Card| {
-        let at_limit = session.peek().as_ref().is_some_and(|s| {
-            s.user.email_verified_at.is_none()
-                && deck_profiles
-                    .peek()
-                    .as_ref()
-                    .and_then(Option::as_ref)
-                    .is_some_and(|p| !p.is_empty())
-        });
-        if at_limit {
-            toast.warning(
-                "Verify your email to create more than one deck".to_string(),
-                ToastOptions::default().duration(TOAST_LONG),
-            );
-        } else {
-            let mut slot = seed.0;
-            slot.set(Some(card));
-            navigator.push(Route::CreateDeck {});
-        }
-    });
-
     let on_remove = use_callback(move |oracle_id: Uuid| {
         spawn_write(async move {
             if authed
@@ -367,55 +433,11 @@ pub fn CommanderMaybeboard() -> Element {
         });
     });
 
-    let clear_maybeboard = use_callback(move |()| {
-        spawn_write(async move {
-            if authed
-                .run("clear_commander_maybeboard", |c, s| async move {
-                    c.clear_commander_maybeboard(&s).await
-                })
-                .await
-                .is_some()
-            {
-                if mounted.get() {
-                    list.clear();
-                }
-                toast.info(
-                    "Maybeboard cleared".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
-            }
-        });
-    });
-
-    // A printing swap is display only: the maybeboard is keyed by oracle, and
-    // a refetch returns the preferred printing. A Create deck after the swap
-    // carries the picked printing.
-    let mut expanded_for_save = expanded_card;
-    let on_printing_save = move |new_card: Card| {
-        let target = new_card.scryfall_data.oracle_id;
-        if target.is_some() {
-            expanded_for_save.set(Some(new_card.scryfall_data.id));
-            if let Some(slot) = entries
-                .write()
-                .iter_mut()
-                .find(|c| c.scryfall_data.oracle_id == target)
-            {
-                *slot = new_card;
-            }
-        }
-    };
-
-    // The Show pips narrow in memory, every picked color in the identity,
-    // then the applied filter, then its sort; saved order stands without
-    // one. The quick add input never narrows the list.
+    // The applied filter narrows the list, then its sort; saved order stands
+    // without one. The quick add input never narrows the list.
     let filtered = use_memo(move || -> Vec<Card> {
-        let colors = selected_colors();
-        let shown: Vec<Card> = entries()
-            .into_iter()
-            .filter(|c| commander_maybeboard::passes_pips(&c.scryfall_data.color_identity, &colors))
-            .collect();
         let applied = filter();
-        let mut shown = Cards::from(shown);
+        let mut shown = Cards::from(entries());
         if !applied.is_empty()
             && let Ok(criteria) = applied.build_criteria()
         {
@@ -424,37 +446,17 @@ pub fn CommanderMaybeboard() -> Element {
         let shown = Cards::from(sort().sorted(shown.into()));
         shown.sorted(applied.sort(), applied.direction()).into()
     });
-    let screen_keys = Callback::new(move |key: String| match screen_key(&key) {
-        Some(ScreenKey::QuickAdd) => focus_by_id(QUICK_ADD_ID),
-        Some(ScreenKey::Filter) => filter_open.set(true),
-        Some(ScreenKey::FilterByName) => components::open_at_name(filter_open),
-        None => {}
-    });
-    use_card_row_keys_and(
-        filtered,
-        expanded_card,
-        ShortcutsScreen::CommanderMaybeboard,
-        Some(screen_keys),
-    );
-    // The arrow keys and h, j, k and l move a cursor through the rows.
-    use_card_list_cursor();
     let filtered = filtered();
-    let colors = selected_colors();
     let has_entries = !entries().is_empty();
     let searching_catalog = query().trim().len() >= QUICK_ADD_MIN_CHARS;
     let results = shown_results();
     let lit = highlight();
 
     rsx! {
-        ScreenFrame {
-            title: "Commander maybeboard",
-            on_hint: move |()| {
-                let mut hint_open = hint_open;
-                hint_open.set(true);
-            },
             div {
-                class: "screen-content",
-                onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
+                class: "web-commanders-list",
+                // One of the screen's two cursor lists, which h and l cross between.
+                "data-cursor-list": "",
                 div { class: "flex-col web-maybeboard",
                     if is_loading() {
                         div { class: "chip-row",
@@ -468,7 +470,7 @@ pub fn CommanderMaybeboard() -> Element {
                                 }
                             }
                         }
-                        GhostShowRow {}
+                        GhostChipRow { label: 4, chips: vec![3] }
                         GhostChipRow { label: 4, chips: vec![12, 4, 10, 5, 9] }
                         div { class: "maybeboard-list card-group row-enter",
                             div { class: "card-group-header card-group-header-with-hint",
@@ -486,6 +488,8 @@ pub fn CommanderMaybeboard() -> Element {
                             GhostActionRow { label: 16, button: 5 }
                         }
                     } else {
+                        // The console's first row: Quick add.
+                        div { class: "web-list-console",
                         div { class: "quick-add",
                         div { class: "chip-row",
                             label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: QUICK_ADD_ID, "Quick add" }
@@ -551,30 +555,10 @@ pub fn CommanderMaybeboard() -> Element {
                             }
                         }
                         }
+                        }
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
-                            Chip {
-                                selected: colors.is_empty(),
-                                onclick: move |_| selected_colors.write().clear(),
-                                "All"
-                            }
-                            for color in Color::all() {
-                                Chip {
-                                    key: "{color.to_short_name()}",
-                                    selected: colors.contains(&color),
-                                    onclick: move |_| {
-                                        let mut picked = selected_colors.write();
-                                        if !picked.remove(&color) {
-                                            picked.insert(color);
-                                        }
-                                    },
-                                    i {
-                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                                        "aria-hidden": "true",
-                                    }
-                                    span { class: "sr-only", "{color.to_long_name()}" }
-                                }
-                            }
+                            // Art alone: colors come from the screen's filter.
                             Chip {
                                 selected: show_row_art(),
                                 onclick: move |_| show_row_art.toggle(),
@@ -622,7 +606,7 @@ pub fn CommanderMaybeboard() -> Element {
                                 }
                             },
                             if load_failed() {
-                                div { class: "card-row card-row-note", "Couldn't load your commander maybeboard" }
+                                div { class: "card-row card-row-note", "Couldn't load your maybeboard" }
                             } else if !has_entries {
                                 div { class: "card-row card-row-note", "No commanders" }
                             } else if filtered.is_empty() {
@@ -647,57 +631,6 @@ pub fn CommanderMaybeboard() -> Element {
                     }
                 }
             }
-            // Filter, the screen's action, floats at the bottom right as the
-            // dock's funnel, its dot on while a filter is set.
-            ActionDock {
-                DockFilter {
-                    label: "Filter",
-                    dot: filter::shows_dot(&filter.read()),
-                    onclick: move |()| filter_open.set(true),
-                }
-            }
-        }
-        OneTimeHintDialog { hint: OneTimeHint::CommanderMaybeboard, open: hint_open }
-        AlertDialog {
-            open: show_clear_dialog,
-            title: "Clear maybeboard",
-            actions: vec![
-                DialogAction::Dismiss("Cancel".into()),
-                DialogAction::Confirm {
-                    label: "Clear".into(),
-                    danger: true,
-                    on_confirm: clear_maybeboard,
-                },
-            ],
-            "Every commander on your maybeboard will be removed. This can't be undone."
-        }
-        HoverStackHost { stack: hover_stack }
-        CardOverlaysHost { overlays, on_printing_save }
-        OtagExamplesHost { examples }
-        CardFilterPanel {
-            open: filter_open,
-            filter,
-            config: SheetConfig::default(),
-            quiet_reset: true,
-            on_apply: move |applied: CardQueryBuilder| filter.set(applied),
-        }
-        // Commanders not saved yet: up saves one here, right starts a deck
-        // with it.
-        SwipeSelect {
-            open: swipe_open,
-            mode: SwipeMode::Commander(Format::Commander),
-            exclude_oracle_ids: Some(saved_oracles.into()),
-            starts_deck: true,
-            on_select: move |card: Card| {
-                swipe_open.set(false);
-                list.refetch();
-                create_with.call(card);
-            },
-            on_close: move |()| {
-                swipe_open.set(false);
-                list.refetch();
-            },
-        }
     }
 }
 
@@ -752,42 +685,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn q_focuses_quick_add_and_f_and_slash_open_the_filter_as_everywhere() {
-        assert_eq!(screen_key("q"), Some(ScreenKey::QuickAdd));
-        assert_eq!(screen_key("/"), Some(ScreenKey::FilterByName));
-        for byte in b' '..=b'~' {
-            let key = char::from(byte).to_string();
-            assert_eq!(
-                screen_key(&key) == Some(ScreenKey::Filter),
-                shortcuts::card_key(&key) == Some(CardKey::Filter),
-                "{key}"
-            );
-            assert_eq!(
-                screen_key(&key) == Some(ScreenKey::FilterByName),
-                shortcuts::card_key(&key) == Some(CardKey::FilterByName),
-                "{key}"
-            );
-        }
-    }
-
-    #[test]
-    fn shift_h_lists_the_filter_and_quick_add_keys_that_work_here() {
-        let listed: Vec<&str> = shortcuts::sheet_rows(&ShortcutsScreen::CommanderMaybeboard)
-            .into_iter()
-            .flat_map(|(keys, _)| keys.iter().copied())
-            .collect();
-        for key in ["f", "/", "q"] {
-            assert!(listed.contains(&key), "{key} is listed: {listed:?}");
-            assert!(screen_key(key).is_some(), "{key} works here");
-        }
-        for key in ["p", "i", "v", "d", "Enter", "Shift+H"] {
-            assert!(listed.contains(&key), "{key} is listed: {listed:?}");
-        }
-    }
-
-    #[test]
     fn a_pick_takes_focus_off_the_box_so_a_phone_s_keyboard_drops() {
-        let source = include_str!("commander_maybeboard.rs");
+        let source = include_str!("maybeboard.rs");
         let pick = source
             .split("let add_from_search = use_callback(move |card: Card| {")
             .nth(1)

@@ -10,7 +10,9 @@
 
 use std::future::Future;
 
-use sqlx::{PgTransaction, QueryBuilder, query_as};
+use sqlx::postgres::PgDatabaseError;
+use sqlx::{Acquire, PgTransaction, QueryBuilder, query_as};
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
@@ -24,12 +26,6 @@ use crate::outbound::sqlx::card::helpers::scryfall_data_fields::{
     self, BindCards, BindScryfallDataFields,
 };
 use crate::outbound::sqlx::card::models::DatabaseScryfallData;
-
-/// Postgres error substring used to filter noise from card-by-card fallback retries.
-///
-/// When a transaction is aborted, subsequent statements produce this error instead
-/// of the root cause, so these are silently skipped during error reporting.
-const POSTGRES_TX_ABORT_MESSAGE: &str = "current transaction is aborted";
 
 // == validation helpers ==
 
@@ -204,19 +200,108 @@ async fn upsert_card_by_card(
     zervice_metrics: &mut ZerviceMetrics,
 ) {
     for card in batch {
-        match card.single_upsert_with_tx(tx).await {
-            Ok(_) => {
+        match upsert_one_in_savepoint(card, tx).await {
+            Ok(()) => {
                 zervice_metrics.add_upserted_count(1);
             }
             Err(e) => {
-                // ignore tx abort messages as they are never root cause
-                if !e.to_string().contains(POSTGRES_TX_ABORT_MESSAGE) {
-                    let error = ErrorMetrics::new(card.id, &card.name, e.to_string());
-                    tracing::warn!("insertion failure => {}", error);
-                    zervice_metrics.add_error(error);
-                }
+                let error = ErrorMetrics::new(card.id, &card.name, e.to_string());
+                tracing::warn!("insertion failure => {}", error);
+                zervice_metrics.add_error(error);
             }
         }
+    }
+}
+
+/// Upserts `card` inside its own savepoint, so a failure rolls back only the card and leaves
+/// `tx` usable for the next one.
+async fn upsert_one_in_savepoint(
+    card: &ScryfallData,
+    tx: &mut PgTransaction<'_>,
+) -> Result<(), CreateCardError> {
+    let mut savepoint = tx.begin().await?;
+    match card.single_upsert_with_tx(&mut savepoint).await {
+        Ok(_) => {
+            savepoint.commit().await?;
+            Ok(())
+        }
+        Err(e) => {
+            savepoint.rollback().await?;
+            Err(label_clash(e, tx).await)
+        }
+    }
+}
+
+/// The `scryfall_data` columns a clash may name and be looked up by, each with its type, so the
+/// lookup compares in that type and its index serves it: each column Postgres holds unique, plus
+/// the store ids a clash could plausibly name.
+const CLASH_COLUMNS: &[(&str, &str)] = &[
+    ("id", "uuid"),
+    ("mtgo_id", "integer"),
+    ("mtgo_foil_id", "integer"),
+    ("arena_id", "integer"),
+    ("tcgplayer_id", "integer"),
+];
+
+/// The printing whose `column` holds `value`, as its id and name. The lookup runs in its own
+/// savepoint, so a failure, which reads as no holder, never aborts the sync's transaction.
+async fn fetch_holder(
+    tx: &mut PgTransaction<'_>,
+    column: &str,
+    kind: &str,
+    value: &str,
+) -> Option<(Uuid, String)> {
+    let mut savepoint = tx.begin().await.ok()?;
+    // The column and its type come from CLASH_COLUMNS, never from the error text.
+    let sql =
+        format!("SELECT id, name FROM scryfall_data WHERE {column} = CAST($1 AS {kind}) LIMIT 1");
+    let holder = sqlx::query_as(sqlx::AssertSqlSafe(sql))
+        .bind(value)
+        .fetch_optional(&mut *savepoint)
+        .await;
+    if let Ok(found) = holder {
+        savepoint.commit().await.ok()?;
+        found
+    } else {
+        savepoint.rollback().await.ok()?;
+        None
+    }
+}
+
+/// The column and value in a unique violation's detail, `Key (mtgo_id)=(777) already exists.`
+fn clash_of(detail: &str) -> Option<(&str, &str)> {
+    let rest = detail.strip_prefix("Key (")?;
+    let (column, rest) = rest.split_once(")=(")?;
+    let value = rest.strip_suffix(") already exists.")?;
+    Some((column, value))
+}
+
+/// Turns a unique violation into a [`CreateCardError::Clash`] naming the column, its value and
+/// the printing holding it. Any other error, or a detail it can't read, passes through.
+async fn label_clash(error: CreateCardError, tx: &mut PgTransaction<'_>) -> CreateCardError {
+    let CreateCardError::UniqueConstraintViolation(cause) = &error else {
+        return error;
+    };
+    let detail = cause
+        .downcast_ref::<sqlx::Error>()
+        .and_then(sqlx::Error::as_database_error)
+        .and_then(|db| db.try_downcast_ref::<PgDatabaseError>())
+        .and_then(PgDatabaseError::detail)
+        .map(ToOwned::to_owned);
+    let Some((column, value)) = detail.as_deref().and_then(clash_of) else {
+        return error;
+    };
+    let Some(&(column, kind)) = CLASH_COLUMNS.iter().find(|(c, _)| *c == column) else {
+        return error;
+    };
+    let holder = fetch_holder(tx, column, kind, value).await;
+    CreateCardError::Clash {
+        column: column.to_string(),
+        value: value.to_string(),
+        holder: holder.map_or_else(
+            || "another printing".to_string(),
+            |(id, name)| format!("{name} ({id})"),
+        ),
     }
 }
 
@@ -229,7 +314,15 @@ impl BatchUpsertWithTx for &[ScryfallData] {
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut cards: Vec<Card> = Vec::new();
         for chunk in self.chunks(batch_size) {
-            match chunk.bulk_upsert_with_tx(tx).await {
+            // The batch runs in a savepoint: a failure rolls back to it, so the card-by-card
+            // retry runs on a usable transaction.
+            let mut savepoint = tx.begin().await?;
+            let attempt = chunk.bulk_upsert_with_tx(&mut savepoint).await;
+            match &attempt {
+                Ok(_) => savepoint.commit().await?,
+                Err(_) => savepoint.rollback().await?,
+            }
+            match attempt {
                 Ok(upserted) => {
                     let upserted_count = upserted.len();
                     cards.extend(upserted);
@@ -324,7 +417,15 @@ impl BatchDeltaUpsertWithTx for &[ScryfallData] {
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut cards: Vec<Card> = Vec::new();
         for chunk in self.chunks(batch_size) {
-            match chunk.bulk_delta_upsert_with_tx(tx).await {
+            // The batch runs in a savepoint: a failure rolls back to it, so the card-by-card
+            // retry runs on a usable transaction.
+            let mut savepoint = tx.begin().await?;
+            let attempt = chunk.bulk_delta_upsert_with_tx(&mut savepoint).await;
+            match &attempt {
+                Ok(_) => savepoint.commit().await?,
+                Err(_) => savepoint.rollback().await?,
+            }
+            match attempt {
                 Ok((upserted, skipped)) => {
                     zervice_metrics
                         .add_upserted_count(zervice_metrics::count_column(upserted.len()));
@@ -338,5 +439,23 @@ impl BatchDeltaUpsertWithTx for &[ScryfallData] {
             }
         }
         Ok(cards)
+    }
+}
+
+#[cfg(test)]
+mod clash_tests {
+    use super::clash_of;
+
+    #[test]
+    fn a_unique_violation_detail_reads_as_its_column_and_value() {
+        assert_eq!(
+            clash_of("Key (mtgo_id)=(777) already exists."),
+            Some(("mtgo_id", "777"))
+        );
+        assert_eq!(
+            clash_of("Key (id)=(5a7e0000-0000-0000-0000-000000000002) already exists."),
+            Some(("id", "5a7e0000-0000-0000-0000-000000000002"))
+        );
+        assert_eq!(clash_of("Failing row contains (...)."), None);
     }
 }

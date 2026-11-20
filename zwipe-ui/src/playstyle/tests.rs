@@ -127,6 +127,33 @@ fn empty_identity_line_names_the_identity() {
 }
 
 #[test]
+fn an_empty_list_names_its_identity_only_when_nothing_of_it_is_held() {
+    let jeskai = [Red, White, Blue];
+    let none: [Named; 0] = [];
+    let held = [commander("Narset", &jeskai)];
+    assert_eq!(
+        suggested_empty_line(&none, Some(&jeskai)),
+        "No Jeskai commanders in your top 100",
+        "a Show identity with nothing held"
+    );
+    assert_eq!(
+        suggested_empty_line(&held, Some(&jeskai)),
+        "No commanders match",
+        "the identity holds commanders and the filter let none through"
+    );
+    assert_eq!(
+        suggested_empty_line(&held, None),
+        "No commanders match",
+        "All, narrowed to nothing by the filter, names no identity"
+    );
+    assert_eq!(
+        suggested_empty_line(&none, None),
+        "No commanders match",
+        "All is never 'colorless'"
+    );
+}
+
+#[test]
 fn a_single_color_is_its_pip_alone_and_others_are_named() {
     assert_eq!(identity_label(&[Blue]), None);
     assert_eq!(identity_label(&[White, Blue, Red]), Some("Jeskai"));

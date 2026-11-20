@@ -9,8 +9,9 @@ use serde::{Deserialize, Serialize};
 /// The most cards one lookup answers, one per card (oracle id).
 pub const LOOKUP_LIMIT: u32 = 30;
 
-/// The most characters a lookup's name keeps; longer than any card name in print.
-pub const MAX_LOOKUP_NAME_CHARS: usize = 100;
+/// The most characters a lookup's name keeps: well past the longest card name in print (141),
+/// and past what a search box takes, so anything longer is a request no client makes.
+pub const MAX_LOOKUP_NAME_CHARS: usize = 200;
 
 /// The most values each of a lookup's lists (types, colors, roles) may hold.
 pub const MAX_LOOKUP_CHIPS: usize = 5;
@@ -160,6 +161,14 @@ mod tests {
         );
         assert!(name("   ").unwrap().is_empty());
         assert_eq!(name("Lim-Dûl's Vault").unwrap().as_str(), "Lim-Dûl's Vault");
+    }
+
+    #[test]
+    fn the_longest_card_name_in_print_fits_with_room_to_spare() {
+        let longest = "Our Market Research Shows That Players Like Really Long Card Names So We Made this Card to Have the Absolute Longest Card Name Ever Elemental";
+        assert_eq!(longest.chars().count(), 141);
+        assert!(name(longest).is_ok());
+        assert_eq!(MAX_LOOKUP_NAME_CHARS, 200);
     }
 
     #[test]

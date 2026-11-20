@@ -90,12 +90,22 @@ async fn paging_sorting_and_every_other_search_field_are_refused(pool: sqlx::PgP
 }
 
 #[sqlx::test]
+async fn the_longest_card_name_in_print_is_looked_up(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let longest = "Our Market Research Shows That Players Like Really Long Card Names So We Made this Card to Have the Absolute Longest Card Name Ever Elemental";
+    let (status, answer) = app
+        .post(CARD_LOOKUP_ROUTE, json!({ "name": longest }), None)
+        .await;
+    assert_eq!(status, StatusCode::OK, "{answer}");
+}
+
+#[sqlx::test]
 async fn every_value_is_checked(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     for body in [
         json!({}),
         json!({ "name": "" }),
-        json!({ "name": "a".repeat(101) }),
+        json!({ "name": "a".repeat(201) }),
         json!({ "name": "bolt\u{0}" }),
         json!({ "name": "x", "types": ["A", "B", "C", "D", "E", "F"] }),
         json!({ "name": "x", "types": ["Gob%lin"] }),

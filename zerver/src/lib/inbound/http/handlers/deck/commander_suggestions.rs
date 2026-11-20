@@ -7,15 +7,16 @@ use serde::Deserialize;
 use zwipe_core::http::contracts::suggestions::{
     DEFAULT_SUGGESTION_LIMIT, HttpActivity, HttpActivityDay, HttpBuilderProfile,
     HttpClearedDismissals, HttpColorAffinity, HttpColorCards, HttpColorIdentityCount, HttpColorMap,
-    HttpColorPair, HttpCommanderSuggestion, HttpCommanderSuggestions, HttpDismissCommander,
-    HttpHardPass, HttpPlayStyleSummary, HttpProfileRole, HttpProfileTag, HttpRoleRates,
-    HttpSharedTag, HttpStaple, HttpSuggestionReasons, HttpSwipeOutcomes, HttpTagRates,
-    MAX_SUGGESTION_LIMIT,
+    HttpColorPair, HttpCommanderDeal, HttpCommanderDealPage, HttpCommanderSuggestion,
+    HttpCommanderSuggestions, HttpDismissCommander, HttpHardPass, HttpPlayStyleSummary,
+    HttpProfileRole, HttpProfileTag, HttpRoleRates, HttpSharedTag, HttpStaple,
+    HttpSuggestionReasons, HttpSwipeOutcomes, HttpTagRates, MAX_SUGGESTION_LIMIT,
 };
 
 use crate::domain::deck::models::deck::activity::{
     Activity, ActivityDay, HardPass, RoleRates, SwipeOutcomes, TagRates,
 };
+use crate::domain::deck::models::deck::commander_deal::{CommanderDeal, CommanderDealPage};
 use crate::domain::deck::models::deck::commander_suggestions::{
     BuilderProfile, ColorAffinity, ColorIdentityCount, ColorMap, CommanderDismissal,
     CommanderSuggestion, CommanderSuggestions, CommanderSuggestionsError,
@@ -53,6 +54,19 @@ impl From<CommanderSuggestions> for HttpCommanderSuggestions {
                 .collect(),
             deck_count: value.deck_count,
             profile: value.profile.map(HttpBuilderProfile::from),
+        }
+    }
+}
+
+impl From<CommanderDealPage> for HttpCommanderDealPage {
+    fn from(value: CommanderDealPage) -> Self {
+        Self {
+            suggestions: value
+                .suggestions
+                .into_iter()
+                .map(HttpCommanderSuggestion::from)
+                .collect(),
+            ranked_by: value.ranked_by,
         }
     }
 }
@@ -266,6 +280,26 @@ pub async fn get_commander_suggestions(
         .await
         .map_err(ApiError::from)
         .map(|suggestions| (StatusCode::OK, Json(suggestions.into())))
+}
+
+/// Returns one page of the merged commander ranking for the authenticated user, over every
+/// commander the body's filter matches that can lead a deck in its format. The limit is clamped
+/// and the exclusions cut as [`CommanderDeal`] reads them.
+///
+/// # Errors
+///
+/// Returns 422 for a malformed body and 500 on a database failure.
+pub async fn deal_commanders(
+    user: AuthenticatedUser,
+    State(state): State<AppState>,
+    Json(body): Json<HttpCommanderDeal>,
+) -> Result<(StatusCode, Json<HttpCommanderDealPage>), ApiError> {
+    state
+        .deck_service
+        .deal_commanders(user.id, CommanderDeal::from(body))
+        .await
+        .map_err(ApiError::from)
+        .map(|page| (StatusCode::OK, Json(HttpCommanderDealPage::from(page))))
 }
 
 /// Returns the authenticated user's deck count and color map, for Home's

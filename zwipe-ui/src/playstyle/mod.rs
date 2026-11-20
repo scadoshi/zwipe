@@ -18,6 +18,7 @@ use zwipe_core::http::contracts::suggestions::{
 };
 
 use crate::activity::Bar;
+use crate::commander::maybeboard::NO_MATCH;
 use crate::deck::decks_label;
 
 /// Suggestions the list shows; a shorter list after a dropped row refetches.
@@ -80,6 +81,18 @@ pub fn empty_identity_line(identity: &[Color]) -> String {
         _ => name.to_owned(),
     };
     format!("No {name} commanders in your top 100")
+}
+
+/// The line in place of an empty Suggested list. `of_identity` is the held list narrowed to the
+/// Show `identity` alone, before the screen's filter: the identity's own line,
+/// [`empty_identity_line`], when an identity is picked and nothing of it is held, else
+/// [`NO_MATCH`], since the filter let nothing through.
+#[must_use]
+pub fn suggested_empty_line<T>(of_identity: &[T], identity: Option<&[Color]>) -> String {
+    match identity {
+        Some(identity) if of_identity.is_empty() => empty_identity_line(identity),
+        Some(_) | None => NO_MATCH.to_owned(),
+    }
 }
 
 /// A staple's share of the user's decks for its row header, rounded half up, "67%". `None` with no decks to count against.

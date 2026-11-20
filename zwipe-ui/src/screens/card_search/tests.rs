@@ -167,7 +167,7 @@ fn emptying_the_box_goes_idle_and_drops_what_is_out() {
 #[test]
 fn a_name_no_card_could_have_matches_nothing_without_asking() {
     let mut state = State::new();
-    let long = "a".repeat(101);
+    let long = "a".repeat(MAX_LOOKUP_NAME_CHARS + 1);
     assert_eq!(state.update(Action::Type(long)), []);
     assert_eq!(state.status(), Status::NoMatch);
 }
@@ -470,5 +470,18 @@ fn each_destination_has_its_path() {
         }
         .path(),
         "/search?q=J%C3%B6tun%20%26%20co%3F%2F%23%2B"
+    );
+}
+
+#[test]
+fn the_box_takes_a_bit_more_than_any_card_name_and_never_more_than_the_server_keeps() {
+    assert_eq!(MAX_QUERY_CHARS, 150);
+    let mut state = State::new();
+    let full = "a".repeat(MAX_QUERY_CHARS);
+    let (_, lookup) = typed(&mut state, &full);
+    assert_eq!(
+        lookup.name().as_str().chars().count(),
+        MAX_QUERY_CHARS,
+        "a full box is looked up"
     );
 }
