@@ -66,6 +66,16 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://zwipe.net/guides/deck-card-list/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://zwipe.net/guides/card-search/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://zwipe.net/guides/synergy/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -82,6 +92,11 @@
   </url>
   <url>
     <loc>https://zwipe.net/guides/playstyle/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://zwipe.net/guides/commander-suggestions/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -142,6 +157,11 @@
   </url>
   <url>
     <loc>https://zwipe.net/guides/import-export/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://zwipe.net/guides/keyboard-shortcuts/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

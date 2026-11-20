@@ -80,7 +80,9 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                     session.set(Some(latest));
                 }
                 toast.success(
-                    format!("Check {typed} for a link to confirm the change"),
+                    components::carry_title(&format!(
+                        "Check {typed} for a link to confirm the change"
+                    )),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 );
                 new_email.set(String::new());

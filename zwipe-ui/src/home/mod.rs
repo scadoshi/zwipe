@@ -199,11 +199,13 @@ pub enum Greeting {
 }
 
 impl Greeting {
-    /// The toast to raise: an info for [`Greeting::Hello`] and a warning for [`Greeting::VerifyEmail`], both up for [`QUICK`](crate::toast::QUICK).
+    /// The toast to raise: an info for [`Greeting::Hello`] and a warning for [`Greeting::VerifyEmail`], both up for [`QUICK`](crate::toast::QUICK). The hello carries over to the next screen; the warning leaves with Home, which raises it again on every visit.
     #[must_use]
     pub fn toast(&self) -> Toast {
         match self {
-            Self::Hello(username) => Toast::quick(ToastKind::Info, format!("Hello, {username}!")),
+            Self::Hello(username) => {
+                Toast::quick(ToastKind::Info, format!("Hello, {username}!")).carried()
+            }
             Self::VerifyEmail => Toast::quick(ToastKind::Warning, VERIFY_EMAIL),
         }
     }
@@ -386,7 +388,7 @@ mod tests {
     fn the_greeting_toasts_are_the_apps_kind_band_and_words() {
         assert_eq!(
             Greeting::Hello("scotty".to_owned()).toast(),
-            Toast::new(ToastKind::Info, "Hello, scotty!", crate::toast::QUICK)
+            Toast::new(ToastKind::Info, "Hello, scotty!", crate::toast::QUICK).carried()
         );
         assert_eq!(
             Greeting::VerifyEmail.toast(),

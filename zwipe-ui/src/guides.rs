@@ -534,21 +534,28 @@ mod tests {
     }
 
     #[test]
-    fn the_web_reads_its_own_playstyle_and_the_app_today_s() {
+    fn each_surface_reads_its_own_suggested_commanders() {
+        let suggested = GUIDES
+            .iter()
+            .find(|g| g.slug == "commander-suggestions")
+            .unwrap();
+        let app = haystack(suggested, Surface::App);
+        let web = haystack(suggested, Surface::Web);
+        assert!(app.contains("open playstyle"), "{app}");
+        assert!(!app.contains("commanders in the nav"), "{app}");
+        assert!(web.contains("tap commanders in the nav"), "{web}");
+        assert!(!web.contains("open playstyle"), "{web}");
+        for read in [&app, &web] {
+            assert!(
+                read.contains("why this commander"),
+                "shared blocks stay on both"
+            );
+        }
         let playstyle = GUIDES.iter().find(|g| g.slug == "playstyle").unwrap();
-        let app = haystack(playstyle, Surface::App);
-        let web = haystack(playstyle, Surface::Web);
-        assert!(app.contains("why this commander"), "{app}");
-        assert!(!web.contains("why this commander"), "{web}");
-        assert!(
-            web.contains("suggested commanders are on the commanders screen"),
-            "{web}"
-        );
-        assert!(!app.contains("commanders screen"), "{app}");
-        assert!(
-            web.contains("what your decks say"),
-            "shared blocks stay on both"
-        );
-        assert!(app.contains("what your decks say"));
+        for surface in [Surface::App, Surface::Web] {
+            let read = haystack(playstyle, surface);
+            assert!(read.contains("what your decks say"), "{read}");
+            assert!(!read.contains("why this commander"), "{read}");
+        }
     }
 }

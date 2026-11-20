@@ -215,7 +215,7 @@ impl State {
                     .text()
                     .map(|text| Effect::Copy {
                         text,
-                        done: Toast::quick(ToastKind::Info, COPIED),
+                        done: Toast::quick(ToastKind::Info, COPIED).carried(),
                     })
                     .into_iter()
                     .collect();

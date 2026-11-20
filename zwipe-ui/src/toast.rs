@@ -3,11 +3,16 @@
 //!
 //! The three bands are orangui's, from orangui-core, so every client agrees
 //! on how long a toast lingers.
+//!
+//! A toast is about the screen it was raised on, and leaves when the user does
+//! ([`Life::Screen`]). The few that tell the user something they still need on
+//! the next screen carry over ([`Life::Carry`]): the sign-in hello, account and
+//! email news, a clone, an import, a copy, and every failure and block.
 
 use std::time::Duration;
 
 use chrono::{DateTime, TimeDelta, Utc};
-pub use orangui_core::toast::{LONG, NORMAL, QUICK};
+pub use orangui_core::toast::{LONG, NORMAL, QUICK, carry_title};
 
 use crate::confirm;
 
@@ -24,6 +29,16 @@ pub enum ToastKind {
     Error,
 }
 
+/// Whether a toast leaves with its screen or carries over to the next one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub enum Life {
+    /// It leaves, by its usual exit, as soon as the user leaves the screen it was raised on.
+    #[default]
+    Screen,
+    /// It lives out its own life on whatever screen comes next.
+    Carry,
+}
+
 /// One toast to raise.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Toast {
@@ -36,6 +51,9 @@ pub struct Toast {
     /// The swipe screens' quiet chip word, when it is not the one
     /// [`chip_word`](crate::confirm::chip_word) gives the text.
     pub chip: Option<&'static str>,
+    /// Whether it leaves with its screen, as every toast does unless it opts in with
+    /// [`carried`](Self::carried).
+    pub life: Life,
 }
 
 impl Toast {
@@ -47,6 +65,35 @@ impl Toast {
             text: text.into(),
             duration,
             chip: None,
+            life: Life::Screen,
+        }
+    }
+
+    /// The same toast, carried over to the next screen.
+    #[must_use]
+    pub fn carried(self) -> Self {
+        Self {
+            life: Life::Carry,
+            ..self
+        }
+    }
+
+    /// The title the client pushes to the toast stack: its words, behind orangui's carry mark
+    /// when it carries over, which the stack reads and never draws.
+    #[must_use]
+    pub fn title(&self) -> String {
+        match self.life {
+            Life::Screen => self.text.clone(),
+            Life::Carry => carry_title(&self.text),
+        }
+    }
+
+    /// [`title`](Self::title), taking the toast.
+    #[must_use]
+    pub fn into_title(self) -> String {
+        match self.life {
+            Life::Screen => self.text,
+            Life::Carry => carry_title(&self.text),
         }
     }
 
@@ -79,6 +126,14 @@ impl Toast {
     pub fn normal(kind: ToastKind, text: impl Into<String>) -> Self {
         Self::new(kind, text, NORMAL)
     }
+}
+
+/// The screen a route's `path` is, for the toast stack to tell when the user leaves it: the path
+/// alone, without its query or fragment. A deck's Cards layer (`?view=cards`) is the deck's own
+/// screen, so a toast about the deck stays while it opens.
+#[must_use]
+pub fn screen(path: &str) -> &str {
+    path.split(['?', '#']).next().unwrap_or(path)
 }
 
 /// What one screen effect raises, for [`keep_one`].
@@ -288,5 +343,64 @@ mod repeat_gate_tests {
         let mut gate = RepeatGate::new();
         assert!(gate.admit(OFFLINE, at(0), Duration::MAX));
         assert!(!gate.admit(OFFLINE, at(1), NORMAL), "still up 1s later");
+    }
+}
+
+#[cfg(test)]
+mod life_tests {
+    use orangui_core::toast::carried;
+
+    use super::*;
+    use crate::deck::create_gate;
+    use crate::deck::view::Done;
+    use crate::home::Greeting;
+
+    #[test]
+    fn a_toast_leaves_with_its_screen_unless_it_opts_in() {
+        let toast = Toast::quick(ToastKind::Success, "Filter applied");
+        assert_eq!(toast.life, Life::Screen);
+        assert_eq!(
+            toast.title(),
+            "Filter applied",
+            "a screen toast's title is its words"
+        );
+        let carried_over = toast.carried();
+        assert_eq!(carried_over.life, Life::Carry);
+        assert_eq!(carried(&carried_over.title()), Some("Filter applied"));
+    }
+
+    #[test]
+    fn the_hello_carries_and_home_s_verify_warning_leaves_with_home() {
+        assert_eq!(Greeting::Hello("ana".to_owned()).toast().life, Life::Carry);
+        assert_eq!(Greeting::VerifyEmail.toast().life, Life::Screen);
+    }
+
+    #[test]
+    fn a_clone_and_a_copied_link_carry_and_the_deck_s_own_news_leaves() {
+        assert_eq!(
+            Done::Cloned("Krenko 2".to_owned()).toast().life,
+            Life::Carry
+        );
+        assert_eq!(Done::LinkCopied.toast().life, Life::Carry);
+        for done in [Done::LinkDisabled, Done::SkipsCleared, Done::CardRemoved] {
+            assert_eq!(done.toast().life, Life::Screen, "{done:?}");
+        }
+    }
+
+    #[test]
+    fn the_deck_limit_block_carries() {
+        let Err(block) = create_gate(false, 1) else {
+            panic!("an unverified account at its limit is blocked");
+        };
+        assert_eq!(block.life, Life::Carry);
+    }
+
+    #[test]
+    fn a_screen_is_its_path_without_the_query() {
+        assert_eq!(screen("/decks/7?view=cards"), "/decks/7");
+        assert_eq!(screen("/decks/7"), screen("/decks/7?view=cards"));
+        assert_ne!(screen("/decks/7/add"), screen("/decks/7"));
+        assert_ne!(screen("/card/sol-ring/abc"), screen("/card/sol-ring"));
+        assert_eq!(screen("/guides#top"), "/guides");
     }
 }

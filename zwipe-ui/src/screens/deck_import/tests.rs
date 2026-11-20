@@ -274,7 +274,7 @@ fn an_import_with_cards_clears_undo_then_toasts_success() {
         effects,
         [
             Effect::ClearUndo(deck_id),
-            Effect::Toast(Toast::new(ToastKind::Success, "Imported 2 cards", QUICK)),
+            Effect::Toast(Toast::new(ToastKind::Success, "Imported 2 cards", QUICK).carried()),
         ]
     );
     assert!(!state.importing());
@@ -296,7 +296,7 @@ fn some_unresolved_lines_toast_info() {
         effects,
         [
             Effect::ClearUndo(deck_id),
-            Effect::Toast(Toast::new(ToastKind::Info, "Imported 1, 2 failed", QUICK)),
+            Effect::Toast(Toast::new(ToastKind::Info, "Imported 1, 2 failed", QUICK).carried()),
         ]
     );
 }
@@ -311,11 +311,9 @@ fn only_unresolved_lines_toast_an_error_and_keep_undo() {
     });
     assert_eq!(
         effects,
-        [Effect::Toast(Toast::new(
-            ToastKind::Error,
-            "1 card failed",
-            NORMAL
-        ))]
+        [Effect::Toast(
+            Toast::new(ToastKind::Error, "1 card failed", NORMAL).carried()
+        )]
     );
     assert_eq!(names(&state), Some((Vec::new(), vec!["Nope".to_owned()])));
 }
@@ -330,11 +328,9 @@ fn an_empty_import_toasts_no_cards_found() {
     });
     assert_eq!(
         effects,
-        [Effect::Toast(Toast::new(
-            ToastKind::Info,
-            "No cards found",
-            QUICK
-        ))]
+        [Effect::Toast(
+            Toast::new(ToastKind::Info, "No cards found", QUICK).carried()
+        )]
     );
 }
 

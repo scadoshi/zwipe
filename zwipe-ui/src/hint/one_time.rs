@@ -29,6 +29,19 @@ pub enum SwipeSelectMode {
     },
 }
 
+impl SwipeSelectMode {
+    /// The overlay's title on its screen: the Commander maybeboard's swipe takes that screen's
+    /// name, the suggested ranking its own, and a command-zone pick the overlay's.
+    #[must_use]
+    pub fn title(self) -> &'static str {
+        match self {
+            Self::Picking(_) => crate::screens::swipe_select::TITLE,
+            Self::StartsDeck => crate::screens::commander_maybeboard::TITLE,
+            Self::Suggested { .. } => crate::screens::swipe_select::SUGGESTED_TITLE,
+        }
+    }
+}
+
 /// The building-a-deck hint, which Create and Edit share.
 fn building_a_deck() -> Vec<Block> {
     vec![
@@ -601,7 +614,7 @@ pub fn swipe_select_on(mode: SwipeSelectMode, surface: Surface) -> HintContent {
                 icon_key(KeyIcon::Funnel),
                 text(" narrows by color or anything else"),
             ]));
-            "Swipe select"
+            mode.title()
         }
     };
     content(title, blocks)
@@ -639,7 +652,9 @@ fn commanders_hint() -> HintContent {
             ]),
             bullet(vec![
                 key("Suggested"),
-                text(" ranks your top 10 against all your decks, best fit first"),
+                text(" ranks the 10 commanders that fit all your decks best, and "),
+                key("Show more"),
+                text(" adds 10 more, once"),
             ]),
             bullet(vec![
                 key("Create deck"),
@@ -761,6 +776,16 @@ mod tests {
     use crate::deck::form::Slot;
 
     #[test]
+    fn the_maybeboard_s_swipe_is_titled_commander_maybeboard() {
+        assert_eq!(SwipeSelectMode::StartsDeck.title(), "Commander maybeboard");
+        assert_eq!(SwipeSelectMode::Picking("partner").title(), "Swipe select");
+        assert_eq!(
+            SwipeSelectMode::Suggested { has_filter: true }.title(),
+            "Suggested commanders"
+        );
+    }
+
+    #[test]
     fn every_hint_but_swipe_select_has_its_dialog() {
         for hint in OneTimeHint::ALL {
             let content = content_for(hint);
@@ -833,7 +858,7 @@ mod tests {
     #[test]
     fn from_the_maybeboard_left_skips_up_saves_and_right_starts_a_deck() {
         let hint = swipe_select(SwipeSelectMode::StartsDeck);
-        assert_eq!(hint.title, "Swipe select");
+        assert_eq!(hint.title, "Commander maybeboard", "the screen's own title");
         let lines: Vec<String> = hint.blocks.iter().take(4).map(Block::plain).collect();
         assert_eq!(
             lines,

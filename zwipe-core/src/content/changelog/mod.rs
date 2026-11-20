@@ -60,6 +60,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, card search results work from the keyboard and have a hint",
         "On the web, card search results show the nav when you're logged out",
         "Card searches on zwipe.net count toward Searches run on Home",
+        "New guides for card search, suggested commanders, a deck's card list and keyboard shortcuts",
+        "Toasts about a screen leave when you do; the ones you still need follow you to the next screen",
     ],
 }];
 

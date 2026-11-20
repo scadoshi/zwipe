@@ -7,7 +7,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -18,10 +18,12 @@ use zwipe_core::domain::deck::Format;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::suggestions::{HttpCommanderSuggestion, HttpSuggestionReasons};
 
-use crate::commander::swipe_select;
+use crate::commander::deal::{self, Door};
+use crate::commander::{maybeboard, swipe_select};
 use crate::deck::form;
 use crate::generation::{Generation, Ticket};
 use crate::playstyle;
+use crate::screens::add_cards::Source;
 use crate::stack::{CardStack, Direction, NO_CARDS_LEFT, StackAction};
 use crate::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
 use crate::toast::{Line, Toast, ToastKind, keep_one};
@@ -169,6 +171,21 @@ pub enum Action {
         pile: SuggestedPile,
         /// Oracle ids kept out of searched pages: the host's own saves.
         excluded: HashSet<Uuid>,
+        /// Whether the overlay has the From chip (the Commander maybeboard's swipe), which
+        /// switches between the search and the user's saved commanders, starting on the search
+        /// at every open. Without it the overlay always searches.
+        from: bool,
+    },
+    /// The From chip was tapped: the overlay switches to the other [`Source`], parking this one's
+    /// filter and taking back the other's, and deals again. The client shows [`State::filter`]
+    /// in its filter sheet after.
+    PickSource,
+    /// The user's commander maybeboard arrived for the load holding `ticket`.
+    MaybeboardLoaded {
+        /// The ticket from the [`Effect::LoadMaybeboard`] this answers.
+        ticket: Ticket,
+        /// Every saved commander, as the server served them.
+        saved: Vec<Card>,
     },
     /// The filter sheet applied `filter`: the pile is dealt again from the top.
     Filter(CardQueryBuilder),
@@ -228,6 +245,12 @@ pub enum Effect {
         /// The search.
         query: Box<CardQuery>,
     },
+    /// Loads the user's commander maybeboard and answers with [`Action::MaybeboardLoaded`] or
+    /// [`Action::Failed`]. A failure is logged only; the pile says so in place of the card.
+    LoadMaybeboard {
+        /// The ticket to hand back with the reply.
+        ticket: Ticket,
+    },
     /// Dismisses this oracle id's commander for a week. Nothing comes back; a failure is logged only.
     DismissCommander(Uuid),
     /// Lifts a dismissal. Nothing comes back; a failure is reported without a toast.
@@ -268,6 +291,7 @@ fn toast_line(effect: &Effect) -> Option<Line<'_>> {
         Effect::OfferHint(_)
         | Effect::SearchCommanders { .. }
         | Effect::LoadMore { .. }
+        | Effect::LoadMaybeboard { .. }
         | Effect::DismissCommander(_)
         | Effect::UndismissCommander(_)
         | Effect::AddMaybeboardCard { .. }
@@ -357,6 +381,14 @@ pub struct State {
     waiting: Vec<(Ticket, Pending)>,
     generation: Generation,
     hint: HintOffer,
+    /// Whether the overlay has the From chip.
+    from: bool,
+    /// The pile the From chip names; always [`Source::Search`] without the chip.
+    source: Source,
+    /// Each source's filter, parked while the other is picked.
+    parked: HashMap<Source, CardQueryBuilder>,
+    /// The saved commanders' pile's line in place of a card, once it loaded or failed.
+    maybe_note: Option<&'static str>,
 }
 
 impl State {
@@ -392,7 +424,33 @@ impl State {
                 filter,
                 pile,
                 excluded,
-            } => self.open(mode, filter, pile, excluded),
+                from,
+            } => {
+                self.from = from;
+                if !from {
+                    self.source = Source::Search;
+                }
+                // Every fresh open starts on Search: a pile left on Maybe parks there with the
+                // filter the host still shows, and Search deals afresh under its own.
+                if self.source == Source::Maybeboard {
+                    self.parked.insert(Source::Maybeboard, filter);
+                    self.source = Source::Search;
+                    self.dealt = None;
+                    let search = self.parked.remove(&Source::Search).unwrap_or_default();
+                    return self.open(mode, search, pile, excluded);
+                }
+                self.open(mode, filter, pile, excluded)
+            }
+            Action::PickSource => self.pick_source(),
+            Action::MaybeboardLoaded { ticket, saved } => {
+                if self.take(ticket) == Some(Pending::Search) {
+                    let count = saved.len();
+                    let matched = deal::maybeboard_matching(saved, &self.filter, self.maybe_door());
+                    self.maybe_note = maybeboard::pile_note(Some((count, matched.len())));
+                    self.stack.replace(matched);
+                }
+                Vec::new()
+            }
             Action::Filter(filter) => {
                 self.filter = filter;
                 self.deal()
@@ -412,11 +470,12 @@ impl State {
             }
             Action::Found { ticket, cards } => self.found(ticket, cards),
             Action::Failed { ticket } => {
-                if matches!(
-                    self.take(ticket),
-                    Some(Pending::Search | Pending::More { .. })
-                ) {
-                    self.failed = true;
+                match self.take(ticket) {
+                    Some(Pending::Search) if self.on_maybe() => {
+                        self.maybe_note = maybeboard::pile_note(None);
+                    }
+                    Some(Pending::Search | Pending::More { .. }) => self.failed = true,
+                    _ => {}
                 }
                 Vec::new()
             }
@@ -483,7 +542,13 @@ impl State {
         self.offset = 0;
         self.exhausted = false;
         self.failed = false;
+        self.maybe_note = None;
         self.dealt = Some(mode.clone());
+        if self.on_maybe() {
+            self.exhausted = true;
+            let ticket = self.wait(Pending::Search);
+            return vec![Effect::LoadMaybeboard { ticket }];
+        }
         if mode == Mode::Suggested {
             self.exhausted = true;
             self.suggestions.clone_from(&self.pile.suggestions);
@@ -605,7 +670,7 @@ impl State {
         let Some(mode) = self.mode.clone() else {
             return Vec::new();
         };
-        if mode == Mode::Suggested {
+        if mode == Mode::Suggested || self.on_maybe() {
             return Vec::new();
         }
         let Some(query) = self.query(&mode, self.offset) else {
@@ -705,6 +770,35 @@ impl State {
         effects
     }
 
+    /// Switches the From chip to the other source: parks this one's filter, takes back the
+    /// other's (none the first time), and deals again.
+    fn pick_source(&mut self) -> Vec<Effect> {
+        if !self.from {
+            return Vec::new();
+        }
+        let to = self.source.toggled();
+        let leaving = std::mem::replace(
+            &mut self.filter,
+            self.parked.remove(&to).unwrap_or_default(),
+        );
+        self.parked.insert(self.source, leaving);
+        self.source = to;
+        self.deal()
+    }
+
+    /// Whether the overlay deals the user's saved commanders.
+    fn on_maybe(&self) -> bool {
+        self.from && self.source == Source::Maybeboard
+    }
+
+    /// The door the saved commanders are matched under: deck creation in the mode's format.
+    fn maybe_door(&self) -> Door {
+        match self.mode {
+            Some(Mode::Commander(format)) => Door::DeckCreation(format),
+            _ => Door::DeckCreation(Format::Commander),
+        }
+    }
+
     /// The search for `mode` from `offset`: the filter with the mode's constraint, no tokens and one page. No sort is pinned, so a sortless filter gets the server's popularity order.
     fn query(&self, mode: &Mode, offset: u32) -> Option<CardQuery> {
         let mut builder = self.filter.clone();
@@ -784,6 +878,10 @@ impl State {
                 .as_deref()
                 .map(playstyle::empty_identity_line);
         }
+        if self.on_maybe() {
+            let empty = self.stack.is_empty() && self.status() == Status::Empty;
+            return self.maybe_note.filter(|_| empty).map(str::to_owned);
+        }
         let dealt_nothing =
             self.mode.is_some() && self.stack.is_empty() && self.status() == Status::Empty;
         dealt_nothing.then(|| empty_pile_line(self.noun(), filter_lit(&self.filter)))
@@ -820,7 +918,19 @@ impl State {
     /// Whether an up swipe saves, so the client offers it.
     #[must_use]
     pub fn can_save(&self) -> bool {
-        self.mode.as_ref().is_some_and(Mode::saves)
+        !self.on_maybe() && self.mode.as_ref().is_some_and(Mode::saves)
+    }
+
+    /// The pile the From chip names, where the overlay has the chip.
+    #[must_use]
+    pub fn source(&self) -> Option<Source> {
+        self.from.then_some(self.source)
+    }
+
+    /// The filter the pile is dealt under, which the client's filter sheet shows.
+    #[must_use]
+    pub fn filter(&self) -> &CardQueryBuilder {
+        &self.filter
     }
 
     /// The cards a swipe stack draws: up to [`crate::stack::STACK_DEPTH`] from the top one.

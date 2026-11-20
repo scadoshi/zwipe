@@ -22,6 +22,19 @@ pub const NO_MATCH: &str = "No commanders match";
 /// The empty line when the maybeboard failed to load.
 pub const LOAD_FAILED: &str = "Couldn't load your commander maybeboard";
 
+/// The line a pile of saved commanders shows in place of a card: [`LOAD_FAILED`] when the
+/// maybeboard didn't load (`None`), else from how many are `saved` and how many of them `matched`,
+/// [`NO_COMMANDERS`] or [`NO_MATCH`]. `None` with cards to swipe.
+#[must_use]
+pub fn pile_note(loaded: Option<(usize, usize)>) -> Option<&'static str> {
+    match loaded {
+        None => Some(LOAD_FAILED),
+        Some((0, _)) => Some(NO_COMMANDERS),
+        Some((_, 0)) => Some(NO_MATCH),
+        Some(_) => None,
+    }
+}
+
 /// What the saved commanders sort on.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SortBy {

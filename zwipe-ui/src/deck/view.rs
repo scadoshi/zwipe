@@ -233,7 +233,15 @@ impl Done {
             }
             Self::CardRemoved => "Card removed".to_owned(),
         };
-        Toast::quick(ToastKind::Info, text)
+        let toast = Toast::quick(ToastKind::Info, text);
+        match self {
+            Self::Cloned(_) | Self::LinkCopied => toast.carried(),
+            Self::LinkDisabled
+            | Self::SkipsCleared
+            | Self::QuantitySet(_)
+            | Self::CommanderCleared(_)
+            | Self::CardRemoved => toast,
+        }
     }
 }
 
@@ -378,9 +386,11 @@ mod tests {
             (Done::CardRemoved, "Card removed"),
         ];
         for (done, text) in cases {
+            let toast = Toast::new(ToastKind::Info, text, QUICK);
+            let carries = matches!(done, Done::Cloned(_) | Done::LinkCopied);
             assert_eq!(
                 done.toast(),
-                Toast::new(ToastKind::Info, text, QUICK),
+                if carries { toast.carried() } else { toast },
                 "{done:?}"
             );
         }

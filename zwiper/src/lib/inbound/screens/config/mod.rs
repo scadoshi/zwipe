@@ -230,7 +230,10 @@ pub fn Config() -> Element {
             }
             Err(e) => {
                 tracing::error!("failed to set app icon: {e}");
-                toast.error(APP_ICON_FAILED.to_owned(), ToastOptions::default());
+                toast.error(
+                    components::carry_title(APP_ICON_FAILED),
+                    ToastOptions::default(),
+                );
             }
         }
     };

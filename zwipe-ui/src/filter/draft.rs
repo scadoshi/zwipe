@@ -111,9 +111,9 @@ impl FilterDraft {
         catalog: &mut Catalog,
         now: DateTime<Utc>,
     ) -> (Self, Opened) {
-        let toast = catalog
-            .any_public_failed()
-            .then(|| Toast::normal(ToastKind::Warning, "Filter lists didn't load, trying again"));
+        let toast = catalog.any_public_failed().then(|| {
+            Toast::normal(ToastKind::Warning, "Filter lists didn't load, trying again").carried()
+        });
         let fetch = catalog.claim(config.sources.needs(), now);
         let opened = Opened {
             hint: OneTimeHint::Filter,

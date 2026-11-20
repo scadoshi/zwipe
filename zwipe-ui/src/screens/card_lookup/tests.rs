@@ -499,7 +499,7 @@ fn share_copies_the_name_s_link_or_the_printing_s() {
         state.update(Action::Share),
         vec![Effect::Copy {
             text: format!("{APP_BASE}/card/delver-of-secrets-insectile-aberration"),
-            done: Toast::new(ToastKind::Info, LINK_COPIED, QUICK),
+            done: Toast::new(ToastKind::Info, LINK_COPIED, QUICK).carried(),
         }],
         "the full name's link, not the alias it came in on"
     );

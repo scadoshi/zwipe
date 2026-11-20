@@ -128,7 +128,10 @@ impl Restorer {
             let fresh = match ensure_fresh(session, client).await {
                 Ok(fresh) => fresh,
                 Err(e) => {
-                    toast.error(e.to_user_message(), ToastOptions::default());
+                    toast.error(
+                        components::carry_title(&e.to_user_message()),
+                        ToastOptions::default(),
+                    );
                     if mounted.get() {
                         stack.write().cancel_entering();
                     }
@@ -159,7 +162,10 @@ impl Restorer {
                             .await
                         {
                             tracing::warn!("undo flag (update deck card) failed: {e}");
-                            toast.error(e.to_user_message(), ToastOptions::default());
+                            toast.error(
+                                components::carry_title(&e.to_user_message()),
+                                ToastOptions::default(),
+                            );
                             if mounted.get()
                                 && let Some(entry) = entries
                                     .write()
@@ -173,7 +179,10 @@ impl Restorer {
                 }
                 Err(e) => {
                     tracing::warn!("undo failed: {e}");
-                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
+                    toast.error(
+                        components::carry_title(undo::UNDO_FAILED),
+                        ToastOptions::default(),
+                    );
                     if let Some(entry) = taken {
                         undo.write().push(deck_id, entry);
                     }
@@ -418,7 +427,10 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     let fresh = match ensure_fresh(session, client).await {
                         Ok(fresh) => fresh,
                         Err(e) => {
-                            toast.error(e.to_user_message(), ToastOptions::default());
+                            toast.error(
+                                components::carry_title(&e.to_user_message()),
+                                ToastOptions::default(),
+                            );
                             if mounted.get() {
                                 stack.write().cancel_entering();
                             }
@@ -460,14 +472,20 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                                         }
                                     }
                                     Err(e) => {
-                                        toast.error(e.to_user_message(), ToastOptions::default());
+                                        toast.error(
+                                            components::carry_title(&e.to_user_message()),
+                                            ToastOptions::default(),
+                                        );
                                     }
                                 }
                             }
                         }
                         Err(e) => {
                             tracing::warn!("undo failed: {e}");
-                            toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
+                            toast.error(
+                                components::carry_title(undo::UNDO_FAILED),
+                                ToastOptions::default(),
+                            );
                             if let Some(entry) = taken {
                                 undo.write().push(deck_id, entry);
                             }

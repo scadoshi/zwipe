@@ -99,7 +99,7 @@ pub fn change_link_sent(address: &str) -> String {
     format!("Check {address} for a new link")
 }
 
-/// The toast after the Pending row's refresh, which waited on `waited_for`, found `user`: the change went through, it still waits, or its link expired unused.
+/// The toast after the Pending row's refresh, which waited on `waited_for`, found `user`: the change went through, it still waits, or its link expired unused. The first two carry over to the next screen; the expired link's line is about the Email row and leaves with the screen.
 #[must_use]
 pub fn pending_check_toast(waited_for: &str, user: &User) -> Toast {
     if let Some(pending) = user.pending_email.as_ref() {
@@ -107,8 +107,9 @@ pub fn pending_check_toast(waited_for: &str, user: &User) -> Toast {
             ToastKind::Info,
             format!("Not confirmed yet. Check {pending}"),
         )
+        .carried()
     } else if user.email.as_ref() == waited_for {
-        Toast::normal(ToastKind::Success, format!("Email changed to {waited_for}"))
+        Toast::normal(ToastKind::Success, format!("Email changed to {waited_for}")).carried()
     } else {
         Toast::normal(ToastKind::Info, CHANGE_LINK_EXPIRED)
     }
@@ -651,7 +652,8 @@ impl State {
                 let toast = Toast::normal(
                     ToastKind::Success,
                     format!("Check {typed} for a link to confirm the change"),
-                );
+                )
+                .carried();
                 self.changed(Sheet::Email, toast)
             }
             Action::PasswordChanged { ticket } => self.password_changed(ticket),
@@ -725,7 +727,7 @@ impl State {
                 let toast = if user.email_verified_at.is_some() {
                     Toast::normal(ToastKind::Success, EMAIL_VERIFIED)
                 } else {
-                    Toast::normal(ToastKind::Info, NOT_VERIFIED)
+                    Toast::normal(ToastKind::Info, NOT_VERIFIED).carried()
                 };
                 self.user = Some(user);
                 vec![Effect::Toast(toast)]
@@ -763,7 +765,9 @@ impl State {
             }
             None => message,
         };
-        vec![Effect::Toast(Toast::normal(ToastKind::Error, text))]
+        vec![Effect::Toast(
+            Toast::normal(ToastKind::Error, text).carried(),
+        )]
     }
 
     fn failed(&mut self, ticket: Ticket) {
@@ -880,7 +884,8 @@ impl State {
         let toast = match sent {
             Sent::Out => Toast::normal(ToastKind::Success, text),
             Sent::Limited => Toast::normal(ToastKind::Info, RESEND_LIMITED),
-        };
+        }
+        .carried();
         let wait = self.tickets.next_ticket();
         let count = cooldown.get_or_insert_with(|| Countdown::held(timing::RESEND_COOLDOWN));
         count.wait = Some(wait);
@@ -963,10 +968,9 @@ impl State {
         };
         *self.forms.get_mut(Sheet::Password) = Form::default();
         vec![
-            Effect::Toast(Toast::normal(
-                ToastKind::Success,
-                format!("{RESET_LINK_SENT} {email}"),
-            )),
+            Effect::Toast(
+                Toast::normal(ToastKind::Success, format!("{RESET_LINK_SENT} {email}")).carried(),
+            ),
             Effect::CloseSheet(Sheet::Password),
         ]
     }

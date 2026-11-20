@@ -23,6 +23,13 @@ pub const LOAD_FAILED: &str = "Couldn't load the dictionary. Close it and try ag
 /// The toast raised when the catalog fails with nothing cached while the dictionary is up.
 pub const LOAD_FAILED_TOAST: &str = "Couldn't load the Oracle tags dictionary";
 
+/// The toast when the dictionary's tags fail to load: [`LOAD_FAILED_TOAST`], an error that carries
+/// over to the next screen, as every failure does.
+#[must_use]
+pub fn load_failed_toast() -> Toast {
+    Toast::normal(ToastKind::Error, LOAD_FAILED_TOAST).carried()
+}
+
 /// A row's stand-in for a tag with no description.
 pub const NO_DESCRIPTION: &str = "No description yet";
 
@@ -194,10 +201,7 @@ impl State {
                 effects
             }
             Action::CatalogFailed => {
-                vec![Effect::Toast(Toast::normal(
-                    ToastKind::Error,
-                    LOAD_FAILED_TOAST,
-                ))]
+                vec![Effect::Toast(load_failed_toast())]
             }
             Action::Search(text) => {
                 self.query = text;

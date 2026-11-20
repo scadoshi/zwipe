@@ -167,6 +167,8 @@ fn App() -> Element {
     let upgrade_required = session_upkeep::spawn_upkeeper();
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
+    // The screen the toast stack is told about, moved as each route lands.
+    let screen = use_signal(String::new);
     // The session's writes whose answer was lost, for every screen's run_write.
     use_context_provider(|| Signal::new(zwipe_ui::write_repeat::Unconfirmed::default()));
     // Closed until the splash starts to fade; the entrances wait on it.
@@ -219,7 +221,8 @@ fn App() -> Element {
             } else {
                 ToastStack {
                     default_duration: components::TOAST_NORMAL,
-                    Router::<Router> {}
+                    screen: Some(ReadSignal::from(screen)),
+                    Router::<Router> { config: move |()| components::moving_screen(screen) }
                     // App-root receiver for on-demand "?" hints.
                     HintHost {}
                     // The menu's Themes sheet, outside every header.

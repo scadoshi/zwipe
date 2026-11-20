@@ -118,7 +118,10 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     || e.to_user_message(),
                     |_| write_repeat::PASSWORD_UNCONFIRMED.to_owned(),
                 );
-                toast.error(text, ToastOptions::default().duration(TOAST_NORMAL));
+                toast.error(
+                    components::carry_title(&text),
+                    ToastOptions::default().duration(TOAST_NORMAL),
+                );
             } else {
                 toast.success(
                     "Password changed".to_string(),
@@ -147,7 +150,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
             match client.request_password_reset(request).await {
                 Ok(()) => {
                     toast.success(
-                        format!("{RESET_LINK_SENT} {email}"),
+                        components::carry_title(&format!("{RESET_LINK_SENT} {email}")),
                         ToastOptions::default().duration(TOAST_NORMAL),
                     );
                     open.set(false);
@@ -155,7 +158,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                 Err(e) => {
                     tracing::warn!("password reset request failed: {e}");
                     toast.error(
-                        e.to_user_message(),
+                        components::carry_title(&e.to_user_message()),
                         ToastOptions::default().duration(TOAST_NORMAL),
                     );
                 }
