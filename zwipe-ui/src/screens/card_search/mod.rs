@@ -8,7 +8,8 @@
 //!
 //! Typing waits [`timing::CARD_SEARCH_DEBOUNCE`] for the user to rest, then sends one lookup.
 //! Every keystroke takes a new ticket, so only the last keystroke's wait sends and only the
-//! newest lookup's answer shows. An answer lists up to [`LOOKUP_LIMIT`] cards. A rate-limited
+//! newest lookup's answer shows. An answer shows its first [`CHIP_LIMIT`] cards as chips, and
+//! Enter opens the results page with every card it matches. A rate-limited
 //! lookup waits out the server's `Retry-After` ([`timing::CARD_SEARCH_RATE_LIMIT_WAIT`] when it
 //! can't be read), then looks up whatever the box holds by then.
 //!
@@ -47,6 +48,9 @@ pub const NO_MATCH: &str = "No cards match";
 pub const RATE_LIMITED: &str = "Too many searches, retrying in a moment";
 /// The line when a lookup failed, beside Retry.
 pub const FAILED: &str = "Couldn't search";
+
+/// How many of an answer's cards show as chips under the box, in the answer's order.
+pub const CHIP_LIMIT: usize = 10;
 
 /// What the bar shows under the box.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
@@ -221,7 +225,7 @@ impl State {
         self.status
     }
 
-    /// The last answer's cards, at most [`LOOKUP_LIMIT`], while [`Status::Results`] shows.
+    /// The last answer's first [`CHIP_LIMIT`] cards, while [`Status::Results`] shows.
     #[must_use]
     pub fn results(&self) -> &[Card] {
         if self.status == Status::Results {
@@ -251,7 +255,7 @@ impl State {
             }
             Action::Loaded { ticket, cards } => {
                 if self.tickets.is_current(ticket) && self.status == Status::Loading {
-                    self.results = cards.into_iter().take(limit()).collect();
+                    self.results = cards.into_iter().take(CHIP_LIMIT).collect();
                     self.highlight = (self.results.len() == 1).then_some(0);
                     self.status = if self.results.is_empty() {
                         Status::NoMatch

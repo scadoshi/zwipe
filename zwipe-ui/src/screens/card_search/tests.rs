@@ -91,7 +91,7 @@ fn an_answer_shows_its_cards_and_none_says_so() {
 }
 
 #[test]
-fn results_stop_at_the_lookup_limit() {
+fn the_first_ten_of_an_answer_show_and_enter_opens_them_all() {
     let mut state = State::new();
     let (ticket, _) = typed(&mut state, "a");
     let many: Vec<Card> = (0..LOOKUP_LIMIT + 5)
@@ -101,7 +101,18 @@ fn results_stop_at_the_lookup_limit() {
         ticket,
         cards: many,
     });
-    assert_eq!(state.results().len(), 30);
+    let shown: Vec<&str> = state
+        .results()
+        .iter()
+        .map(|c| c.scryfall_data.name.as_str())
+        .collect();
+    let first_ten: Vec<String> = (0..10).map(|i| format!("Card {i}")).collect();
+    assert_eq!(
+        shown, first_ten,
+        "the chips are the answer's first ten, in order"
+    );
+    assert_eq!(CHIP_LIMIT, 10);
+    assert_eq!(state.update(Action::Enter), opens_results("a"));
 }
 
 #[test]
