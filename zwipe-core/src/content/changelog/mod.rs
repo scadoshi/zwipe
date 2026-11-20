@@ -73,6 +73,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Undo right after a + or - on a card takes it back, even before it saves",
         "Card pages, one for every card with its image, details, prices, tags, stats and printings, open without logging in",
         "Card search opens a card or a page of matches from the nav, Home and Log in on a phone, and zwipe.net",
+        "On a phone, Send to opens as a side drawer instead of covering the screen",
     ],
 }];
 
