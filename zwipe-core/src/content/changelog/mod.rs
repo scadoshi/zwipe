@@ -53,6 +53,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On Android, Send to, Oracle tag examples and the update screen show their header below the status bar",
         "On a card's page, tapping a tag under a card role opens its description and example cards",
         "A toast stamps down harder as it lands, coming in big and settling with a small bounce",
+        "Commanders, a new screen on the web with your commander maybeboard and suggested commanders side by side",
     ],
 }];
 
