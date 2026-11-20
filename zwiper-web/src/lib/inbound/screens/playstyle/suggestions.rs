@@ -490,7 +490,7 @@ pub(crate) fn SuggestedFold(
             if !exhausted() && !entries.read().is_empty() {
                 button {
                     r#type: "button",
-                    class: "chip changelog-more",
+                    class: "chip changelog-more card-list-more",
                     onclick: move |_| show_more.call(()),
                     "Show more"
                 }
