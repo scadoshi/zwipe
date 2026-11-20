@@ -3,11 +3,15 @@
 
 use std::collections::HashSet;
 
-use components::{BarChart, BarOrientation, ColorBars, ColorsEmpty, DeckFold, OtagDef, RoleTags};
+use components::{
+    BarChart, BarOrientation, ColorBars, ColorsEmpty, DataBar, DeckFold, OtagDef, RoleTags,
+};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpBuilderProfile;
-use zwipe_ui::playstyle::{SummaryValue, TagRow, profile_summary, role_bars, role_tags, tag_rows};
+use zwipe_ui::playstyle::{
+    SummaryValue, TagBars, TagRow, profile_summary, role_bars, role_tags, tag_rows,
+};
 use zwipe_ui::screens::playstyle::{SUMMARY_DECKS, SUMMARY_TOP_COLOR, SUMMARY_TOP_COLORS};
 
 use super::chips::IdentityPips;
@@ -195,6 +199,7 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
     let open = open_tag();
     let shown = shown_tag();
     let is_open = |slug: &str| open.as_deref() == Some(slug);
+    let bars = TagBars::of(&rows);
     let tap = move |slug: String| {
         move |evt: MouseEvent| {
             evt.stop_propagation();
@@ -207,47 +212,57 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
         }
     };
     rsx! {
-        div { class: "tag-table",
-            div { class: "tag-table-head",
-                span { class: "settings-row-label", "Tag" }
-            }
-            div { class: "tag-table-head tag-table-head-p3",
-                span { class: "settings-row-label", "Decks" }
-                InfoButton { topic: HintTopic::SuggestionTagDecks }
-            }
-            div { class: "tag-table-head tag-table-head-p5",
-                span { class: "settings-row-label", "Cards" }
-                InfoButton { topic: HintTopic::SuggestionTagCards }
-            }
-            div { class: "tag-table-head tag-table-head-p2",
-                span { class: "settings-row-label", "Impact" }
-                InfoButton { topic: HintTopic::SuggestionTagImpact }
-            }
-            for row in rows.iter() {
-                div { class: "tag-table-tag",
-                    button {
-                        class: if is_open(&row.slug) { "chip selected" } else { "chip" },
-                        onclick: tap(row.slug.clone()),
-                        "{row.slug}"
+        table { class: "data-table tag-data-table",
+            thead {
+                tr {
+                    th { scope: "col", "Tag" }
+                    th { scope: "col", class: "data-table-bar",
+                        "Decks"
+                        InfoButton { topic: HintTopic::SuggestionTagDecks }
+                    }
+                    th { scope: "col", class: "data-table-bar",
+                        "Cards"
+                        InfoButton { topic: HintTopic::SuggestionTagCards }
+                    }
+                    th { scope: "col", class: "data-table-bar",
+                        "Impact"
+                        InfoButton { topic: HintTopic::SuggestionTagImpact }
                     }
                 }
-                span { class: "tag-table-num",
-                    span { class: "stat-chip stat-chip-p3", "{row.decks}" }
-                }
-                span { class: "tag-table-num",
-                    span { class: "stat-chip stat-chip-p5", "{row.cards}" }
-                }
-                span { class: "tag-table-num",
-                    if let Some(impact) = row.impact {
-                        span { class: "stat-chip stat-chip-p2", "{impact}" }
-                    }
-                }
-                div {
-                    class: if is_open(&row.slug) { "keyword-reveal open" } else { "keyword-reveal" },
-                    style: "grid-column:1 / -1;",
-                    div { class: "keyword-reveal-inner",
-                        if shown.as_deref() == Some(row.slug.as_str()) {
-                            OtagDef { slug: row.slug.clone(), describe_tag, on_examples }
+            }
+            tbody {
+                for row in rows.iter() {
+                    Fragment { key: "{row.slug}",
+                        tr {
+                            th { scope: "row",
+                                button {
+                                    class: if is_open(&row.slug) { "chip selected" } else { "chip" },
+                                    onclick: tap(row.slug.clone()),
+                                    "{row.slug}"
+                                }
+                            }
+                            td { class: "data-table-bar",
+                                DataBar { percent: bars.decks(row), tone: "p3", value: row.decks.to_string() }
+                            }
+                            td { class: "data-table-bar",
+                                DataBar { percent: bars.cards(row), tone: "p5", value: row.cards.to_string() }
+                            }
+                            td { class: "data-table-bar",
+                                if let (Some(impact), Some(percent)) = (row.impact, bars.impact(row)) {
+                                    DataBar { percent, tone: "p2", value: impact.to_string() }
+                                }
+                            }
+                        }
+                        tr { class: "data-table-detail",
+                            td { colspan: "4",
+                                div { class: if is_open(&row.slug) { "keyword-reveal open" } else { "keyword-reveal" },
+                                    div { class: "keyword-reveal-inner",
+                                        if shown.as_deref() == Some(row.slug.as_str()) {
+                                            OtagDef { slug: row.slug.clone(), describe_tag, on_examples }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

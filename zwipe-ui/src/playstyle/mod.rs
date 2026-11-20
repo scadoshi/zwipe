@@ -284,6 +284,57 @@ pub struct TagRow {
     pub impact: Option<u32>,
 }
 
+/// How long each oracle tags table bar draws: every column's bars scale to that column's own
+/// most, so the longest bar in a column fills it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TagBars {
+    decks: u32,
+    cards: u32,
+    impact: u32,
+}
+
+impl TagBars {
+    /// The column mosts of `rows`.
+    #[must_use]
+    pub fn of(rows: &[TagRow]) -> Self {
+        Self {
+            decks: rows.iter().map(|r| r.decks).max().unwrap_or(0),
+            cards: rows.iter().map(|r| r.cards).max().unwrap_or(0),
+            impact: rows.iter().filter_map(|r| r.impact).max().unwrap_or(0),
+        }
+    }
+
+    /// `row`'s Decks bar, as a percent of its column.
+    #[must_use]
+    pub fn decks(&self, row: &TagRow) -> u32 {
+        share(row.decks, self.decks)
+    }
+
+    /// `row`'s Cards bar, as a percent of its column.
+    #[must_use]
+    pub fn cards(&self, row: &TagRow) -> u32 {
+        share(row.cards, self.cards)
+    }
+
+    /// `row`'s Impact bar, as a percent of its column, or `None` when the row has no impact.
+    #[must_use]
+    pub fn impact(&self, row: &TagRow) -> Option<u32> {
+        row.impact.map(|impact| share(impact, self.impact))
+    }
+}
+
+/// `value` as a whole percent of `most`, 0 when `most` is 0.
+fn share(value: u32, most: u32) -> u32 {
+    if most == 0 {
+        return 0;
+    }
+    let percent = u64::from(value.min(most))
+        .saturating_mul(100)
+        .checked_div(u64::from(most))
+        .unwrap_or(0);
+    u32::try_from(percent).unwrap_or(100)
+}
+
 /// `score` against `max` on a 0 to [`TOP_IMPACT`] scale, rounded. `None` when `max` is not above 0; a negative or NaN score reads 0.
 #[must_use]
 pub fn impact(score: f64, max: f64) -> Option<u32> {

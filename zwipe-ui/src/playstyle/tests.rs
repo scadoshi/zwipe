@@ -705,3 +705,36 @@ fn a_staple_from_a_server_without_deck_ids_names_no_decks() {
         "no decks to list, so the chip stays the plain count"
     );
 }
+
+#[test]
+fn each_column_s_bars_scale_to_that_column_s_own_most() {
+    let rows = vec![
+        TagRow {
+            slug: "ramp".into(),
+            decks: 8,
+            cards: 30,
+            impact: Some(100),
+        },
+        TagRow {
+            slug: "tome".into(),
+            decks: 4,
+            cards: 15,
+            impact: Some(25),
+        },
+        TagRow {
+            slug: "none".into(),
+            decks: 0,
+            cards: 0,
+            impact: None,
+        },
+    ];
+    let bars = TagBars::of(&rows);
+    assert_eq!(bars.decks(&rows[0]), 100);
+    assert_eq!(bars.decks(&rows[1]), 50);
+    assert_eq!(bars.cards(&rows[1]), 50);
+    assert_eq!(bars.impact(&rows[1]), Some(25));
+    assert_eq!(bars.decks(&rows[2]), 0, "an empty count draws no bar");
+    assert_eq!(bars.impact(&rows[2]), None, "no impact, no bar");
+    let empty = TagBars::of(&[]);
+    assert_eq!(empty.decks(&rows[0]), 0, "no column most, no bar");
+}

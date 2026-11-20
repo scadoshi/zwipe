@@ -4299,6 +4299,91 @@ nav:has(> .card-search-header:focus-within) > :not(.card-search-nav, .nav-panel)
     border-top: 1px solid var(--border-secondary);
 }
 
+/* A row's label may be a chip to tap, such as an Oracle tag that opens its
+   description; a long one wraps inside the chip. */
+.data-table th .chip {
+    max-width: 100%;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* A header's `?` sits beside its name. */
+.data-table th .info-button {
+    margin-left: var(--space-1);
+}
+
+/* A detail row under a row (a tapped tag's description) belongs to it, so
+   it takes no rule, and its cell keeps only the panel's edge padding. */
+.data-table tbody tr.data-table-detail {
+    border-top: none;
+}
+
+.data-table .data-table-detail > td {
+    padding: 0 var(--space-4);
+}
+
+/* A bar cell (.data-table-bar) holds a DataBar: a thin bar in its column's
+   color, its fill the value's share of the column's most, with the value
+   inside in the text color. Bar cells split the room past the label, 1px
+   either side so bars stand 2px apart. */
+.data-table .data-table-bar {
+    width: 20%;
+    padding-left: 1px;
+    padding-right: 1px;
+}
+
+.data-bar {
+    --data-bar-tone: var(--text-muted);
+    position: relative;
+    display: block;
+    height: 1.15rem;
+    overflow: hidden;
+    border-radius: 4px;
+    background-color: color-mix(in srgb, var(--data-bar-tone) 14%, transparent);
+}
+
+.data-bar::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--data-bar-fill, 0%);
+    border-radius: 4px;
+    background-color: color-mix(in srgb, var(--data-bar-tone) 55%, transparent);
+}
+
+.data-bar-value {
+    position: relative;
+    display: block;
+    padding: 0 var(--space-1);
+    font-size: 0.75rem;
+    line-height: 1.15rem;
+    color: var(--text-primary);
+    text-align: left;
+}
+
+.data-bar-p3 {
+    --data-bar-tone: var(--palette-3);
+}
+
+.data-bar-p5 {
+    --data-bar-tone: var(--palette-5);
+}
+
+.data-bar-p2 {
+    --data-bar-tone: var(--palette-2);
+}
+
+/* A loading bar is its own bar in its own color, its fill a ghost
+   length, pulsing as every ghost does. */
+.skeleton-bar.data-bar-ghost {
+    height: 1.15rem;
+    border-radius: 4px;
+    background-color: color-mix(in srgb, var(--data-bar-tone) 14%, transparent);
+}
+
 /* A loading table is all ghost: a skeleton bar on each cell's text line. */
 .data-table .data-table-ghost {
     display: inline-block;

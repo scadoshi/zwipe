@@ -2,11 +2,11 @@
 //! text a ghost bar in the element that holds it, so the swap to the real
 //! page moves nothing.
 
+use components::DataBarGhost;
 use dioxus::prelude::*;
 
 use crate::inbound::chrome::ghost::{
-    GhostChip, GhostChipBars, GhostChipRow, GhostFold, GhostHint, GhostSection, GhostShowRow,
-    GhostText,
+    GhostChipBars, GhostChipRow, GhostFold, GhostHint, GhostSection, GhostShowRow, GhostText,
 };
 
 /// The Card roles chart's ghost chips, as wide as the roles' short labels.
@@ -57,32 +57,55 @@ fn SummaryGhost() -> Element {
     }
 }
 
-/// The Oracle tags table: its four heads, then a tag chip and three counts
-/// per row.
+/// The Oracle tags table, all ghost: its four column names (three with their `?`), then a tag
+/// and three bars per row, each bar in its column's color, in the shared data table's rows and
+/// columns.
 #[component]
 fn TagTableGhost() -> Element {
     rsx! {
-        div { class: "tag-table",
-            div { class: "tag-table-head",
-                span { class: "settings-row-label", GhostText { chars: 3 } }
-            }
-            for (tone, chars) in [("p3", 5), ("p5", 5), ("p2", 6)] {
-                div { class: "tag-table-head tag-table-head-{tone}",
-                    span { class: "settings-row-label", GhostText { chars } }
-                    GhostHint {}
+        table { class: "data-table tag-data-table",
+            thead {
+                tr {
+                    th { scope: "col", {table_ghost(3)} }
+                    for chars in [5, 5, 6] {
+                        th { scope: "col", class: "data-table-bar",
+                            {table_ghost(chars)}
+                            GhostHint {}
+                        }
+                    }
                 }
             }
-            for chars in TAG_CHIPS.iter().copied().cycle().take(TAG_ROWS) {
-                div { class: "tag-table-tag",
-                    GhostChip { chars, button: true }
-                }
-                for tone in ["p3", "p5", "p2"] {
-                    span { class: "tag-table-num",
-                        span { class: "skeleton-bar skeleton-chip web-ghost-count-chip stat-chip-{tone} skeleton-tinted" }
+            tbody {
+                for (i, chars) in TAG_CHIPS.iter().copied().cycle().take(TAG_ROWS).enumerate() {
+                    tr { key: "{i}",
+                        th { scope: "row", {table_ghost(chars)} }
+                        for (tone, percent) in ghost_bars(i) {
+                            td { class: "data-table-bar",
+                                DataBarGhost { percent, tone }
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+/// Row `i`'s three ghost bars, each in its column's color, shortening down the table as the
+/// loaded bars do.
+fn ghost_bars(i: usize) -> [(&'static str, u32); 3] {
+    let step = u32::try_from(i).unwrap_or(0).saturating_mul(7);
+    [
+        ("p3", 90_u32.saturating_sub(step).max(20)),
+        ("p5", 80_u32.saturating_sub(step).max(15)),
+        ("p2", 100_u32.saturating_sub(step).max(25)),
+    ]
+}
+
+/// A data table cell's ghost, `chars` characters wide.
+fn table_ghost(chars: u8) -> Element {
+    rsx! {
+        span { class: "skeleton-bar data-table-ghost", style: "width: {chars}ch;" }
     }
 }
 
@@ -178,5 +201,38 @@ pub fn PlaystyleSkeleton(wide: bool) -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn render(app: fn() -> Element) -> String {
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dioxus_ssr::render(&dom)
+    }
+
+    #[test]
+    fn the_tag_table_ghosts_every_bar_in_its_own_color_and_no_chips() {
+        let html = render(|| rsx! { TagTableGhost {} });
+        assert!(
+            html.contains(r#"<table class="data-table tag-data-table">"#),
+            "{html}"
+        );
+        for tone in ["p3", "p5", "p2"] {
+            assert_eq!(
+                html.matches(&format!("data-bar data-bar-{tone} data-bar-ghost"))
+                    .count(),
+                TAG_ROWS,
+                "a {tone} ghost bar in every row: {html}"
+            );
+        }
+        assert!(!html.contains("stat-chip"), "no chip ghosts: {html}");
+        assert!(
+            !html.contains("skeleton-chip web-ghost-count-chip"),
+            "no count chip ghosts: {html}"
+        );
     }
 }
