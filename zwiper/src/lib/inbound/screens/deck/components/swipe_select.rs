@@ -406,7 +406,6 @@ pub(crate) fn SwipeSelect(
     // Up-swipe = "maybe this commander" (per-user save), so it's only live in
     // the modes whose pool is commanders.
     let maybe_enabled = state.can_save();
-    let title = state.title();
     let current_reasons = state.reasons().cloned();
     let deck_count = state.deck_count();
     let has_suggested_identity = state.identity().is_some();
@@ -428,6 +427,7 @@ pub(crate) fn SwipeSelect(
     } else {
         SwipeSelectMode::Picking(noun)
     };
+    let title = hint_mode.title();
     let mut directions = vec![Direction::Left, Direction::Right, Direction::Down];
     if maybe_enabled {
         directions.push(Direction::Up);

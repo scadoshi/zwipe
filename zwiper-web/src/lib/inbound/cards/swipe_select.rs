@@ -355,6 +355,21 @@ struct Pile {
     maybe_line: Signal<Option<&'static str>>,
 }
 
+/// What the overlay is for, which names it and picks its hint: the suggested ranking, the
+/// Commander maybeboard's swipe (`starts_deck`, where a pick starts a deck), or a command-zone
+/// pick.
+fn overlay_mode(mode: SwipeMode, starts_deck: bool) -> SwipeSelectMode {
+    match mode {
+        SwipeMode::Commanders(Door::Suggested) => SwipeSelectMode::Suggested { has_filter: true },
+        _ if starts_deck => SwipeSelectMode::StartsDeck,
+        SwipeMode::Commander(_)
+        | SwipeMode::Commanders(Door::DeckCreation(_))
+        | SwipeMode::Partner
+        | SwipeMode::Background
+        | SwipeMode::SignatureSpell => SwipeSelectMode::Picking(mode.noun()),
+    }
+}
+
 /// The overlay. `on_select` takes the picked card; `on_close` is `Back`.
 /// See the module docs for the modes and their props.
 #[component]
@@ -641,11 +656,8 @@ pub fn SwipeSelect(
         refreshes.set(next);
     });
 
-    let title = if mode == SwipeMode::Commanders(Door::Suggested) {
-        "Suggested commanders"
-    } else {
-        "Swipe select"
-    };
+    let hint_mode = overlay_mode(mode, starts_deck);
+    let title = hint_mode.title();
     // On a wide window the overlay sits under the nav, which names it, opens
     // its hint and closes it from the back arrow.
     let mut hint_from_nav = hint_open;
@@ -655,15 +667,6 @@ pub fn SwipeSelect(
         Callback::new(move |()| hint_from_nav.set(true)),
         Callback::new(move |()| on_close.call(())),
     );
-    let hint_mode = match mode {
-        SwipeMode::Commanders(Door::Suggested) => SwipeSelectMode::Suggested { has_filter: true },
-        _ if starts_deck => SwipeSelectMode::StartsDeck,
-        SwipeMode::Commander(_)
-        | SwipeMode::Commanders(Door::DeckCreation(_))
-        | SwipeMode::Partner
-        | SwipeMode::Background
-        | SwipeMode::SignatureSpell => SwipeSelectMode::Picking(mode.noun()),
-    };
 
     rsx! {
         div {
@@ -1119,6 +1122,33 @@ mod tests {
     use zwipe_core::domain::card::scryfall_data::legalities::LegalityKind;
 
     use super::*;
+
+    #[test]
+    fn every_swipe_names_itself_and_the_maybeboard_s_by_its_screen() {
+        let commander = SwipeMode::Commander(Format::Commander);
+        assert_eq!(
+            overlay_mode(commander, true).title(),
+            "Commander maybeboard",
+            "the Commanders screen's Maybeboard Swipe"
+        );
+        assert_eq!(overlay_mode(commander, false).title(), "Swipe select");
+        for picking in [
+            SwipeMode::Commanders(Door::DeckCreation(Format::Commander)),
+            SwipeMode::Partner,
+            SwipeMode::Background,
+            SwipeMode::SignatureSpell,
+        ] {
+            assert_eq!(
+                overlay_mode(picking, false).title(),
+                "Swipe select",
+                "{picking:?}"
+            );
+        }
+        assert_eq!(
+            overlay_mode(SwipeMode::Commanders(Door::Suggested), false).title(),
+            "Suggested commanders"
+        );
+    }
 
     /// A real card, as the API serves it.
     fn card() -> Card {

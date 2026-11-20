@@ -29,6 +29,19 @@ pub enum SwipeSelectMode {
     },
 }
 
+impl SwipeSelectMode {
+    /// The overlay's title on its screen: the Commander maybeboard's swipe takes that screen's
+    /// name, the suggested ranking its own, and a command-zone pick the overlay's.
+    #[must_use]
+    pub fn title(self) -> &'static str {
+        match self {
+            Self::Picking(_) => crate::screens::swipe_select::TITLE,
+            Self::StartsDeck => crate::screens::commander_maybeboard::TITLE,
+            Self::Suggested { .. } => crate::screens::swipe_select::SUGGESTED_TITLE,
+        }
+    }
+}
+
 /// The building-a-deck hint, which Create and Edit share.
 fn building_a_deck() -> Vec<Block> {
     vec![
@@ -757,6 +770,16 @@ fn welcome_on(ask_to_verify: bool, surface: Surface) -> HintContent {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_maybeboard_s_swipe_is_titled_commander_maybeboard() {
+        assert_eq!(SwipeSelectMode::StartsDeck.title(), "Commander maybeboard");
+        assert_eq!(SwipeSelectMode::Picking("partner").title(), "Swipe select");
+        assert_eq!(
+            SwipeSelectMode::Suggested { has_filter: true }.title(),
+            "Suggested commanders"
+        );
+    }
+
     use super::*;
     use crate::deck::form::Slot;
 
