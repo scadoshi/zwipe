@@ -74,7 +74,6 @@ pub(crate) fn SendToHost(send_to: SendTo) -> Element {
                     1,
                     Some(board.display_name().to_owned()),
                 );
-                let oracle_id = sent.scryfall_data.oracle_id;
                 // A task of this host, which sits above the screens, so the write runs to its
                 // end when the screen it opened over goes.
                 spawn(async move {
@@ -107,21 +106,8 @@ pub(crate) fn SendToHost(send_to: SendTo) -> Element {
                             );
                         }
                         Err(e) => {
-                            // A duplicate names the board that holds the card, read from the deck.
-                            let holding = match (&e, oracle_id) {
-                                (ClientError::Conflict(_), Some(oracle_id)) => authed
-                                    .try_run_quiet_at(
-                                        component::SEND_TO_SHEET,
-                                        "send_to_board",
-                                        |c, s| async move { c.fetch_deck(target.id, &s).await },
-                                    )
-                                    .await
-                                    .ok()
-                                    .and_then(|deck| send_to::holding_board(&deck.entries, oracle_id)),
-                                _ => None,
-                            };
                             toast.error(
-                                failure_message(&e, &target.name, holding),
+                                failure_message(&e, &target.name),
                                 ToastOptions::default().duration(TOAST_NORMAL),
                             );
                         }
@@ -132,11 +118,11 @@ pub(crate) fn SendToHost(send_to: SendTo) -> Element {
     }
 }
 
-/// What a failed send toasts: the deck by name, and the board when it is known, when it already
-/// holds the card, else the error's own plain words.
-fn failure_message(error: &ClientError, deck: &str, board: Option<Board>) -> String {
+/// What a failed send toasts: the deck by name when it already holds the card, else the error's
+/// own plain words.
+fn failure_message(error: &ClientError, deck: &str) -> String {
     if matches!(error, ClientError::Conflict(_)) {
-        send_to::already_in(deck, board)
+        send_to::already_in(deck)
     } else {
         error.to_user_message()
     }
@@ -188,23 +174,28 @@ const fn host_screen(route: &Router) -> Screen {
 mod tests {
     use super::*;
 
+    /// A send the deck already holds toasts as its answer lands: nothing reads the deck first.
+    #[test]
+    fn a_duplicate_toasts_without_reading_the_deck() {
+        let source = include_str!("send_to.rs");
+        let code = source.split("#[cfg(test)]").next().unwrap_or_default();
+        assert!(
+            code.contains("failure_message(&e, &target.name)"),
+            "the toast takes the deck's name only"
+        );
+        assert!(
+            !code.contains("\"send_to_board\""),
+            "no read of the deck for its board"
+        );
+        assert!(!code.contains("holding_board"), "no board looked up");
+    }
+
     #[test]
     fn a_duplicate_names_the_deck_it_went_to_and_other_errors_keep_their_words() {
         let duplicate = ClientError::Conflict("That card is already in this deck".to_owned());
-        assert_eq!(
-            failure_message(&duplicate, "Krenko", Some(Board::Maybeboard)),
-            "Already in Krenko's maybeboard"
-        );
-        assert_eq!(
-            failure_message(&duplicate, "Krenko", None),
-            "Already in Krenko",
-            "the board unknown"
-        );
+        assert_eq!(failure_message(&duplicate, "Krenko"), "Already in Krenko");
         let limit = ClientError::UnprocessableEntity("Card limit reached".to_owned());
-        assert_eq!(
-            failure_message(&limit, "Krenko", None),
-            limit.to_user_message()
-        );
+        assert_eq!(failure_message(&limit, "Krenko"), limit.to_user_message());
     }
 
     #[test]
