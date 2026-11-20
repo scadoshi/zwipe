@@ -10,7 +10,7 @@
 
 use std::future::Future;
 
-use sqlx::{PgTransaction, QueryBuilder, query_as};
+use sqlx::{Acquire, PgTransaction, QueryBuilder, query_as};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
@@ -24,12 +24,6 @@ use crate::outbound::sqlx::card::helpers::scryfall_data_fields::{
     self, BindCards, BindScryfallDataFields,
 };
 use crate::outbound::sqlx::card::models::DatabaseScryfallData;
-
-/// Postgres error substring used to filter noise from card-by-card fallback retries.
-///
-/// When a transaction is aborted, subsequent statements produce this error instead
-/// of the root cause, so these are silently skipped during error reporting.
-const POSTGRES_TX_ABORT_MESSAGE: &str = "current transaction is aborted";
 
 // == validation helpers ==
 
@@ -204,18 +198,34 @@ async fn upsert_card_by_card(
     zervice_metrics: &mut ZerviceMetrics,
 ) {
     for card in batch {
-        match card.single_upsert_with_tx(tx).await {
-            Ok(_) => {
+        match upsert_one_in_savepoint(card, tx).await {
+            Ok(()) => {
                 zervice_metrics.add_upserted_count(1);
             }
             Err(e) => {
-                // ignore tx abort messages as they are never root cause
-                if !e.to_string().contains(POSTGRES_TX_ABORT_MESSAGE) {
-                    let error = ErrorMetrics::new(card.id, &card.name, e.to_string());
-                    tracing::warn!("insertion failure => {}", error);
-                    zervice_metrics.add_error(error);
-                }
+                let error = ErrorMetrics::new(card.id, &card.name, e.to_string());
+                tracing::warn!("insertion failure => {}", error);
+                zervice_metrics.add_error(error);
             }
+        }
+    }
+}
+
+/// Upserts `card` inside its own savepoint, so a failure rolls back only the card and leaves
+/// `tx` usable for the next one.
+async fn upsert_one_in_savepoint(
+    card: &ScryfallData,
+    tx: &mut PgTransaction<'_>,
+) -> Result<(), CreateCardError> {
+    let mut savepoint = tx.begin().await?;
+    match card.single_upsert_with_tx(&mut savepoint).await {
+        Ok(_) => {
+            savepoint.commit().await?;
+            Ok(())
+        }
+        Err(e) => {
+            savepoint.rollback().await?;
+            Err(e)
         }
     }
 }
@@ -229,7 +239,15 @@ impl BatchUpsertWithTx for &[ScryfallData] {
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut cards: Vec<Card> = Vec::new();
         for chunk in self.chunks(batch_size) {
-            match chunk.bulk_upsert_with_tx(tx).await {
+            // The batch runs in a savepoint: a failure rolls back to it, so the card-by-card
+            // retry runs on a usable transaction.
+            let mut savepoint = tx.begin().await?;
+            let attempt = chunk.bulk_upsert_with_tx(&mut savepoint).await;
+            match &attempt {
+                Ok(_) => savepoint.commit().await?,
+                Err(_) => savepoint.rollback().await?,
+            }
+            match attempt {
                 Ok(upserted) => {
                     let upserted_count = upserted.len();
                     cards.extend(upserted);
@@ -324,7 +342,15 @@ impl BatchDeltaUpsertWithTx for &[ScryfallData] {
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut cards: Vec<Card> = Vec::new();
         for chunk in self.chunks(batch_size) {
-            match chunk.bulk_delta_upsert_with_tx(tx).await {
+            // The batch runs in a savepoint: a failure rolls back to it, so the card-by-card
+            // retry runs on a usable transaction.
+            let mut savepoint = tx.begin().await?;
+            let attempt = chunk.bulk_delta_upsert_with_tx(&mut savepoint).await;
+            match &attempt {
+                Ok(_) => savepoint.commit().await?,
+                Err(_) => savepoint.rollback().await?,
+            }
+            match attempt {
                 Ok((upserted, skipped)) => {
                     zervice_metrics
                         .add_upserted_count(zervice_metrics::count_column(upserted.len()));
