@@ -59,6 +59,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Card searches and opened tag examples count toward Searches run on Home and Activity while you're logged in",
         "On the web, card search results work from the keyboard and have a hint",
         "On the web, card search results show the nav when you're logged out",
+        "Card searches on zwipe.net count toward Searches run on Home",
     ],
 }];
 

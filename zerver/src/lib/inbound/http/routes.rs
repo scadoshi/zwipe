@@ -173,6 +173,8 @@ pub fn public_routes(limits: &RateLimits) -> Router<AppState> {
     let public_client_limit = FamilyLimitLayer::new(limits.public_client, stable_rate_limit);
     let public_changelog_limit = FamilyLimitLayer::new(limits.public_changelog, stable_rate_limit);
     let anonymous_event_limit = FamilyLimitLayer::new(limits.anonymous_event, stable_rate_limit);
+    // The funnel events' limit, in a bucket of its own, so searching never crowds them out.
+    let anonymous_search_limit = FamilyLimitLayer::new(limits.anonymous_event, stable_rate_limit);
     let crash_report_limit = FamilyLimitLayer::new(limits.crash_report, stable_rate_limit);
     let public_share_limit = FamilyLimitLayer::new(limits.public_share, stable_rate_limit);
     let share_preview_limit = FamilyLimitLayer::new(limits.share_preview, stable_rate_limit);
@@ -298,6 +300,11 @@ pub fn public_routes(limits: &RateLimits) -> Router<AppState> {
                     Router::new()
                         .route("/anonymous", post(metrics::record_anonymous_event))
                         .layer(anonymous_event_limit)
+                        .merge(
+                            Router::new()
+                                .route("/anonymous/search", post(metrics::record_anonymous_search))
+                                .layer(anonymous_search_limit),
+                        )
                         .merge(
                             Router::new()
                                 .route("/crash", post(metrics::record_crash))

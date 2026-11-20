@@ -109,18 +109,18 @@ fn table_ghost(chars: u8) -> Element {
     }
 }
 
-/// A card list: its header (the title and `actions` ghosts), then its rows.
+/// A card list: its header (the title, its `?` and Swipe's ghosts), then its rows.
 #[component]
 fn ListGhost(title: u8, swipe: bool) -> Element {
     rsx! {
         div { class: "maybeboard-list card-group",
             div { class: "card-group-header card-group-header-with-hint",
                 span { GhostText { chars: title } }
-                div { class: "card-group-header-actions",
-                    if swipe {
+                span { class: "card-list-fold-hint", GhostHint {} }
+                if swipe {
+                    div { class: "card-group-header-actions",
                         span { class: "skeleton-bar skeleton-chip web-ghost-action" }
                     }
-                    GhostHint {}
                 }
             }
             for i in 0..LIST_ROWS {

@@ -72,6 +72,10 @@ pub trait MetricsRepository: Clone + Send + Sync + 'static {
         platform: Option<ClientPlatform>,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
+    /// Adds one to the count of card searches run signed out, which the public searches total
+    /// adds in. Stores nothing else about the search.
+    fn record_anonymous_search(&self) -> impl Future<Output = Result<(), MetricsError>> + Send;
+
     /// Stores a crash report exactly once (`ON CONFLICT (crash_id) DO NOTHING`).
     fn record_crash(
         &self,
@@ -166,6 +170,10 @@ pub trait MetricsService: Clone + Send + Sync + 'static {
         kind: AnonymousEventKind,
         platform: Option<ClientPlatform>,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
+
+    /// Counts one card search run signed out toward the public searches total, and no
+    /// account's.
+    fn record_anonymous_search(&self) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
     /// Stores a crash report from an unauthenticated client (exactly once
     /// per `crash_id`: the client retries until it sees a 2xx).

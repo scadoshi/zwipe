@@ -1,6 +1,7 @@
 //! zwipe.net's card search: the nav's chip and box above the fold, the chip alone in the header
 //! below it, where a tap opens the box across the header. A lookup goes out signed out, and a
-//! pick opens the card, or the results, on app.zwipe.net.
+//! pick opens the card, or the results, on app.zwipe.net, first telling the server one search
+//! ran, for the public searches total.
 
 use std::time::Duration;
 
@@ -9,10 +10,11 @@ use dioxus::prelude::*;
 use zwipe_client::card::lookup_cards::LookupError;
 use zwipe_core::domain::card::Card;
 use zwipe_core::http::contracts::card::HttpCardLookup;
+use zwipe_core::http::paths::RECORD_ANONYMOUS_SEARCH_ROUTE;
 use zwipe_ui::screens::card_search::{Destination, Failure};
 
 use crate::components::sleep_ms;
-use crate::{APP_BASE, api};
+use crate::{API_BASE, APP_BASE, api};
 
 /// The site's [`SearchHost`]: the browser's clock, the lookup signed out, and links to the web
 /// app.
@@ -38,8 +40,26 @@ impl SearchHost for SiteSearch {
         document::eval(&open_js(&app_url(&to)));
     }
 
-    /// Counts nothing: no one signs in on zwipe.net.
-    fn record_search(self) {}
+    /// Tells the server one search ran, with no account and nothing about the search.
+    fn record_search(self) {
+        document::eval(&count_js(&count_url()));
+    }
+}
+
+/// The server's address for one search run signed out.
+fn count_url() -> String {
+    format!("{API_BASE}{RECORD_ANONYMOUS_SEARCH_ROUTE}")
+}
+
+/// Posts to `url` as a beacon, which the browser still sends once the page has gone on to the
+/// web app, or with a keepalive fetch where there is no beacon. Nothing waits on it or reads its
+/// answer, and a refusal (a rate limit) is dropped.
+fn count_js(url: &str) -> String {
+    let literal = serde_json::to_string(url).unwrap_or_else(|_| "\"/\"".to_owned());
+    format!(
+        "(() => {{ const u = {literal}; if (!(navigator.sendBeacon && navigator.sendBeacon(u))) \
+         {{ fetch(u, {{ method: 'POST', keepalive: true, mode: 'no-cors' }}).catch(() => {{}}); }} }})();"
+    )
 }
 
 /// `to`'s address on the web app.
@@ -96,6 +116,25 @@ mod tests {
             query: "solemn".to_owned(),
         };
         assert_eq!(app_url(&to), format!("{APP_BASE}/search?q=solemn"));
+    }
+
+    #[test]
+    fn a_search_tells_the_server_at_its_anonymous_search_route_and_sends_nothing_else() {
+        assert_eq!(
+            count_url(),
+            format!("{API_BASE}/api/metrics/anonymous/search")
+        );
+        let js = count_js("https://api.zwipe.net/api/metrics/anonymous/search");
+        assert!(
+            js.contains(r#"const u = "https://api.zwipe.net/api/metrics/anonymous/search";"#),
+            "{js}"
+        );
+        assert!(
+            js.contains("navigator.sendBeacon(u)"),
+            "a beacon with no body: {js}"
+        );
+        assert!(js.contains("keepalive: true"), "{js}");
+        assert!(!js.contains("body"), "nothing about the search goes: {js}");
     }
 
     #[test]

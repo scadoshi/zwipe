@@ -1,25 +1,34 @@
 //! A panel of card rows that folds, as every card group does: the header's
-//! disclosure arrow and title, with the panel's own actions at its end, over
-//! the rows.
+//! disclosure arrow and title with its `?` after it, and the panel's own
+//! actions at its end, over the rows.
 
 use dioxus::prelude::*;
 
 use crate::is_press;
 
 /// A card list panel (Suggested commanders, Staples, Most skipped, the
-/// Commander maybeboard): a header of the arrow and `title`, then `actions`
-/// at its end, over `children`, which ease shut and open with the
+/// Commander maybeboard): a header of the arrow, `title` and its `hint`, then
+/// `actions` at its end, over `children`, which ease shut and open with the
 /// `.collapsible` the card groups use. A click on the header folds it; a
-/// click among `actions` does not. Starts open.
+/// click on `hint` or among `actions` does not. Starts open, or holds its
+/// state in `open` when the parent hands one in, so what the parent draws
+/// outside the panel can follow the fold.
 #[component]
 pub fn CardListFold(
     #[props(into)] title: String,
-    /// The header's buttons (Swipe, the `?`), at its end.
+    /// The title's `?`, right after it.
+    #[props(default)]
+    hint: Option<Element>,
+    /// The header's buttons (Swipe), at its end.
     #[props(default)]
     actions: Option<Element>,
+    /// Whether the panel is open, when the parent keeps it.
+    #[props(default)]
+    open: Option<Signal<bool>>,
     children: Element,
 ) -> Element {
-    let mut open = use_signal(|| true);
+    let own = use_signal(|| true);
+    let mut open = open.unwrap_or(own);
     rsx! {
         div { class: if open() { "maybeboard-list card-group row-enter" } else { "maybeboard-list card-group row-enter collapsed" },
             div {
@@ -39,6 +48,13 @@ pub fn CardListFold(
                     },
                     span { class: "card-row-arrow", "\u{25b8}" }
                     span { "{title}" }
+                }
+                if let Some(hint) = hint {
+                    span {
+                        class: "card-list-fold-hint",
+                        onclick: move |evt: MouseEvent| evt.stop_propagation(),
+                        {hint}
+                    }
                 }
                 if let Some(actions) = actions {
                     div {

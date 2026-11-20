@@ -363,7 +363,7 @@ pub fn HardPassesPanel(passes: Vec<HttpHardPass>, expanded_card: Signal<Option<U
     rsx! {
         CardListFold {
             title: PASSES_TITLE,
-            actions: rsx! {
+            hint: rsx! {
                 InfoButton { topic: HintTopic::HardPasses }
             },
             if passes.is_empty() {
