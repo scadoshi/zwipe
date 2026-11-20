@@ -56,3 +56,13 @@ fn a_tap_stack_off_the_screen_skips_its_work_and_keeps_its_place() {
         "the room takes no taps, the stack's own contents do: {stack:?}"
     );
 }
+
+#[test]
+fn the_keyboard_cursor_s_result_card_floats_as_a_hovered_one_does() {
+    let focused = rule(".card-list-results .card-stack-card.floatable:focus-visible");
+    assert!(focused.contains("--float-reach: 1;"), "{focused:?}");
+    assert!(
+        focused.contains("animation-play-state: running;"),
+        "{focused:?}"
+    );
+}

@@ -14,6 +14,7 @@
 
 pub mod guide;
 pub mod one_time;
+pub mod search_results;
 pub mod shared_deck;
 pub mod topics;
 
@@ -464,7 +465,7 @@ mod tests {
         topics
             .chain(one_time)
             .chain(decks)
-            .chain(std::iter::once(shared_deck::content()))
+            .chain([shared_deck::content(), search_results::content()])
             .collect()
     }
 

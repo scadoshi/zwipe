@@ -13,7 +13,7 @@ use components::swipe_stack::{Swipe, swipe_key};
 use zwipe_ui::shortcuts::{
     self, Editable, FILTER_NAME_ROW, FLIP_ROW, ListLayout, ScreenKeys, SheetGroup, SheetRow,
     card_page_groups, card_rows_groups, commander_maybeboard_groups, deck_cards_groups,
-    examples_groups, rows_of,
+    examples_groups, rows_of, search_results_groups,
 };
 pub use zwipe_ui::shortcuts::{
     CardKey, DeckAction, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, QUICK_ADD_KEY, SEND_TO_KEY,
@@ -157,6 +157,41 @@ pub enum ShortcutsScreen {
     /// A card page showing one card: `p` for its Printings, Shift+P for its Send to and `/` for
     /// the card search.
     CardPage,
+    /// The card search's results: the cursor over the grid, the keys that read the cursor's card
+    /// and `/` for the card search.
+    SearchResults,
+}
+
+/// What a key does on the card search's results page, to the cursor's card, else the hovered one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SearchResultsKey {
+    /// Opens the card's Printings sheet.
+    Printings,
+    /// Opens the card's Send to, or the login page for a visitor.
+    SendTo,
+    /// Opens the card's details drawer.
+    Details,
+    /// Flips the card to its other face, or toggles a meld half's Meld.
+    Flip,
+    /// Puts the cursor in the card search box that shows.
+    Search,
+}
+
+/// The results page key `key` (a `KeyboardEvent.key`) stands for: `p` Printings, Shift+P Send to
+/// and `/` the card search as on the card page, `d` and `v` as every screen reads them
+/// ([`card_key`]).
+#[must_use]
+pub fn search_results_key(key: &str) -> Option<SearchResultsKey> {
+    match card_key(key) {
+        Some(CardKey::Details) => return Some(SearchResultsKey::Details),
+        Some(CardKey::Flip) => return Some(SearchResultsKey::Flip),
+        Some(CardKey::Filter | CardKey::FilterByName) | None => {}
+    }
+    match card_page_key(key)? {
+        CardPageKey::Printings => Some(SearchResultsKey::Printings),
+        CardPageKey::SendTo => Some(SearchResultsKey::SendTo),
+        CardPageKey::Search => Some(SearchResultsKey::Search),
+    }
 }
 
 /// What a key does on a card page showing one card.
@@ -217,6 +252,7 @@ pub fn sheet_groups(screen: &ShortcutsScreen) -> Vec<SheetGroup> {
         ShortcutsScreen::CardPage => card_page_groups(),
         ShortcutsScreen::CardRows(layout) => card_rows_groups(*layout),
         ShortcutsScreen::CommanderMaybeboard => commander_maybeboard_groups(),
+        ShortcutsScreen::SearchResults => search_results_groups(),
     }
 }
 
@@ -235,7 +271,8 @@ pub fn claims_steps(screen: &ShortcutsScreen) -> bool {
         | ShortcutsScreen::DeckCards
         | ShortcutsScreen::Examples
         | ShortcutsScreen::CardRows(_)
-        | ShortcutsScreen::CommanderMaybeboard => true,
+        | ShortcutsScreen::CommanderMaybeboard
+        | ShortcutsScreen::SearchResults => true,
         ShortcutsScreen::EditDeck | ShortcutsScreen::CardPage => false,
     }
 }
@@ -246,6 +283,38 @@ mod tests {
     use zwipe_ui::shortcuts::{PRINTINGS_SHEET_ROWS, THEME_SHEET_ROWS};
 
     use super::*;
+
+    #[test]
+    fn the_search_results_answer_the_keys_their_sheet_lists() {
+        for (key, does) in [
+            ("p", SearchResultsKey::Printings),
+            ("P", SearchResultsKey::SendTo),
+            ("d", SearchResultsKey::Details),
+            ("D", SearchResultsKey::Details),
+            ("v", SearchResultsKey::Flip),
+            ("V", SearchResultsKey::Flip),
+            ("/", SearchResultsKey::Search),
+        ] {
+            assert_eq!(search_results_key(key), Some(does), "{key}");
+        }
+        for key in ["i", "f", "m", "s", "u", "H", "Enter"] {
+            assert_eq!(search_results_key(key), None, "{key}");
+        }
+        let listed: Vec<&str> = sheet_rows(&ShortcutsScreen::SearchResults)
+            .into_iter()
+            .flat_map(|(keys, _)| keys.iter().copied())
+            .collect();
+        for key in [
+            "p", "Shift+P", "d", "v", "/", "Enter", "Home", "h", "Shift+H",
+        ] {
+            assert!(listed.contains(&key), "{key}");
+        }
+        assert!(!listed.contains(&"i"), "no Image key on the results");
+        assert!(
+            claims_steps(&ShortcutsScreen::SearchResults),
+            "the cursor keeps j and k"
+        );
+    }
 
     #[test]
     fn arrows_and_vim_letters_swipe() {

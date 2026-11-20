@@ -117,7 +117,8 @@ if (!window.__zwipeDeckTrack) {
 /// Registers one page's cursor keys: a move key under the guard, at any width, while the page
 /// draws cards, gathers the cards as drawn (in columns: the deck page's stacks or paired List
 /// columns, else a screen's lists marked [`LIST_ATTR`] where it has more than one, else one) and
-/// sends `[key, from, columns]`, `from` the
+/// sends `[key, from, columns]` (a grid marked [`GRID_ATTR`] in its columns as laid out, each
+/// column the cards that share a left edge), `from` the
 /// card the move starts at (the hovered card when the mouse moved last, else the card in focus,
 /// else the last cursor), each column `[[id, center_y, in_view], ...]`, `open`: `drawer`
 /// while the details drawer shows, `row` while a List row is open, else empty, whether the
@@ -153,11 +154,22 @@ const onKey = (e) => {
     const paired = listed && getComputedStyle(listed).display === 'grid';
     const lists = [...document.querySelectorAll('[__LIST__]')];
     const holders = stacked.length ? stacked : paired ? [...listed.querySelectorAll(':scope > .deck-list-column')] : lists.length > 1 ? lists : [];
+    const grid = holders.length ? null : document.querySelector('[__GRID__]');
+    const gridColumns = () => {
+        const byLeft = new Map();
+        for (const s of cards.filter((s) => grid.contains(s))) {
+            const left = Math.round(box(s).getBoundingClientRect().left);
+            if (!byLeft.has(left)) byLeft.set(left, []);
+            byLeft.get(left).push(s);
+        }
+        return [...byLeft.entries()].sort((a, b) => a[0] - b[0]).map((entry) => entry[1]);
+    };
+    const laid = grid ? gridColumns() : null;
     const height = window.innerHeight;
     const as = (s) => { const r = box(s).getBoundingClientRect(); return [s.getAttribute('data-row'), r.top + r.height / 2, r.bottom > 0 && r.top < height]; };
-    const columns = holders.length ? holders.map((h) => cards.filter((s) => h.contains(s)).map(as)) : [cards.map(as)];
+    const columns = laid ? laid.map((column) => column.map(as)) : holders.length ? holders.map((h) => cards.filter((s) => h.contains(s)).map(as)) : [cards.map(as)];
     const centerX = (el) => { const r = box(el).getBoundingClientRect(); return r.left + r.width / 2; };
-    const columnX = holders.length ? holders.map(centerX) : [cards.length ? centerX(cards[0]) : 0];
+    const columnX = laid ? laid.map((column) => centerX(column[0])) : holders.length ? holders.map(centerX) : [cards.length ? centerX(cards[0]) : 0];
     const head = all.filter((s) => s.matches(headStops)).map((s) => [spot(s), centerX(s)]);
     window.__zwipeDeckOrder = columns.flat().map((s) => s[0]);
     const open = document.querySelector('.bottom-sheet.show.__DRAWER__') ? 'drawer' : document.querySelector('.web-deck-row.selected, .web-card-row .card-row.expanded') ? 'row' : '';
@@ -171,6 +183,35 @@ document.addEventListener('keydown', onKey);
 /// Suggested commanders and Staples): the cursor takes each as a column and walks them as
 /// [`Walk::Lists`], at any width, stacked or side by side.
 pub const LIST_ATTR: &str = "data-cursor-list";
+
+/// The attribute that marks a grid of cards laid out in rows (the card search's results): the
+/// cursor takes the cards that share a left edge as a column and walks them as [`Walk::Grid`].
+pub const GRID_ATTR: &str = "data-cursor-grid";
+
+/// Installs the hand-back the card search box calls as focus leaves it by Escape or `↓`
+/// ([`HAND_BACK_JS`]): the cursor's card takes focus again, else the first card in view, and the
+/// keys act on it.
+const HOME_JS: &str = r"
+window.__zwipeCursorHome = () => {
+    window.__zwipeDeckInput = 'key';
+    if (window.__zwipeDeckHandOn && window.__zwipeDeckHandOn()) return;
+    const height = window.innerHeight;
+    const first = [...document.querySelectorAll('__STOPS__')].find((s) => {
+        const r = s.getBoundingClientRect();
+        return s.offsetParent !== null && !s.closest('[inert]') && r.bottom > 0 && r.top < height;
+    });
+    if (first && window.__zwipeDeckFocus) window.__zwipeDeckFocus(first.getAttribute('data-row'));
+};
+";
+
+/// Removes the hand-back.
+const HOME_DROP_JS: &str = "delete window.__zwipeCursorHome;";
+
+/// Hands the keyboard cursor back to the page's cards where the page has a hand-back
+/// ([`use_card_grid_cursor`]), and reports whether it did, for the card search box as Escape or
+/// `↓` lets it go.
+pub(crate) const HAND_BACK_JS: &str =
+    "if (window.__zwipeCursorHome) { window.__zwipeCursorHome(); true } else { false }";
 
 /// Removes one page's cursor keys.
 const NAV_DROP_JS: &str = r"
@@ -289,6 +330,19 @@ pub fn use_card_list_cursor() {
     use_deck_cursor(None, Walk::Lists);
 }
 
+/// The cursor on a grid of whole cards marked [`GRID_ATTR`] (the card search's results): the
+/// deck page's keys over the grid as laid out at this width ([`Walk::Grid`]), Enter opening the
+/// card as a click does. The card search box hands the cursor back as Escape or `↓` lets it go.
+pub fn use_card_grid_cursor() {
+    use_hook(|| {
+        document::eval(&HOME_JS.replace("__STOPS__", STOP_SELECTOR));
+    });
+    use_drop(|| {
+        document::eval(HOME_DROP_JS);
+    });
+    use_deck_cursor(None, Walk::Grid);
+}
+
 /// One card as the browser sends it: its id, vertical center and whether it is in view.
 type SentStop = (String, f64, bool);
 
@@ -349,6 +403,7 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>, walk: Walk) {
             .replace("__STOPS__", STOP_SELECTOR)
             .replace("__HEAD__", HEAD_SELECTOR)
             .replace("__LIST__", LIST_ATTR)
+            .replace("__GRID__", GRID_ATTR)
             .replace("__KEY__", PRESSED_KEY)
             .replace("__MOVES__", &format!("{MOVE_KEYS:?}"))
             .replace("__GUARD__", &cursor_guard_js(STACK_DETAILS_CLASS))
@@ -658,6 +713,68 @@ mod tests {
             ),
             Some(card(11)),
             "the last commander on to the first staple"
+        );
+    }
+
+    #[test]
+    fn a_marked_grid_is_walked_in_its_columns_as_laid_out() {
+        assert!(
+            NAV_JS.contains(
+                "const grid = holders.length ? null : document.querySelector('[__GRID__]');"
+            ),
+            "{NAV_JS}"
+        );
+        assert!(
+            NAV_JS.contains("const left = Math.round(box(s).getBoundingClientRect().left);"),
+            "a column is the cards that share a left edge: {NAV_JS}"
+        );
+        assert!(
+            NAV_JS.contains("sort((a, b) => a[0] - b[0])"),
+            "columns left to right: {NAV_JS}"
+        );
+        let snapshot = snapshot_of(&[
+            vec![sent(1, 10.0), sent(4, 90.0)],
+            vec![sent(2, 10.0)],
+            vec![sent(3, 10.0)],
+        ]);
+        assert_eq!(
+            land(
+                &snapshot,
+                &cursor::Head::default(),
+                Some(card(1)),
+                Move::Right,
+                Walk::Grid,
+                &[]
+            ),
+            Some(card(2))
+        );
+        assert_eq!(
+            land(
+                &snapshot,
+                &cursor::Head::default(),
+                Some(card(3)),
+                Move::Down,
+                Walk::Grid,
+                &[]
+            ),
+            Some(card(4)),
+            "down from a column with nothing below lands on the next row's last card"
+        );
+    }
+
+    #[test]
+    fn the_hand_back_focuses_the_cursor_card_else_the_first_in_view() {
+        assert!(
+            HOME_JS.contains("if (window.__zwipeDeckHandOn && window.__zwipeDeckHandOn()) return;"),
+            "{HOME_JS}"
+        );
+        assert!(
+            HOME_JS.contains("window.__zwipeDeckInput = 'key';"),
+            "the keys act on it: {HOME_JS}"
+        );
+        assert!(
+            HAND_BACK_JS.contains("if (window.__zwipeCursorHome)"),
+            "a page with no hand-back keeps the box's own keys: {HAND_BACK_JS}"
         );
     }
 

@@ -26,6 +26,7 @@ use zwipe_ui::screens::card_search::{
 use zwipe_ui::shortcuts;
 
 use crate::ClearWrap;
+use crate::deck_cursor::HAND_BACK_JS;
 use crate::keys::use_page_keys;
 
 /// The search icon: a lens and its handle as one path, Lucide's `search` (ISC,
@@ -223,6 +224,13 @@ pub fn CardSearchBar(
                 oninput: move |event| on_action.call(Action::Type(event.value())),
                 onkeydown: move |event: Event<KeyboardData>| {
                     let action = match event.key() {
+                        // With no chips to step through, `↓` hands the keys back to the page's
+                        // cards where the page has a cursor over them.
+                        Key::ArrowDown if model.peek().results().is_empty() => {
+                            event.prevent_default();
+                            document::eval(HAND_BACK_JS);
+                            return;
+                        }
                         Key::ArrowDown => Action::Step(Step::Down),
                         Key::ArrowUp => Action::Step(Step::Up),
                         Key::Enter => Action::Enter,
@@ -235,6 +243,7 @@ pub fn CardSearchBar(
                             }
                             if escape_lets_go(empty, header()) {
                                 let_go.call(());
+                                document::eval(HAND_BACK_JS);
                             }
                             return;
                         }

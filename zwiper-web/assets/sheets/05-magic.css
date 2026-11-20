@@ -2874,6 +2874,12 @@ html.keyboard-up .web-dock-pair {
         transition-delay: var(--float-delay, 0s);
         animation-play-state: running;
     }
+
+    .card-list-results .card-stack-card.floatable:focus-visible {
+        --float-reach: 1;
+        transition-delay: var(--float-delay, 0s);
+        animation-play-state: running;
+    }
 }
 
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
