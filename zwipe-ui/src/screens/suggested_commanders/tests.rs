@@ -26,7 +26,10 @@ fn deal_of(effects: &[Effect]) -> (Ticket, HttpCommanderDeal) {
     let deals: Vec<(Ticket, HttpCommanderDeal)> = effects
         .iter()
         .filter_map(|e| {
-            if let Effect::Deal { ticket, request } = e {
+            if let Effect::Deal {
+                ticket, request, ..
+            } = e
+            {
                 Some((*ticket, (**request).clone()))
             } else {
                 None

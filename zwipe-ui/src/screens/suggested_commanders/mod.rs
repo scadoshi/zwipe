@@ -97,6 +97,8 @@ pub enum Effect {
         ticket: Ticket,
         /// The request.
         request: Box<HttpCommanderDeal>,
+        /// Which page it asks for, which names the request in the client's reports.
+        page: Page,
     },
     /// Saves this oracle id to the commander maybeboard and answers with [`Action::Saved`]; a
     /// failure raises the client's error toast and answers nothing.
@@ -111,9 +113,9 @@ pub enum Effect {
     Toast(Toast),
 }
 
-/// Which page a deal out is for.
+/// Which page a deal is for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Page {
+pub enum Page {
     /// The first page of a fresh deal, which replaces the list.
     First,
     /// A next page, which joins it.
@@ -225,6 +227,7 @@ impl State {
         vec![Effect::Deal {
             ticket,
             request: Box::new(request),
+            page: Page::First,
         }]
     }
 
@@ -244,6 +247,7 @@ impl State {
         vec![Effect::Deal {
             ticket,
             request: Box::new(request),
+            page: Page::More,
         }]
     }
 
