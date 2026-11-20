@@ -524,6 +524,12 @@ fn push_deal_order(qb: &mut QueryBuilder<Postgres>, deal: &CommanderDeal) {
     qb.push_bind(i64::from(deal.limit));
 }
 
+/// A printing's rarity as its rank, for the Rarity sort: common, uncommon, rare, mythic, bonus,
+/// special, the tier order `Rarity`'s `Ord` gives the in-memory sorts, rather than the stored
+/// codes' alphabetical one.
+const RARITY_RANK: &str = "CASE rarity WHEN 'C' THEN 0 WHEN 'U' THEN 1 WHEN 'R' THEN 2 \
+     WHEN 'M' THEN 3 WHEN 'B' THEN 4 WHEN 'S' THEN 5 END";
+
 /// The SQL a card search orders by for `key`, over `latest_cards`' columns.
 fn sort_column(key: CardSortKey) -> &'static str {
     match key {
@@ -531,7 +537,7 @@ fn sort_column(key: CardSortKey) -> &'static str {
         CardSortKey::Cmc => "cmc",
         CardSortKey::Power => "CAST(NULLIF(power, '') AS INT)",
         CardSortKey::Toughness => "CAST(NULLIF(toughness, '') AS INT)",
-        CardSortKey::Rarity => "rarity",
+        CardSortKey::Rarity => RARITY_RANK,
         CardSortKey::ReleasedAt => "released_at",
         CardSortKey::PriceUsd => "(prices->>'usd')::NUMERIC",
         CardSortKey::PriceEur => "(prices->>'eur')::NUMERIC",

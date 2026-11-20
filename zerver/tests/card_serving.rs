@@ -178,6 +178,48 @@ async fn search_color_identity_within(pool: sqlx::PgPool) {
 /// must sort opposite ways, and a stray `ascending` bool from an old body is
 /// ignored rather than rejected.
 #[sqlx::test]
+async fn the_rarity_sort_orders_by_rank_not_by_letter(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("raritysorter").await;
+    // Names in no rarity's order, so a name tiebreak can't pass for the sort.
+    seed_cards(
+        &pool,
+        &[
+            card("Rank Bonus").rarity("bonus"),
+            card("Rank Common").rarity("common"),
+            card("Rank Mythic").rarity("mythic"),
+            card("Rank Rare").rarity("rare"),
+            card("Rank Special").rarity("special"),
+            card("Rank Uncommon").rarity("uncommon"),
+        ],
+    )
+    .await;
+    // Rarity's tier order, which the in-memory sorts use too.
+    let by_rank = [
+        "Rank Common",
+        "Rank Uncommon",
+        "Rank Rare",
+        "Rank Mythic",
+        "Rank Bonus",
+        "Rank Special",
+    ];
+    for (direction, want) in [
+        ("ascending", by_rank.to_vec()),
+        ("descending", by_rank.iter().rev().copied().collect()),
+    ] {
+        let (status, results) = app
+            .post(
+                SEARCH_CARDS_ROUTE,
+                json!({ "name_contains": "Rank", "order_by": "Rarity", "direction": direction }),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "search: {results}");
+        assert_eq!(names(&results), want, "{direction}");
+    }
+}
+
+#[sqlx::test]
 async fn search_reads_direction_by_name(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, _) = app.register("sorter").await;
