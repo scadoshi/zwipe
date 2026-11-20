@@ -2,7 +2,8 @@
 //! with `DATABASE_URL` alone, and one that sends mail asks for the Resend settings too.
 //!
 //! Each test runs the built binary with an empty environment but for what it names, from a
-//! directory with no `.env`. Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
+//! directory with no `.env`. A test that reaches the accounts runs on `#[sqlx::test]`'s migrated
+//! database. Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
 #![expect(
     clippy::unwrap_used,
@@ -11,6 +12,8 @@
 
 use std::path::PathBuf;
 use std::process::{Command, Output};
+
+use sqlx::{ConnectOptions, PgPool};
 
 /// An account name no database holds.
 const NOBODY: &str = "nobody_660_admin_env";
@@ -39,13 +42,21 @@ fn database_url() -> (&'static str, String) {
     ("DATABASE_URL", std::env::var("DATABASE_URL").unwrap())
 }
 
+/// The URL of `pool`'s database, migrated by `#[sqlx::test]`.
+fn database_url_of(pool: &PgPool) -> (&'static str, String) {
+    (
+        "DATABASE_URL",
+        pool.connect_options().to_url_lossy().to_string(),
+    )
+}
+
 fn stderr(output: &Output) -> String {
     String::from_utf8_lossy(&output.stderr).into_owned()
 }
 
-#[test]
-fn a_command_without_mail_runs_on_the_database_url_alone() {
-    let output = admin(&["show", NOBODY], &[database_url()]);
+#[sqlx::test]
+async fn a_command_without_mail_runs_on_the_database_url_alone(pool: PgPool) {
+    let output = admin(&["show", NOBODY], &[database_url_of(&pool)]);
     let err = stderr(&output);
     assert!(!output.status.success());
     assert!(
@@ -58,11 +69,11 @@ fn a_command_without_mail_runs_on_the_database_url_alone() {
     );
 }
 
-#[test]
-fn a_rename_without_a_notice_needs_no_mail_settings() {
+#[sqlx::test]
+async fn a_rename_without_a_notice_needs_no_mail_settings(pool: PgPool) {
     let output = admin(
         &["rename", NOBODY, "nobody_660_new", "--no-notice"],
-        &[database_url()],
+        &[database_url_of(&pool)],
     );
     let err = stderr(&output);
     assert!(!err.contains("failed to get variable"), "{err}");
