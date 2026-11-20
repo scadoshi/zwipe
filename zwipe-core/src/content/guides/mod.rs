@@ -857,13 +857,18 @@ pub static GUIDES: &[Guide] = &[
                 Surface::Web,
                 &[
                     Block::P(
-                        "Tap Commanders in the nav. Suggested sits beside your Maybeboard, under it on a phone: the commanders that fit your decks best, 10 at a time with Show more for the next. Its `?` explains the ranking, and the [[funnel]] at the bottom right narrows it along with the Maybeboard.",
+                        "Tap Commanders in the nav. Suggested sits beside your Maybeboard, under it on a phone: the 10 commanders that fit your decks best, and Show more adds 10 more, once. Its `?` explains the ranking, and the [[funnel]] at the bottom right narrows it along with the Maybeboard.",
                     ),
                     Block::P(
                         "Until you've built a deck, Suggested shows popular commanders instead.",
                     ),
                 ],
             ),
+            Block::Image {
+                file: "commander-suggestions/01-suggested-list.webp",
+                alt: "Suggested commanders as card rows, best fit first, under the Show row of color identities",
+                caption: None,
+            },
             Block::H2("Why this commander"),
             Block::P(
                 "Expand a row and tap Why this commander? for the Oracle tags it shares with your decks and the colors you keep building in. While you swipe, the card's details sheet shows the same reasons.",

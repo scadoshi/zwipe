@@ -639,9 +639,9 @@ fn commanders_hint() -> HintContent {
             ]),
             bullet(vec![
                 key("Suggested"),
-                text(" ranks the commanders that fit all your decks best, 10 at a time, and "),
+                text(" ranks the 10 commanders that fit all your decks best, and "),
                 key("Show more"),
-                text(" deals the next 10"),
+                text(" adds 10 more, once"),
             ]),
             bullet(vec![
                 key("Create deck"),
