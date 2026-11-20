@@ -46,8 +46,8 @@ use crate::inbound::shell::{OpenFrame, PublicFrame};
 /// [`PublicFrame`]; everything else sits in one [`OpenFrame`], so a
 /// signed-in user keeps the one top nav
 /// [`Shell`](crate::inbound::shell::Shell) from screen to screen, About and
-/// Privacy policy included. Privacy policy, About, a shared deck, the guides
-/// and Not found are open to everyone, and the rest need a session ([`AuthGate`]). `/changelog`
+/// Privacy policy included. Privacy policy, About, a shared deck, a card
+/// page, the card search's results, the guides and Not found are open to everyone, and the rest need a session ([`AuthGate`]). `/changelog`
 /// redirects to About, `/config` to Settings and `/maybeboard` to Commanders.
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
