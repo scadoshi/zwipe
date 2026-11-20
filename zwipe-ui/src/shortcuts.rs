@@ -237,8 +237,8 @@ pub fn card_page_groups() -> Vec<SheetGroup> {
 }
 
 /// The card search's results page: the cursor's four ways over the grid, the ends and Enter
-/// under Navigation, the keys that read a card (Printings, Send to, details and Flip, no Image)
-/// under Card, and `/` for the card search under Page. The cursor keeps `j` and `k`.
+/// under Navigation, the keys that read a card (Printings, Send to, Image, Flip and details) under
+/// Card, and `/` for the card search under Page. The cursor keeps `j` and `k`.
 #[must_use]
 pub fn search_results_groups() -> Vec<SheetGroup> {
     sheet_groups(ScreenKeys {
@@ -248,12 +248,7 @@ pub fn search_results_groups() -> Vec<SheetGroup> {
             (&["Home", "End"], "First or last card"),
         ],
         open: Some((&["Enter"], "Open the card")),
-        card: vec![
-            PRINTINGS_ROW,
-            SEND_TO_ROW,
-            (&["d"], "Card details"),
-            (&["v"], FLIP_ROW),
-        ],
+        card: card_read_rows_with_send_to(),
         page: vec![CARD_SEARCH_ROW],
         ..ScreenKeys::default()
     })
@@ -747,7 +742,7 @@ mod tests {
     }
 
     #[test]
-    fn the_search_results_list_the_cursor_and_the_card_keys_but_no_image() {
+    fn the_search_results_list_the_cursor_and_the_card_keys() {
         assert_eq!(
             outline(&search_results_groups()),
             vec![
@@ -755,7 +750,7 @@ mod tests {
                     "Navigation",
                     vec!["↑", "h", "Home", "gg", "Shift+G", "Enter"]
                 ),
-                ("Card", vec!["p", "Shift+P", "d", "v"]),
+                ("Card", vec!["p", "Shift+P", "i", "v", "d"]),
                 ("Page", vec!["/", "t", "?", "Shift+H", "Esc"]),
                 ("In printings", vec!["←", "h", "v", "Enter"]),
                 ("In themes", vec!["↑", "h", "gg", "Enter"]),
