@@ -73,14 +73,19 @@ async fn authed_route_without_token_is_401(pool: sqlx::PgPool) {
 
 /// Argon2 runs on the blocking pool: two logins at once both succeed, and a
 /// ticker on the same task keeps ticking while they hash, which it can't if
-/// the hashing holds the runtime thread. The bound is half of one hash timed
-/// in the same run, so a slow machine slows both sides alike.
+/// the hashing holds the runtime thread. A hash on the runtime stalls the
+/// ticker for a whole hash every round, so the bound is three quarters of the
+/// fastest of a few hashes timed in the same run, and a round passes once in
+/// up to three tries; a stall from a busy machine rarely lands on every round.
 #[sqlx::test]
 async fn concurrent_logins_leave_the_runtime_free(pool: sqlx::PgPool) {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::time::{Duration, Instant};
 
     use zwipe::domain::auth::models::password::HashedPassword;
+
+    const TIMED_HASHES: usize = 3;
+    const ROUNDS: usize = 3;
 
     let app = TestApp::new(pool.clone());
     app.register("hasher1").await;
@@ -92,44 +97,59 @@ async fn concurrent_logins_leave_the_runtime_free(pool: sqlx::PgPool) {
             .await
             .unwrap();
     let hash = HashedPassword::new(&stored).unwrap();
-    let started = Instant::now();
-    assert!(hash.verify("TestPass123!").unwrap());
-    let one_hash = started.elapsed();
-    let bound = one_hash.checked_div(2).unwrap();
+    let one_hash = (0..TIMED_HASHES)
+        .map(|_| {
+            let started = Instant::now();
+            assert!(hash.verify("TestPass123!").unwrap());
+            started.elapsed()
+        })
+        .min()
+        .unwrap();
+    let bound = one_hash.checked_mul(3).unwrap().checked_div(4).unwrap();
 
-    let done = AtomicBool::new(false);
-    let ticker = async {
-        let mut longest = Duration::ZERO;
-        let mut last = Instant::now();
-        while !done.load(Ordering::SeqCst) {
-            tokio::time::sleep(Duration::from_millis(1)).await;
-            longest = longest.max(last.elapsed());
-            last = Instant::now();
+    let mut stalls = Vec::with_capacity(ROUNDS);
+    for _ in 0..ROUNDS {
+        // A fresh app per round has its own address, so the rounds' logins stay under the
+        // per-address login limit.
+        let app = TestApp::new(pool.clone());
+        let done = AtomicBool::new(false);
+        let ticker = async {
+            let mut longest = Duration::ZERO;
+            let mut last = Instant::now();
+            while !done.load(Ordering::SeqCst) {
+                tokio::time::sleep(Duration::from_millis(1)).await;
+                longest = longest.max(last.elapsed());
+                last = Instant::now();
+            }
+            longest
+        };
+        let logins = async {
+            let results = tokio::join!(
+                app.post(
+                    LOGIN_ROUTE,
+                    serde_json::json!({ "identifier": "hasher1", "password": "TestPass123!" }),
+                    None,
+                ),
+                app.post(
+                    LOGIN_ROUTE,
+                    serde_json::json!({ "identifier": "hasher2", "password": "TestPass123!" }),
+                    None,
+                ),
+            );
+            done.store(true, Ordering::SeqCst);
+            results
+        };
+        let (longest, ((first, first_body), (second, second_body))) = tokio::join!(ticker, logins);
+        assert_eq!(first, StatusCode::OK, "first login: {first_body}");
+        assert_eq!(second, StatusCode::OK, "second login: {second_body}");
+        stalls.push(longest);
+        if longest < bound {
+            return;
         }
-        longest
-    };
-    let logins = async {
-        let results = tokio::join!(
-            app.post(
-                LOGIN_ROUTE,
-                serde_json::json!({ "identifier": "hasher1", "password": "TestPass123!" }),
-                None,
-            ),
-            app.post(
-                LOGIN_ROUTE,
-                serde_json::json!({ "identifier": "hasher2", "password": "TestPass123!" }),
-                None,
-            ),
-        );
-        done.store(true, Ordering::SeqCst);
-        results
-    };
-    let (longest, ((first, first_body), (second, second_body))) = tokio::join!(ticker, logins);
-    assert_eq!(first, StatusCode::OK, "first login: {first_body}");
-    assert_eq!(second, StatusCode::OK, "second login: {second_body}");
-    assert!(
-        longest < bound,
-        "the runtime stalled for {longest:?} during the logins; one hash takes {one_hash:?}"
+    }
+    panic!(
+        "the runtime stalled for {stalls:?} in {ROUNDS} rounds of logins; the bound is {bound:?}, \
+         three quarters of one hash ({one_hash:?})"
     );
 }
 
