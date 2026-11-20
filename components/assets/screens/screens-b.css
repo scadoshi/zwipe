@@ -1263,6 +1263,13 @@
     padding: 0 var(--space-3);
 }
 
+/* In the Rates column the gap is the room under the chips; a chip row's own
+   margin would add to it, leaving the note or chart under them further
+   away than the section's foot. */
+.activity-rates > .activity-rate-chips {
+    margin-bottom: 0;
+}
+
 /* The Activity section's body while the screen loads, in its loaded
    shape: the section's padding and gap around the empty grid, its tags, the
    rule and Totals, so the loaded section lands where the ghost stood. */

@@ -24,3 +24,12 @@ fn alone_under_a_group_header_it_takes_even_room() {
     assert!(group.contains("padding-top: var(--space-3);"), "{group}");
     assert!(group.contains("padding-bottom: var(--space-3);"), "{group}");
 }
+
+#[test]
+fn the_rate_chips_take_only_the_rates_gap_under_them() {
+    let chips = rule(".activity-rates > .activity-rate-chips");
+    assert!(
+        chips.contains("margin-bottom: 0;"),
+        "the column's 12px gap is the room under the chips, not the gap plus a chip row's margin: {chips}"
+    );
+}
