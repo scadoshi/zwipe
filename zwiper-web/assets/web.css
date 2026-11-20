@@ -2247,11 +2247,13 @@ body {
     box-sizing: border-box;
 }
 
+/* Side by side, the columns carry no side padding, so they meet at the grid's --panel-gap,
+   as Playstyle's and the deck page's do. */
 @media (min-width: 900px) {
     .web-suggested,
     .web-maybeboard {
         max-width: var(--web-page-max);
-        padding: 0 var(--space-5) var(--space-6);
+        padding: 0 0 var(--space-6);
     }
 
     /* Quick add is as wide as its bar, as the deck page's is, so its results

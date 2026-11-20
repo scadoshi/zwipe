@@ -43,6 +43,16 @@ fn stacked_under_the_maybeboard_the_suggested_column_keeps_a_panel_gap_over_its_
     );
 }
 
+#[test]
+fn side_by_side_the_columns_meet_at_the_panel_gap_as_playstyle_s_do() {
+    assert!(
+        WEB.contains(
+            "@media (min-width: 900px) {\n    .web-suggested,\n    .web-maybeboard {\n        max-width: var(--web-page-max);\n        padding: 0 0 var(--space-6);\n    }"
+        ),
+        "a column's side padding would add to the grid's --panel-gap between the two"
+    );
+}
+
 /// The Suggested list's source.
 const SUGGESTED: &str = include_str!("../src/lib/inbound/screens/commanders/suggested.rs");
 
