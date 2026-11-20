@@ -6,4 +6,5 @@ pub mod oracle_tag_descriptions;
 pub mod oracle_tag_groups;
 pub mod oracle_tags;
 pub mod scryfall_data_fields;
+pub mod scryfall_loads;
 pub mod upsert_card;

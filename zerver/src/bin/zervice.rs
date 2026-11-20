@@ -20,7 +20,7 @@ use zwipe::domain::card::models::zervice_step::{Step, StepOutcome, StepRecord};
 use zwipe::domain::card::ports::CardService;
 use zwipe::domain::upkeep::ports::UpkeepService;
 use zwipe::domain::{card, upkeep};
-use zwipe::inbound::external::scryfall::bulk::BulkEndpoint;
+use zwipe::inbound::external::scryfall::bulk::Scryfall;
 use zwipe::outbound::sqlx::postgres::{Jit, Postgres, Writes};
 use zwipe_core::domain::logo;
 
@@ -120,7 +120,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let clock = begin(Step::CardSync);
-    let synced = match card_service.scryfall_sync(BulkEndpoint::DefaultCards).await {
+    let synced = match card_service.scryfall_sync(&Scryfall).await {
         Ok(synced) => {
             let m = &synced.metrics;
             let outcome = done(
@@ -310,8 +310,8 @@ async fn oracle_tag_steps(
 ) {
     let clock = begin(Step::OracleTags);
     let pulled = match file {
-        Some(url) => cards.sync_oracle_tags_from(url).await,
-        None => cards.sync_oracle_tags().await,
+        Some(url) => cards.sync_oracle_tags_from(&Scryfall, url).await,
+        None => cards.sync_oracle_tags(&Scryfall).await,
     };
     match pulled {
         Ok((tags, correlations)) => {

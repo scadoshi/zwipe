@@ -38,7 +38,7 @@ use crate::domain::card::requests::get_sets::GetSetsError;
 use crate::domain::deck::models::deck::commander_suggestions::{
     CommanderSuggestionsError, DeckTagProfile, ScoredCommander,
 };
-use crate::inbound::external::scryfall::bulk::BulkEndpoint;
+use crate::inbound::external::scryfall::bulk::BulkSource;
 use crate::inbound::external::scryfall::oracle_tag::OracleTag as ScryfallOracleTag;
 
 /// The optional deck-serving inputs threaded into the deck-aware search entry
@@ -110,6 +110,12 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         batch_size: usize,
         zervice_metrics: &mut ZerviceMetrics,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
+
+    /// When Scryfall made the `kind` bulk file loaded last, or `None` before any load.
+    fn fetch_scryfall_load(
+        &self,
+        kind: &str,
+    ) -> impl Future<Output = anyhow::Result<Option<DateTime<Utc>>>> + Send;
 
     /// Records sync metrics to database.
     fn record_zervice_metrics(
@@ -499,9 +505,9 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Syncs database with Scryfall bulk data, returning the run's metrics and every printing id
     /// the bulk file listed.
-    fn scryfall_sync(
+    fn scryfall_sync<S: BulkSource>(
         &self,
-        bulk_endpoint: BulkEndpoint,
+        source: &S,
     ) -> impl Future<Output = anyhow::Result<SyncedCards>> + Send;
 
     /// Records one step of a zervice run in `zervice_steps`.
@@ -550,13 +556,17 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Syncs the `oracle_tag` catalog + card correlation from Scryfall's Oracle
     /// Tags bulk file (nightly, zervice). Returns `(catalog_rows, correlation_rows)`.
-    fn sync_oracle_tags(&self) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
+    fn sync_oracle_tags<S: BulkSource>(
+        &self,
+        source: &S,
+    ) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 
     /// Syncs the catalog and card correlation from one dated Oracle Tags bulk file at `url`, an
     /// https URL on Scryfall's bulk host, to restore from an earlier night's file. Returns
     /// `(catalog_rows, correlation_rows)`.
-    fn sync_oracle_tags_from(
+    fn sync_oracle_tags_from<S: BulkSource>(
         &self,
+        source: &S,
         url: &str,
     ) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 

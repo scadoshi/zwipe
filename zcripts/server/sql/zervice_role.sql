@@ -90,6 +90,9 @@ GRANT SELECT (commander_id, partner_commander_id, background_id, signature_spell
 -- Every step: one zervice_steps row per step per run.
 GRANT SELECT, INSERT ON zervice_steps TO zervice;
 
+-- The card and oracle tag syncs: the bulk file each loaded last.
+GRANT SELECT, INSERT, UPDATE ON scryfall_loads TO zervice;
+
 COMMIT;
 
 -- Everything else (users, the rest of decks and deck_cards, signal writes,

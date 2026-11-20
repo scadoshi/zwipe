@@ -32,7 +32,8 @@ use crate::domain::card::requests::get_oracle_tags::GetOracleTagsError;
 use crate::domain::card::requests::get_oracle_words::GetOracleWordsError;
 use crate::domain::card::requests::get_scryfall_data::{GetScryfallData, ScryfallDataIds};
 use crate::domain::card::requests::get_sets::GetSetsError;
-use crate::inbound::external::scryfall::bulk::{self, BulkEndpoint};
+use crate::inbound::external::scryfall::bulk::{self, BulkEndpoint, BulkSource};
+use crate::inbound::external::scryfall::oracle_tag::OracleTag as ScryfallOracleTag;
 use crate::outbound::sqlx::card::helpers::scryfall_data_fields;
 
 /// PostgreSQL parameter limit per query (~65k parameters).
@@ -97,14 +98,12 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.upsert(&scryfall_data).await
     }
 
-    async fn scryfall_sync(&self, bulk_endpoint: BulkEndpoint) -> anyhow::Result<SyncedCards> {
-        tracing::info!(
-            "performing scryfall sync with {}",
-            bulk_endpoint.to_snake_case()
-        );
+    async fn scryfall_sync<S: BulkSource>(&self, source: &S) -> anyhow::Result<SyncedCards> {
+        let file = source.describe(BulkEndpoint::DefaultCards).await?;
+        tracing::info!("performing scryfall sync with {}", file.kind);
         let mut zervice_metrics = ZerviceMetrics::new();
         let batch_size = batch_size();
-        let scryfall_data: Vec<ScryfallData> = bulk_endpoint.fetch_cards().await?;
+        let scryfall_data: Vec<ScryfallData> = bulk::pull_cards(source, file).await?.items;
         zervice_metrics.set_received_count(zervice_metrics::count_column(scryfall_data.len()));
         self.repo
             .batch_delta_upsert(&scryfall_data, batch_size, &mut zervice_metrics)
@@ -207,17 +206,23 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.refresh_otag_context_signal_rollup().await
     }
 
-    async fn sync_oracle_tags(&self) -> anyhow::Result<(usize, usize)> {
+    async fn sync_oracle_tags<S: BulkSource>(&self, source: &S) -> anyhow::Result<(usize, usize)> {
         tracing::info!("performing oracle tags sync");
-        let tags = BulkEndpoint::OracleTags.fetch_oracle_tags().await?;
+        let file = source.describe(BulkEndpoint::OracleTags).await?;
+        let tags: Vec<ScryfallOracleTag> = bulk::pull(source, file).await?.items;
         tracing::info!("fetched {} oracle tags", tags.len());
-        let counts = self.repo.sync_oracle_tags(&tags).await?;
-        Ok(counts)
+        self.repo.sync_oracle_tags(&tags).await
     }
 
-    async fn sync_oracle_tags_from(&self, url: &str) -> anyhow::Result<(usize, usize)> {
+    async fn sync_oracle_tags_from<S: BulkSource>(
+        &self,
+        source: &S,
+        url: &str,
+    ) -> anyhow::Result<(usize, usize)> {
         tracing::info!("performing oracle tags sync from {url}");
-        let tags = bulk::fetch_oracle_tags_file(url).await?;
+        let tags: Vec<ScryfallOracleTag> = bulk::pull(source, bulk::oracle_tags_file(url)?)
+            .await?
+            .items;
         tracing::info!("fetched {} oracle tags", tags.len());
         self.repo.sync_oracle_tags(&tags).await
     }

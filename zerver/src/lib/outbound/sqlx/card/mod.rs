@@ -56,6 +56,7 @@ use crate::domain::deck::models::deck::commander_suggestions::{
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::commander_scoring::SCORE_COMMANDER_SUGGESTIONS_SQL;
 use crate::outbound::sqlx::card::helpers::oracle_tag_groups::{self, RoleMembershipBinds};
+use crate::outbound::sqlx::card::helpers::scryfall_loads;
 use crate::outbound::sqlx::card::helpers::upsert_card::{
     BatchDeltaUpsertWithTx, BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
 };
@@ -441,6 +442,14 @@ impl CardRepository for MyPostgres {
         // A dry run records no sync row, so a preview never reads as a real night.
         self.finish(tx).await?;
         Ok(zervice_metrics)
+    }
+
+    async fn fetch_scryfall_load(
+        &self,
+        kind: &str,
+    ) -> anyhow::Result<Option<chrono::DateTime<chrono::Utc>>> {
+        let mut conn = self.pool.acquire().await?;
+        scryfall_loads::fetch_load(&mut conn, kind).await
     }
 
     async fn record_zervice_step(&self, record: &StepRecord) -> anyhow::Result<()> {
