@@ -55,6 +55,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "In the app, Commanders, a new screen with your commander maybeboard and suggested commanders",
         "In the app, the Themes sheet no longer has a search",
         "An expanded card row puts all its buttons on one line that wraps",
+        "In the Suggested swipe, Why this commander? opens inside the card's details instead of the footer",
     ],
 }];
 
