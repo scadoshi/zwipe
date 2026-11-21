@@ -19,7 +19,6 @@ use zwipe_core::http::contracts::suggestions::{
 
 use crate::activity::Bar;
 use crate::commander::maybeboard::NO_MATCH;
-use crate::deck::decks_label;
 
 /// Suggestions the list shows; a shorter list after a dropped row refetches.
 pub const LIST_SIZE: usize = 10;
@@ -214,7 +213,7 @@ pub fn group_shared_tags(tags: &[HttpSharedTag]) -> SharedTags {
 pub struct SummaryValue {
     /// The colors drawn as pips in WUBRG order; empty for colorless.
     pub pips: Vec<Color>,
-    /// The deck count after the pips, "4 decks".
+    /// The deck count after the pips, a bare number: the row's label says what it counts.
     pub count: String,
 }
 
@@ -240,14 +239,14 @@ pub fn profile_summary(profile: &HttpBuilderProfile) -> ProfileSummary {
             .collect();
         SummaryValue {
             pips: colors::identity_of(&parsed),
-            count: decks_label(top.decks),
+            count: top.decks.to_string(),
         }
     });
     let color = profile.colors.iter().find_map(|c| {
         let color = Color::try_from(c.color.as_str()).ok()?;
         Some(SummaryValue {
             pips: vec![color],
-            count: decks_label(c.decks),
+            count: c.decks.to_string(),
         })
     });
     ProfileSummary {

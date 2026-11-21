@@ -880,6 +880,10 @@ button {
     justify-content: flex-start;
 }
 
+.settings-row.info-row-stacked .info-row-value {
+    text-align: left;
+}
+
 .card h3 {
     color: var(--ink-accent-primary, var(--accent-primary));
 }

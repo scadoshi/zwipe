@@ -7,7 +7,6 @@ use components::{
     BarChart, BarOrientation, ColorBars, ColorsEmpty, DataBar, DeckFold, OtagDef, RoleTags,
 };
 use dioxus::prelude::*;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpBuilderProfile;
 use zwipe_ui::playstyle::{
     SummaryValue, TagBars, TagRow, profile_summary, role_bars, role_tags, tag_rows,
@@ -143,44 +142,42 @@ pub fn ProfileSummary(
     let summary = profile_summary(&profile);
     rsx! {
         ProfilePanel { title: SUMMARY_TITLE, open_section, folds,
-            div { class: "flex-col",
-                div { class: "settings-row",
-                    span { class: "settings-row-label", "{SUMMARY_DECKS}" }
-                    span { class: "info-row-value", "{summary.decks}" }
-                }
-                if let Some(value) = summary.color_set {
-                    SummaryIdentityRow { label: SUMMARY_TOP_COLORS, value }
-                }
-                if let Some(value) = summary.color {
-                    SummaryIdentityRow {
-                        label: SUMMARY_TOP_COLOR,
-                        name: value.pips.first().map(Color::to_long_name),
-                        value,
-                    }
-                }
+            SummaryRows { summary }
+        }
+    }
+}
+
+/// The Summary rows, each label above its value: the deck count, then the
+/// top identity and the top color as pips with their bare deck counts.
+#[component]
+fn SummaryRows(summary: zwipe_ui::playstyle::ProfileSummary) -> Element {
+    rsx! {
+        div { class: "flex-col",
+            div { class: "settings-row info-row-stacked",
+                span { class: "settings-row-label", "{SUMMARY_DECKS}" }
+                span { class: "info-row-value", "{summary.decks}" }
+            }
+            if let Some(value) = summary.color_set {
+                SummaryIdentityRow { label: SUMMARY_TOP_COLORS, value }
+            }
+            if let Some(value) = summary.color {
+                SummaryIdentityRow { label: SUMMARY_TOP_COLOR, value }
             }
         }
     }
 }
 
-/// A Summary row whose value is an identity: `name` when given (the long
-/// color name), then the identity's pips and its deck count.
+/// A Summary row whose value is an identity: the label, then under it the
+/// pips and the deck count. Screen readers hear the identity's name in the
+/// pips' place; colorless draws no pip, so it shows its name.
 #[component]
-fn SummaryIdentityRow(
-    label: &'static str,
-    value: SummaryValue,
-    #[props(default)] name: Option<String>,
-) -> Element {
-    // A shown name says the color, so the pips say nothing more.
-    let speak = name.is_none();
+fn SummaryIdentityRow(label: &'static str, value: SummaryValue) -> Element {
+    let show_name = value.pips.is_empty();
     rsx! {
-        div { class: "settings-row",
+        div { class: "settings-row info-row-stacked",
             span { class: "settings-row-label", "{label}" }
             span { class: "info-row-value identity-pips",
-                if let Some(name) = name {
-                    span { "{name}" }
-                }
-                IdentityPips { identity: value.pips, count: value.count, speak }
+                IdentityPips { identity: value.pips, count: value.count, show_name }
             }
         }
     }
@@ -268,5 +265,69 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use zwipe_core::domain::card::scryfall_data::colors::Color::{Blue, Red, White};
+    use zwipe_ui::playstyle::ProfileSummary;
+
+    use super::*;
+
+    fn summary_html() -> String {
+        fn app() -> Element {
+            rsx! {
+                SummaryRows {
+                    summary: ProfileSummary {
+                        decks: "11".to_owned(),
+                        color_set: Some(SummaryValue { pips: vec![White, Blue, Red], count: "4".to_owned() }),
+                        color: Some(SummaryValue { pips: vec![Blue], count: "9".to_owned() }),
+                    },
+                }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dioxus_ssr::render(&dom)
+    }
+
+    #[test]
+    fn each_summary_row_stacks_its_label_over_pips_and_a_bare_count() {
+        let html = summary_html();
+        assert_eq!(
+            html.matches("settings-row info-row-stacked").count(),
+            3,
+            "{html}"
+        );
+        for label in [SUMMARY_DECKS, SUMMARY_TOP_COLORS, SUMMARY_TOP_COLOR] {
+            let row = html.find(label).expect("each label shows");
+            assert!(
+                html.get(row..)
+                    .is_some_and(|rest| rest.contains("info-row-value")),
+                "{label} sits above its value"
+            );
+        }
+        assert_eq!(
+            html.matches("ms-cost").count(),
+            4,
+            "Jeskai's three pips and Blue's one"
+        );
+        assert!(
+            !html.contains("<span>Jeskai</span>") && !html.contains("<span>Blue</span>"),
+            "the pips name the colors: {html}"
+        );
+        assert!(
+            html.contains(r#"<span class="sr-only">Jeskai</span>"#),
+            "screen readers still hear the identity: {html}"
+        );
+        assert!(
+            !html.contains("deck<") && !html.contains("decks<"),
+            "the counts are bare: {html}"
+        );
+        assert!(
+            html.contains("<span>4</span>") && html.contains("<span>9</span>"),
+            "{html}"
+        );
     }
 }
