@@ -928,10 +928,17 @@ i.ms.ms-cost.ms-gp {
     margin-top: var(--space-2);
 }
 
-/* The bar's first line: the icons in one group, then the stepper, a gap
-   apart as the icons are, so the line reads as one row of controls. */
+/* The bar's one line: the icons' group, then the stepper, then the words'
+   group, a gap apart as the buttons are, so the line reads as one row of
+   controls. */
 .card-action-split {
     column-gap: var(--space-2);
+}
+
+/* A group in the line lends its buttons to the line, so each wraps on its
+   own and the words share the icons' line while it has room. */
+.card-action-split > .card-action-group {
+    display: contents;
 }
 
 .card-action-group {
@@ -1034,9 +1041,7 @@ i.ms.ms-cost.ms-gp {
         margin-bottom: var(--space-1);
     }
 
-    /* The stepper ends the icons' line. */
     .card-action-split {
-        justify-content: space-between;
         column-gap: var(--space-2);
     }
 }
@@ -1053,12 +1058,6 @@ i.ms.ms-cost.ms-gp {
         height: auto;
         transform: none;
     }
-}
-
-/* The card drawer is a phone's width at every window width, so the stepper
-   ends the icons' line there too. */
-.card-details-drawer .card-action-split {
-    justify-content: space-between;
 }
 
 /* The quantity stepper: `-`, the count and `+` wrap to the next line

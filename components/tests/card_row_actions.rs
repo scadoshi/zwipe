@@ -1,6 +1,6 @@
-//! An open deck card row's actions, and the deck page's card drawer's: the icons in one group with
-//! the stepper at the end of their line, then a block of the word buttons, Printings and the board
-//! moves, under them.
+//! An open card row's actions, and the deck page's card drawer's: one wrapping line of the icons'
+//! group, the stepper after it, then the word buttons' group, Printings, the host's words and the
+//! board moves. Each button wraps on its own, so the words share the icons' line while it has room.
 
 #![expect(
     clippy::unwrap_used,
@@ -21,8 +21,8 @@ const CARD_JSON: &str = include_str!("../../zwipe-ui/src/test_support/card.json"
 /// The opening tag of the icons' line.
 const SPLIT_ROW: &str = r#"<div class="card-action-row card-action-split">"#;
 
-/// The opening tag of the word buttons' block.
-const WORDS: &str = r#"<div class="card-action-row card-action-words">"#;
+/// The opening tag of the word buttons' group.
+const WORDS: &str = r#"<span class="card-action-group card-action-words">"#;
 
 fn card() -> Card {
     serde_json::from_str(CARD_JSON).unwrap()
@@ -170,8 +170,8 @@ fn icons_then_stepper(html: &str) {
         "{after}"
     );
     assert!(
-        !has(line, data_action::PRINTINGS),
-        "Printings is a word: {line}"
+        !has(group, data_action::PRINTINGS),
+        "Printings is a word, not an icon: {group}"
     );
     assert_eq!(
         html.matches(components::SEND_TO_ACTION).count(),
@@ -181,20 +181,30 @@ fn icons_then_stepper(html: &str) {
 }
 
 #[test]
-fn printings_and_the_moves_sit_in_the_block_under_the_icons() {
+fn printings_and_the_moves_follow_the_stepper_on_the_icons_line() {
     for html in [render(open_row), render(drawer_panel)] {
-        words_under_icons(&html);
+        words_on_the_icons_line(&html);
     }
 }
 
-fn words_under_icons(html: &str) {
-    let words = section(html, WORDS);
+fn words_on_the_icons_line(html: &str) {
+    assert_eq!(
+        html.matches(r#"<div class="card-action-row"#).count(),
+        1,
+        "the bar is one line: {html}"
+    );
+    let line = section(html, SPLIT_ROW);
+    let (before, words) = line
+        .split_once(WORDS)
+        .unwrap_or_else(|| panic!("the words in the icons' line: {line}"));
+    assert!(
+        before.contains(r#"<span class="card-action-stepper">"#),
+        "the words follow the stepper: {line}"
+    );
     assert!(has(words, data_action::PRINTINGS), "{words}");
     for label in [">Maybeboard<", ">Sideboard<"] {
         assert!(words.contains(label), "{label} in {words}");
     }
-    let (icons, _) = html.split_once(WORDS).unwrap();
-    assert!(icons.contains(SPLIT_ROW), "the icons come first: {html}");
     assert_eq!(
         html.matches(r#"data-action="printings""#).count(),
         1,
@@ -211,9 +221,12 @@ fn rule<'css>(css: &'css str, selector: &str) -> &'css str {
 }
 
 #[test]
-fn on_a_phone_the_stepper_ends_the_line_and_the_words_keep_their_width() {
+fn on_a_phone_the_stepper_follows_the_icons_and_the_words_keep_their_width() {
     let phone = phone_block();
-    assert!(rule(phone, ".card-action-split").contains("justify-content: space-between;"));
+    assert!(
+        !rule(phone, ".card-action-split").contains("justify-content"),
+        "the stepper stays beside the icons, the words after it"
+    );
     assert!(
         !phone.contains(".card-action-words"),
         "the words lay out as on a wide screen: {phone}"
@@ -309,14 +322,25 @@ fn on_a_phone_each_button_reaches_half_the_gap_so_neighbors_meet_at_its_middle()
 }
 
 #[test]
-fn the_narrow_drawer_lays_its_bar_out_as_a_phone_does_at_every_width() {
+fn the_narrow_drawer_lays_its_bar_out_as_the_row_does() {
     let css = components::MAGIC_CSS;
-    let split = rule(css, "\n.card-details-drawer .card-action-split");
-    assert!(split.contains("justify-content: space-between;"), "{split}");
+    assert!(
+        !css.contains(".card-details-drawer .card-action-split"),
+        "the drawer's line lays out as the row's"
+    );
     assert!(
         !css.contains(".card-details-drawer .card-action-words"),
         "the drawer's words lay out as the row's do"
     );
+}
+
+#[test]
+fn each_button_in_the_line_wraps_on_its_own() {
+    let groups = rule(
+        components::MAGIC_CSS,
+        "\n.card-action-split > .card-action-group",
+    );
+    assert!(groups.contains("display: contents;"), "{groups}");
 }
 
 /// A suggested commander's row: no stepper and no moves, its host's words after Printings.
@@ -349,9 +373,13 @@ fn suggestion_row() -> Element {
 }
 
 #[test]
-fn a_row_without_moves_lays_its_words_in_the_same_block() {
+fn a_row_without_moves_lays_its_words_after_image_on_one_line() {
     let html = render(suggestion_row);
-    let words = section(&html, WORDS);
+    let line = section(&html, SPLIT_ROW);
+    let (icons, words) = line
+        .split_once(WORDS)
+        .unwrap_or_else(|| panic!("the words in Image's line: {line}"));
+    assert!(has(icons, "image"), "{icons}");
     for label in [
         r#"data-action="printings""#,
         ">Create deck<",

@@ -392,9 +392,9 @@ pub fn CardRow(
                             CardStepper { qty, on_qty_change }
                         }
                     },
-                    action_rows: rsx! {
+                    action_words: rsx! {
                         if has_words {
-                            div { class: "card-action-row card-action-words",
+                            Fragment {
                                 if let Some(handler) = on_printing {
                                     {
                                         let card_clone = card.clone();
