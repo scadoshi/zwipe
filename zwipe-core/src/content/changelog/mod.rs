@@ -54,6 +54,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On Android, opening a card role in a deck's card list no longer leaves doubled pieces of the row behind",
         "In the app, Commanders, a new screen with your commander maybeboard and suggested commanders",
         "In the app, the Themes sheet no longer has a search",
+        "An expanded card row puts all its buttons on one line that wraps",
     ],
 }];
 
