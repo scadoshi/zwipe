@@ -46,38 +46,41 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 9);
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 25, 0),
+    version: Version::new(1, 26, 0),
     date: None,
     entries: &[
         "On Android, the app no longer signs you out now and then after a restart",
         "On Android, Send to, Oracle tag examples and the update screen show their header below the status bar",
-        "On a card's page, tapping a tag under a card role opens its description and example cards",
-        "A toast stamps down harder as it lands, coming in big and settling with a small bounce",
-        "Commanders, a new screen with your commander maybeboard and suggested commanders",
-        "A Brawl deck's commander picker only offers commanders legal in Brawl",
-        "Playstyle's Oracle tags show Decks, Cards and Impact as colored bars",
-        "Card searches and opened tag examples count toward Searches run on Home and Activity while you're logged in",
-        "On the web, card search results work from the keyboard and have a hint",
-        "On the web, card search results show the nav when you're logged out",
-        "Card searches on zwipe.net count toward Searches run on Home",
-        "New guides for card search, suggested commanders, a deck's card list and keyboard shortcuts",
-        "Toasts about a screen leave when you do; the ones you still need follow you to the next screen",
-        "A commander search or deal that fails shows Retry instead of loading forever",
-        "Commander swipes deal cards in the order the filter's sort sets",
         "On Android, opening a card role in a deck's card list no longer leaves doubled pieces of the row behind",
-        "Card search results load more as you scroll",
-        "Sorting by Rarity goes from common to mythic instead of alphabetically",
-        "Going back from a card to your search results keeps your place",
-        "On the web and zwipe.net, the Themes search's clear button is red",
+        "In the app, Commanders, a new screen with your commander maybeboard and suggested commanders",
         "In the app, the Themes sheet no longer has a search",
-        "Hints fit on a phone screen without scrolling",
-        "A long hint keeps its title and buttons in place and scrolls only its text",
-        "zwipe.net's search icon matches the other header icons",
     ],
 }];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 25, 0),
+        date: NaiveDate::from_ymd_opt(2026, 11, 20),
+        entries: &[
+            "On the web, Commanders, a new screen with your commander maybeboard and suggested commanders",
+            "New guides for card search, suggested commanders, a deck's card list and keyboard shortcuts",
+            "Card search results load more as you scroll, and going back from a card keeps your place",
+            "On the web, card search results work from the keyboard, have a hint and show the nav when you're logged out",
+            "Card searches and opened tag examples count toward Searches run on Home and Activity while you're logged in",
+            "Card searches on zwipe.net count toward Searches run on Home",
+            "On a card's page, tapping a tag under a card role opens its description and example cards",
+            "Playstyle's Oracle tags show Decks, Cards and Impact as colored bars",
+            "A Brawl deck's commander picker only offers commanders legal in Brawl",
+            "Commander swipes deal cards in the order the filter's sort sets",
+            "A commander search or deal that fails shows Retry instead of loading forever",
+            "Sorting by Rarity goes from common to mythic instead of alphabetically",
+            "Toasts land with a bigger stamp, and only the ones you still need follow you to the next screen",
+            "Hints fit on a phone screen without scrolling, and a long one keeps its title and buttons in place",
+            "On the web and zwipe.net, the Themes search's clear button is red",
+            "zwipe.net's search icon matches the other header icons",
+        ],
+    },
     Release {
         version: Version::new(1, 24, 0),
         date: NaiveDate::from_ymd_opt(2026, 11, 19),
