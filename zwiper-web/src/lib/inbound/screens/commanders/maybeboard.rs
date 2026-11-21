@@ -22,7 +22,6 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::commander::maybeboard::{self, Sort, SortBy, Step};
-use zwipe_ui::commander::more_ghosts::GHOSTS_KEY;
 use zwipe_ui::commander::more_page::{MoreItem, MorePage};
 use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::screens::deck_list;
@@ -459,7 +458,10 @@ pub(super) fn MaybeboardPanel(
     let filtered_rows = filtered;
     let filtered = filtered();
     let page = more_page.read().clone();
-    let items = page.layout(&filtered, |c| c.scryfall_data.oracle_id);
+    let items = page
+        .layout(&filtered, |c| c.scryfall_data.oracle_id)
+        .into_iter()
+        .map(|item| (item.key(|c| c.scryfall_data.id.to_string()), item));
     let ghosts = page.ghosts().clone();
     let offers_more = page.offers_more(filtered.len());
     let has_entries = !entries().is_empty();
@@ -557,7 +559,6 @@ pub(super) fn MaybeboardPanel(
                                 } else {
                                     for (i, card) in results.into_iter().enumerate() {
                                         button {
-                                            key: "{card.scryfall_data.id}",
                                             r#type: "button",
                                             class: if lit == Some(i) { "chip-unselected card-filter-result card-filter-highlight" } else { "chip-unselected card-filter-result" },
                                             style: "animation-delay: {i.saturating_mul(40)}ms;",
@@ -630,26 +631,26 @@ pub(super) fn MaybeboardPanel(
                             }
                             // One keyed run, so the rows an earlier press showed never change
                             // parent when a later press moves the ghosts after them.
-                            for item in items {
-                                {match item {
-                                    MoreItem::Row(card) => rsx! {
-                                        MaybeboardRow {
-                                            key: "{card.scryfall_data.id}",
-                                            card,
-                                            expanded_card,
-                                            on_create: create_with,
-                                            on_remove,
-                                        }
-                                    },
-                                    MoreItem::Ghosts => rsx! {
-                                        MoreGhostRows {
-                                            key: "{GHOSTS_KEY}",
-                                            ghosts: ghosts.clone(),
-                                            on_animation_end: move |name: String| more_page.write().animation_ended(&name),
-                                            row_class: "web-ghost-card-row",
-                                        }
-                                    },
-                                }}
+                            for (key, item) in items {
+                                Fragment { key: "{key}",
+                                    {match item {
+                                        MoreItem::Row(card) => rsx! {
+                                            MaybeboardRow {
+                                                card,
+                                                expanded_card,
+                                                on_create: create_with,
+                                                on_remove,
+                                            }
+                                        },
+                                        MoreItem::Ghosts => rsx! {
+                                            MoreGhostRows {
+                                                ghosts: ghosts.clone(),
+                                                on_animation_end: move |name: String| more_page.write().animation_ended(&name),
+                                                row_class: "web-ghost-card-row",
+                                            }
+                                        },
+                                    }}
+                                }
                             }
                         }
                         // Show more sits under the panel and shows ten more rows; the press that
@@ -661,6 +662,7 @@ pub(super) fn MaybeboardPanel(
                             onclick: move |()| {
                                 let rows = filtered_rows.peek();
                                 more_page.write().show_more(&rows, |c| c.scryfall_data.oracle_id);
+                                true
                             },
                         }
                         DangerZoneAction {

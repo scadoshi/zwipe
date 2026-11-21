@@ -30,7 +30,6 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::commander::maybeboard::{Sort, SortBy};
-use zwipe_ui::commander::more_ghosts::GHOSTS_KEY;
 use zwipe_ui::commander::more_page::{MoreItem, MorePage};
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::commander_maybeboard::{
@@ -394,7 +393,10 @@ pub fn CommanderMaybeboard() -> Element {
     });
     let list_open = use_signal(|| true);
     let page = more_page.read().clone();
-    let items = page.layout(&filtered, |c| c.scryfall_data.oracle_id);
+    let items = page
+        .layout(&filtered, |c| c.scryfall_data.oracle_id)
+        .into_iter()
+        .map(|item| (item.key(|c| c.scryfall_data.id.to_string()), item));
     let ghosts = page.ghosts().clone();
     let offers_more = page.offers_more(filtered.len());
     let leaves = page.next_shows_the_rest(filtered.len());
@@ -478,7 +480,6 @@ pub fn CommanderMaybeboard() -> Element {
                                     QuickAddResults::Found(found) => rsx! {
                                         for (i, card) in found.into_iter().enumerate() {
                                             button {
-                                                key: "{card.scryfall_data.id}",
                                                 r#type: "button",
                                                 class: "chip-unselected card-filter-result",
                                                 style: "animation-delay: {i.saturating_mul(40)}ms;",
@@ -542,31 +543,31 @@ pub fn CommanderMaybeboard() -> Element {
                             }
                             // One keyed run, so the rows an earlier press showed never change
                             // parent when a later press moves the ghosts after them.
-                            for item in items {
-                                {match item {
-                                    MoreItem::Row(card) => rsx! {
-                                        MaybeboardRow {
-                                            key: "{card.scryfall_data.id}",
-                                            card,
-                                            expanded_card,
-                                            preview_card,
-                                            preview_dismissing,
-                                            on_create,
-                                            on_remove,
-                                            on_printing: move |c: Card| {
-                                                printing_card.set(Some(c));
-                                                printing_open.set(true);
-                                            },
-                                        }
-                                    },
-                                    MoreItem::Ghosts => rsx! {
-                                        MoreGhostRows {
-                                            key: "{GHOSTS_KEY}",
-                                            ghosts: ghosts.clone(),
-                                            on_animation_end: move |name: String| more_page.write().animation_ended(&name),
-                                        }
-                                    },
-                                }}
+                            for (key, item) in items {
+                                Fragment { key: "{key}",
+                                    {match item {
+                                        MoreItem::Row(card) => rsx! {
+                                            MaybeboardRow {
+                                                card,
+                                                expanded_card,
+                                                preview_card,
+                                                preview_dismissing,
+                                                on_create,
+                                                on_remove,
+                                                on_printing: move |c: Card| {
+                                                    printing_card.set(Some(c));
+                                                    printing_open.set(true);
+                                                },
+                                            }
+                                        },
+                                        MoreItem::Ghosts => rsx! {
+                                            MoreGhostRows {
+                                                ghosts: ghosts.clone(),
+                                                on_animation_end: move |name: String| more_page.write().animation_ended(&name),
+                                            }
+                                        },
+                                    }}
+                                }
                             }
                         }
                         // Show more sits under the panel and shows ten more rows; the press that
@@ -578,6 +579,7 @@ pub fn CommanderMaybeboard() -> Element {
                             onclick: move |()| {
                                 let rows = driver.model.peek().shown(&filter_builder.peek());
                                 more_page.write().show_more(&rows, |c| c.scryfall_data.oracle_id);
+                                true
                             },
                         }
                         DangerZoneAction {

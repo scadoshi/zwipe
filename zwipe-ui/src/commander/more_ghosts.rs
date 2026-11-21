@@ -6,8 +6,8 @@
 //! The list draws its rows held before Show more, the ghosts, then the rows its page dealt, all in
 //! one run ([`MoreGhosts::layout`]): [`MoreGhosts::split`] says where the ghosts go. The dealt rows stay
 //! hidden until the ghosts start to leave, so they ease in over the ghosts rather than under
-//! them. The ghosts' element stays (hidden) once they have gone, so the dealt rows keep their
-//! place in the second run and never mount again.
+//! them. The ghosts' element stays (hidden) once they have gone, as the marker the dealt rows
+//! follow.
 
 use uuid::Uuid;
 
@@ -39,7 +39,8 @@ pub enum Phase {
     Waiting,
     /// Over the dealt rows, fading out as they ease in.
     Leaving,
-    /// Gone, their element kept hidden between the two runs of rows.
+    /// Gone, their element kept hidden between the rows held before Show more and the rows it
+    /// dealt.
     Gone,
 }
 
@@ -50,6 +51,19 @@ pub enum MoreItem<T> {
     Row(T),
     /// The ghost rows, between the rows held before Show more and the rows it dealt.
     Ghosts,
+}
+
+impl<T> MoreItem<T> {
+    /// The item's key in the list's keyed loop: `row_key` of a row, [`GHOSTS_KEY`] for the
+    /// ghosts. The client keys the loop body's first node with it, so a row keeps its own
+    /// component as rows around it come and go.
+    #[must_use]
+    pub fn key(&self, row_key: impl Fn(&T) -> String) -> String {
+        match self {
+            Self::Row(row) => row_key(row),
+            Self::Ghosts => GHOSTS_KEY.to_owned(),
+        }
+    }
 }
 
 /// Show more's ghost rows and the page they wait on. Starts [`Phase::Off`].
@@ -132,7 +146,8 @@ impl MoreGhosts {
         }
     }
 
-    /// Whether the ghosts' element is drawn, between the two runs of rows.
+    /// Whether the ghosts' element is drawn, between the rows held before Show more and the rows
+    /// it dealt.
     #[must_use]
     pub fn drawn(&self) -> bool {
         self.phase != Phase::Off

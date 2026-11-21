@@ -19,7 +19,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::http::contracts::suggestions::HttpBuilderProfile;
 use zwipe_ui::commander::deal::Door;
-use zwipe_ui::commander::more_ghosts::{GHOSTS_KEY, MoreItem};
+use zwipe_ui::commander::more_ghosts::MoreItem;
 use zwipe_ui::generation::Generation;
 use zwipe_ui::screens::playstyle as suggested_model;
 use zwipe_ui::screens::suggested_commanders::{self as suggested, Action, Effect, Page, State};
@@ -381,7 +381,10 @@ pub(crate) fn SuggestedFold(
     // The fold's state, so Show more under the panel hides while it is shut.
     let open = use_signal(|| true);
     let state = model.read();
-    let items = state.layout();
+    let items = state
+        .layout()
+        .into_iter()
+        .map(|item| (item.key(|s| s.card.scryfall_data.id.to_string()), item));
     let ghosts = state.ghosts().clone();
     let offers = state.offers_more();
     let line = state.ranked_line();
@@ -417,28 +420,28 @@ pub(crate) fn SuggestedFold(
                 }
             }
             // One keyed run, so rows a later page joins after never change parent.
-            for item in items {
-                {match item {
-                    MoreItem::Row(suggestion) => rsx! {
-                        SuggestionRow {
-                            key: "{suggestion.card.scryfall_data.id}",
-                            suggestion,
-                            deck_count: deck_count(),
-                            expanded_card,
-                            on_start: create_with,
-                            on_maybe,
-                            on_dismiss,
-                        }
-                    },
-                    MoreItem::Ghosts => rsx! {
-                        MoreGhostRows {
-                            key: "{GHOSTS_KEY}",
-                            ghosts: ghosts.clone(),
-                            on_animation_end: move |name: String| dispatch.call(Action::GhostsEnded(name)),
-                            row_class: "web-ghost-card-row",
-                        }
-                    },
-                }}
+            for (key, item) in items {
+                Fragment { key: "{key}",
+                    {match item {
+                        MoreItem::Row(suggestion) => rsx! {
+                            SuggestionRow {
+                                suggestion,
+                                deck_count: deck_count(),
+                                expanded_card,
+                                on_start: create_with,
+                                on_maybe,
+                                on_dismiss,
+                            }
+                        },
+                        MoreItem::Ghosts => rsx! {
+                            MoreGhostRows {
+                                ghosts: ghosts.clone(),
+                                on_animation_end: move |name: String| dispatch.call(Action::GhostsEnded(name)),
+                                row_class: "web-ghost-card-row",
+                            }
+                        },
+                    }}
+                }
             }
         }
         // Show more sits under the panel and deals one page, once per deal, so it leaves on its
@@ -447,7 +450,11 @@ pub(crate) fn SuggestedFold(
             offers,
             open: open(),
             leaves: true,
-            onclick: move |()| dispatch.call(Action::ShowMore),
+            // Taken when its page went out, which spends it; a press while a top-up is out isn't.
+            onclick: move |()| {
+                dispatch.call(Action::ShowMore);
+                !model.peek().offers_more()
+            },
         }
     }
 }

@@ -13,7 +13,7 @@ fn render(app: fn() -> Element) -> String {
 #[test]
 fn it_shows_as_a_chip_in_a_bare_box_while_the_list_offers_more() {
     fn app() -> Element {
-        rsx! { ListMore { offers: true, open: true, leaves: true, onclick: |()| {} } }
+        rsx! { ListMore { offers: true, open: true, leaves: true, onclick: |()| true } }
     }
     let html = render(app);
     assert!(
@@ -25,10 +25,10 @@ fn it_shows_as_a_chip_in_a_bare_box_while_the_list_offers_more() {
 #[test]
 fn it_hides_with_nothing_more_or_a_shut_panel() {
     fn none() -> Element {
-        rsx! { ListMore { offers: false, open: true, leaves: true, onclick: |()| {} } }
+        rsx! { ListMore { offers: false, open: true, leaves: true, onclick: |()| true } }
     }
     fn shut() -> Element {
-        rsx! { ListMore { offers: true, open: false, leaves: true, onclick: |()| {} } }
+        rsx! { ListMore { offers: true, open: false, leaves: true, onclick: |()| true } }
     }
     assert!(!render(none).contains("card-list-more"));
     assert!(!render(shut).contains("card-list-more"));

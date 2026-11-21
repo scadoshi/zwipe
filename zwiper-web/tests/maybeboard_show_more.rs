@@ -3,6 +3,7 @@
 //! ten again.
 
 const MAYBEBOARD: &str = include_str!("../src/lib/inbound/screens/commanders/maybeboard.rs");
+const SUGGESTED: &str = include_str!("../src/lib/inbound/screens/playstyle/suggestions.rs");
 
 #[test]
 fn the_list_shows_ten_at_a_time_and_a_new_sort_or_filter_starts_over() {
@@ -23,9 +24,12 @@ fn show_more_sits_under_the_panel_with_its_ghost_rows_in_the_list() {
 
 #[test]
 fn the_rows_and_ghosts_draw_in_one_keyed_run_so_a_later_press_moves_no_row() {
-    assert!(
-        MAYBEBOARD.contains("let items = page.layout(&filtered, |c| c.scryfall_data.oracle_id);")
-    );
-    assert!(MAYBEBOARD.contains("for item in items {"));
-    assert!(MAYBEBOARD.contains("key: \"{GHOSTS_KEY}\","));
+    assert!(MAYBEBOARD.contains(".layout(&filtered, |c| c.scryfall_data.oracle_id)"));
+    for src in [MAYBEBOARD, SUGGESTED] {
+        let (_, body) = src.split_once("for (key, item) in items {").unwrap();
+        assert!(
+            body.trim_start().starts_with("Fragment { key: \"{key}\","),
+            "the loop body's first node carries the key, which Dioxus reads there only"
+        );
+    }
 }

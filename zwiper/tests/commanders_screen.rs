@@ -61,9 +61,7 @@ fn suggested_has_its_console_swipe_question_mark_show_more_and_danger_zone() {
         "once per deal, and not while the panel is shut"
     );
     assert!(
-        SUGGESTED.contains("for item in items {")
-            && SUGGESTED.contains("MoreItem::Ghosts => rsx! {")
-            && SUGGESTED.contains("key: \"{GHOSTS_KEY}\","),
+        loop_root_is_keyed(SUGGESTED) && SUGGESTED.contains("MoreItem::Ghosts => rsx! {"),
         "its press eases in the ghost rows, as the web's does, in the rows' one keyed run"
     );
 }
@@ -103,8 +101,8 @@ fn the_maybeboard_shows_ten_at_a_time_under_its_own_show_more() {
         "a new sort or an applied filter shows the first ten again"
     );
     assert!(
-        MAYBEBOARD.contains("let items = page.layout(&filtered, |c| c.scryfall_data.oracle_id);")
-            && MAYBEBOARD.contains("for item in items {"),
+        MAYBEBOARD.contains(".layout(&filtered, |c| c.scryfall_data.oracle_id)")
+            && loop_root_is_keyed(MAYBEBOARD),
         "the rows and the ghosts in one keyed run, so a later press moves no row"
     );
     let ghosts = MAYBEBOARD.find("MoreGhostRows {").expect("ghost rows");
@@ -113,4 +111,12 @@ fn the_maybeboard_shows_ten_at_a_time_under_its_own_show_more() {
         .find("label: model::CLEAR_MAYBEBOARD,")
         .expect("Clear maybeboard");
     assert!(ghosts < more && more < danger, "Show more under the panel");
+}
+
+/// Whether `src` draws its Show more list in a loop whose body's first node is a keyed `Fragment`:
+/// Dioxus reads a loop item's key off that node only, and a key inside a `match` there leaves the
+/// list unkeyed.
+fn loop_root_is_keyed(src: &str) -> bool {
+    src.split_once("for (key, item) in items {")
+        .is_some_and(|(_, body)| body.trim_start().starts_with("Fragment { key: \"{key}\","))
 }

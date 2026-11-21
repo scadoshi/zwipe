@@ -12,11 +12,12 @@ pub fn ends_list_more_leave(animation: &str) -> bool {
 }
 
 /// Show more under a card list's panel, while the list `offers` more rows and its panel is
-/// `open`. A press calls `onclick`; when it `leaves`, the press shows the last rows, so the chip
-/// folds away (fades under reduced motion) and stays up until that exit ends. The chip sits in a
-/// bare box, since its own padding would floor the row it folds.
+/// `open`. A press calls `onclick`, which answers whether the list took it; a press it took that
+/// `leaves` (it shows the last rows) folds the chip away (fades under reduced motion), and the chip
+/// stays up until that exit ends. The chip sits in a bare box, since its own padding would floor
+/// the row it folds.
 #[component]
-pub fn ListMore(offers: bool, open: bool, leaves: bool, onclick: EventHandler<()>) -> Element {
+pub fn ListMore(offers: bool, open: bool, leaves: bool, onclick: Callback<(), bool>) -> Element {
     let mut leaving = use_signal(|| false);
     if !(open && (leaving() || offers)) {
         return rsx! {};
@@ -34,10 +35,9 @@ pub fn ListMore(offers: bool, open: bool, leaves: bool, onclick: EventHandler<()
                     r#type: "button",
                     class: "chip",
                     onclick: move |_| {
-                        if leaves {
+                        if onclick.call(()) && leaves {
                             leaving.set(true);
                         }
-                        onclick.call(());
                     },
                     {SHOW_MORE}
                 }

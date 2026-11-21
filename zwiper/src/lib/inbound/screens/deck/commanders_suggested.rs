@@ -14,7 +14,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_ui::commander::more_ghosts::{GHOSTS_KEY, MoreItem};
+use zwipe_ui::commander::more_ghosts::MoreItem;
 use zwipe_ui::screens::commander_maybeboard as maybeboard_model;
 use zwipe_ui::screens::suggested_commanders::{self as model, Action, Effect, Page, State};
 
@@ -197,7 +197,10 @@ pub(crate) fn SuggestedSection(
     let state = model.read();
     let is_loading = state.is_loading();
     let load_failed = state.load_failed();
-    let items = state.layout();
+    let items = state
+        .layout()
+        .into_iter()
+        .map(|item| (item.key(|s| s.card.scryfall_data.id.to_string()), item));
     let ghosts = state.ghosts().clone();
     let line = state.ranked_line();
     let empty = state.empty_line();
@@ -259,32 +262,32 @@ pub(crate) fn SuggestedSection(
                         div { class: "card-row card-row-note", {empty} }
                     }
                     // One keyed run, so rows a later page joins after never change parent.
-                    for item in items {
-                        {match item {
-                            MoreItem::Row(suggestion) => rsx! {
-                                SuggestionRow {
-                                    key: "{suggestion.card.scryfall_data.id}",
-                                    suggestion,
-                                    deck_count: deck_count(),
-                                    expanded_card,
-                                    preview_card,
-                                    preview_dismissing,
-                                    on_start: move |card: Card| on_create.call(card),
-                                    on_maybe,
-                                    on_dismiss,
-                                    on_printing: move |card: Card| on_printing.call(card),
-                                }
-                            },
-                            // Show more's ghost rows answer its press while its page is out, then
-                            // lie under the rows it dealt as they ease in.
-                            MoreItem::Ghosts => rsx! {
-                                MoreGhostRows {
-                                    key: "{GHOSTS_KEY}",
-                                    ghosts: ghosts.clone(),
-                                    on_animation_end: move |name: String| driver.dispatch(Action::GhostsEnded(name)),
-                                }
-                            },
-                        }}
+                    for (key, item) in items {
+                        Fragment { key: "{key}",
+                            {match item {
+                                MoreItem::Row(suggestion) => rsx! {
+                                    SuggestionRow {
+                                        suggestion,
+                                        deck_count: deck_count(),
+                                        expanded_card,
+                                        preview_card,
+                                        preview_dismissing,
+                                        on_start: move |card: Card| on_create.call(card),
+                                        on_maybe,
+                                        on_dismiss,
+                                        on_printing: move |card: Card| on_printing.call(card),
+                                    }
+                                },
+                                // Show more's ghost rows answer its press while its page is out, then
+                                // lie under the rows it dealt as they ease in.
+                                MoreItem::Ghosts => rsx! {
+                                    MoreGhostRows {
+                                        ghosts: ghosts.clone(),
+                                        on_animation_end: move |name: String| driver.dispatch(Action::GhostsEnded(name)),
+                                    }
+                                },
+                            }}
+                        }
                     }
                 }
                 // Show more sits under the panel, as a chip row sits over one, and deals one page.
@@ -293,7 +296,12 @@ pub(crate) fn SuggestedSection(
                     offers,
                     open: fold_open(),
                     leaves: true,
-                    onclick: move |()| driver.dispatch(Action::ShowMore),
+                    // Taken when its page went out, which spends it; a press while a top-up is
+                    // out isn't.
+                    onclick: move |()| {
+                        driver.dispatch(Action::ShowMore);
+                        !driver.model.peek().offers_more()
+                    },
                 }
                 DangerZoneAction {
                     label: model::CLEAR_SKIPS,
