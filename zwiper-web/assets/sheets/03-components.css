@@ -947,11 +947,11 @@ a.nav-dropdown-item.active:visited {
    sits under it as it would under the title bar. */
 .theme-search-bar {
     position: sticky;
-    top: calc(-1 * var(--space-4));
+    top: calc(-1 * var(--panel-pad));
     z-index: 1;
     background-color: var(--bg-sink);
-    margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-5)) 0;
-    padding: var(--space-4) var(--space-5) var(--space-3);
+    margin: calc(-1 * var(--panel-pad)) calc(-1 * var(--panel-pad)) 0;
+    padding: var(--panel-pad) var(--panel-pad) var(--space-3);
 }
 
 .theme-search {
@@ -2176,11 +2176,11 @@ html:has(.bottom-sheet.show) body,
     gap: var(--space-2);
 }
 
-/* Full-bleed divider to the card edges, matching the dialogs. */
+/* Full-bleed divider out through the panel's padding to its border, matching the dialogs. */
 .panel-rule {
     border: none;
     border-top: 1px solid var(--border-secondary);
-    margin: var(--space-4) calc(-1 * var(--space-5));
+    margin: var(--space-4) calc(-1 * var(--panel-pad));
 }
 
 /* Grow the body so the footer rule + actions pin to the bottom. In a normal

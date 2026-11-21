@@ -12,10 +12,12 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// The containers' side padding tokens a full-bleed rule may pull out by.
-const PADDING: [&str; 2] = [
+/// The containers' side padding a full-bleed rule may pull out by: the padding tokens, and a card
+/// proxy's padding, which scales with the proxy in container units.
+const PADDING: [&str; 3] = [
     "calc(-1 * var(--panel-pad))",
     "calc(-1 * var(--card-row-detail-pad-x))",
+    "-6cqw",
 ];
 
 /// The workspace root.
@@ -175,7 +177,9 @@ fn a_full_bleed_rule_pulls_out_by_its_container_s_padding() {
                     continue;
                 }
                 for side in side_margins(&body) {
-                    if side.starts_with("calc(-1 *") && !PADDING.contains(&side.as_str()) {
+                    if (side.starts_with('-') || side.starts_with("calc(-1 *"))
+                        && !PADDING.contains(&side.as_str())
+                    {
                         let file = path.strip_prefix(root()).unwrap().display().to_string();
                         off.push(format!("{file}: {selector} {{ margin: {side} }}"));
                     }
@@ -216,7 +220,8 @@ fn no_rule_sets_its_margin_inline() {
 
 #[test]
 fn the_kit_s_panel_rule_runs_to_the_panel_s_border() {
-    let kit = fs::read_to_string(root().join("zwiper-web/assets/sheets/03-components.css")).unwrap();
+    let kit =
+        fs::read_to_string(root().join("zwiper-web/assets/sheets/03-components.css")).unwrap();
     let rules = rules(&kit);
     let body = |selector: &str| {
         rules
