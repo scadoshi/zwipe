@@ -1980,6 +1980,31 @@ body {
     margin-bottom: var(--space-4);
 }
 
+/* The layer ends with its own site footer. Its dock rises over that footer,
+   not the covered Profile's, and its cards end a dock's height above it, so
+   at the end the dock rests between the two. */
+.web-cards-layer {
+    timeline-scope: --site-footer;
+}
+
+.web-cards-layer:has(> .web-site-footer) > .screen-content {
+    padding-bottom: 5rem;
+}
+
+@supports (animation-timeline: view()) {
+    .web-cards-layer > .action-dock {
+        animation: footer-rise linear both;
+        animation-timeline: --site-footer;
+        animation-range: entry 0px entry 100vh;
+    }
+}
+
+/* A screen whose page a layer covers (screen_return.rs) leaves its footer
+   unpainted too, so the footer lift (footer_lift.rs) reads only the layer's. */
+.web-scroll-screen:has(.under-layer) > .web-site-footer {
+    visibility: hidden;
+}
+
 /* The overlay scrolls as a screen under the nav does, down to the site's
    footer, and clips sideways at the window's edge. */
 .swipe-select-screen.web-swipe-select {

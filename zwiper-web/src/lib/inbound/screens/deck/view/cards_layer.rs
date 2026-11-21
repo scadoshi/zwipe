@@ -1,7 +1,8 @@
 //! The deck's Cards on a phone, as the app draws them: a full-screen layer over the deck's
 //! Profile with a back button, the deck's head with its featured cards, the page's controls
-//! (Quick add for the owner, View, Group by, Boards and Show), then the List's groups with their price and cart or the stacks, in tap mode on
-//! a touch screen and under hover with a mouse. The owner's deck and a shared deck draw the same
+//! (Quick add for the owner, View, Group by, Boards and Show), then the List's groups with their
+//! price and cart or the stacks, in tap mode on a touch screen and under hover with a mouse, and
+//! the site footer at its end, as a screen ends. The owner's deck and a shared deck draw the same
 //! layer; only the owner's passes edit actions and the edit buttons in the dock.
 //!
 //! The layer sits on the overlay stack, so the OS back closes it as it closes a sheet, and a
@@ -29,7 +30,7 @@ use super::ghost::DeckBandsGhost;
 use crate::inbound::app::EscKeeps;
 use crate::inbound::chrome::leave_guard::use_route_overlay;
 use crate::inbound::router::Route;
-use crate::inbound::shell::use_overlay_nav;
+use crate::inbound::shell::{WebFooter, use_overlay_nav};
 
 /// The query a deck's route carries while its Cards are open.
 const CARDS_QUERY: &str = "view=cards";
@@ -222,7 +223,74 @@ pub(crate) fn DeckCardsLayer(
                     }
                 }
             }
+            // It scrolls as a screen does and ends as one, with the site's footer.
+            WebFooter {}
             div { class: "action-dock action-dock-right", {dock} }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// This file's code, above its tests.
+    const SOURCE: &str = include_str!("cards_layer.rs");
+    /// The web's own sheet.
+    const WEB_CSS: &str = include_str!("../../../../../../assets/web.css");
+
+    /// The declarations of every rule whose selector is exactly `selector`, joined.
+    fn rules(css: &str, selector: &str) -> String {
+        let found: Vec<&str> = css
+            .split(&format!("\n{selector} {{"))
+            .skip(1)
+            .filter_map(|rest| rest.split('}').next())
+            .collect();
+        assert!(!found.is_empty(), "no rule for {selector}");
+        found.concat()
+    }
+
+    #[test]
+    fn the_layer_ends_its_scroll_column_with_the_site_footer_above_its_dock() {
+        let code = SOURCE.split("#[cfg(test)]").next().expect("the code");
+        let layer = code.split("fn DeckCardsLayer(").nth(1).expect("the layer");
+        let content = layer
+            .find("\"screen-content web-deck-cards-view\"")
+            .expect("the layer's content");
+        let footer = layer
+            .find("WebFooter {}")
+            .expect("the layer ends with the site footer, as a screen does");
+        let dock = layer
+            .find("\"action-dock action-dock-right\"")
+            .expect("the layer's dock");
+        assert!(
+            content < footer && footer < dock,
+            "the footer follows the content and comes before the dock"
+        );
+    }
+
+    #[test]
+    fn the_layer_s_dock_rises_over_its_own_footer_not_the_profile_s() {
+        assert!(
+            rules(WEB_CSS, ".web-cards-layer").contains("timeline-scope: --site-footer;"),
+            "the layer's footer names the timeline inside the layer"
+        );
+        let dock = rules(WEB_CSS, "    .web-cards-layer > .action-dock");
+        assert!(dock.contains("animation: footer-rise"), "{dock}");
+        assert!(
+            dock.contains("animation-timeline: --site-footer;"),
+            "{dock}"
+        );
+        // The room every screen with a floating dock keeps under its content.
+        let dock_room = rules(
+            WEB_CSS,
+            ".web-scroll-screen:has(> .action-dock, > .swipe-bottom-row) > .screen-content",
+        );
+        assert_eq!(
+            rules(
+                WEB_CSS,
+                ".web-cards-layer:has(> .web-site-footer) > .screen-content"
+            ),
+            dock_room,
+            "the cards end a dock's height above the footer"
+        );
     }
 }

@@ -40,9 +40,10 @@ pub fn use_footer_lift() {
 }
 
 /// Sends `[viewport height, footer top]` (the top `null` while no footer
-/// is drawn) once a frame at most, whenever a scroll, a resize or a change
-/// to the page could have moved the footer, and only when it changed; puts
-/// each lift it receives back on the root.
+/// is drawn and painted; a screen a layer covers leaves its own unpainted)
+/// once a frame at most, whenever a scroll, a resize or a change to the page
+/// could have moved the footer, and only when it changed; puts each lift it
+/// receives back on the root.
 const FOOTER_LIFT_JS: &str = r"
 if (window.__zwipeFooterLift) window.__zwipeFooterLift();
 let frame = 0;
@@ -53,7 +54,8 @@ const measure = () => {
     let top = null;
     for (const footer of document.querySelectorAll('footer.web-site-footer')) {
         const rect = footer.getBoundingClientRect();
-        if (rect.height > 0 && (top === null || rect.top < top)) top = rect.top;
+        const painted = getComputedStyle(footer).visibility === 'visible';
+        if (painted && rect.height > 0 && (top === null || rect.top < top)) top = rect.top;
         if (footer.previousElementSibling) sized.observe(footer.previousElementSibling);
     }
     const key = window.innerHeight + ':' + top;
@@ -109,6 +111,21 @@ mod tests {
         assert!(
             bottom.contains("var(--sheet-drawer-floor, 0px)"),
             "the narrow drawer rises with the floor too: {bottom}"
+        );
+    }
+
+    #[test]
+    fn a_footer_a_layer_covers_lifts_nothing() {
+        let hidden = WEB_CSS
+            .split("\n.web-scroll-screen:has(.under-layer) > .web-site-footer {")
+            .nth(1)
+            .and_then(|rest| rest.split('}').next())
+            .expect("the covered screen's footer rule");
+        assert!(hidden.contains("visibility: hidden;"), "{hidden}");
+        assert!(
+            FOOTER_LIFT_JS.contains("getComputedStyle(footer).visibility === 'visible'")
+                && FOOTER_LIFT_JS.contains("if (painted && "),
+            "only a painted footer lifts the drawers"
         );
     }
 
