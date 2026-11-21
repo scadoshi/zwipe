@@ -6,9 +6,7 @@
 //! `zwipe_ui::activity`; this module draws them.
 
 use components::{
-    ACTIVITY_HEAT_PARTS, BarChart, BarOrientation, CardListFold, ChartTip, Chip, HEAT_CELL,
-    HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatMonths, HeatReadout, HeatWeekdays, LabelCase,
-    OtagDef, RoleTags, use_heat_pick, use_open_on_newest,
+    BarChart, BarOrientation, CardListFold, Chip, HeatCell, Heatmap, LabelCase, OtagDef, RoleTags,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -25,31 +23,23 @@ use crate::inbound::screens::deck::card::components::card_row::{
 };
 use crate::inbound::screens::deck::components::collapsible_section::CollapsibleSection;
 
-/// Room on the left of the grid for the weekday labels.
-const LEFT: f64 = 24.0;
-/// Room above the grid for the month labels.
-const TOP: f64 = 14.0;
-
-/// The year as a heatmap: weekday labels down the left, month labels over
-/// the top, a cell per day shaded by its swipes and searches in orangui's
-/// [`HeatGrid`]. Wider than a phone, it scrolls sideways and opens on the
-/// latest week, with no month name cut by the pinned weekdays
-/// ([`ACTIVITY_HEAT_PARTS`]). Under it, orangui's [`HeatReadout`]: the year's swipes,
-/// searches and span as tags, which a tapped day's take over for a few
-/// seconds on a touch or narrow screen. A hover device with room names the
-/// day under the pointer in a floating chip instead.
+/// The year as orangui's [`Heatmap`]: weekday labels down the left, month labels over the top, a
+/// cell per day shaded by its swipes and searches, opening on the latest week. Under it the
+/// year's swipes, searches and span as tags, which a tapped day's take over for a few seconds on
+/// a touch or narrow screen; a hover device with room names the day under the pointer in a chip.
 #[component]
 fn ActivityHeatmap(layout: HeatLayout, rest: Vec<String>, label: String) -> Element {
-    let pick = use_heat_pick();
-    let mut hover: Signal<Option<(String, f64, f64)>> = use_signal(|| None);
-    let width = LEFT + components::heat_span(layout.columns);
-    let height = TOP + components::heat_span(HEAT_ROWS);
     let weekdays: Vec<(usize, String)> = WEEKDAY_LABELS
         .iter()
         .map(|&(row, name)| (row, name.to_owned()))
         .collect();
-    let tags: Vec<[String; 3]> = layout.cells.iter().map(activity::day_tags).collect();
-    let grid: Vec<HeatCell> = layout
+    let tags: Vec<Vec<String>> = layout
+        .cells
+        .iter()
+        .map(|cell| activity::day_tags(cell).to_vec())
+        .collect();
+    let chips: Vec<String> = tags.iter().map(|day| day.join(", ")).collect();
+    let cells: Vec<HeatCell> = layout
         .cells
         .iter()
         .map(|cell| HeatCell {
@@ -60,84 +50,22 @@ fn ActivityHeatmap(layout: HeatLayout, rest: Vec<String>, label: String) -> Elem
             key: cell.date.to_string(),
         })
         .collect();
-    let tap_tags = tags.clone();
-    let on_tap = move |hit: HeatHit| {
-        if let Some(day) = tap_tags.get(hit.index) {
-            pick.show(day.to_vec());
-        }
-    };
-    let on_enter = move |hit: HeatHit| {
-        if let Some(day) = tags.get(hit.index) {
-            let x = (hit.x + HEAT_CELL / 2.0) / width * 100.0;
-            let y = hit.y / height * 100.0;
-            hover.set(Some((day.join(", "), x, y)));
-        }
-    };
-    use_open_on_newest(ACTIVITY_HEAT_PARTS);
     rsx! {
-        div {
-            class: "chart-scroll scroll-fade-x activity-scroll",
-            onmounted: move |event| async move {
-                let _ = event.data().scroll(
-                    dioxus::html::geometry::PixelsVector2D::new(width, 0.0),
-                    ScrollBehavior::Instant,
-                ).await;
-            },
-            div {
-                class: "activity-plot",
-                style: "width:{width}px;",
-                onmouseleave: move |_| hover.set(None),
-                // The weekday names again, pinned at the scroller's left
-                // over the grid's own, so they stay in view as the year
-                // scrolls under them.
-                div {
-                    class: "activity-days",
-                    style: "width:{LEFT}px;height:{height}px;margin-bottom:-{height}px;",
-                    "aria-hidden": "true",
-                    svg {
-                        width: "{LEFT}",
-                        height: "{height}",
-                        view_box: "0 0 {LEFT} {height}",
-                        HeatWeekdays { labels: weekdays.clone(), top: TOP }
-                    }
-                }
-                svg {
-                    class: "heat-grid",
-                    style: "width:{width}px;",
-                    view_box: "0 0 {width} {height}",
-                    role: "img",
-                    "aria-label": "{label}",
-                    HeatMonths { months: layout.months, left: LEFT, top: TOP }
-                    HeatWeekdays { labels: weekdays, top: TOP }
-                    HeatGrid {
-                        cells: grid,
-                        left: LEFT,
-                        top: TOP,
-                        on_enter,
-                        on_tap,
-                    }
-                }
-                if let Some((text, left, top)) = hover() {
-                    ChartTip { text, left, top, class: "tag heat-float" }
-                }
-            }
+        Heatmap {
+            cells,
+            columns: layout.columns,
+            months: layout.months,
+            weekdays,
+            chips,
+            tags,
+            rest: rest,
+            label: label,
         }
-        HeatReadout { rest, pick }
     }
 }
 
-/// The heatmap while the screen loads: empty space at the loaded grid's
-/// height, so nothing under it moves when the grid lands. No squares and no
-/// labels, which the loaded grid brings.
-#[component]
-pub(crate) fn HeatGhost() -> Element {
-    let height = TOP + components::heat_span(HEAT_ROWS);
-    rsx! {
-        div { class: "chart-scroll activity-scroll",
-            div { class: "activity-plot", style: "height:{height}px;" }
-        }
-    }
-}
+/// A year's week columns, the heatmap's width while it loads.
+pub(crate) const GHOST_COLUMNS: usize = 54;
 
 /// The screen's three sections in one accordion: Activity, the year's
 /// heatmap with its totals under it and what the user's swipes came to as

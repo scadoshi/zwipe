@@ -5084,7 +5084,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "orangui"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=main#b56ce80e52f8d0c56474d94d4b367d8293f0d9fd"
+source = "git+https://github.com/scadoshi/orangui?branch=main#bd3da7d1996ce73ac78b59bba8792f341f1c1a87"
 dependencies = [
  "dioxus",
  "dioxus-primitives",
@@ -5104,7 +5104,7 @@ dependencies = [
 [[package]]
 name = "orangui-core"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=main#b56ce80e52f8d0c56474d94d4b367d8293f0d9fd"
+source = "git+https://github.com/scadoshi/orangui?branch=main#bd3da7d1996ce73ac78b59bba8792f341f1c1a87"
 dependencies = [
  "serde",
 ]

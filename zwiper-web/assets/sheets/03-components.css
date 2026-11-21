@@ -2708,6 +2708,62 @@ html:has(.bottom-sheet.show) body,
     }
 }
 
+/* The Heatmap: wider than a phone, so it scrolls sideways with no scroll bar
+   and opens on the newest weeks. The weekdays stay pinned at its left, on the
+   surface's color, while the weeks scroll under them: the mask is opaque to
+   the gutter, the left padding plus the 24px strip, then the weeks fade in
+   past it by --fade-left and out at the right edge by --fade-right. */
+.heat-scroll {
+    --heat-gutter: calc(var(--space-3) + 24px);
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
+    mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
+}
+
+.heat-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+:where(.heat-scroll) {
+    padding: var(--space-1) var(--space-3) 0;
+}
+
+.heat-axis {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: var(--bg-primary);
+    /* The scroller's left padding, in the surface's color too. */
+    box-shadow: calc(-1 * var(--space-3)) 0 0 var(--bg-primary);
+}
+
+.heat-axis > svg {
+    display: block;
+    font-family: inherit;
+}
+
+/* The grid at its own size, so a cell keeps its pitch on any phone, and the
+   box the day chip is placed in. Room added at its right end widens it. */
+.heat-plot {
+    position: relative;
+    box-sizing: content-box;
+}
+
+.heat-plot .heat-grid {
+    height: auto;
+    max-width: none;
+}
+
+.heat-backdrop {
+    fill: transparent;
+}
+
+/* The Heatmap's readout clears its surface's edges. */
+:where(.heat-scroll + .heat-readout) {
+    margin-inline: var(--space-4);
+    margin-bottom: var(--space-3);
+}
+
 /* The tags under a heatmap. At rest they name what the grid adds up to. On a
    touch or narrow screen a picked cell's tags take their place for a few
    seconds; a hover device with room keeps them at rest and names the cell

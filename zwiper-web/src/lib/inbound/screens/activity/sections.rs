@@ -4,9 +4,7 @@
 
 use chrono::NaiveDate;
 use components::{
-    ACTIVITY_HEAT_PARTS, BarChart, BarOrientation, CardListFold, ChartTip, Chip, HEAT_CELL,
-    HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatMonths, HeatReadout, HeatWeekdays, LabelCase,
-    OtagDef, RoleTags, use_heat_pick, use_open_on_newest,
+    BarChart, BarOrientation, CardListFold, Chip, HeatCell, Heatmap, LabelCase, OtagDef, RoleTags,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -30,32 +28,26 @@ const TAGS_TITLE: &str = "Oracle tags";
 /// The hard passes group's header.
 const PASSES_TITLE: &str = "Most skipped";
 
-/// Room on the left of the grid for the weekday labels, in grid units.
-const LEFT: f64 = 24.0;
-/// Room above the grid for the month labels, in grid units.
-const TOP: f64 = 14.0;
 /// A year's week columns, the heatmap's width while it loads.
-const GHOST_COLUMNS: usize = 54;
+pub(crate) const GHOST_COLUMNS: usize = 54;
 
-/// The year as a heatmap: weekday labels down the left, month labels over
-/// the top, a cell per day in the kit's [`HeatGrid`], opening scrolled to
-/// the newest week with no month name cut by the pinned weekdays
-/// ([`ACTIVITY_HEAT_PARTS`]). Under it the kit's [`HeatReadout`]: the year's tags,
-/// which a clicked day's take over for a few seconds. Hovering a day names
-/// it in a floating chip.
+/// The year as the kit's [`Heatmap`]: weekday labels down the left, month labels over the top, a
+/// cell per day, opening scrolled to the newest week. Under it the year's tags, which a clicked
+/// day's take over for a few seconds. Hovering a day names it in a floating chip.
 #[component]
 fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
-    let pick = use_heat_pick();
-    let mut hover: Signal<Option<(String, f64, f64)>> = use_signal(|| None);
     let layout = activity::heat_layout(through, &days);
-    let width = LEFT + components::heat_span(layout.columns);
-    let height = TOP + components::heat_span(HEAT_ROWS);
     let weekdays: Vec<(usize, String)> = WEEKDAY_LABELS
         .iter()
         .map(|&(row, name)| (row, name.to_owned()))
         .collect();
-    let tags: Vec<[String; 3]> = layout.cells.iter().map(activity::day_tags).collect();
-    let grid: Vec<HeatCell> = layout
+    let tags: Vec<Vec<String>> = layout
+        .cells
+        .iter()
+        .map(|cell| activity::day_tags(cell).to_vec())
+        .collect();
+    let chips: Vec<String> = tags.iter().map(|day| day.join(", ")).collect();
+    let cells: Vec<HeatCell> = layout
         .cells
         .iter()
         .map(|cell| HeatCell {
@@ -66,79 +58,16 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
             key: cell.date.to_string(),
         })
         .collect();
-    let tap_tags = tags.clone();
-    let on_tap = move |hit: HeatHit| {
-        if let Some(day) = tap_tags.get(hit.index) {
-            pick.show(day.to_vec());
-        }
-    };
-    let on_enter = move |hit: HeatHit| {
-        if let Some(day) = tags.get(hit.index) {
-            let x = (hit.x + HEAT_CELL / 2.0) / width * 100.0;
-            let y = hit.y / height * 100.0;
-            hover.set(Some((day.join(", "), x, y)));
-        }
-    };
-    use_open_on_newest(ACTIVITY_HEAT_PARTS);
     rsx! {
-        div {
-            class: "chart-scroll scroll-fade-x activity-scroll",
-            onmounted: move |event| async move {
-                let _ = event
-                    .data()
-                    .scroll(
-                        dioxus::html::geometry::PixelsVector2D::new(width, 0.0),
-                        ScrollBehavior::Instant,
-                    )
-                    .await;
-            },
-            div {
-                class: "activity-plot",
-                style: "width:{width}px;",
-                onmouseleave: move |_| hover.set(None),
-                // The weekday names again, pinned at the scroller's left
-                // over the grid's own, so they stay in view as the year
-                // scrolls under them.
-                div {
-                    class: "activity-days",
-                    style: "width:{LEFT}px;height:{height}px;margin-bottom:-{height}px;",
-                    "aria-hidden": "true",
-                    svg {
-                        width: "{LEFT}",
-                        height: "{height}",
-                        view_box: "0 0 {LEFT} {height}",
-                        HeatWeekdays { labels: weekdays.clone(), top: TOP }
-                    }
-                }
-                svg {
-                    class: "heat-grid",
-                    style: "width:{width}px;",
-                    view_box: "0 0 {width} {height}",
-                    role: "img",
-                    "aria-label": "{activity::year_line(&days)}",
-                    HeatMonths { months: layout.months, left: LEFT, top: TOP }
-                    HeatWeekdays { labels: weekdays, top: TOP }
-                    HeatGrid { cells: grid, left: LEFT, top: TOP, on_enter, on_tap }
-                }
-                if let Some((text, left, top)) = hover() {
-                    ChartTip { text, left, top, class: "tag heat-float" }
-                }
-            }
-        }
-        HeatReadout { rest: activity::year_tags(&days).to_vec(), pick }
-    }
-}
-
-/// The heatmap while the screen loads: empty space in a year's grid's
-/// shape, at its width on a phone and scaled to the column on a wide
-/// window as the grid is, so nothing under it moves when the grid lands.
-#[component]
-pub fn HeatGhost() -> Element {
-    let width = LEFT + components::heat_span(GHOST_COLUMNS);
-    let height = TOP + components::heat_span(HEAT_ROWS);
-    rsx! {
-        div { class: "chart-scroll activity-scroll",
-            div { class: "activity-plot", style: "width:{width}px;aspect-ratio:{width} / {height};" }
+        Heatmap {
+            cells,
+            columns: layout.columns,
+            months: layout.months,
+            weekdays,
+            chips,
+            tags,
+            rest: activity::year_tags(&days).to_vec(),
+            label: activity::year_line(&days),
         }
     }
 }

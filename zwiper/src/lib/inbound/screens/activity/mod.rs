@@ -9,6 +9,7 @@
 /// The screen's accordion sections and hard passes group.
 pub(crate) mod sections;
 
+use components::HeatGhost;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
@@ -21,7 +22,7 @@ use zwipe_ui::screens::activity::{
     self as model, Action, Destination, Effect, Section, State, Status,
 };
 
-use self::sections::{ActivitySections, HardPassesPanel, HeatGhost};
+use self::sections::{ActivitySections, GHOST_COLUMNS, HardPassesPanel};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog;
@@ -108,7 +109,7 @@ fn ActivitySkeleton() -> Element {
                         div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                     }
                     div { class: "activity-ghost-body",
-                        HeatGhost {}
+                        HeatGhost { columns: GHOST_COLUMNS }
                         div { class: "heat-readout",
                             div { class: "heat-readout-row",
                                 for i in 0..3 {

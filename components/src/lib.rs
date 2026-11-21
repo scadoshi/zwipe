@@ -40,7 +40,6 @@
 //! `use_toast`, `Toasts` and `ToastOptions`, and `links` its in-app browser
 //! (`open_url`, `use_in_app_links`).
 
-mod activity_heat;
 mod architecture;
 mod back_arrow;
 mod back_online;
@@ -124,7 +123,6 @@ pub mod swipe_stack;
 mod theme;
 mod toast_screen;
 
-pub use activity_heat::{ACTIVITY_HEAT_PARTS, HeatMonths};
 pub use architecture::ZwipeArchitecture;
 pub use back_arrow::BackArrow;
 pub use back_online::use_back_online;
@@ -216,18 +214,18 @@ pub use orangui::{
     AppPhase, BOOT_BG, BOOT_HEAD, BRAND_RESET_JS, Banner, BootReveal, BottomSheet, Button,
     ButtonVariant, COMPONENTS_CSS, ChartTip, Chip, ClearWrap, CollapseSet, DIALOG_CSS,
     DarkModeButton, Decode, DialogAction, DialogHostView, DockAction, DockFilter, DockPlace,
-    GalleryFooter, GalleryFrame, GridCells, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit,
-    HeatReadout, HeatScrollParts, HeatWeekdays, HintBullet, HintBullets, HintDialog, HintKey,
-    HintLine, IconButton, IconText, InfoButton, KEYBOARD_INSET_JS, ModeIcon, NAV_FOLD_CSS,
-    NAV_GLIDE_JS, NavBar, NavCtaIcon, OpenFocus, OverlayBackStack, PageHeader, PageMeta,
-    PaletteIcon, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS, Replay, SCROLL_FADE_JS, SITE_CSS,
-    SheetDim, SheetFrame, SheetWide, SiteMeta, Splash, SplashGate, StatsStrip, THEME_GROUPS,
-    THEMES_CSS, TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput, ThemeConfig, ThemePicker,
-    ThemeSheet, carry_title, heat_span, icons, open_on_newest_js, overlay_z, peak_indices,
-    status_uses, use_app_lifecycle, use_app_lifecycle_root, use_collapse_set, use_dialog_host,
-    use_heat_pick, use_on_resume, use_open_on_newest, use_os_back, use_overlay_back,
-    use_overlay_back_action, use_overlay_back_stack, use_page_kill_recovery, use_persisted_theme,
-    use_theme_follow, use_theme_wipe, with_separators,
+    GalleryFooter, GalleryFrame, GridCells, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGhost, HeatGrid,
+    HeatHit, HeatReadout, HeatScrollParts, HeatWeekdays, Heatmap, HintBullet, HintBullets,
+    HintDialog, HintKey, HintLine, IconButton, IconText, InfoButton, KEYBOARD_INSET_JS, ModeIcon,
+    NAV_FOLD_CSS, NAV_GLIDE_JS, NavBar, NavCtaIcon, OpenFocus, OverlayBackStack, PageHeader,
+    PageMeta, PaletteIcon, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS, Replay, SCROLL_FADE_JS,
+    SITE_CSS, SheetDim, SheetFrame, SheetWide, SiteMeta, Splash, SplashGate, StatsStrip,
+    THEME_GROUPS, THEMES_CSS, TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput, ThemeConfig,
+    ThemePicker, ThemeSheet, carry_title, heat_span, icons, open_on_newest_js, overlay_z,
+    peak_indices, status_uses, use_app_lifecycle, use_app_lifecycle_root, use_collapse_set,
+    use_dialog_host, use_heat_pick, use_on_resume, use_open_on_newest, use_os_back,
+    use_overlay_back, use_overlay_back_action, use_overlay_back_stack, use_page_kill_recovery,
+    use_persisted_theme, use_theme_follow, use_theme_wipe, with_separators,
 };
 #[cfg(feature = "links")]
 pub use orangui::{OpenUrlError, open_url, use_in_app_links};
