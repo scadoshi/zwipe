@@ -16,7 +16,7 @@ fn a_result_chip_hovers_as_the_other_chips_do() {
 }
 
 #[test]
-fn the_glass_is_as_wide_as_the_store_icons_it_wears_the_class_of() {
+fn the_glass_is_as_wide_as_the_store_icons_and_wears_the_web_app_s_class() {
     let css = include_str!("../assets/style.css");
     assert!(
         css.contains("nav .card-search-nav {\n    --card-search-glass: 1.85rem;\n}"),
@@ -24,8 +24,8 @@ fn the_glass_is_as_wide_as_the_store_icons_it_wears_the_class_of() {
     );
     let source = include_str!("../src/components/card_search.rs");
     assert!(
-        source.contains(r#"pub(crate) const GLASS_CLASS: &str = "nav-cta nav-cta-icon";"#),
-        "the glass wears the store icons' class"
+        source.contains(r#"pub(crate) const GLASS_CLASS: &str = "btn-action nav-icon";"#),
+        "the glass wears the web app's nav icon class, so it takes the header icons' color rather than the store icons' accent"
     );
 }
 
@@ -61,7 +61,22 @@ fn a_finger_gets_the_glass_s_44px_tap_box_as_the_store_icons_do() {
 fn the_glass_glyph_is_the_store_glyphs_size_at_every_width() {
     let css = include_str!("../assets/style.css");
     assert!(
-        css.contains("\nnav .card-search-label svg {\n    width: 1.25em;\n    height: 1.25em;\n}"),
+        css.contains(
+            "\nnav .card-search-label.nav-icon svg {\n    width: 1.25em;\n    height: 1.25em;\n}"
+        ),
         "the glass glyph takes the store glyphs' 1.25em, wide and folded"
     );
+}
+
+#[test]
+fn wide_the_web_app_s_glass_keeps_the_store_icons_box() {
+    let css = include_str!("../assets/style.css");
+    let rule = "\nnav .card-search-label.nav-icon {\n    width: var(--card-search-glass);\n    height: var(--card-search-glass);\n    font-size: 0.8rem;\n}";
+    let at = css
+        .find(rule)
+        .unwrap_or_else(|| panic!("the glass's box: {rule}"));
+    let folded = css
+        .find("    nav .card-search-header .card-search-label {")
+        .unwrap_or(0);
+    assert!(at < folded, "before the folded size, which overrides it");
 }

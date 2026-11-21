@@ -80,8 +80,9 @@ fn use_site_search() -> CardSearch<SiteSearch> {
 /// Where the nav folds, the card search is the header's.
 const HEADER_MEDIA: &str = "(max-width: 60rem)";
 
-/// The class of the site nav's icon buttons, the store icons, which the glass wears too.
-pub(crate) const GLASS_CLASS: &str = "nav-cta nav-cta-icon";
+/// The glass's class: the web app's nav icon button, so it takes the web app's header icon
+/// color, at the store icons' size (`style.css`).
+pub(crate) const GLASS_CLASS: &str = "btn-action nav-icon";
 
 /// The nav's card search, its glass one of the nav's icon buttons.
 #[component]
