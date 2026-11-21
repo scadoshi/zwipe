@@ -11,7 +11,7 @@ use std::collections::HashSet;
 
 use components::{
     AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap, DangerZoneAction,
-    DialogAction, TOAST_LONG, TOAST_QUICK, spawn_write, use_mounted,
+    DialogAction, ListMore, MoreGhostRows, TOAST_LONG, TOAST_QUICK, spawn_write, use_mounted,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -22,6 +22,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::commander::maybeboard::{self, Sort, SortBy, Step};
+use zwipe_ui::commander::more_page::{MoreItem, MorePage};
 use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::screens::deck_list;
 use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
@@ -446,7 +447,23 @@ pub(super) fn MaybeboardPanel(
         let shown = Cards::from(sort().sorted(shown.into()));
         shown.sorted(applied.sort(), applied.direction()).into()
     });
+    // The list shows ten at a time; a new sort or filter shows the first ten again.
+    let mut more_page = use_signal(MorePage::new);
+    let view = use_memo(move || (sort(), filter()));
+    use_effect(move || {
+        let _view = view();
+        more_page.write().reset();
+    });
+    let list_open = use_signal(|| true);
+    let filtered_rows = filtered;
     let filtered = filtered();
+    let page = more_page.read().clone();
+    let items = page
+        .layout(&filtered, |c| c.scryfall_data.oracle_id)
+        .into_iter()
+        .map(|item| (item.key(|c| c.scryfall_data.id.to_string()), item));
+    let ghosts = page.ghosts().clone();
+    let offers_more = page.offers_more(filtered.len());
     let has_entries = !entries().is_empty();
     let searching_catalog = query().trim().len() >= QUICK_ADD_MIN_CHARS;
     let results = shown_results();
@@ -542,7 +559,6 @@ pub(super) fn MaybeboardPanel(
                                 } else {
                                     for (i, card) in results.into_iter().enumerate() {
                                         button {
-                                            key: "{card.scryfall_data.id}",
                                             r#type: "button",
                                             class: if lit == Some(i) { "chip-unselected card-filter-result card-filter-highlight" } else { "chip-unselected card-filter-result" },
                                             style: "animation-delay: {i.saturating_mul(40)}ms;",
@@ -598,6 +614,7 @@ pub(super) fn MaybeboardPanel(
                         // row says why.
                         CardListFold {
                             title: LIST_TITLE,
+                            open: list_open,
                             actions: rsx! {
                                 Button {
                                     variant: ButtonVariant::Action,
@@ -612,15 +629,41 @@ pub(super) fn MaybeboardPanel(
                             } else if filtered.is_empty() {
                                 div { class: "card-row card-row-note", "No commanders match" }
                             }
-                            for card in filtered {
-                                MaybeboardRow {
-                                    key: "{card.scryfall_data.id}",
-                                    card,
-                                    expanded_card,
-                                    on_create: create_with,
-                                    on_remove,
+                            // One keyed run, so the rows an earlier press showed never change
+                            // parent when a later press moves the ghosts after them.
+                            for (key, item) in items {
+                                Fragment { key: "{key}",
+                                    {match item {
+                                        MoreItem::Row(card) => rsx! {
+                                            MaybeboardRow {
+                                                card,
+                                                expanded_card,
+                                                on_create: create_with,
+                                                on_remove,
+                                            }
+                                        },
+                                        MoreItem::Ghosts => rsx! {
+                                            MoreGhostRows {
+                                                ghosts: ghosts.clone(),
+                                                on_animation_end: move |name: String| more_page.write().animation_ended(&name),
+                                                row_class: "web-ghost-card-row",
+                                            }
+                                        },
+                                    }}
                                 }
                             }
+                        }
+                        // Show more sits under the panel and shows ten more rows; the press that
+                        // shows the last of them sends it away on its exit.
+                        ListMore {
+                            offers: offers_more,
+                            open: list_open(),
+                            leaves: page.next_shows_the_rest(filtered.len()),
+                            onclick: move |()| {
+                                let rows = filtered_rows.peek();
+                                more_page.write().show_more(&rows, |c| c.scryfall_data.oracle_id);
+                                true
+                            },
                         }
                         DangerZoneAction {
                             label: "Clear maybeboard",

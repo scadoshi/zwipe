@@ -15,7 +15,7 @@ fn show_more_sits_a_chip_row_s_gap_under_its_panel_and_a_panel_gap_over_the_next
     );
     assert!(
         SCREENS_B.contains(
-            ".card-list-more {\n    display: grid;\n    grid-template-rows: 1fr;\n    width: fit-content;\n    margin: 0 0 var(--panel-gap);\n}"
+            ".card-list-more {\n    display: grid;\n    grid-template-rows: 1fr;\n    width: fit-content;\n    margin: 0 auto var(--panel-gap);\n}"
         ),
         "one row it can fold to nothing, and the panel gap to what follows"
     );
@@ -44,7 +44,7 @@ fn leaving_it_fades_on_the_kit_s_entrance_curve_and_length() {
 fn with_motion_allowed_it_folds_away_and_hands_back_the_chip_gap() {
     assert!(
         SCREENS_B.contains(
-            "@media (prefers-reduced-motion: no-preference) {\n    .card-list-more.card-list-more-leaving {\n        overflow: hidden;\n        transform-origin: top left;\n        animation-name: card-list-more-leave;\n    }\n}"
+            "@media (prefers-reduced-motion: no-preference) {\n    .card-list-more.card-list-more-leaving {\n        overflow: hidden;\n        transform-origin: top center;\n        animation-name: card-list-more-leave;\n    }\n}"
         ),
         "{SCREENS_B}"
     );

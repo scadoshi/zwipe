@@ -1,18 +1,21 @@
-//! Show more's ghost rows on Commanders' Suggested list, so a press answers at once: the ghosts
+//! Show more's ghost rows on the Commanders screen's lists, so a press answers at once: the ghosts
 //! ease in at the foot of the list the moment Show more is pressed, and once its page has landed
 //! and they have finished easing in, they lie over the page's first rows and fade as those rows
 //! ease in over them. Under reduced motion every step is a fade.
 //!
-//! The list draws its rows in two runs, the rows held before Show more and then the rows its page
-//! dealt, with the ghosts between them: [`MoreGhosts::split`] says where. The dealt rows stay
+//! The list draws its rows held before Show more, the ghosts, then the rows its page dealt, all in
+//! one run ([`MoreGhosts::layout`]): [`MoreGhosts::split`] says where the ghosts go. The dealt rows stay
 //! hidden until the ghosts start to leave, so they ease in over the ghosts rather than under
-//! them. The ghosts' element stays (hidden) once they have gone, so the dealt rows keep their
-//! place in the second run and never mount again.
+//! them. The ghosts' element stays (hidden) once they have gone, as the marker the dealt rows
+//! follow.
 
 use uuid::Uuid;
 
 /// How many ghost rows Show more eases in.
 pub const GHOST_ROWS: usize = 3;
+
+/// The ghosts' key among a list's keyed rows, which a row's printing id never matches.
+pub const GHOSTS_KEY: &str = "more-ghosts";
 
 /// The ghosts' ease in, which folds them open as they fade in.
 pub const ENTER_ANIMATION: &str = "card-list-ghosts-enter";
@@ -36,8 +39,31 @@ pub enum Phase {
     Waiting,
     /// Over the dealt rows, fading out as they ease in.
     Leaving,
-    /// Gone, their element kept hidden between the two runs of rows.
+    /// Gone, their element kept hidden between the rows held before Show more and the rows it
+    /// dealt.
     Gone,
+}
+
+/// One thing a list with Show more's ghost rows draws: a row, or the ghosts.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MoreItem<T> {
+    /// A row.
+    Row(T),
+    /// The ghost rows, between the rows held before Show more and the rows it dealt.
+    Ghosts,
+}
+
+impl<T> MoreItem<T> {
+    /// The item's key in the list's keyed loop: `row_key` of a row, [`GHOSTS_KEY`] for the
+    /// ghosts. The client keys the loop body's first node with it, so a row keeps its own
+    /// component as rows around it come and go.
+    #[must_use]
+    pub fn key(&self, row_key: impl Fn(&T) -> String) -> String {
+        match self {
+            Self::Row(row) => row_key(row),
+            Self::Ghosts => GHOSTS_KEY.to_owned(),
+        }
+    }
 }
 
 /// Show more's ghost rows and the page they wait on. Starts [`Phase::Off`].
@@ -120,7 +146,8 @@ impl MoreGhosts {
         }
     }
 
-    /// Whether the ghosts' element is drawn, between the two runs of rows.
+    /// Whether the ghosts' element is drawn, between the rows held before Show more and the rows
+    /// it dealt.
     #[must_use]
     pub fn drawn(&self) -> bool {
         self.phase != Phase::Off
@@ -151,6 +178,27 @@ impl MoreGhosts {
     #[must_use]
     pub fn shows_dealt(&self) -> bool {
         !matches!(self.phase, Phase::Entering | Phase::Waiting)
+    }
+
+    /// What the list draws, in order: the rows held before Show more, the ghosts while they are
+    /// drawn, then the rows its page dealt once they show ([`Self::split`],
+    /// [`Self::shows_dealt`]). One run, so a client drawing it in one keyed loop moves no row to
+    /// another parent when a later press moves the ghosts. `oracle_id` reads a row's oracle id.
+    #[must_use]
+    pub fn layout<T: Clone>(
+        &self,
+        rows: &[T],
+        oracle_id: impl Fn(&T) -> Option<Uuid>,
+    ) -> Vec<MoreItem<T>> {
+        let (held, dealt) = rows.split_at(self.split(rows, oracle_id));
+        let mut items: Vec<MoreItem<T>> = held.iter().cloned().map(MoreItem::Row).collect();
+        if self.drawn() {
+            items.push(MoreItem::Ghosts);
+        }
+        if self.shows_dealt() {
+            items.extend(dealt.iter().cloned().map(MoreItem::Row));
+        }
+        items
     }
 }
 

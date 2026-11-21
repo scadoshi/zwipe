@@ -48,15 +48,21 @@ fn suggested_has_its_console_swipe_question_mark_show_more_and_danger_zone() {
     }
     let fold = SUGGESTED.find("CardListFold {").expect("the fold");
     let more = SUGGESTED
-        .find(r#"class: if leaving() { "card-list-more card-list-more-leaving" } else { "card-list-more" },"#)
-        .expect("Show more, in the web's exit markup");
+        .find("ListMore {")
+        .expect("Show more, the web's shared chip");
     let danger = SUGGESTED
         .find("label: model::CLEAR_SKIPS,")
         .expect("Clear skips");
     assert!(fold < more && more < danger, "Show more under the panel");
     assert!(
-        SUGGESTED.contains("let more = fold_open() && (leaving() || state.offers_more());"),
+        SUGGESTED.contains("let offers = state.offers_more();")
+            && SUGGESTED.contains("open: fold_open(),")
+            && SUGGESTED.contains("leaves: true,"),
         "once per deal, and not while the panel is shut"
+    );
+    assert!(
+        loop_root_is_keyed(SUGGESTED) && SUGGESTED.contains("MoreItem::Ghosts => rsx! {"),
+        "its press eases in the ghost rows, as the web's does, in the rows' one keyed run"
     );
 }
 
@@ -81,4 +87,36 @@ fn suggested_keeps_a_panel_gap_under_the_maybeboard_s_danger_zone() {
         MAIN_CSS.contains(".commanders-suggested {\n    margin-top: var(--panel-gap);\n}"),
         "a panel gap over its Show row, as the web's stacked Suggested keeps"
     );
+}
+
+const MAYBEBOARD: &str = include_str!("../src/lib/inbound/screens/deck/commander_maybeboard.rs");
+
+#[test]
+fn the_maybeboard_shows_ten_at_a_time_under_its_own_show_more() {
+    assert!(MAYBEBOARD.contains("let mut more_page = use_signal(MorePage::new);"));
+    assert!(
+        MAYBEBOARD.contains(
+            "let list_view = use_memo(move || (driver.model.read().sort(), filter_reset_counter()));"
+        ),
+        "a new sort or an applied filter shows the first ten again"
+    );
+    assert!(
+        MAYBEBOARD.contains(".layout(&filtered, |c| c.scryfall_data.oracle_id)")
+            && loop_root_is_keyed(MAYBEBOARD),
+        "the rows and the ghosts in one keyed run, so a later press moves no row"
+    );
+    let ghosts = MAYBEBOARD.find("MoreGhostRows {").expect("ghost rows");
+    let more = MAYBEBOARD.find("ListMore {").expect("Show more");
+    let danger = MAYBEBOARD
+        .find("label: model::CLEAR_MAYBEBOARD,")
+        .expect("Clear maybeboard");
+    assert!(ghosts < more && more < danger, "Show more under the panel");
+}
+
+/// Whether `src` draws its Show more list in a loop whose body's first node is a keyed `Fragment`:
+/// Dioxus reads a loop item's key off that node only, and a key inside a `match` there leaves the
+/// list unkeyed.
+fn loop_root_is_keyed(src: &str) -> bool {
+    src.split_once("for (key, item) in items {")
+        .is_some_and(|(_, body)| body.trim_start().starts_with("Fragment { key: \"{key}\","))
 }

@@ -7,8 +7,8 @@
 //! profile Playstyle draws and the deck count the reasons count against.
 
 use components::{
-    AlertDialog, Button, ButtonVariant, CardListFold, DialogAction, MoreGhostRows, Mounted,
-    TOAST_LONG, spawn_write, use_mounted,
+    AlertDialog, Button, ButtonVariant, CardListFold, DialogAction, ListMore, MoreGhostRows,
+    Mounted, TOAST_LONG, spawn_write, use_mounted,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
@@ -18,8 +18,8 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::http::contracts::suggestions::HttpBuilderProfile;
-use zwipe_ui::commander::deal::{self, Door};
-use zwipe_ui::commander::more_ghosts::MoreGhosts;
+use zwipe_ui::commander::deal::Door;
+use zwipe_ui::commander::more_ghosts::MoreItem;
 use zwipe_ui::generation::Generation;
 use zwipe_ui::screens::playstyle as suggested_model;
 use zwipe_ui::screens::suggested_commanders::{self as suggested, Action, Effect, Page, State};
@@ -43,8 +43,6 @@ const HELD_LIMIT: u32 = 0;
 pub(crate) struct Suggestions {
     /// The list's model.
     model: Signal<State>,
-    /// Show more's ghost rows, which answer its press while its page is out.
-    more_ghosts: Signal<MoreGhosts>,
     /// The user's deck count, which the reasons count against; 0 before it loads.
     pub(crate) deck_count: Signal<u32>,
     /// The user's decks, for the create gate; `None` until loaded.
@@ -212,7 +210,6 @@ fn use_create_gate() -> (Signal<Option<Vec<DeckProfile>>>, Callback<Card>) {
 #[derive(Clone, Copy)]
 struct Driver {
     model: Signal<State>,
-    more_ghosts: Signal<MoreGhosts>,
     authed: Authed,
     toasts: Toasts,
     mounted: Mounted,
@@ -220,19 +217,10 @@ struct Driver {
 }
 
 impl Driver {
-    /// Applies `action` to the model and performs what it returns. A fresh deal takes any ghost
-    /// rows away at once, and a Show more that deals nothing sends them away over no rows.
+    /// Applies `action` to the model and performs what it returns.
     fn dispatch(self, action: Action) {
         let mut model = self.model;
-        let mut ghosts = self.more_ghosts;
-        let fresh = matches!(action, Action::Load(_) | Action::Redeal | Action::Cleared);
-        let show_more = action == Action::ShowMore;
         let effects = model.write().update(action);
-        if fresh {
-            ghosts.write().reset();
-        } else if show_more && !effects.iter().any(|e| matches!(e, Effect::Deal { .. })) {
-            ghosts.write().failed();
-        }
         for effect in effects {
             self.perform(effect);
         }
@@ -274,16 +262,6 @@ impl Driver {
                         )
                         .await
                         .map_err(|_| ());
-                    // Show more's page, rows or none, sends its ghost rows away.
-                    if page == Page::More {
-                        let mut ghosts = self.more_ghosts;
-                        match &reply {
-                            Ok(found) => {
-                                ghosts.write().landed(deal::oracle_ids(&found.suggestions));
-                            }
-                            Err(()) => ghosts.write().failed(),
-                        }
-                    }
                     self.dispatch(Action::Page { ticket, reply });
                 });
             }
@@ -342,10 +320,8 @@ pub(crate) fn use_suggestions(filter: Signal<CardQueryBuilder>) -> Suggestions {
     let clear_open = use_signal(|| false);
     let held = use_held();
     let model = use_signal(State::new);
-    let more_ghosts = use_signal(MoreGhosts::new);
     let driver = Driver {
         model,
-        more_ghosts,
         authed: use_authed(),
         toasts: use_toast(),
         mounted: use_mounted(),
@@ -375,7 +351,6 @@ pub(crate) fn use_suggestions(filter: Signal<CardQueryBuilder>) -> Suggestions {
 
     Suggestions {
         model,
-        more_ghosts,
         deck_count: held.deck_count,
         deck_profiles,
         filter,
@@ -397,7 +372,6 @@ pub(crate) fn SuggestedFold(
 ) -> Element {
     let Suggestions {
         model,
-        mut more_ghosts,
         deck_count,
         mut swipe_open,
         dispatch,
@@ -406,20 +380,16 @@ pub(crate) fn SuggestedFold(
     } = list;
     // The fold's state, so Show more under the panel hides while it is shut.
     let open = use_signal(|| true);
-    // Show more on its way out, kept until its exit ends.
-    let mut leaving = use_signal(|| false);
     let state = model.read();
-    let mut rows = state.entries().to_vec();
-    let more = open() && (leaving() || state.offers_more());
+    let items = state
+        .layout()
+        .into_iter()
+        .map(|item| (item.key(|s| s.card.scryfall_data.id.to_string()), item));
+    let ghosts = state.ghosts().clone();
+    let offers = state.offers_more();
     let line = state.ranked_line();
     let empty = state.empty_line();
     drop(state);
-    let ghosts = more_ghosts.read().clone();
-    let split = ghosts.split(&rows, |s| s.card.scryfall_data.oracle_id);
-    let mut dealt = rows.split_off(split.min(rows.len()));
-    if !ghosts.shows_dealt() {
-        dealt.clear();
-    }
     let on_maybe =
         use_callback(move |oracle_id: Uuid| dispatch.call(Action::Maybeboard(oracle_id)));
     let on_dismiss = use_callback(move |oracle_id: Uuid| dispatch.call(Action::Dismiss(oracle_id)));
@@ -449,63 +419,44 @@ pub(crate) fn SuggestedFold(
                     span { class: "chip-note", {empty} }
                 }
             }
-            for suggestion in rows {
-                SuggestionRow {
-                    key: "{suggestion.card.scryfall_data.id}",
-                    suggestion,
-                    deck_count: deck_count(),
-                    expanded_card,
-                    on_start: create_with,
-                    on_maybe,
-                    on_dismiss,
-                }
-            }
-            if ghosts.drawn() {
-                MoreGhostRows { ghosts: more_ghosts, row_class: "web-ghost-card-row" }
-            }
-            for suggestion in dealt {
-                SuggestionRow {
-                    key: "{suggestion.card.scryfall_data.id}",
-                    suggestion,
-                    deck_count: deck_count(),
-                    expanded_card,
-                    on_start: create_with,
-                    on_maybe,
-                    on_dismiss,
+            // One keyed run, so rows a later page joins after never change parent.
+            for (key, item) in items {
+                Fragment { key: "{key}",
+                    {match item {
+                        MoreItem::Row(suggestion) => rsx! {
+                            SuggestionRow {
+                                suggestion,
+                                deck_count: deck_count(),
+                                expanded_card,
+                                on_start: create_with,
+                                on_maybe,
+                                on_dismiss,
+                            }
+                        },
+                        MoreItem::Ghosts => rsx! {
+                            MoreGhostRows {
+                                ghosts: ghosts.clone(),
+                                on_animation_end: move |name: String| dispatch.call(Action::GhostsEnded(name)),
+                                row_class: "web-ghost-card-row",
+                            }
+                        },
+                    }}
                 }
             }
         }
-        // Show more sits under the panel, as a chip row sits over one, and deals one page. It
-        // leaves on its exit while the page loads.
-        if more {
-            div {
-                class: if leaving() { "card-list-more card-list-more-leaving" } else { "card-list-more" },
-                onanimationend: move |event: AnimationEvent| {
-                    if ends_leave(&event.animation_name()) {
-                        leaving.set(false);
-                    }
-                },
-                div {
-                    button {
-                        r#type: "button",
-                        class: "chip",
-                        onclick: move |_| {
-                            leaving.set(true);
-                            more_ghosts.write().ask();
-                            dispatch.call(Action::ShowMore);
-                        },
-                        {suggested::SHOW_MORE}
-                    }
-                }
-            }
+        // Show more sits under the panel and deals one page, once per deal, so it leaves on its
+        // exit while the page loads.
+        ListMore {
+            offers,
+            open: open(),
+            leaves: true,
+            // Taken when its page went out, which spends it; a press while a top-up is out isn't.
+            onclick: move |()| {
+                dispatch.call(Action::ShowMore);
+                !model.peek().offers_more()
+            },
         }
     }
-}
-
-/// Whether `animation` is Show more's exit ending: the fold away, or the fade alone under
-/// reduced motion.
-fn ends_leave(animation: &str) -> bool {
-    matches!(animation, "card-list-more-leave" | "card-list-more-fade")
 }
 
 /// The list's Clear skips dialog and its Swipe select, which starts from the screen's filter.
@@ -546,17 +497,5 @@ pub(crate) fn SuggestedOverlays(list: Suggestions) -> Element {
             },
             on_close: move |()| swipe_open.set(false),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn show_more_goes_when_either_exit_ends_and_not_on_another_animation() {
-        assert!(ends_leave("card-list-more-leave"), "the fold away");
-        assert!(ends_leave("card-list-more-fade"), "the reduced-motion fade");
-        assert!(!ends_leave("row-enter"), "a row easing in under it");
     }
 }
