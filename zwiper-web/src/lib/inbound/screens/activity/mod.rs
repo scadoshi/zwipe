@@ -11,7 +11,7 @@
 pub mod sections;
 
 use components::deck_cursor::use_card_list_cursor;
-use components::{HoverStackHost, use_hover_stack};
+use components::{HeatGhost, HoverStackHost, use_hover_stack};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::http::contracts::suggestions::HttpActivity;
@@ -19,7 +19,7 @@ use zwipe_ui::activity::has_anything;
 use zwipe_ui::shortcuts::ListLayout;
 use zwipe_ui::telemetry::vocabulary::Screen;
 
-use self::sections::{ACTIVITY_TITLE, ActivityRates, ActivityYear, HardPassesPanel, HeatGhost};
+use self::sections::{ACTIVITY_TITLE, ActivityRates, ActivityYear, GHOST_COLUMNS, HardPassesPanel};
 use crate::inbound::cards::card_row::{CardOverlaysHost, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::row_keys::use_card_row_keys;
@@ -51,7 +51,7 @@ fn ActivitySkeleton() -> Element {
             GhostSection { chars: 8, open: true,
                 div { class: "web-activity-year-body",
                     div { class: "web-activity-heat",
-                        HeatGhost {}
+                        HeatGhost { columns: GHOST_COLUMNS }
                         div { class: "heat-readout",
                             div { class: "heat-readout-row",
                                 for i in 0..3 {
