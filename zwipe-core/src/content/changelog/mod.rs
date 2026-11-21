@@ -70,6 +70,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "Going back from a card to your search results keeps your place",
         "On the web and zwipe.net, the Themes search's clear button is red",
         "In the app, the Themes sheet no longer has a search",
+        "Hints fit on a phone screen without scrolling",
+        "A long hint keeps its title and buttons in place and scrolls only its text",
     ],
 }];
 
