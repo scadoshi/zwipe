@@ -46,7 +46,7 @@ if [ "$others" != "0" ]; then
   echo "which it restarts on demand) and rerun." >&2
   exit 1
 fi
-PGOPTIONS="-c client_min_messages=warning" psql "$ADMIN" -v ON_ERROR_STOP=1 -qc "drop database if exists $VERIFY_DB" -c "create database $VERIFY_DB template \"$TEMPLATE_DB\""
+psql "$ADMIN" -v ON_ERROR_STOP=1 -q -c "set client_min_messages = warning" -c "drop database if exists $VERIFY_DB" -c "create database $VERIFY_DB template \"$TEMPLATE_DB\""
 
 step "migrations"
 # A dev database that ran another branch's migrations carries tables this branch has never seen,
@@ -54,7 +54,7 @@ step "migrations"
 extra="$(psql "$VERIFY_URL" -Atqc "select version from _sqlx_migrations order by version" |
   extra_migrations "$ROOT/zerver/migrations")"
 if [ -n "$extra" ]; then
-  PGOPTIONS="-c client_min_messages=warning" psql "$ADMIN" -qc "drop database if exists $VERIFY_DB"
+  psql "$ADMIN" -q -c "set client_min_messages = warning" -c "drop database if exists $VERIFY_DB"
   echo "$TEMPLATE_DB ran migrations this branch doesn't have: $extra." >&2
   echo "They come from another branch; rebuild the dev database from this one (or point VERIFY_TEMPLATE_URL at one that matches) and rerun." >&2
   exit 1
