@@ -322,6 +322,10 @@ pub fn CommanderMaybeboard() -> Element {
     let preview_dismissing = use_signal(|| false);
     let mut swipe_open = use_signal(|| false);
     let swipe_mode = use_memo(|| Some(SwipeMode::Commander(Format::Commander)));
+    // Suggested's swipe, opened from its list and rendered at the root beside the Maybeboard's.
+    let mut suggested_swipe_open = use_signal(|| false);
+    let suggested_swipe_mode = use_memo(|| Some(SwipeMode::Suggested));
+    let suggested_deck_count = use_signal(|| 0u32);
     // Printing sheet target: the row whose Printing button was tapped. The
     // swap is display-local (the maybeboard is oracle-keyed; a refetch goes
     // back to the preferred printing), but a Create deck after swapping
@@ -594,6 +598,8 @@ pub fn CommanderMaybeboard() -> Element {
                         model: suggested,
                         filter: filter_builder,
                         filter_applied: filter_reset_counter,
+                        swipe_open: suggested_swipe_open,
+                        deck_count: suggested_deck_count,
                         expanded_card,
                         preview_card,
                         preview_dismissing,
@@ -652,6 +658,21 @@ pub fn CommanderMaybeboard() -> Element {
                     driver.create(card);
                 },
                 on_close: move |()| swipe_open.set(false),
+            }
+
+            // The suggested deal, from the screen's filter: right starts a deck with the pick, up
+            // saves it, left skips it for a week.
+            SwipeSelect {
+                host_screen: screen::COMMANDER_MAYBEBOARD,
+                open: suggested_swipe_open,
+                mode: suggested_swipe_mode,
+                start_filter: Some(filter_builder.into()),
+                reasons_deck_count: Some(suggested_deck_count.into()),
+                on_select: move |card: Card| {
+                    suggested_swipe_open.set(false);
+                    create_from_suggested.call(card);
+                },
+                on_close: move |()| suggested_swipe_open.set(false),
             }
 
             // Pick a printing → swap that row's card in place and keep the

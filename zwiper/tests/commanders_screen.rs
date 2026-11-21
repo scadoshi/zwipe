@@ -42,7 +42,6 @@ fn suggested_has_its_console_swipe_question_mark_show_more_and_danger_zone() {
         "InfoButton { topic: HintTopic::SuggestionList }",
         "{maybeboard_model::SWIPE}",
         "label: model::CLEAR_SKIPS,",
-        "mode: swipe_mode,",
     ] {
         assert!(SUGGESTED.contains(piece), "{piece}");
     }
@@ -64,6 +63,35 @@ fn suggested_has_its_console_swipe_question_mark_show_more_and_danger_zone() {
         loop_root_is_keyed(SUGGESTED) && SUGGESTED.contains("MoreItem::Ghosts => rsx! {"),
         "its press eases in the ghost rows, as the web's does, in the rows' one keyed run"
     );
+}
+
+/// `.screen-content` scrolls, and iOS draws the screen's header and floating dock over a fixed
+/// layer inside a scroll container, so Suggested's swipe showed the screen's funnel over its eye
+/// button. Both swipes render at the screen's root, after the dock, as the web's do.
+#[test]
+fn both_swipes_render_at_the_screen_s_root_after_the_dock() {
+    let panel = SUGGESTED.split("#[cfg(test)]").next().unwrap_or_default();
+    assert!(
+        !panel.contains("SwipeSelect {"),
+        "Suggested's panel renders no swipe inside the page"
+    );
+    let dock = COMMANDERS
+        .find("div { class: \"action-dock action-dock-right\",")
+        .expect("the dock");
+    let (page, root) = COMMANDERS.split_at(dock);
+    assert!(!page.contains("SwipeSelect {"), "no swipe inside the page");
+    assert_eq!(
+        root.matches("SwipeSelect {").count(),
+        2,
+        "the Maybeboard's swipe and Suggested's, after the dock"
+    );
+    for piece in [
+        "open: suggested_swipe_open,",
+        "mode: suggested_swipe_mode,",
+        "reasons_deck_count: Some(suggested_deck_count.into()),",
+    ] {
+        assert!(root.contains(piece), "{piece}");
+    }
 }
 
 #[test]

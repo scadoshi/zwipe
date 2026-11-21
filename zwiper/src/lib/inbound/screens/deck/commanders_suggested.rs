@@ -20,12 +20,11 @@ use zwipe_ui::screens::suggested_commanders::{self as model, Action, Effect, Pag
 
 use super::components::danger_zone::DangerZoneAction;
 use super::components::skeletons::{ChipGhost, ChipRowGhost};
-use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use super::suggested_commanders::SuggestionRow;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
-use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
+use crate::inbound::components::telemetry::vocabulary::Screen;
 use crate::inbound::components::ui_toast;
 use crate::inbound::screens::deck::card::components::card_row::ShowRowArt;
 
@@ -127,13 +126,18 @@ impl Driver {
 
 /// The Suggested list over `model`, dealt under the screen's `filter`, again each time the filter
 /// sheet's Apply bumps `filter_applied`. Its rows open into `expanded_card` and their image and
-/// Printings into the screen's overlays; Create deck and a right swipe go through `on_create`, and
-/// a row's save calls `on_saved`. Its Show row's Art chip shows or hides this list's art only.
+/// Printings into the screen's overlays; Create deck goes through `on_create`, and a row's save
+/// calls `on_saved`. Its Swipe opens `swipe_open`, the screen's swipe over this deal, which the
+/// screen renders at its root; closing it deals again. `deck_count` is the count the reasons count
+/// against, which it loads once for the rows and the swipe. Its Show row's Art chip shows or hides
+/// this list's art only.
 #[component]
 pub(crate) fn SuggestedSection(
     model: Signal<State>,
     filter: Signal<CardQueryBuilder>,
     filter_applied: Signal<u32>,
+    swipe_open: Signal<bool>,
+    deck_count: Signal<u32>,
     expanded_card: Signal<Option<Uuid>>,
     preview_card: Signal<Option<(ScryfallData, usize)>>,
     preview_dismissing: Signal<bool>,
@@ -150,12 +154,11 @@ pub(crate) fn SuggestedSection(
     let authed = driver.authed;
     let mut show_row_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_row_art));
-    let mut swipe_open = use_signal(|| false);
-    let swipe_mode = use_memo(|| Some(SwipeMode::Suggested));
     let mut clear_open = use_signal(|| false);
     // The open state of the list's fold, so Show more under it hides while it is shut.
     let fold_open = use_signal(|| true);
-    let mut deck_count = use_signal(|| 0u32);
+    let mut swipe_open = swipe_open;
+    let mut deck_count = deck_count;
 
     // The first page on mount, and again whenever the filter sheet applies.
     use_effect(move || {
@@ -323,21 +326,6 @@ pub(crate) fn SuggestedSection(
                 },
             ],
             {model::CLEAR_SKIPS_LINE}
-        }
-
-        // The suggested deal, from the screen's filter: right starts a deck with the pick, up
-        // saves it, left skips it for a week.
-        SwipeSelect {
-            host_screen: screen::COMMANDER_MAYBEBOARD,
-            open: swipe_open,
-            mode: swipe_mode,
-            start_filter: Some(filter.into()),
-            reasons_deck_count: Some(deck_count.into()),
-            on_select: move |card: Card| {
-                swipe_open.set(false);
-                on_create.call(card);
-            },
-            on_close: move |()| swipe_open.set(false),
         }
     }
 }
