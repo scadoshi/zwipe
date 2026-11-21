@@ -2598,8 +2598,9 @@ html.keyboard-up .web-dock-pair {
     filter: brightness(0.85);
 }
 
-/* The square, at the panels' corner radius: the art crop filling it, or
-   the raised fill with the pips centered as the placeholder. */
+/* The square, at the chip radius since it sits at the panel's padding:
+   the art crop filling it, or the raised fill with the pips centered as
+   the placeholder. */
 .home-deck-tile-art {
     display: flex;
     align-items: center;
@@ -2607,7 +2608,7 @@ html.keyboard-up .web-dock-pair {
     gap: var(--space-1);
     width: 100%;
     aspect-ratio: 1 / 1;
-    border-radius: 1rem;
+    border-radius: var(--chip-radius);
     background-color: var(--bg-raised);
     overflow: hidden;
     font-size: 1.3rem;

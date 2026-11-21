@@ -53,7 +53,6 @@ const OUT_OF_SCOPE: &[&str] = &[
     ".skeleton-bar.web-ghost-card",
     ".sd-image-overlay .sd-image-overlay-img img",
     ".flippable-card-wrapper img",
-    ".home-deck-tile-art",
     ".carousel-card-image",
     ".card-image",
     ".skeleton-image",
