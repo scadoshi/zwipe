@@ -2532,8 +2532,10 @@ html.keyboard-up .web-dock-pair {
 }
 
 /* A panel too narrow to center the title between the two reserves (a phone's,
-   or a column beside Colors) starts the title at the left edge instead, so it
-   never cuts off. */
+   or a column beside Colors) starts the title at the left edge and puts the
+   buttons back in the flow at the right, with no reserve, so the title gets
+   the whole line beside them; when the line can't hold both, the buttons
+   wrap under the title and the title never cuts off. */
 .home-decks {
     container-type: inline-size;
 }
@@ -2541,7 +2543,16 @@ html.keyboard-up .web-dock-pair {
 @container (max-width: 36rem) {
     .home-flavor.home-decks > .settings-list-header.home-decks-header-create {
         justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: var(--space-2);
         padding-left: var(--space-4);
+        padding-right: var(--space-4);
+    }
+
+    .home-decks > .home-decks-header-create > .home-panel-header-action {
+        position: static;
+        transform: none;
+        margin-left: auto;
     }
 }
 
