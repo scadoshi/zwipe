@@ -455,7 +455,7 @@ pub(crate) fn SwipeSelect(
     let current_reasons = state.reasons().cloned();
     let deck_count = state.deck_count();
     drop(state);
-    // The reasons behind the card on top, for the details sheet's footer. Its
+    // The reasons behind the card on top, for the details sheet's body. Its
     // shared-tag chips take the sheet's own description lookup and the host's
     // examples opener as props: the suggested commanders screen provides the
     // opener, and its examples overlay draws over this screen and the sheet.
@@ -582,7 +582,9 @@ pub(crate) fn SwipeSelect(
                         open: show_details,
                         card,
                         on_printings: move |()| printing_open.set(true),
-                        footer: current_reasons.map(|reasons| rsx! {
+                        // Folded under the row's chip at the body's end, so the foot keeps
+                        // only its actions.
+                        body_end: current_reasons.map(|reasons| rsx! {
                             SuggestionReasons {
                                 reasons,
                                 deck_count,

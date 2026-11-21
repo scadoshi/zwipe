@@ -1137,7 +1137,12 @@ fn SwipeSelectBody(
                     }
                 },
                 body_end: reasons.map(|reasons| rsx! {
-                    SuggestionReasons { reasons, deck_count: deck_count(), describe_tag, on_examples }
+                    SuggestionReasons {
+                        reasons,
+                        deck_count: deck_count(),
+                        describe_tag,
+                        on_examples,
+                    }
                 }),
             }
             PrintingSheet {

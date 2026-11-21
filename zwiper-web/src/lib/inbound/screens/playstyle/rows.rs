@@ -25,9 +25,8 @@ use crate::inbound::router::Route;
 /// The Staples group's title.
 const STAPLES_TITLE: &str = "Staples";
 
-/// The "Why this commander?" block under a suggestion: folded under a chip
-/// in a list row (`foldable`), or open under a `chips-label` heading in a
-/// details sheet. It holds the shared oracle tags grouped by card role, or
+/// The "Why this commander?" block under a suggestion, folded under its chip
+/// in a list row and in the swipe's card details alike, closed on mount. It holds the shared oracle tags grouped by card role, or
 /// [`deal::POPULAR_REASON`] when the commander shares none, then one bullet
 /// per shared color. Tag reveals use `describe_tag` and `on_examples`,
 /// else the screen's contexts.
@@ -37,7 +36,6 @@ pub fn SuggestionReasons(
     deck_count: u32,
     #[props(default)] describe_tag: Option<Callback<String, Option<String>>>,
     #[props(default)] on_examples: Option<Callback<String>>,
-    #[props(default)] foldable: bool,
 ) -> Element {
     let mut reasons_open = use_signal(|| false);
     let context_describe = try_use_context::<OtagDescribe>().map(|d| d.0);
@@ -70,25 +68,20 @@ pub fn SuggestionReasons(
     };
     rsx! {
         div { class: "card-detail-footer",
-            if foldable {
-                Chip {
-                    selected: reasons_open(),
-                    onclick: move |evt: MouseEvent| {
-                        evt.stop_propagation();
-                        reasons_open.toggle();
-                    },
-                    span {
-                        class: if reasons_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
-                        "\u{25b8}"
-                    }
-                    "Why this commander?"
+            Chip {
+                selected: reasons_open(),
+                onclick: move |evt: MouseEvent| {
+                    evt.stop_propagation();
+                    reasons_open.toggle();
+                },
+                span {
+                    class: if reasons_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
+                    "\u{25b8}"
                 }
-                div { class: if reasons_open() { "collapsible open" } else { "collapsible" },
-                    div { class: "collapsible-inner", {bullets} }
-                }
-            } else {
-                span { class: "chips-label", "Why this commander?" }
-                {bullets}
+                "Why this commander?"
+            }
+            div { class: if reasons_open() { "collapsible open" } else { "collapsible" },
+                div { class: "collapsible-inner", {bullets} }
             }
         }
     }
@@ -114,7 +107,7 @@ pub fn SuggestionRow(
             qty: 1,
             expanded_card,
             footer: rsx! {
-                SuggestionReasons { reasons: suggestion.reasons, deck_count, foldable: true }
+                SuggestionReasons { reasons: suggestion.reasons, deck_count }
             },
             extra_actions: actions,
         }

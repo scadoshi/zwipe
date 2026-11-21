@@ -471,10 +471,9 @@ pub(crate) fn BuilderProfileSections(
     }
 }
 
-/// The "Why this commander?" block under a suggestion's details: folded
-/// under a chip in a list row (`foldable`), or open under a `chips-label`
-/// heading like the details' Keywords and Card roles in the details sheet,
-/// over the shared oracle tags grouped by card role (the card's own role-chip grammar)
+/// The "Why this commander?" block under a suggestion's details, folded under
+/// its chip in a list row and in the swipe's card details alike, closed on
+/// mount, over the shared oracle tags grouped by card role (the card's own role-chip grammar)
 /// and one bullet per shared color, each omitted when empty. Renders nothing
 /// at all when both are. A tapped tag shows its description and its examples
 /// button through `describe_tag` and `on_examples`; a host that leaves them
@@ -490,10 +489,6 @@ pub(crate) fn SuggestionReasons(
     /// Opens a shared tag's examples; falls back to the `OtagExamplesOpen` context.
     #[props(default)]
     on_examples: Option<Callback<String>>,
-    /// Folds the bullets under a "Why this commander?" chip, closed on mount,
-    /// where a list row keeps them; unset, they sit open under a heading.
-    #[props(default)]
-    foldable: bool,
 ) -> Element {
     let mut reasons_open = use_signal(|| false);
     let context_describe = try_use_context::<OtagDescribe>().map(|d| d.0);
@@ -525,29 +520,23 @@ pub(crate) fn SuggestionReasons(
     };
     rsx! {
         div { class: "card-detail-footer",
-            if foldable {
-                Chip {
-                    selected: reasons_open(),
-                    onclick: move |evt: MouseEvent| {
-                        evt.stop_propagation();
-                        reasons_open.set(!reasons_open());
-                    },
-                    // The card rows' disclosure arrow at the left, as on every
-                    // fold: sideways folded, down open.
-                    span {
-                        class: if reasons_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
-                        "\u{25B8}"
-                    }
-                    {model::WHY}
+            Chip {
+                selected: reasons_open(),
+                onclick: move |evt: MouseEvent| {
+                    evt.stop_propagation();
+                    reasons_open.set(!reasons_open());
+                },
+                // The card rows' disclosure arrow at the left, as on every
+                // fold: sideways folded, down open.
+                span {
+                    class: if reasons_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
+                    "\u{25B8}"
                 }
-                // The bullets stay mounted and ease open and closed under the chip.
-                div { class: if reasons_open() { "collapsible open" } else { "collapsible" },
-                    div { class: "collapsible-inner", {bullets} }
-                }
-            } else {
-                // Open, headed like the details' Keywords and Card roles.
-                span { class: "chips-label", {model::WHY} }
-                {bullets}
+                {model::WHY}
+            }
+            // The bullets stay mounted and ease open and closed under the chip.
+            div { class: if reasons_open() { "collapsible open" } else { "collapsible" },
+                div { class: "collapsible-inner", {bullets} }
             }
         }
     }
@@ -579,7 +568,7 @@ pub(crate) fn SuggestionRow(
             preview_dismissing,
             on_printing: move |c: Card| on_printing.call(c),
             footer: rsx! {
-                SuggestionReasons { reasons: suggestion.reasons, deck_count, foldable: true }
+                SuggestionReasons { reasons: suggestion.reasons, deck_count }
             },
             extra_actions: rsx! {
                 button {

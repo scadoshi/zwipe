@@ -52,6 +52,9 @@ pub(crate) fn CardDetailsSheet(
     /// Host content shown in the panel's foot.
     #[props(default)]
     footer: Option<Element>,
+    /// Host content at the body's end, scrolling with the body, such as a commander's reasons.
+    #[props(default)]
+    body_end: Option<Element>,
     /// Every card's shown face where the screen keeps them, so the drawer's Flip turns the
     /// card's image too, and the image's flip turns the drawer.
     #[props(default)]
@@ -90,6 +93,7 @@ pub(crate) fn CardDetailsSheet(
                 describe_tag: Some(describe_tag),
                 on_printings,
                 footer,
+                body_end,
                 on_face_change: share_face(faces, id),
             }
         }
@@ -161,5 +165,37 @@ mod tests {
             html.contains("Creature — Human Insect"),
             "the shared back: {html}"
         );
+    }
+
+    /// The host's `body_end` scrolls at the body's end, so a long block such as a commander's
+    /// reasons never squeezes the body; the foot keeps only its buttons.
+    #[test]
+    fn body_end_sits_in_the_body_not_the_foot() {
+        fn app() -> Element {
+            let cache = use_catalog_cache();
+            use_context_provider(|| cache);
+            use_context_provider(|| {
+                Signal::new(ZwipeClient::new(
+                    "http://localhost".parse().expect("a base url"),
+                ))
+            });
+            let open = use_signal(|| true);
+            rsx! {
+                CardDetailsSheet {
+                    open,
+                    card: delver(),
+                    on_printings: move |()| {},
+                    body_end: rsx! { span { class: "why-marker", "Why this commander?" } },
+                }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        let marker = html.find("why-marker").expect("the host's block renders");
+        let foot = html.find("card-details-foot").expect("the foot");
+        let body_end = html.find("card-details-body-end").expect("the body's end");
+        assert!(body_end < marker, "inside the body's end: {html}");
+        assert!(marker < foot, "before the foot, not in it: {html}");
     }
 }
