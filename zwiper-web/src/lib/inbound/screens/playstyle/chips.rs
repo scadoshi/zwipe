@@ -22,13 +22,9 @@ pub fn IdentityPips(
     identity: Vec<Color>,
     #[props(default)] count: Option<String>,
     #[props(default = true)] show_name: bool,
-    /// Gives screen readers the identity's name when none shows; off beside
-    /// a name the host already shows, such as the Top color row's.
-    #[props(default = true)]
-    speak: bool,
 ) -> Element {
     let name = identity_label(&identity).filter(|_| show_name);
-    let spoken = spoken(&identity, show_name, speak);
+    let spoken = spoken(&identity, show_name);
     rsx! {
         span { class: "identity-pips",
             if let Some(name) = name {
@@ -51,11 +47,10 @@ pub fn IdentityPips(
 }
 
 /// What screen readers hear for `identity` where no name shows: its name
-/// (Mono-red for a single color), or nothing when `speak` is off or a name
-/// shows.
-fn spoken(identity: &[Color], show_name: bool, speak: bool) -> Option<String> {
+/// (Mono-red for a single color), or nothing when a name shows.
+fn spoken(identity: &[Color], show_name: bool) -> Option<String> {
     let shown = show_name && identity_label(identity).is_some();
-    (speak && !shown && !identity.is_empty()).then(|| identity_name(identity).to_string())
+    (!shown && !identity.is_empty()).then(|| identity_name(identity).to_string())
 }
 
 #[cfg(test)]
@@ -63,21 +58,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_single_color_beside_its_shown_name_speaks_nothing_more() {
+    fn a_single_color_speaks_its_name_and_a_shown_name_speaks_nothing_more() {
         let red = [Color::Red];
         assert_eq!(
-            spoken(&red, true, true).as_deref(),
+            spoken(&red, true).as_deref(),
             Some("Mono-red"),
             "an identity chip"
         );
-        assert_eq!(
-            spoken(&red, true, false),
-            None,
-            "the Top color row names it already"
-        );
         let boros = [Color::Red, Color::White];
         assert_eq!(
-            spoken(&boros, true, true),
+            spoken(&boros, true),
             None,
             "a named identity shows its name"
         );
