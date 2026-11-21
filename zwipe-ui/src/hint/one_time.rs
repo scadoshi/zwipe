@@ -117,13 +117,18 @@ pub fn first_deck(layout: DeckLayout) -> HintContent {
                 icon_key(KeyIcon::Clone),
                 text(" clones the deck and "),
                 icon_key(KeyIcon::Share),
-                text(" shares a link to it"),
+                text(" shares a link"),
             ]),
         ]
     };
-    blocks.push(bullet(vec![text(
-        "Warnings flag rule problems, each with a one-tap fix",
-    )]));
+    blocks.extend([
+        bullet(vec![text(
+            "Import, export and delete are at the bottom of the page",
+        )]),
+        bullet(vec![text(
+            "Warnings flag rule problems, each with a one-tap fix",
+        )]),
+    ]);
     content("Welcome to your deck", blocks)
 }
 
@@ -731,7 +736,8 @@ mod tests {
             [
                 "Cards browses, adds and removes cards",
                 "In the dock, pencil changes the name, format, command zone, tags and targets",
-                "Beside it, clone clones the deck and share shares a link to it",
+                "Beside it, clone clones the deck and share shares a link",
+                "Import, export and delete are at the bottom of the page",
                 "Warnings flag rule problems, each with a one-tap fix",
             ]
         );
@@ -806,7 +812,7 @@ mod tests {
         );
         assert_eq!(
             deck.blocks[2].plain(),
-            "Beside it, clone clones the deck and share shares a link to it"
+            "Beside it, clone clones the deck and share shares a link"
         );
         let export = content_for(OneTimeHint::Export).unwrap();
         assert_eq!(
