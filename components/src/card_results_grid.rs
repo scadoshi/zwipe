@@ -12,21 +12,26 @@ use zwipe_core::domain::card::Card;
 use crate::{CardSkeleton, CardStack, StackCard};
 
 /// `cards` under the heading `title`, each calling `on_select` with its printing id and showing
-/// the face `faces` holds for it, else its front.
+/// the face `faces` holds for it, else its front. The cards from `dealt_from` on, a next page
+/// that just landed, deal in a little apart, each by its place in that page.
 #[component]
 pub fn CardResultsGrid(
     title: String,
     cards: Vec<Card>,
     on_select: EventHandler<Uuid>,
     #[props(default)] faces: HashMap<Uuid, usize>,
+    #[props(default)] dealt_from: Option<usize>,
 ) -> Element {
     rsx! {
         h1 { class: "card-list-title",
             span { class: "chip-note", "{title}" }
         }
         div { class: "deck-stacks card-list-results", "data-cursor-grid": "",
-            for listed in cards {
-                div { key: "{listed.scryfall_data.id}",
+            for (i, listed) in cards.into_iter().enumerate() {
+                div {
+                    key: "{listed.scryfall_data.id}",
+                    class: if dealt(i, dealt_from).is_some() { "card-list-dealt" },
+                    style: dealt(i, dealt_from).map(|n| format!("--deal-n: {n}")),
                     CardStack {
                         cards: vec![
                             StackCard {
@@ -43,6 +48,11 @@ pub fn CardResultsGrid(
             }
         }
     }
+}
+
+/// Card `i`'s place in the newest page that starts at `from`, while it is one of that page's.
+fn dealt(i: usize, from: Option<usize>) -> Option<usize> {
+    i.checked_sub(from?)
 }
 
 /// How many card ghosts [`CardResultsGridGhost`] draws: one row on a wide window, two on a phone.

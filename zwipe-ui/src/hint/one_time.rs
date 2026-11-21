@@ -117,21 +117,13 @@ pub fn first_deck(layout: DeckLayout) -> HintContent {
                 icon_key(KeyIcon::Clone),
                 text(" clones the deck and "),
                 icon_key(KeyIcon::Share),
-                text(" shares a link to it"),
+                text(" shares a link"),
             ]),
         ]
     };
     blocks.extend([
         bullet(vec![text(
             "Import, export and delete are at the bottom of the page",
-        )]),
-        bullet(vec![
-            text("Skipped and removed cards stay out of the add stack. "),
-            key("Clear"),
-            text(" at the bottom brings them back"),
-        ]),
-        bullet(vec![text(
-            "Stats fill in as the deck grows. Tap a section to expand it",
         )]),
         bullet(vec![text(
             "Warnings flag rule problems, each with a one-tap fix",
@@ -209,39 +201,25 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             vec![
                 line(vec![text("Tap a row for details, quantity and printings")]),
                 bullet(vec![
-                    text("Tap a "),
-                    emph("keyword", Role::Palette1),
-                    text(" chip for what it does, or a "),
-                    emph("role", Role::Palette1),
-                    text(" chip for its Oracle tags"),
-                ]),
-                bullet(vec![
                     key("Group by"),
-                    text(" groups by type, mana value, color or role"),
-                ]),
-                bullet(vec![key("Boards"), text(" picks main, maybe or side")]),
-                bullet(vec![
-                    key("Show"),
-                    text(" toggles tokens, the command zone and row art"),
+                    text(" groups the rows and "),
+                    key("Boards"),
+                    text(" picks main, maybe or side"),
                 ]),
                 bullet(vec![
-                    text("The bar at the bottom: "),
+                    text("In the bar, "),
                     icon_key(KeyIcon::Plus),
                     text(" adds, "),
                     icon_key(KeyIcon::Minus),
                     text(" removes, "),
                     icon_key(KeyIcon::Funnel),
-                    text(" filters (its "),
-                    key("\u{d7}"),
-                    text(" resets the filter), and "),
+                    text(" filters and "),
                     icon_key(KeyIcon::Undo),
                     text(" undoes"),
                 ]),
                 bullet(vec![
                     icon_key_in(KeyIcon::Star, Role::Star),
-                    text(
-                        " marks up to three MVPs. Suggestions lean toward cards that share their roles",
-                    ),
+                    text(" marks up to three MVPs, and suggestions lean toward their roles"),
                 ]),
             ],
         ),
@@ -251,22 +229,13 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 bullet(vec![
                     text("Swipe "),
                     emph("right", Role::Success),
-                    text(" adds the card"),
-                ]),
-                bullet(vec![
-                    text("Swipe "),
+                    text(" adds, "),
                     emph("left", Role::Error),
-                    text(" skips it for a week"),
-                ]),
-                bullet(vec![
-                    text("Swipe "),
+                    text(" skips for a week, "),
                     emph("up", Role::Warning),
-                    text(" sends it to the maybeboard"),
-                ]),
-                bullet(vec![
-                    text("Swipe "),
+                    text(" sends to the maybeboard, "),
                     emph("down", Role::Tertiary),
-                    text(" undoes the last swipe"),
+                    text(" undoes"),
                 ]),
                 bullet(vec![
                     text("The chip after "),
@@ -276,12 +245,9 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 bullet(vec![
                     icon_key(KeyIcon::Bolt),
                     text(
-                        " is Synergy: on starts with cards that work with your commander, then cards like your deck. Off shows every legal card",
+                        " Synergy leads with cards that work with your commander. Off shows every legal card",
                     ),
                 ]),
-                line(vec![text(
-                    "The filter's Sort only reorders. It never hides cards",
-                )]),
             ],
         ),
         OneTimeHint::RemoveDeckCards => content(
@@ -579,36 +545,26 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
     content(title, blocks)
 }
 
-/// The Commanders screen: its two lists and what each list's controls do.
+/// The Commanders screen at a glance: its two lists, Show more, Swipe with its directions and
+/// From. The rest of each row's and list's controls are in the guide.
 fn commanders_hint() -> HintContent {
     content(
         "Commanders",
         vec![
-            line(vec![text(
-                "Your saved commanders and the ones that fit your decks",
-            )]),
             bullet(vec![
                 key("Maybeboard"),
                 text(" holds the commanders you save"),
             ]),
             bullet(vec![
                 key("Suggested"),
-                text(" ranks the 10 commanders that fit all your decks best, and "),
+                text(" ranks the 10 that fit your decks best, and "),
                 key("Show more"),
                 text(" adds 10 more, once"),
             ]),
             bullet(vec![
-                key("Create deck"),
-                text(" starts a deck with that commander"),
-            ]),
-            bullet(vec![
-                key_in("Remove", Role::Error),
-                text(" takes a save off Maybeboard, or hides a suggestion for a week"),
-            ]),
-            bullet(vec![
                 key("Swipe"),
                 text(
-                    " on Suggested deals its ranking, and on Maybeboard commanders you haven't saved",
+                    " deals Suggested's ranking, and on Maybeboard deals commanders you haven't saved",
                 ),
             ]),
             bullet(vec![
@@ -622,11 +578,6 @@ fn commanders_hint() -> HintContent {
             bullet(vec![
                 key("From"),
                 text(" on the Maybeboard's Swipe switches to your saved commanders"),
-            ]),
-            bullet(vec![key("Quick add"), text(" saves a commander by name")]),
-            bullet(vec![
-                icon_key(KeyIcon::Funnel),
-                text(" narrows both lists at once"),
             ]),
         ],
     )
@@ -661,14 +612,10 @@ fn welcome(ask_to_verify: bool) -> HintContent {
         ]),
         suggestions,
         bullet(vec![
-            key("Account"),
-            text(", the "),
             icon_key(KeyIcon::Person),
-            text(" up top or in the menu, has your email, password and Log out. "),
-            key("Settings"),
-            text(", the "),
+            text(" Account has your email, password and Log out, and "),
             icon_key(KeyIcon::Cog),
-            text(" beside it, sets your theme and which cards show"),
+            text(" Settings sets your theme and which cards show"),
         ]),
     ];
     if ask_to_verify {
@@ -759,7 +706,7 @@ mod tests {
             [
                 "Decks shows your latest. Create deck starts one; All decks opens the full list",
                 "Colors counts your decks' cards by color. Commanders suggests ones that fit your decks",
-                "Account, the person up top or in the menu, has your email, password and Log out. Settings, the cog beside it, sets your theme and which cards show",
+                "person Account has your email, password and Log out, and cog Settings sets your theme and which cards show",
                 "Verify your email in Account to lift the deck and card limits",
             ]
         );
@@ -782,13 +729,45 @@ mod tests {
     }
 
     #[test]
-    fn the_deck_hint_names_the_clear_button_as_drawn() {
-        assert!(
-            first_deck(DeckLayout::Narrow)
-                .blocks
-                .iter()
-                .any(|b| b.spans().contains(&key("Clear")))
+    fn the_deck_hints_fit_a_small_phone_and_leave_the_rest_to_their_guides() {
+        let plain = |c: HintContent| c.blocks.iter().map(Block::plain).collect::<Vec<String>>();
+        assert_eq!(
+            plain(first_deck(DeckLayout::Narrow)),
+            [
+                "Cards browses, adds and removes cards",
+                "In the dock, pencil changes the name, format, command zone, tags and targets",
+                "Beside it, clone clones the deck and share shares a link",
+                "Import, export and delete are at the bottom of the page",
+                "Warnings flag rule problems, each with a one-tap fix",
+            ]
         );
+        assert_eq!(
+            plain(content_for(OneTimeHint::DeckCards).unwrap()),
+            [
+                "Tap a row for details, quantity and printings",
+                "Group by groups the rows and Boards picks main, maybe or side",
+                "In the bar, plus adds, minus removes, funnel filters and undo undoes",
+                "star marks up to three MVPs, and suggestions lean toward their roles",
+            ]
+        );
+        assert_eq!(
+            plain(content_for(OneTimeHint::AddDeckCards).unwrap()),
+            [
+                "Swipe right adds, left skips for a week, up sends to the maybeboard, down undoes",
+                "The chip after From switches between Search and the maybeboard",
+                "bolt Synergy leads with cards that work with your commander. Off shows every legal card",
+            ]
+        );
+        for hint in [
+            OneTimeHint::FirstDeck,
+            OneTimeHint::DeckCards,
+            OneTimeHint::AddDeckCards,
+        ] {
+            assert!(
+                crate::hint::guide::one_time_slug(hint).is_some(),
+                "{hint:?}'s See guide carries the rest"
+            );
+        }
     }
 
     #[test]
@@ -833,7 +812,7 @@ mod tests {
         );
         assert_eq!(
             deck.blocks[2].plain(),
-            "Beside it, clone clones the deck and share shares a link to it"
+            "Beside it, clone clones the deck and share shares a link"
         );
         let export = content_for(OneTimeHint::Export).unwrap();
         assert_eq!(
@@ -913,6 +892,40 @@ mod tests {
     }
 
     #[test]
+    fn the_commanders_hint_keeps_what_a_glance_needs_and_leaves_the_rest_to_the_guide() {
+        let commanders = content_for(OneTimeHint::Commanders).unwrap();
+        let lines: Vec<String> = commanders.blocks.iter().map(Block::plain).collect();
+        assert_eq!(
+            lines.len(),
+            5,
+            "five bullets fit a phone without scrolling: {lines:?}"
+        );
+        for kept in [
+            "Maybeboard",
+            "Suggested",
+            "Show more",
+            "Swipe",
+            "right",
+            "From",
+        ] {
+            assert!(
+                lines.iter().any(|l| l.contains(kept)),
+                "{kept} stays: {lines:?}"
+            );
+        }
+        for dropped in ["Create deck", "Remove", "Quick add", "narrows"] {
+            assert!(
+                !lines.iter().any(|l| l.contains(dropped)),
+                "{dropped} is the guide's: {lines:?}"
+            );
+        }
+        assert!(
+            crate::hint::guide::one_time_slug(OneTimeHint::Commanders).is_some(),
+            "its See guide carries the rest"
+        );
+    }
+
+    #[test]
     fn the_welcome_playstyle_and_commanders_hints_send_suggestions_to_commanders() {
         let plain = |c: HintContent| c.blocks.iter().map(Block::plain).collect::<Vec<String>>();
         let welcome = plain(content_for_user(OneTimeHint::FirstLogin, true).unwrap());
@@ -931,7 +944,13 @@ mod tests {
         let lines = plain(commanders);
         assert_eq!(
             lines.first().map(String::as_str),
-            Some("Your saved commanders and the ones that fit your decks")
+            Some("Maybeboard holds the commanders you save")
+        );
+        assert_eq!(
+            lines.get(1).map(String::as_str),
+            Some(
+                "Suggested ranks the 10 that fit your decks best, and Show more adds 10 more, once"
+            )
         );
         let swipe = lines
             .iter()
@@ -941,7 +960,7 @@ mod tests {
             swipe,
             Some(
                 &[
-                    "Swipe on Suggested deals its ranking, and on Maybeboard commanders you haven't saved".to_owned(),
+                    "Swipe deals Suggested's ranking, and on Maybeboard deals commanders you haven't saved".to_owned(),
                     "right starts a deck, up saves, left skips".to_owned(),
                 ][..]
             ),

@@ -195,6 +195,7 @@ pub fn Search(q: String) -> Element {
     let cards = state.cards().to_vec();
     let title = state.title();
     let has_more = state.has_more();
+    let dealt_from = state.dealt_from();
     drop(state);
     let rows: Vec<RowInfo> = cards
         .iter()
@@ -229,6 +230,7 @@ pub fn Search(q: String) -> Element {
                     cards,
                     faces: faces(),
                     on_select: move |id: Uuid| dispatch(Action::Pick(id)),
+                    dealt_from,
                 }
                 // Reaching it, by scroll or End, loads the next page.
                 if has_more {

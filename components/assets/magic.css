@@ -4250,6 +4250,32 @@ nav:has(> .card-search-header:focus-within) > :not(.card-search-nav, .nav-panel)
     }
 }
 
+/* A next page's cards deal up from below as they land, a little apart, with
+   the kit's enter motion, and only fade in under reduced motion; the first
+   page keeps its own entrance. */
+.card-list-results > .card-list-dealt {
+    animation: card-list-fade var(--enter-duration) var(--ease-enter) calc(min(var(--deal-n), 15) * 30ms) backwards;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .card-list-results > .card-list-dealt {
+        animation-name: card-list-deal;
+    }
+}
+
+@keyframes card-list-deal {
+    from {
+        opacity: 0;
+        transform: translateY(1.5rem);
+    }
+}
+
+@keyframes card-list-fade {
+    from {
+        opacity: 0;
+    }
+}
+
 /* The grid while its cards load: the heading's chip as a bar of its size,
    centered, and each card ghost filling its cell as the card will. */
 .card-list-title-ghost {

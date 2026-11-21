@@ -253,6 +253,27 @@ fn a_new_text_drops_a_next_page_still_out() {
 }
 
 #[test]
+fn a_next_page_says_where_its_cards_start_so_they_deal_in() {
+    let mut state = first_page();
+    assert_eq!(
+        state.dealt_from(),
+        None,
+        "the first page keeps its own entrance"
+    );
+    let effects = state.update(Action::LoadMore);
+    let [Effect::Lookup { ticket, .. }] = effects.as_slice() else {
+        panic!("one lookup: {effects:?}");
+    };
+    let _ = state.update(Action::Loaded {
+        ticket: *ticket,
+        cards: many("Second", 20),
+    });
+    assert_eq!(state.dealt_from(), Some(20));
+    let (_, _) = loading(&mut state, "b");
+    assert_eq!(state.dealt_from(), None, "a new text starts over");
+}
+
+#[test]
 fn a_page_of_results_keeps_its_loaded_pages_and_resumes_on_them() {
     let mut state = first_page();
     let effects = state.update(Action::LoadMore);
@@ -279,6 +300,27 @@ fn a_page_of_results_keeps_its_loaded_pages_and_resumes_on_them() {
         lookup.offset(),
         Some(40),
         "the next page after what it kept"
+    );
+}
+
+#[test]
+fn resumed_results_do_not_deal_in_again() {
+    let mut state = first_page();
+    let effects = state.update(Action::LoadMore);
+    let [Effect::Lookup { ticket, .. }] = effects.as_slice() else {
+        panic!("one lookup: {effects:?}");
+    };
+    let _ = state.update(Action::Loaded {
+        ticket: *ticket,
+        cards: many("Second", 20),
+    });
+    let kept = state.kept().expect("results to keep");
+    assert_eq!(state.dealt_from(), Some(20));
+    let _ = state.update(Action::Resume(kept));
+    assert_eq!(
+        state.dealt_from(),
+        None,
+        "Back shows the kept cards in place"
     );
 }
 
