@@ -2313,6 +2313,21 @@ body {
     }
 }
 
+/* The rows Show more deals follow its ghosts through their wrappers: they
+   ease in at once over the leaving ghosts, and fade in under reduced
+   motion. */
+@media (prefers-reduced-motion: no-preference) {
+    .maybeboard-list .card-list-ghosts ~ .web-card-row > .card-row {
+        animation-delay: 0ms;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .maybeboard-list .card-list-ghosts ~ .web-card-row > .card-row {
+        animation: card-list-ghosts-fade-in var(--enter-duration) var(--ease-enter) both;
+    }
+}
+
 /* On a wide window the deck page's controls are as wide as their widest
    chip row, and Quick add's field runs to that row's right edge: its row
    takes no part in the block's width and stretches across it. */

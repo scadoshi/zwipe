@@ -3,7 +3,7 @@
 //! orangui is the generic kit: themes, panels, nav, charts, the entrance
 //! effects and the app and site kits. This crate re-exports, by name, the
 //! orangui items `zwiper` (the app) and `zite` (the site) use, so they keep one
-//! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`] and the [`CardListFold`] that holds a list of them,
+//! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`] and the [`CardListFold`] that holds a list of them, with Show more's [`MoreGhostRows`],
 //! [`CardRoleChips`], [`RoleTags`], [`OtagDef`], [`KeywordChips`],
 //! [`OracleText`], [`FlippableCardImage`], [`ChangelogFilters`] and
 //! [`ChangelogReleases`], the deck charts ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
@@ -100,6 +100,7 @@ mod media;
 mod media_frame;
 mod meld;
 mod menu_section;
+mod more_ghost_rows;
 mod oracle_tag_examples;
 mod oracle_text;
 mod picker_search;
@@ -205,6 +206,7 @@ pub use media::{
 pub use media_frame::{MediaFrame, MediaSize};
 pub use meld::{MeldFetch, MeldSource, MeldToggle, use_meld};
 pub use menu_section::MenuSection;
+pub use more_ghost_rows::MoreGhostRows;
 pub use oracle_tag_examples::{ExamplesPage, ExamplesSource, OracleTagExamples};
 pub use oracle_text::OracleText;
 pub use orangui::{
