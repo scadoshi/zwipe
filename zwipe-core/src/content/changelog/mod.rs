@@ -58,7 +58,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "In the Suggested swipe, Why this commander? opens inside the card's details instead of the footer",
         "The Activity heatmap no longer draws a scroll bar over its cells",
         "Playstyle's Summary puts each label above its pips and count, so nothing splits on a phone",
-        "Every chip and button shares one corner, whether or not you can tap it",
+        "Panels have squarer corners, and every chip and button shares one smaller corner whether or not you can tap it",
     ],
 }];
 
