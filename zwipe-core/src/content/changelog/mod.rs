@@ -57,6 +57,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "An expanded card row puts all its buttons on one line that wraps",
         "In the Suggested swipe, Why this commander? opens inside the card's details instead of the footer",
         "The Activity heatmap no longer draws a scroll bar over its cells",
+        "Playstyle's Summary puts each label above its pips and count, so nothing splits on a phone",
     ],
 }];
 
