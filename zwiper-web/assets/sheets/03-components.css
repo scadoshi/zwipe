@@ -3090,7 +3090,7 @@ html[data-wipe="left"]::view-transition-new(root) {
     gap: 0.15rem;
     min-width: 0;
     border: 1px solid var(--border-secondary);
-    border-radius: var(--panel-radius);
+    border-radius: var(--chip-radius);
     background-color: var(--bg-sink);
     box-shadow: var(--shadow-sm);
 }
