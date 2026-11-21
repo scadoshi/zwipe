@@ -514,9 +514,9 @@ body {
     }
 }
 
-/* A deck on Decks is a card row, so the kit's row hover reaches it with
-   the expanded row's smaller corners and a scale. Under a mouse it keeps
-   its own corners and the row hover's tint and lifts as a panel does: the
+/* A deck on Decks is a card row, so the kit's row hover reaches it with a
+   scale. Under a mouse it keeps the panel corners it shares with that
+   hover and the row hover's tint, and lifts as a panel does: the
    medium shadow, and a 3px rise where motion is welcome, at the panel
    lift's timing. Its entrance fills backwards only, so its end transform
    lets go of the hover. */
