@@ -660,7 +660,25 @@ body {
        weight of their strokes. */
     .web-shell .nav-trailing-row .web-nav-hint {
         width: 2.2rem;
-        height: 1.7rem;
+        height: 2rem;
+        padding: 0;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    /* One height across the bar: the icon buttons and the card search's
+       glass stand as tall as the text pills and the search box (2rem). */
+    .web-shell .nav-trailing-row .nav-icon,
+    .web-shell .nav-trailing-row .app-nav-logout,
+    .web-app-nav .card-search-nav .card-search-label.nav-icon,
+    .web-app-nav .app-nav-back {
+        height: 2rem;
+    }
+
+    /* The `!` takes the icons' box, so it reads as one of them. */
+    .web-shell .nav-trailing-row .app-nav-support:not(.web-nav-hint) {
+        width: 2.2rem;
+        height: 2rem;
         padding: 0;
         font-size: 1rem;
         font-weight: 700;
@@ -1600,6 +1618,7 @@ body {
        once they reach it. The pip, the bar and the count scale with the
        row from the compact bars' sizes at the least row, and the count
        stops at 1.15rem. */
+    .web-playstyle-colors .web-playstyle-fold-body > .color-bars,
     .web-home-page .web-column > .home-colors > .color-bars {
         flex: 1 1 auto;
         container-type: size;
@@ -1607,6 +1626,7 @@ body {
         justify-content: center;
     }
 
+    .web-playstyle-colors .web-playstyle-fold-body > .color-bars > .color-bar-row,
     .web-home-page .web-column > .home-colors .color-bar-row {
         --color-bar-row: clamp(1.71rem, 100cqh / 6, 2.75rem);
         --color-bar-pip: calc(var(--color-bar-row) * 0.85 / 1.71);
@@ -1789,6 +1809,25 @@ body {
        panel of rows is; a chart or a table keeps the body's room. */
     .web-playstyle-fold-body:has(> .flex-col > .settings-row) {
         padding: 0;
+    }
+
+    /* Colors runs as tall as Summary beside it, as Home's Colors runs as
+       tall as Decks: the cell stretches to the row, and while its fold is
+       open the height passes down to the bars, which share it as Home's
+       do. A folded Colors stays a bare header. */
+    .web-playstyle-colors {
+        align-self: stretch;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .web-playstyle-colors > .deck-fold:not(.folded),
+    .web-playstyle-colors > .deck-fold:not(.folded) > .deck-fold-body,
+    .web-playstyle-colors > .deck-fold:not(.folded) .deck-fold-inner,
+    .web-playstyle-colors > .deck-fold:not(.folded) .web-playstyle-fold-body {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
     }
 
     .web-playstyle-summary-hero { order: 1; }

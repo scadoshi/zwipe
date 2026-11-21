@@ -62,6 +62,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "On a narrow phone, Home's Decks header no longer cuts off its title",
         "Dividers inside a panel no longer poke past its edge",
         "On the web at phone width, a deck's Cards screen ends with the site footer",
+        "On the web, every button in the top bar stands the same height",
+        "On the web, Playstyle's Colors runs as tall as Summary beside it",
     ],
 }];
 
