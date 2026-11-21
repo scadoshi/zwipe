@@ -68,6 +68,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "Card search results load more as you scroll",
         "Sorting by Rarity goes from common to mythic instead of alphabetically",
         "Going back from a card to your search results keeps your place",
+        "On the web and zwipe.net, the Themes search's clear button is red",
+        "In the app, the Themes sheet no longer has a search",
     ],
 }];
 
