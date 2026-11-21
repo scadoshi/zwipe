@@ -2,6 +2,8 @@
 
 Fills a local database with accounts, decks and cards, so a branch can be tested on a dev machine before it merges. Every script here refuses a database that isn't on this machine (`guard.sh`, checked by `guard_test.sh`): the URL, every `host=` and `PGHOST` must be a local socket or localhost, and `hostaddr=`, `service=`, a percent-encoded keyword, `PGHOSTADDR` and `PGSERVICE` are refused outright.
 
+The scripts hand `psql` their SQL over stdin and their settings as `SET` lines, so a `psql` that runs inside a Postgres container works as well as a native one (`stdin_test.sh` checks it).
+
 ## Before you seed
 
 1. Run the migrations: `sqlx migrate run --source zerver/migrations`.

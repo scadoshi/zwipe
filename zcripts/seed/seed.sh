@@ -28,11 +28,16 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/guard.sh"
 seed_guard
 
+# The SQL goes over stdin and the settings as SET lines, quoted by psql, so a psql that runs in
+# a container, seeing neither this machine's files nor its environment, works too.
 if [ "$SIZE" = reset ] || [ "$RESET" = true ]; then
-  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$DIR/reset.sql"
+  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q < "$DIR/reset.sql"
   echo "removed the seeded accounts"
 fi
 [ "$SIZE" = reset ] && exit 0
 
-PGOPTIONS="-c zwipe.seed_size=$SIZE -c zwipe.seed=$SEED" \
-  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$DIR/seed.sql"
+{
+  echo "SET zwipe.seed_size = :'seed_size';"
+  echo "SET zwipe.seed = :'seed';"
+  cat "$DIR/seed.sql"
+} | psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -v seed_size="$SIZE" -v seed="$SEED"

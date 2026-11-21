@@ -21,5 +21,10 @@ seed_guard
 
 [[ "$SEED" =~ ^-?(0(\.[0-9]+)?|1(\.0+)?|\.[0-9]+)$ ]] || { echo "seed must be a number from -1 to 1" >&2; exit 2; }
 
-PGOPTIONS="-c zwipe.seed_user=$ACCOUNT -c zwipe.seed=$SEED" \
-  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$DIR/activity.sql"
+# The SQL goes over stdin and the settings as SET lines, quoted by psql, so a psql that runs in
+# a container, seeing neither this machine's files nor its environment, works too.
+{
+  echo "SET zwipe.seed_user = :'seed_user';"
+  echo "SET zwipe.seed = :'seed';"
+  cat "$DIR/activity.sql"
+} | psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -v seed_user="$ACCOUNT" -v seed="$SEED"
