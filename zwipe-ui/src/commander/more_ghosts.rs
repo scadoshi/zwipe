@@ -3,8 +3,8 @@
 //! and they have finished easing in, they lie over the page's first rows and fade as those rows
 //! ease in over them. Under reduced motion every step is a fade.
 //!
-//! The list draws its rows in two runs, the rows held before Show more and then the rows its page
-//! dealt, with the ghosts between them: [`MoreGhosts::split`] says where. The dealt rows stay
+//! The list draws its rows held before Show more, the ghosts, then the rows its page dealt, all in
+//! one run ([`MoreGhosts::layout`]): [`MoreGhosts::split`] says where the ghosts go. The dealt rows stay
 //! hidden until the ghosts start to leave, so they ease in over the ghosts rather than under
 //! them. The ghosts' element stays (hidden) once they have gone, so the dealt rows keep their
 //! place in the second run and never mount again.
@@ -13,6 +13,9 @@ use uuid::Uuid;
 
 /// How many ghost rows Show more eases in.
 pub const GHOST_ROWS: usize = 3;
+
+/// The ghosts' key among a list's keyed rows, which a row's printing id never matches.
+pub const GHOSTS_KEY: &str = "more-ghosts";
 
 /// The ghosts' ease in, which folds them open as they fade in.
 pub const ENTER_ANIMATION: &str = "card-list-ghosts-enter";
@@ -38,6 +41,15 @@ pub enum Phase {
     Leaving,
     /// Gone, their element kept hidden between the two runs of rows.
     Gone,
+}
+
+/// One thing a list with Show more's ghost rows draws: a row, or the ghosts.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MoreItem<T> {
+    /// A row.
+    Row(T),
+    /// The ghost rows, between the rows held before Show more and the rows it dealt.
+    Ghosts,
 }
 
 /// Show more's ghost rows and the page they wait on. Starts [`Phase::Off`].
@@ -153,21 +165,25 @@ impl MoreGhosts {
         !matches!(self.phase, Phase::Entering | Phase::Waiting)
     }
 
-    /// `rows` as the two runs the list draws around the ghosts: the rows held before Show more,
-    /// then the rows its page dealt, empty while those wait on the ghosts ([`Self::split`],
-    /// [`Self::shows_dealt`]). `oracle_id` reads a row's oracle id.
+    /// What the list draws, in order: the rows held before Show more, the ghosts while they are
+    /// drawn, then the rows its page dealt once they show ([`Self::split`],
+    /// [`Self::shows_dealt`]). One run, so a client drawing it in one keyed loop moves no row to
+    /// another parent when a later press moves the ghosts. `oracle_id` reads a row's oracle id.
     #[must_use]
-    pub fn runs<'a, T>(
+    pub fn layout<T: Clone>(
         &self,
-        rows: &'a [T],
+        rows: &[T],
         oracle_id: impl Fn(&T) -> Option<Uuid>,
-    ) -> (&'a [T], &'a [T]) {
+    ) -> Vec<MoreItem<T>> {
         let (held, dealt) = rows.split_at(self.split(rows, oracle_id));
-        if self.shows_dealt() {
-            (held, dealt)
-        } else {
-            (held, &[])
+        let mut items: Vec<MoreItem<T>> = held.iter().cloned().map(MoreItem::Row).collect();
+        if self.drawn() {
+            items.push(MoreItem::Ghosts);
         }
+        if self.shows_dealt() {
+            items.extend(dealt.iter().cloned().map(MoreItem::Row));
+        }
+        items
     }
 }
 

@@ -22,7 +22,8 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::commander::maybeboard::{self, Sort, SortBy, Step};
-use zwipe_ui::commander::more_page::MorePage;
+use zwipe_ui::commander::more_ghosts::GHOSTS_KEY;
+use zwipe_ui::commander::more_page::{MoreItem, MorePage};
 use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::screens::deck_list;
 use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
@@ -458,8 +459,7 @@ pub(super) fn MaybeboardPanel(
     let filtered_rows = filtered;
     let filtered = filtered();
     let page = more_page.read().clone();
-    let (held, dealt) = page.runs(&filtered, |c| c.scryfall_data.oracle_id);
-    let (held, dealt) = (held.to_vec(), dealt.to_vec());
+    let items = page.layout(&filtered, |c| c.scryfall_data.oracle_id);
     let ghosts = page.ghosts().clone();
     let offers_more = page.offers_more(filtered.len());
     let has_entries = !entries().is_empty();
@@ -628,30 +628,28 @@ pub(super) fn MaybeboardPanel(
                             } else if filtered.is_empty() {
                                 div { class: "card-row card-row-note", "No commanders match" }
                             }
-                            for card in held {
-                                MaybeboardRow {
-                                    key: "{card.scryfall_data.id}",
-                                    card,
-                                    expanded_card,
-                                    on_create: create_with,
-                                    on_remove,
-                                }
-                            }
-                            if ghosts.drawn() {
-                                MoreGhostRows {
-                                    ghosts,
-                                    on_animation_end: move |name: String| more_page.write().animation_ended(&name),
-                                    row_class: "web-ghost-card-row",
-                                }
-                            }
-                            for card in dealt {
-                                MaybeboardRow {
-                                    key: "{card.scryfall_data.id}",
-                                    card,
-                                    expanded_card,
-                                    on_create: create_with,
-                                    on_remove,
-                                }
+                            // One keyed run, so the rows an earlier press showed never change
+                            // parent when a later press moves the ghosts after them.
+                            for item in items {
+                                {match item {
+                                    MoreItem::Row(card) => rsx! {
+                                        MaybeboardRow {
+                                            key: "{card.scryfall_data.id}",
+                                            card,
+                                            expanded_card,
+                                            on_create: create_with,
+                                            on_remove,
+                                        }
+                                    },
+                                    MoreItem::Ghosts => rsx! {
+                                        MoreGhostRows {
+                                            key: "{GHOSTS_KEY}",
+                                            ghosts: ghosts.clone(),
+                                            on_animation_end: move |name: String| more_page.write().animation_ended(&name),
+                                            row_class: "web-ghost-card-row",
+                                        }
+                                    },
+                                }}
                             }
                         }
                         // Show more sits under the panel and shows ten more rows; the press that

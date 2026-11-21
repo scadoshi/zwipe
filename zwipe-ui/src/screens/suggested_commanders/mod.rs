@@ -23,7 +23,7 @@ use zwipe_core::http::contracts::suggestions::{
 };
 
 use crate::commander::deal::{self, Door, LIST_PAGE};
-use crate::commander::more_ghosts::MoreGhosts;
+use crate::commander::more_ghosts::{MoreGhosts, MoreItem};
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
 
@@ -73,8 +73,8 @@ pub enum Action {
         /// The page, or `Err(())` when the request failed.
         reply: Result<HttpCommanderDealPage, ()>,
     },
-    /// Show more was tapped: its ghost rows ease in, it deals the next page, and Show more goes
-    /// until the next fresh deal.
+    /// Show more was tapped: when its page goes out, its ghost rows ease in and Show more goes
+    /// until the next fresh deal; while another deal is out it does nothing.
     ShowMore,
     /// An animation with this name ended on Show more's ghost rows.
     GhostsEnded(String),
@@ -200,15 +200,15 @@ impl State {
                 Vec::new()
             }
             Action::ShowMore => {
-                self.ghosts.ask();
-                let effects = if self.offers_more() {
+                if !self.offers_more() {
+                    return Vec::new();
+                }
+                let effects = self.more();
+                // A press that sends no page (one is out, or the ranking has no more) leaves the
+                // ghosts and Show more as they were.
+                if !effects.is_empty() {
                     self.more_used = true;
-                    self.more()
-                } else {
-                    Vec::new()
-                };
-                if effects.is_empty() {
-                    self.ghosts.failed();
+                    self.ghosts.ask();
                 }
                 effects
             }
@@ -323,12 +323,12 @@ impl State {
         &self.ghosts
     }
 
-    /// The rows as the two runs the list draws around Show more's ghost rows: those held before
-    /// it, then those its page dealt, empty while they wait on the ghosts.
+    /// What the list draws, in order: its rows with Show more's ghost rows before the rows its
+    /// page dealt ([`MoreGhosts::layout`]).
     #[must_use]
-    pub fn runs(&self) -> (&[HttpCommanderSuggestion], &[HttpCommanderSuggestion]) {
+    pub fn layout(&self) -> Vec<MoreItem<HttpCommanderSuggestion>> {
         self.ghosts
-            .runs(&self.entries, |s| s.card.scryfall_data.oracle_id)
+            .layout(&self.entries, |s| s.card.scryfall_data.oracle_id)
     }
 
     /// The rows' cards, in order.

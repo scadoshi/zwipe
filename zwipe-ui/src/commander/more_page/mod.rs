@@ -11,6 +11,7 @@ mod tests;
 use uuid::Uuid;
 
 use crate::commander::more_ghosts::MoreGhosts;
+pub use crate::commander::more_ghosts::MoreItem;
 
 /// The chip under a list that shows more of it.
 pub const SHOW_MORE: &str = "Show more";
@@ -88,15 +89,15 @@ impl MorePage {
         *self = Self::default();
     }
 
-    /// The rows that show, as the run held before the last Show more and the run it revealed
-    /// ([`MoreGhosts::runs`]). `oracle_id` reads a row's oracle id.
+    /// What the list draws, in order: the rows that show, with the ghosts before the rows the
+    /// last Show more revealed ([`MoreGhosts::layout`]). `oracle_id` reads a row's oracle id.
     #[must_use]
-    pub fn runs<'a, T>(
+    pub fn layout<T: Clone>(
         &self,
-        rows: &'a [T],
+        rows: &[T],
         oracle_id: impl Fn(&T) -> Option<Uuid>,
-    ) -> (&'a [T], &'a [T]) {
+    ) -> Vec<MoreItem<T>> {
         let visible = rows.get(..self.shown.min(rows.len())).unwrap_or_default();
-        self.ghosts.runs(visible, oracle_id)
+        self.ghosts.layout(visible, oracle_id)
     }
 }

@@ -61,8 +61,10 @@ fn suggested_has_its_console_swipe_question_mark_show_more_and_danger_zone() {
         "once per deal, and not while the panel is shut"
     );
     assert!(
-        SUGGESTED.contains("if ghosts.drawn() {\n                        MoreGhostRows {"),
-        "its press eases in the ghost rows, as the web's does"
+        SUGGESTED.contains("for item in items {")
+            && SUGGESTED.contains("MoreItem::Ghosts => rsx! {")
+            && SUGGESTED.contains("key: \"{GHOSTS_KEY}\","),
+        "its press eases in the ghost rows, as the web's does, in the rows' one keyed run"
     );
 }
 
@@ -99,6 +101,11 @@ fn the_maybeboard_shows_ten_at_a_time_under_its_own_show_more() {
             "let list_view = use_memo(move || (driver.model.read().sort(), filter_reset_counter()));"
         ),
         "a new sort or an applied filter shows the first ten again"
+    );
+    assert!(
+        MAYBEBOARD.contains("let items = page.layout(&filtered, |c| c.scryfall_data.oracle_id);")
+            && MAYBEBOARD.contains("for item in items {"),
+        "the rows and the ghosts in one keyed run, so a later press moves no row"
     );
     let ghosts = MAYBEBOARD.find("MoreGhostRows {").expect("ghost rows");
     let more = MAYBEBOARD.find("ListMore {").expect("Show more");

@@ -5,9 +5,29 @@ fn ids(n: u128) -> Vec<Option<Uuid>> {
     (1..=n).map(|i| Some(Uuid::from_u128(i))).collect()
 }
 
+/// How many rows show before the ghosts and after them; with no ghosts drawn, all count before.
 fn lens(page: &MorePage, rows: &[Option<Uuid>]) -> (usize, usize) {
-    let (held, dealt) = page.runs(rows, |row| *row);
-    (held.len(), dealt.len())
+    let layout = page.layout(rows, |row| *row);
+    let at = layout
+        .iter()
+        .position(|item| *item == MoreItem::Ghosts)
+        .unwrap_or(layout.len());
+    let after = layout
+        .len()
+        .saturating_sub(at)
+        .saturating_sub(usize::from(at < layout.len()));
+    (at, after)
+}
+
+/// The rows the layout draws, in order, without the ghosts.
+fn drawn(page: &MorePage, rows: &[Option<Uuid>]) -> Vec<Option<Uuid>> {
+    page.layout(rows, |row| *row)
+        .into_iter()
+        .filter_map(|item| match item {
+            MoreItem::Row(row) => Some(row),
+            MoreItem::Ghosts => None,
+        })
+        .collect()
 }
 
 #[test]
@@ -82,4 +102,23 @@ fn it_knows_which_press_shows_the_rest() {
     assert!(!page.next_shows_the_rest(25), "fifteen still hide after it");
     assert!(page.next_shows_the_rest(20));
     assert!(page.next_shows_the_rest(13));
+}
+
+#[test]
+fn a_later_press_keeps_the_rows_before_it_in_one_run_in_place() {
+    let rows = ids(25);
+    let mut page = MorePage::new();
+    page.show_more(&rows, |row| *row);
+    page.animation_ended(ENTER_ANIMATION);
+    page.animation_ended(LEAVE_ANIMATION);
+    let first = drawn(&page, &rows);
+    page.show_more(&rows, |row| *row);
+    assert_eq!(
+        drawn(&page, &rows),
+        first,
+        "the twenty from before stay, in order, as the ghosts ease in after them"
+    );
+    assert_eq!(lens(&page, &rows), (20, 0));
+    page.animation_ended(ENTER_ANIMATION);
+    assert_eq!(drawn(&page, &rows), rows, "the last five join after them");
 }

@@ -20,3 +20,12 @@ fn show_more_sits_under_the_panel_with_its_ghost_rows_in_the_list() {
     assert!(fold < ghosts && ghosts < more && more < danger);
     assert!(MAYBEBOARD.contains("leaves: page.next_shows_the_rest(filtered.len()),"));
 }
+
+#[test]
+fn the_rows_and_ghosts_draw_in_one_keyed_run_so_a_later_press_moves_no_row() {
+    assert!(
+        MAYBEBOARD.contains("let items = page.layout(&filtered, |c| c.scryfall_data.oracle_id);")
+    );
+    assert!(MAYBEBOARD.contains("for item in items {"));
+    assert!(MAYBEBOARD.contains("key: \"{GHOSTS_KEY}\","));
+}

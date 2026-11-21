@@ -259,16 +259,14 @@ fn show_more_eases_ghosts_in_and_its_page_lands_under_them() {
     let (ticket, _) = deal_of(&state.update(Action::ShowMore));
     assert_eq!(state.ghosts().phase(), Phase::Entering, "at once");
     let _ = state.update(landed(ticket, page("More", 10)));
-    let (held, dealt) = state.runs();
     assert_eq!(
-        (held.len(), dealt.len()),
+        rows_around_ghosts(&state),
         (10, 0),
         "the page waits on the ghosts"
     );
     let _ = state.update(Action::GhostsEnded(ENTER_ANIMATION.to_owned()));
     assert_eq!(state.ghosts().phase(), Phase::Leaving);
-    let (held, dealt) = state.runs();
-    assert_eq!((held.len(), dealt.len()), (10, 10));
+    assert_eq!(rows_around_ghosts(&state), (10, 10));
 }
 
 #[test]
@@ -288,4 +286,35 @@ fn a_fresh_deal_takes_the_ghosts_away_and_a_failed_page_sends_them_off() {
     let _ = state.update(Action::GhostsEnded(ENTER_ANIMATION.to_owned()));
     let _ = state.update(Action::GhostsEnded(LEAVE_ANIMATION.to_owned()));
     assert_eq!(state.ghosts().phase(), Phase::Off, "gone over no rows");
+}
+
+/// How many rows the list draws before Show more's ghosts and after them.
+fn rows_around_ghosts(state: &State) -> (usize, usize) {
+    use crate::commander::more_ghosts::MoreItem;
+    let layout = state.layout();
+    let at = layout
+        .iter()
+        .position(|item| matches!(item, MoreItem::Ghosts))
+        .unwrap_or(layout.len());
+    (at, layout.len().saturating_sub(at).saturating_sub(1))
+}
+
+#[test]
+fn show_more_spends_itself_only_when_its_page_goes_out() {
+    use crate::commander::more_ghosts::Phase;
+    let mut state = loaded();
+    // A row leaves and the list tops itself back up, so a deal is out.
+    let oracle = state.entries()[0].card.scryfall_data.oracle_id.unwrap();
+    let topped = state.update(Action::Saved(oracle));
+    assert!(topped.iter().any(|e| matches!(e, Effect::Deal { .. })));
+    assert!(
+        state.update(Action::ShowMore).is_empty(),
+        "no second deal while one is out"
+    );
+    assert!(state.offers_more(), "the press isn't spent");
+    assert_eq!(
+        state.ghosts().phase(),
+        Phase::Off,
+        "and no ghosts fade over nothing"
+    );
 }

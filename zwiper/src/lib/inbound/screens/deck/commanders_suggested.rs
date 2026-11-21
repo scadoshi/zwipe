@@ -14,6 +14,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_ui::commander::more_ghosts::{GHOSTS_KEY, MoreItem};
 use zwipe_ui::screens::commander_maybeboard as maybeboard_model;
 use zwipe_ui::screens::suggested_commanders::{self as model, Action, Effect, Page, State};
 
@@ -196,8 +197,7 @@ pub(crate) fn SuggestedSection(
     let state = model.read();
     let is_loading = state.is_loading();
     let load_failed = state.load_failed();
-    let (held, dealt) = state.runs();
-    let (rows, dealt) = (held.to_vec(), dealt.to_vec());
+    let items = state.layout();
     let ghosts = state.ghosts().clone();
     let line = state.ranked_line();
     let empty = state.empty_line();
@@ -258,41 +258,33 @@ pub(crate) fn SuggestedSection(
                     if let Some(empty) = empty {
                         div { class: "card-row card-row-note", {empty} }
                     }
-                    for suggestion in rows {
-                        SuggestionRow {
-                            key: "{suggestion.card.scryfall_data.id}",
-                            suggestion,
-                            deck_count: deck_count(),
-                            expanded_card,
-                            preview_card,
-                            preview_dismissing,
-                            on_start: move |card: Card| on_create.call(card),
-                            on_maybe,
-                            on_dismiss,
-                            on_printing: move |card: Card| on_printing.call(card),
-                        }
-                    }
-                    // Show more's ghost rows answer its press while its page is out, then lie
-                    // under the rows it dealt as they ease in.
-                    if ghosts.drawn() {
-                        MoreGhostRows {
-                            ghosts,
-                            on_animation_end: move |name: String| driver.dispatch(Action::GhostsEnded(name)),
-                        }
-                    }
-                    for suggestion in dealt {
-                        SuggestionRow {
-                            key: "{suggestion.card.scryfall_data.id}",
-                            suggestion,
-                            deck_count: deck_count(),
-                            expanded_card,
-                            preview_card,
-                            preview_dismissing,
-                            on_start: move |card: Card| on_create.call(card),
-                            on_maybe,
-                            on_dismiss,
-                            on_printing: move |card: Card| on_printing.call(card),
-                        }
+                    // One keyed run, so rows a later page joins after never change parent.
+                    for item in items {
+                        {match item {
+                            MoreItem::Row(suggestion) => rsx! {
+                                SuggestionRow {
+                                    key: "{suggestion.card.scryfall_data.id}",
+                                    suggestion,
+                                    deck_count: deck_count(),
+                                    expanded_card,
+                                    preview_card,
+                                    preview_dismissing,
+                                    on_start: move |card: Card| on_create.call(card),
+                                    on_maybe,
+                                    on_dismiss,
+                                    on_printing: move |card: Card| on_printing.call(card),
+                                }
+                            },
+                            // Show more's ghost rows answer its press while its page is out, then
+                            // lie under the rows it dealt as they ease in.
+                            MoreItem::Ghosts => rsx! {
+                                MoreGhostRows {
+                                    key: "{GHOSTS_KEY}",
+                                    ghosts: ghosts.clone(),
+                                    on_animation_end: move |name: String| driver.dispatch(Action::GhostsEnded(name)),
+                                }
+                            },
+                        }}
                     }
                 }
                 // Show more sits under the panel, as a chip row sits over one, and deals one page.
