@@ -1692,19 +1692,19 @@ body {
        so the heatmap scales to its column instead of scrolling the last weeks
        at a phone's cell size; the grid's inline pixel width is the phone's
        scroll width. */
-    .web-activity-heat .activity-scroll {
+    .web-activity-heat .heat-scroll {
         overflow-x: visible;
         mask-image: none;
         -webkit-mask-image: none;
     }
 
-    .web-activity-heat .activity-plot,
+    .web-activity-heat .heat-plot,
     .web-activity-heat .heat-grid {
         width: 100% !important;
         height: auto;
     }
 
-    .web-activity-heat .activity-days {
+    .web-activity-heat .heat-axis {
         display: none;
     }
 }

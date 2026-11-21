@@ -419,7 +419,7 @@ fn value(pips: &[Color], count: &str) -> SummaryValue {
 }
 
 #[test]
-fn profile_summary_counts_decks_with_the_top_set_and_color() {
+fn profile_summary_counts_decks_with_the_top_set_and_color_as_bare_numbers() {
     let summary = profile_summary(&profile(
         7,
         vec![color("U", 5), color("W", 4)],
@@ -428,31 +428,31 @@ fn profile_summary_counts_decks_with_the_top_set_and_color() {
     assert_eq!(summary.decks, "7");
     assert_eq!(
         summary.color_set,
-        Some(value(&[White, Blue, Red], "4 decks")),
+        Some(value(&[White, Blue, Red], "4")),
         "pips in WUBRG order whatever order the server sent"
     );
-    assert_eq!(summary.color, Some(value(&[Blue], "5 decks")));
+    assert_eq!(summary.color, Some(value(&[Blue], "5")));
 
     let summary = profile_summary(&profile(1, vec![color("B", 1)], Some(top(&["B"], 1))));
     assert_eq!(summary.decks, "1");
-    assert_eq!(summary.color_set, Some(value(&[Black], "1 deck")));
-    assert_eq!(summary.color, Some(value(&[Black], "1 deck")));
+    assert_eq!(summary.color_set, Some(value(&[Black], "1")));
+    assert_eq!(summary.color, Some(value(&[Black], "1")));
 }
 
 #[test]
 fn profile_summary_omits_what_the_profile_lacks() {
     let summary = profile_summary(&profile(3, vec![color("U", 2)], None));
     assert_eq!(summary.color_set, None, "no identity repeats");
-    assert_eq!(summary.color, Some(value(&[Blue], "2 decks")));
+    assert_eq!(summary.color, Some(value(&[Blue], "2")));
 
     let summary = profile_summary(&profile(2, vec![], Some(top(&[], 2))));
-    assert_eq!(summary.color_set, Some(value(&[], "2 decks")));
+    assert_eq!(summary.color_set, Some(value(&[], "2")));
     assert_eq!(summary.color, None, "every deck colorless");
 
     let summary = profile_summary(&profile(2, vec![color("C", 2), color("G", 1)], None));
     assert_eq!(
         summary.color,
-        Some(value(&[Green], "1 deck")),
+        Some(value(&[Green], "1")),
         "a code outside WUBRG is skipped"
     );
 }

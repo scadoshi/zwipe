@@ -43,7 +43,7 @@ mod tests {
         // At 720 the column is 670px and the year's grid 726px: from 640px wide it scales to the
         // column rather than scrolling the last few weeks at a phone's cell size.
         assert_eq!(
-            query_for(".web-activity-heat .activity-scroll"),
+            query_for(".web-activity-heat .heat-scroll"),
             "@media (min-width: 640px)"
         );
     }
