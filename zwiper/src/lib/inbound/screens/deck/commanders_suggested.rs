@@ -136,8 +136,8 @@ pub(crate) fn SuggestedSection(
     model: Signal<State>,
     filter: Signal<CardQueryBuilder>,
     filter_applied: Signal<u32>,
-    swipe_open: Signal<bool>,
-    deck_count: Signal<u32>,
+    mut swipe_open: Signal<bool>,
+    mut deck_count: Signal<u32>,
     expanded_card: Signal<Option<Uuid>>,
     preview_card: Signal<Option<(ScryfallData, usize)>>,
     preview_dismissing: Signal<bool>,
@@ -157,8 +157,6 @@ pub(crate) fn SuggestedSection(
     let mut clear_open = use_signal(|| false);
     // The open state of the list's fold, so Show more under it hides while it is shut.
     let fold_open = use_signal(|| true);
-    let mut swipe_open = swipe_open;
-    let mut deck_count = deck_count;
 
     // The first page on mount, and again whenever the filter sheet applies.
     use_effect(move || {
