@@ -1040,10 +1040,6 @@ i.ms.ms-cost.ms-gp {
     .card-action-row:last-child {
         margin-bottom: var(--space-1);
     }
-
-    .card-action-split {
-        column-gap: var(--space-2);
-    }
 }
 
 /* On a touch screen the kit gives every button a tap box at least 44px

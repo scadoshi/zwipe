@@ -224,8 +224,8 @@ fn rule<'css>(css: &'css str, selector: &str) -> &'css str {
 fn on_a_phone_the_stepper_follows_the_icons_and_the_words_keep_their_width() {
     let phone = phone_block();
     assert!(
-        !rule(phone, ".card-action-split").contains("justify-content"),
-        "the stepper stays beside the icons, the words after it"
+        !phone.contains(".card-action-split"),
+        "the stepper stays beside the icons, the words after it, as on a wide screen"
     );
     assert!(
         !phone.contains(".card-action-words"),
@@ -283,8 +283,6 @@ fn a_touch_screen_spaces_the_buttons_8px_apart_as_a_mouse_does() {
     let row = rule(phone, ".card-action-row");
     assert!(row.contains("gap: var(--space-2);"), "{row}");
     assert!(row.contains("margin-top: var(--space-2);"), "{row}");
-    let split = rule(phone, ".card-action-split");
-    assert!(split.contains("column-gap: var(--space-2);"), "{split}");
 }
 
 #[test]

@@ -250,9 +250,9 @@ pub fn CardRow(
         .clone()
         .or_else(|| front.and_then(|f| f.loyalty.clone()))
         .unwrap_or_default();
-    // The shared detail's bar: Send to, Star and Flag join its icons, the
-    // stepper ends their line, and Printings, the host's buttons and the moves
-    // form the words' block under it. Image is a `CardDetails` default.
+    // The shared detail's bar, one wrapping line: Send to, Star and Flag join
+    // its icons, the stepper follows them, then Printings, the host's buttons
+    // and the moves. Image is a `CardDetails` default.
     let send_to = send_to && try_use_context::<crate::SendTo>().is_some();
     let flag_shown = crate::is_flagged(card.scryfall_data.id);
     let has_slot_actions = on_qty_change.is_some()
