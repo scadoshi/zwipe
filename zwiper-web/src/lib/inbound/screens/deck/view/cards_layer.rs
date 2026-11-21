@@ -1,8 +1,8 @@
 //! The deck's Cards on a phone, as the app draws them: a full-screen layer over the deck's
 //! Profile with a back button, the deck's head with its featured cards, the page's controls
-//! (Quick add for the owner, View, Group by, Boards and Show), then the List's groups with their price and cart or the stacks, in tap mode on
-//! a touch screen and under hover with a mouse, and the site footer at its end, as a screen
-//! ends. The owner's deck and a shared deck draw the same
+//! (Quick add for the owner, View, Group by, Boards and Show), then the List's groups with their
+//! price and cart or the stacks, in tap mode on a touch screen and under hover with a mouse, and
+//! the site footer at its end, as a screen ends. The owner's deck and a shared deck draw the same
 //! layer; only the owner's passes edit actions and the edit buttons in the dock.
 //!
 //! The layer sits on the overlay stack, so the OS back closes it as it closes a sheet, and a
@@ -279,12 +279,17 @@ mod tests {
             dock.contains("animation-timeline: --site-footer;"),
             "{dock}"
         );
-        assert!(
+        // The room every screen with a floating dock keeps under its content.
+        let dock_room = rules(
+            WEB_CSS,
+            ".web-scroll-screen:has(> .action-dock, > .swipe-bottom-row) > .screen-content",
+        );
+        assert_eq!(
             rules(
                 WEB_CSS,
                 ".web-cards-layer:has(> .web-site-footer) > .screen-content"
-            )
-            .contains("padding-bottom: 5rem;"),
+            ),
+            dock_room,
             "the cards end a dock's height above the footer"
         );
     }
