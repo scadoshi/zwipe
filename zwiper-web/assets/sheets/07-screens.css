@@ -3392,15 +3392,20 @@ button {
 =========================== */
 
 /* The year scrolls sideways inside its section, faded at an edge with more
-   past it, and opens on the latest week. Its scrollbar takes the theme's
-   colors. Mon, Wed and Fri stay pinned at its left, on the panel's color,
-   while the weeks scroll under them; the left fade starts past them. */
+   past it, and opens on the latest week. It shows no scrollbar, so nothing
+   draws over the bottom row. Mon, Wed and Fri stay pinned at its left, on the
+   panel's color, while the weeks scroll under them; the left fade starts past
+   them. */
 .activity-scroll {
     --heat-gutter: calc(var(--space-3) + 24px);
     padding: var(--space-1) var(--space-3) 0;
-    scrollbar-color: var(--border-secondary) transparent;
+    scrollbar-width: none;
     -webkit-mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
     mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
+}
+
+.activity-scroll::-webkit-scrollbar {
+    display: none;
 }
 
 .activity-days {
