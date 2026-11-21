@@ -72,6 +72,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "In the app, the Themes sheet no longer has a search",
         "Hints fit on a phone screen without scrolling",
         "A long hint keeps its title and buttons in place and scrolls only its text",
+        "zwipe.net's search icon matches the other header icons",
     ],
 }];
 
