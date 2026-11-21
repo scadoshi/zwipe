@@ -60,6 +60,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Playstyle's Summary puts each label above its pips and count, so nothing splits on a phone",
         "Panels have squarer corners, and every chip and button shares one smaller corner whether or not you can tap it",
         "On a narrow phone, Home's Decks header no longer cuts off its title",
+        "Dividers inside a panel no longer poke past its edge",
     ],
 }];
 
