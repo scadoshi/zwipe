@@ -56,6 +56,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "In the app, the Themes sheet no longer has a search",
         "An expanded card row puts all its buttons on one line that wraps",
         "In the Suggested swipe, Why this commander? opens inside the card's details instead of the footer",
+        "The Activity heatmap no longer draws a scroll bar over its cells",
     ],
 }];
 
