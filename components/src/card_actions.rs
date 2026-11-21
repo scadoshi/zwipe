@@ -1,8 +1,8 @@
 //! A deck card's editing buttons, shared by the expanded [`CardRow`] and
 //! the card details drawer the deck page's stacks open: the Star and Flag
-//! with the row's other icons, the quantity stepper at the end of their
-//! line, and the board moves in the word buttons' block under it. A host
-//! with a layout of its own takes the [`CardEditButtons`] row alone.
+//! with the row's other icons, the quantity stepper after them, and the
+//! board moves with the word buttons after it, all on one wrapping line. A
+//! host with a layout of its own takes the [`CardEditButtons`] row alone.
 //!
 //! [`CardRow`]: crate::CardRow
 
@@ -37,8 +37,8 @@ pub struct CardEdit {
 }
 
 /// The editing buttons as one `card-action-row`: the [`CardMarkButtons`] in a
-/// `card-action-group`, then the [`CardStepper`] when `on_qty_change` is
-/// given, at the line's far end on a phone.
+/// `card-action-group`, then the [`CardStepper`] right after them when
+/// `on_qty_change` is given.
 #[component]
 pub fn CardEditButtons(
     qty: i32,

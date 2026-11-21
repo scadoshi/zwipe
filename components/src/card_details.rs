@@ -272,8 +272,8 @@ fn TagRows(
 /// rule, the action bar holds Flip for a multi-faced card, Meld for a meld
 /// half when the host provides a [`MeldSource`](crate::MeldSource), Image when
 /// the card has art and `on_image` is given, then the host's `actions`, all in
-/// one `card-action-group`, with the host's `action_end` after the group at
-/// the end of the line on a phone, and the host's `action_rows` under it. A
+/// one `card-action-group`, then the host's `action_end`, then the host's
+/// `action_words` in a group of their own, all on one wrapping line. A
 /// multi-faced card shows one face at a time behind Flip; a meld half shows
 /// its melded card while Meld is on.
 #[component]
@@ -294,7 +294,7 @@ pub fn CardDetails(
     /// their own.
     #[props(default)]
     face: Option<usize>,
-    /// Whether `actions`, `action_end` or `action_rows` carry any buttons, so
+    /// Whether `actions`, `action_end` or `action_words` carry any buttons, so
     /// the bar renders to hold them. (A slot can't be introspected.)
     #[props(default)]
     has_actions: bool,
@@ -302,14 +302,13 @@ pub fn CardDetails(
     /// Star, Flag), built as `card-action-btn card-action-icon`s.
     #[props(default)]
     actions: Option<Element>,
-    /// Host controls after the group, at the end of its line on a phone (the
-    /// quantity stepper).
+    /// Host controls right after the icons' group (the quantity stepper).
     #[props(default)]
     action_end: Option<Element>,
-    /// Host rows under the bar's row (the word buttons' block), each a
-    /// `card-action-row`.
+    /// Host word buttons (Printings, the board moves), in their own group
+    /// after `action_end` on the same line.
     #[props(default)]
-    action_rows: Option<Element>,
+    action_words: Option<Element>,
     /// Resolve an oracle tag's description. Forwarded to [`CardRoleChips`].
     #[props(default)]
     describe_tag: Option<Callback<String, Option<String>>>,
@@ -384,8 +383,8 @@ pub fn CardDetails(
                         {actions}
                     }
                     {action_end}
+                    span { class: "card-action-group card-action-words", {action_words} }
                 }
-                {action_rows}
             }
         }
     }
@@ -401,8 +400,8 @@ pub fn CardDetails(
 /// their oracle tags when `show_classification`, then the host's `body_end`.
 /// The panel's foot holds the host's `footer` and the Flip, Image and
 /// Printings buttons; with the host's `edit` it lays out as the open card
-/// row's bar, the icons with the stepper at the end of their line and then
-/// Printings and the moves. A multi-faced card
+/// row's bar, one wrapping line of the icons, the stepper, then Printings and
+/// the moves. A multi-faced card
 /// shows one face at a time, as in [`CardDetails`]: `face` lets the host own
 /// the shown face (pair it with `show_flip: false` to put Flip in its own
 /// chrome).
@@ -553,12 +552,12 @@ pub fn CardDetailsPanel(
                             if let Some(on_qty_change) = edit.on_qty_change {
                                 CardStepper { qty: edit.qty, on_qty_change }
                             }
-                        }
-                        div { class: "card-action-row card-action-words",
-                            if let Some(handler) = on_printings {
-                                FootButton { label: "Printings", action: data_action::PRINTINGS, on_click: handler }
+                            span { class: "card-action-group card-action-words",
+                                if let Some(handler) = on_printings {
+                                    FootButton { label: "Printings", action: data_action::PRINTINGS, on_click: handler }
+                                }
+                                BoardMoveButtons { current_board: edit.current_board, on_move_to: edit.on_move_to }
                             }
-                            BoardMoveButtons { current_board: edit.current_board, on_move_to: edit.on_move_to }
                         }
                     } else if has_buttons {
                         div { class: "card-action-row",
