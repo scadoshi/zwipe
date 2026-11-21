@@ -10,7 +10,7 @@ use dioxus::prelude::*;
 /// are the same box.
 pub(crate) fn card_style(border: &str) -> String {
     format!(
-        "width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid {border};border-radius:0.5rem;padding:var(--space-3) 0;display:flex;flex-direction:column;cursor:pointer;user-select:none;"
+        "width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid {border};border-radius:var(--panel-radius);padding:var(--space-3) 0;display:flex;flex-direction:column;cursor:pointer;user-select:none;"
     )
 }
 

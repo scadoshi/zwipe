@@ -26,7 +26,7 @@
         right: round(var(--drawer-float-gap), 1px);
         width: min(calc(100vw - 3rem), 26rem);
         max-height: none;
-        border-radius: 1rem;
+        border-radius: var(--panel-radius);
         border: 1px solid var(--border-secondary);
         box-shadow: var(--shadow-lg);
         transform: translateX(calc(100% + var(--drawer-float-gap) + 1px));
@@ -121,7 +121,7 @@
     display: inline-block;
     padding: 0.15rem var(--space-2);
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     /* A button element, so the host's face has to be named. */
     font-family: inherit;
     font-size: 0.7rem;
@@ -159,7 +159,7 @@
     padding: var(--space-2);
     margin-bottom: var(--space-2);
     font-size: 0.875rem;
-    border-radius: 0.5rem;
+    border-radius: var(--chip-radius);
 }
 
 /* On a touch screen a compact field reads at 16px, under which iOS zooms
@@ -246,7 +246,7 @@
     padding: var(--space-1) var(--space-2);
     margin-left: var(--space-1);
     border: 1px solid var(--color-error);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     /* Opaque fill so the page grid doesn't show through the button. */
     background-color: var(--bg-primary);
     transition: all 0.2s ease;
@@ -347,7 +347,7 @@
     animation:
         search-float-in 0.25s ease-out both,
         search-float-drift 3.2s ease-in-out 0.25s infinite;
-    border-radius: var(--radius-control);
+    border-radius: var(--chip-radius);
 }
 
 .stepper {
@@ -437,7 +437,7 @@
   color: var(--text-primary);
   outline: none;
   text-align: center;
-  border-radius: 0.5rem;
+  border-radius: var(--chip-radius);
   font-size: 0.95rem;
   font-weight: 400;
   cursor: pointer;
@@ -668,7 +668,7 @@
     line-height: inherit;
     cursor: pointer;
     animation: search-float-in 0.25s ease-out both;
-    border-radius: var(--radius-control);
+    border-radius: var(--chip-radius);
 }
 
 /* The picker result the arrow keys point at. */

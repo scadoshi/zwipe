@@ -179,7 +179,7 @@ button {
 .action-dock > .btn-action {
     min-height: 2.4rem;
     margin: var(--dock-inset) 0;
-    border-radius: max(0.15rem, calc(var(--dock-radius) - 1px - var(--dock-inset)));
+    border-radius: var(--chip-radius);
     border: none;
     box-shadow: none;
     background: transparent;
@@ -237,7 +237,7 @@ button {
 .form-submit > .btn {
     margin: 0;
     padding: var(--space-3) var(--space-4);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
 }
 
 .form-links {
@@ -295,7 +295,7 @@ button {
     margin: 0;
     background: var(--bg-primary);
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     color: var(--text-primary);
     cursor: pointer;
     opacity: var(--fade-corner);
@@ -428,11 +428,11 @@ button {
 }
 
 .rounded-sm {
-    border-radius: 0.5rem;
+    border-radius: var(--chip-radius);
 }
 
 .rounded {
-    border-radius: 1rem;
+    border-radius: var(--panel-radius);
 }
 
 .rounded-full {
@@ -594,9 +594,9 @@ button {
 .import-hint {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
-    border-radius: 0.6rem;
+    border-radius: var(--panel-radius);
     box-shadow: var(--shadow-sm);
-    padding: var(--space-2) var(--space-3);
+    padding: var(--panel-pad);
     margin-top: var(--space-2);
 }
 

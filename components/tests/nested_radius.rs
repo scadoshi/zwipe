@@ -18,22 +18,22 @@ fn rule(sheet: &'static str, selector: &str) -> &'static str {
         .map_or("", |(body, _)| body)
 }
 
-/// The nested radius of a deck row's art: the row's corner less its border and the art's own
-/// inset, which is smaller than the text's, so the art sits nearer the corner and rounder.
+/// The nested radius of a deck row's art: the row's corner, the panel radius, less its border
+/// and the art's own inset, which is smaller than the text's, so the art sits nearer the corner
+/// and rounder.
 const DECK_ART_RADIUS: &str =
-    "border-radius: max(0.15rem, calc(var(--deck-row-radius) - 1px - var(--deck-row-art-inset)));";
+    "border-radius: max(0.15rem, calc(var(--panel-radius) - 1px - var(--deck-row-art-inset)));";
 
 #[test]
 fn a_deck_rows_art_follows_the_rows_corner() {
     let row = rule(SCREENS_COMPONENTS, ".deck-row");
-    assert!(row.contains("--deck-row-radius: 1rem;"), "{row:?}");
     assert!(row.contains("--deck-row-inset: var(--space-3);"), "{row:?}");
     assert!(
         row.contains("padding: var(--deck-row-inset) var(--space-4);"),
         "{row:?}"
     );
     assert!(
-        row.contains("border-radius: var(--deck-row-radius);"),
+        row.contains("border-radius: var(--panel-radius);"),
         "{row:?}"
     );
     assert!(
@@ -50,23 +50,21 @@ fn a_deck_rows_art_follows_the_rows_corner() {
 fn a_hovered_deck_row_on_the_web_keeps_the_rows_corner() {
     assert!(
         WEB.contains(
-            ".card-row.deck-row:not(.expanded):hover {\n        border-radius: var(--deck-row-radius);"
+            ".card-row.deck-row:not(.expanded):hover {\n        border-radius: var(--panel-radius);"
         ),
-        "the web's hover corner is the row's token"
+        "the web's hover corner is the row's, the panel radius"
     );
 }
 
 #[test]
-fn a_docks_text_buttons_follow_the_docks_corner() {
+fn a_docks_text_buttons_take_the_chip_corner_the_dock_is_built_around() {
     let button = rule(SCREENS_BASE, ".action-dock > .btn-action");
     assert!(
         button.contains("margin: var(--dock-inset) 0;"),
         "{button:?}"
     );
     assert!(
-        button.contains(
-            "border-radius: max(0.15rem, calc(var(--dock-radius) - 1px - var(--dock-inset)));"
-        ),
+        button.contains("border-radius: var(--chip-radius);"),
         "as orangui's dock buttons: {button:?}"
     );
 }

@@ -26,12 +26,14 @@
        the gap is the same from both physical edges and each float sits on a 45 degree line from
        its corner. */
     --corner-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2));
-    /* The corner floats' own corner: the dock's and a toast's. */
-    --corner-radius: 0.9rem;
-    /* A chip's corner: read-only for one that only shows something, control for
-       one that does something. */
-    --radius-readonly: 0.4rem;
-    --radius-control: 0.6rem;
+    /* One corner for every container (a panel, a sheet, a dialog, a toast) and
+       one padding inside it. A chip's or a button's corner is the panel's less
+       that padding, so a chip in a container's corner nests in it. Clickable
+       and read-only chips share it and differ by border, hover, press and
+       fill. */
+    --panel-radius: 1.5rem;
+    --panel-pad: var(--space-4);
+    --chip-radius: calc(var(--panel-radius) - var(--panel-pad));
     --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
     --enter-duration: 280ms;
 }
@@ -62,7 +64,7 @@
     padding: var(--space-1) var(--space-2);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-muted);
-    border-radius: var(--radius-readonly);
+    border-radius: var(--chip-radius);
     font-size: 0.75rem;
     color: var(--ink-text-muted, var(--text-muted));
     cursor: pointer;
@@ -74,7 +76,7 @@
     display: inline-block;
     padding: var(--space-1) var(--space-2);
     border: 1px solid var(--border-primary);
-    border-radius: var(--radius-control);
+    border-radius: var(--chip-radius);
     /* A button element, so the host's face has to be named. */
     font-family: inherit;
     font-size: 0.75rem;
@@ -133,7 +135,7 @@
 /* A label on a project, a guide, a source row. The size and shape are soft
    defaults, so a host rule of any specificity resizes a tag. */
 :where(.tag) {
-    border-radius: var(--radius-readonly);
+    border-radius: var(--chip-radius);
     padding: var(--space-1) var(--space-3);
     font-size: 0.78rem;
     letter-spacing: 0.02em;
@@ -152,13 +154,8 @@
    border. The size and shape are soft defaults, as on .tag. */
 :where(.stat-chip) {
     padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-readonly);
+    border-radius: var(--chip-radius);
     font-size: 0.75rem;
-}
-
-/* A tag or stat chip that is a link or a button takes the control corner. */
-:where(a.tag, button.tag, a.stat-chip, button.stat-chip) {
-    border-radius: var(--radius-control);
 }
 
 .stat-chip {
@@ -263,7 +260,7 @@ a.stat-chip {
     background-color: var(--bg-primary);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-primary);
-    border-radius: 1rem;
+    border-radius: var(--chip-radius);
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
     font-size: 1rem;
@@ -283,7 +280,7 @@ a.stat-chip {
 .btn-xs {
     padding: var(--space-2) var(--space-3);
     font-size: 0.75rem;
-    border-radius: 0.5rem;
+    border-radius: var(--chip-radius);
     margin-bottom: var(--space-2);
     width: auto;
     background: none;
@@ -305,7 +302,7 @@ a.stat-chip {
 .btn-action {
     padding: var(--space-2) var(--space-3);
     font-size: 0.8rem;
-    border-radius: 0.5rem;
+    border-radius: var(--chip-radius);
     width: auto;
     margin: 0;
     background-color: var(--bg-primary);
@@ -420,7 +417,7 @@ a.stat-chip {
     padding: var(--space-1) var(--space-2);
     background: var(--bg-primary);
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     opacity: var(--fade-corner);
     cursor: pointer;
     transition: border-color 0.15s;
@@ -533,7 +530,7 @@ a.stat-chip {
     color: var(--text-primary);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     padding: 0 var(--space-3);
     font-family: inherit;
     font-size: 0.8rem;
@@ -578,7 +575,7 @@ a.stat-chip {
     color: var(--ink-palette-5, var(--palette-5));
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     padding: 0 var(--space-3);
     font-family: inherit;
     font-size: 0.8rem;
@@ -661,7 +658,7 @@ a.stat-chip {
     color: var(--text-primary);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     padding: 0 var(--space-3);
     font-family: inherit;
     font-size: 0.8rem;
@@ -768,7 +765,7 @@ a.stat-chip {
     margin-top: var(--space-2);
     background: var(--bg-primary);
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: var(--panel-radius);
     min-width: 11rem;
     padding: var(--space-2) 0;
     /* One above the triggers (200). In the hamburger panel a menu drops over
@@ -860,7 +857,7 @@ a.nav-dropdown-item.active:visited {
     gap: var(--space-1);
     flex-shrink: 0;
     padding: var(--space-1) var(--space-1);
-    border-radius: 0.35rem;
+    border-radius: var(--chip-radius);
     background: var(--bg-primary);
     border: 1px solid var(--text-muted);
 }
@@ -878,7 +875,7 @@ a.nav-dropdown-item.active:visited {
 /* Soft: the padding, radius and font. */
 :where(.pref-row) {
     padding: var(--space-2) var(--space-4);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     font-family: "JetBrains Mono", monospace;
     font-weight: 400;
     font-size: 0.85rem;
@@ -963,7 +960,7 @@ a.nav-dropdown-item.active:visited {
     padding: var(--space-2) var(--space-4);
     background-color: var(--bg-primary);
     border: 1px solid var(--ink-text-muted, var(--text-muted));
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
     font-size: 0.85rem;
@@ -1117,9 +1114,9 @@ a.nav-dropdown-item.active:visited {
 /* Soft: the bar's gap, padding and radius. */
 :where(.action-dock) {
     /* The dock's corner and the buttons' inset from its top and bottom: a
-       button's corner is the dock's less the border and that inset, so the
-       gap around each end button stays even. */
-    --dock-radius: var(--corner-radius);
+       button rounds at the chip radius, and the dock's corner is that plus the
+       border and the inset, so the gap around each end button stays even. */
+    --dock-radius: calc(var(--chip-radius) + 1px + var(--dock-inset));
     --dock-inset: var(--space-1);
     gap: var(--space-1);
     padding: 0 var(--space-2);
@@ -1162,7 +1159,7 @@ a.nav-dropdown-item.active:visited {
     width: 2.4rem;
     height: 2.4rem;
     margin: var(--dock-inset) 0;
-    border-radius: max(0.15rem, calc(var(--dock-radius) - 1px - var(--dock-inset)));
+    border-radius: var(--chip-radius);
 }
 
 .action-dock-btn {
@@ -1267,7 +1264,7 @@ a.nav-dropdown-item.active:visited {
     right: -0.35rem;
     width: 1.2rem;
     height: 1.2rem;
-    border-radius: 0.35rem;
+    border-radius: var(--chip-radius);
     font-size: 0.8rem;
 }
 
@@ -1320,7 +1317,7 @@ a.nav-dropdown-item.active:visited {
     right: 0;
     max-height: 85vh;
     background: var(--bg-primary);
-    border-radius: 1rem 1rem 0 0;
+    border-radius: var(--panel-radius) var(--panel-radius) 0 0;
     box-shadow: var(--shadow-lg);
     transform: translateY(100%);
     visibility: hidden;
@@ -1496,7 +1493,7 @@ html:has(.bottom-sheet.show) body,
     left: 1rem;
     width: 2.1rem;
     height: 1.7rem;
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     font-size: 1.1rem;
     opacity: var(--fade-corner);
 }
@@ -1538,7 +1535,7 @@ html:has(.bottom-sheet.show) body,
 /* The body starts as close under the title bar as a panel's body under
    its header. */
 .sheet-content {
-    padding: var(--space-4) var(--space-5) var(--space-5);
+    padding: var(--panel-pad);
     overflow-y: auto;
     flex: 1;
     display: flex;
@@ -1651,7 +1648,7 @@ html:has(.bottom-sheet.show) body,
         bottom: auto;
         width: min(32rem, calc(100vw - 4rem));
         max-height: 85vh;
-        border-radius: 1rem;
+        border-radius: var(--panel-radius);
         border: 1px solid var(--border-secondary);
         opacity: 0;
         transform: translate(-50%, calc(-50% + 0.5rem)) scale(0.98);
@@ -1678,7 +1675,7 @@ html:has(.bottom-sheet.show) body,
         right: 1rem;
         width: min(24rem, calc(100vw - 2rem));
         max-height: none;
-        border-radius: 1rem;
+        border-radius: var(--panel-radius);
         border: 1px solid var(--border-secondary);
         box-shadow: var(--shadow-lg);
         transform: translateX(calc(100% + 1rem));
@@ -1798,9 +1795,9 @@ html:has(.bottom-sheet.show) body,
     overflow: hidden;
     background: var(--bg-primary);
     border: 1px solid var(--border-secondary);
-    border-radius: 0.4rem;
+    border-radius: var(--panel-radius);
     /* 2.4rem on the right is the room for the close button, off the scale. */
-    padding: var(--space-3) 2.4rem var(--space-4) var(--space-4);
+    padding: var(--panel-pad) 2.4rem var(--panel-pad) var(--panel-pad);
     font-size: 0.75rem;
     color: var(--text-primary);
     display: flex;
@@ -1929,7 +1926,7 @@ html:has(.bottom-sheet.show) body,
     height: 2rem;
     background: transparent;
     border: none;
-    border-radius: 0.6rem;
+    border-radius: var(--chip-radius);
     color: var(--ink-text-muted, var(--text-muted));
     cursor: pointer;
     font-family: inherit;
@@ -1982,7 +1979,7 @@ html:has(.bottom-sheet.show) body,
     letter-spacing: 0.05em;
     padding: var(--space-1) var(--space-2);
     border: 1px solid transparent;
-    border-radius: var(--radius-readonly);
+    border-radius: var(--chip-radius);
     vertical-align: middle;
     text-transform: none;
 }
@@ -2007,7 +2004,7 @@ html:has(.bottom-sheet.show) body,
 .release-card {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: var(--panel-radius);
     overflow: hidden;
     width: 100%;
     box-sizing: border-box;
@@ -2136,8 +2133,8 @@ html:has(.bottom-sheet.show) body,
     flex-direction: column;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    padding: var(--space-5);
+    border-radius: var(--panel-radius);
+    padding: var(--panel-pad);
     box-shadow: var(--shadow-sm);
     transition: border-color 0.2s;
 }
@@ -2223,7 +2220,7 @@ html:has(.bottom-sheet.show) body,
     align-items: center;
     padding: var(--space-1) var(--space-4);
     border: 1px solid var(--border-primary);
-    border-radius: 0.6rem;
+    border-radius: var(--chip-radius);
     background-color: var(--bg-primary);
     box-shadow: var(--shadow-sm);
     color: var(--text-primary);
@@ -2249,7 +2246,7 @@ html:has(.bottom-sheet.show) body,
 .stepper-btn {
     padding: var(--space-1) var(--space-2);
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     background-color: var(--bg-primary);
     color: var(--text-primary);
     cursor: pointer;
@@ -2284,7 +2281,7 @@ html:has(.bottom-sheet.show) body,
     font-size: 0.85rem;
     padding: var(--space-1) var(--space-2);
     cursor: pointer;
-    border-radius: 0.3rem;
+    border-radius: var(--chip-radius);
 }
 
 @media (hover: hover) {
@@ -2394,7 +2391,7 @@ html:has(.bottom-sheet.show) body,
     color: var(--ink-color-error, var(--color-error));
     background-color: var(--bg-primary);
     border: 1px solid var(--color-error);
-    border-radius: 0.5rem;
+    border-radius: var(--chip-radius);
     transition:
         width 0.2s ease,
         margin-left 0.2s ease,
@@ -2706,6 +2703,62 @@ html:has(.bottom-sheet.show) body,
     .heat-halo {
         animation: none;
     }
+}
+
+/* The Heatmap: wider than a phone, so it scrolls sideways with no scroll bar
+   and opens on the newest weeks. The weekdays stay pinned at its left, on the
+   surface's color, while the weeks scroll under them: the mask is opaque to
+   the gutter, the left padding plus the 24px strip, then the weeks fade in
+   past it by --fade-left and out at the right edge by --fade-right. */
+.heat-scroll {
+    --heat-gutter: calc(var(--space-3) + 24px);
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
+    mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
+}
+
+.heat-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+:where(.heat-scroll) {
+    padding: var(--space-1) var(--space-3) 0;
+}
+
+.heat-axis {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: var(--bg-primary);
+    /* The scroller's left padding, in the surface's color too. */
+    box-shadow: calc(-1 * var(--space-3)) 0 0 var(--bg-primary);
+}
+
+.heat-axis > svg {
+    display: block;
+    font-family: inherit;
+}
+
+/* The grid at its own size, so a cell keeps its pitch on any phone, and the
+   box the day chip is placed in. Room added at its right end widens it. */
+.heat-plot {
+    position: relative;
+    box-sizing: content-box;
+}
+
+.heat-plot .heat-grid {
+    height: auto;
+    max-width: none;
+}
+
+.heat-backdrop {
+    fill: transparent;
+}
+
+/* The Heatmap's readout clears its surface's edges. */
+:where(.heat-scroll + .heat-readout) {
+    margin-inline: var(--space-4);
+    margin-bottom: var(--space-3);
 }
 
 /* The tags under a heatmap. At rest they name what the grid adds up to. On a
@@ -3035,7 +3088,7 @@ html[data-wipe="left"]::view-transition-new(root) {
     gap: 0.15rem;
     min-width: 0;
     border: 1px solid var(--border-secondary);
-    border-radius: 0.8rem;
+    border-radius: var(--panel-radius);
     background-color: var(--bg-sink);
     box-shadow: var(--shadow-sm);
 }
@@ -3080,7 +3133,7 @@ html[data-wipe="left"]::view-transition-new(root) {
     margin-left: var(--space-1);
     padding: 0;
     border: 1px solid var(--border-primary);
-    border-radius: 0.5rem;
+    border-radius: var(--chip-radius);
     background: var(--bg-primary);
     color: var(--ink-text-muted, var(--text-muted));
     font-family: "JetBrains Mono", monospace;
@@ -3101,7 +3154,7 @@ html[data-wipe="left"]::view-transition-new(root) {
 .hint-key {
     border: 1px solid var(--accent-tertiary);
     color: var(--ink-accent-tertiary, var(--accent-tertiary));
-    border-radius: 0.5rem;
+    border-radius: var(--chip-radius);
     padding: 0.05rem var(--space-2);
     font-size: 0.8rem;
     line-height: 1;
@@ -3542,7 +3595,7 @@ html[data-wipe="left"]::view-transition-new(root) {
     width: auto;
     padding: var(--space-1) var(--space-3);
     border: 1px solid var(--border-muted);
-    border-radius: 0.6rem;
+    border-radius: var(--chip-radius);
     background-color: var(--bg-primary);
     box-shadow: var(--shadow-sm);
     font-size: 0.8rem;

@@ -44,12 +44,12 @@
    the prev/next colors and hover, the caption's ease and the full-width rule
    between them. */
 
-/* Breaks out of the panel-card's 1.5rem padding. */
+/* Breaks out of the panel-card's padding. */
 .gallery-rule {
     border: none;
     border-top: 1px solid var(--border-secondary);
     align-self: stretch;
-    margin: var(--space-3) calc(-1 * var(--space-5));
+    margin: var(--space-3) calc(-1 * var(--panel-pad));
 }
 
 /* A media's box at its own shape (--media-w / --media-h, set by MediaFrame),
@@ -156,9 +156,9 @@
 .guide-content.panel {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: var(--panel-radius);
     box-shadow: var(--shadow-sm);
-    padding: var(--space-5);
+    padding: var(--panel-pad);
 }
 
 :is(.guide-content, .guide-related).section {
@@ -209,7 +209,7 @@
 
 .guide-search-input {
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-family: inherit;
@@ -334,7 +334,7 @@
     align-items: center;
     padding: var(--space-2) var(--space-4);
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     background-color: var(--bg-primary);
     box-shadow: var(--shadow-sm);
     color: var(--ink-palette-1, var(--palette-1));
@@ -393,7 +393,7 @@
 
 .guide-kw {
     padding: 0.03rem var(--space-1);
-    border-radius: var(--radius-readonly);
+    border-radius: var(--chip-radius);
     background-color: color-mix(in srgb, var(--text-primary) 9%, transparent);
     border: 1px solid color-mix(in srgb, var(--text-primary) 16%, transparent);
     color: var(--text-primary);

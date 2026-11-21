@@ -58,7 +58,7 @@ body {
     width: 100%;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: var(--panel-radius);
     box-shadow: var(--shadow-sm);
 }
 
@@ -331,7 +331,7 @@ body {
 /* The printing sheet's body runs the sheet's full width, out through the
    content's padding, so the carousel's pages are the viewport wide. */
 .printing-sheet-body {
-    margin: 0 calc(-1 * var(--space-5));
+    margin: 0 calc(-1 * var(--panel-pad));
 }
 
 /* The cover flow's step buttons keep the screen's gutter inside that full

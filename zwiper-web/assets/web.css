@@ -319,10 +319,10 @@ body {
 
     .web-form-panel {
         width: 100%;
-        padding: var(--space-5);
+        padding: var(--panel-pad);
         background-color: var(--bg-primary);
         border: 1px solid var(--border-secondary);
-        border-radius: 1rem;
+        border-radius: var(--panel-radius);
         box-shadow: var(--shadow-sm);
     }
 
@@ -331,8 +331,8 @@ body {
     .web-form-panel > .web-form-head {
         display: flex;
         justify-content: center;
-        margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-5)) var(--space-5);
-        border-radius: 1rem 1rem 0 0;
+        margin: calc(-1 * var(--panel-pad)) calc(-1 * var(--panel-pad)) var(--space-5);
+        border-radius: var(--panel-radius) var(--panel-radius) 0 0;
     }
 
     /* A sign-in panel is held to a form's width; the page head wears the
@@ -345,7 +345,7 @@ body {
        edges, as the header's does, instead of spanning the window as the
        app's does. */
     .web-form-panel > .form-links {
-        margin: var(--space-5) calc(-1 * var(--space-5)) calc(-1 * var(--space-5));
+        margin: var(--space-5) calc(-1 * var(--panel-pad)) calc(-1 * var(--panel-pad));
     }
 
     /* A public screen: the hero at the page's width, then the form in the
@@ -530,7 +530,7 @@ body {
     }
 
     .card-row.deck-row:not(.expanded):hover {
-        border-radius: var(--deck-row-radius);
+        border-radius: var(--panel-radius);
         transform: none;
         box-shadow: var(--shadow-md);
     }
@@ -1021,7 +1021,7 @@ body {
     background: var(--bg-primary);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-secondary);
-    border-radius: 0.5rem;
+    border-radius: var(--panel-radius);
     padding: var(--space-3) 0;
     display: flex;
     flex-direction: column;
@@ -1174,7 +1174,7 @@ body {
 
 .web-printing-body > .cover-flow {
     --flow-step-inset: var(--space-4);
-    margin: 0 calc(-1 * var(--space-5)) var(--space-3);
+    margin: 0 calc(-1 * var(--panel-pad)) var(--space-3);
 }
 
 /* The flow's frame is filled with the sheet body's own color, so nothing
@@ -1216,7 +1216,7 @@ body {
     width: 2.4rem;
     height: 2.4rem;
     margin: var(--space-1) 0;
-    border-radius: 0.6rem;
+    border-radius: var(--chip-radius);
 }
 
 /* ---- Printing picker's cover flow ----
@@ -1246,7 +1246,7 @@ body {
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        padding: var(--space-4) var(--space-5) var(--space-5);
+        padding: var(--panel-pad);
     }
 
     .web-flow-body:focus {
@@ -1257,10 +1257,10 @@ body {
        body's side padding to the modal's edges, its stage stretching rather
        than keeping the phone's shape. */
     .web-flow-body > .cover-flow {
-        --flow-step-inset: var(--space-5);
+        --flow-step-inset: var(--panel-pad);
         flex: 1 1 auto;
         min-height: 0;
-        margin-inline: calc(-1 * var(--space-5));
+        margin-inline: calc(-1 * var(--panel-pad));
     }
 
     /* The frame under the step buttons stretches to the flow's height and
@@ -1492,7 +1492,7 @@ body {
         height: auto;
         transform: translateZ(0);
         border: 1px solid var(--border-secondary);
-        border-radius: 1rem;
+        border-radius: var(--panel-radius);
         overflow: hidden;
         box-shadow: 0 0 0 100vmax var(--bg-overlay), var(--shadow-lg);
         animation: modal-enter var(--enter-duration) var(--ease-enter) backwards;
@@ -2034,7 +2034,7 @@ body {
         max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
         overflow-y: auto;
         overscroll-behavior: contain;
-        border-radius: 1rem;
+        border-radius: var(--panel-radius);
         box-sizing: border-box;
         transform: translateX(0);
         transition: transform 0.3s ease;
@@ -2673,9 +2673,9 @@ body {
 @media (min-width: 900px) {
     .web-form-panel > .import-output {
         box-sizing: border-box;
-        margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-5)) calc(-1 * var(--space-5));
-        padding: var(--space-5);
-        border-radius: 0 0 1rem 1rem;
+        margin: calc(-1 * var(--panel-pad)) calc(-1 * var(--panel-pad)) calc(-1 * var(--panel-pad));
+        padding: var(--panel-pad);
+        border-radius: 0 0 var(--panel-radius) var(--panel-radius);
     }
 }
 
@@ -2853,7 +2853,7 @@ body {
         padding: 0;
         background-color: var(--bg-primary);
         border: 1px solid var(--border-secondary);
-        border-radius: 1rem;
+        border-radius: var(--panel-radius);
         box-shadow: var(--shadow-sm);
         box-sizing: border-box;
         overflow: hidden;

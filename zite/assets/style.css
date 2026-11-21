@@ -87,9 +87,9 @@ body {
 .panel {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: var(--panel-radius);
     box-shadow: var(--shadow-sm);
-    padding: var(--space-5);
+    padding: var(--panel-pad);
 }
 
 .panel > :first-child {
@@ -230,7 +230,7 @@ html:has(> body[class*="theme-"][class*="-light"]) {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     border: 1px solid var(--border-primary);
-    border-radius: 6px;
+    border-radius: var(--chip-radius);
     text-decoration: none;
     transform: translateY(calc(-100% - 1rem));
 }
@@ -433,10 +433,10 @@ code {
        padding) so the hero's edges align with the demo/features band below. */
     max-width: calc(var(--zite-page-max) - 3rem);
     margin: 0 auto;
-    padding: var(--space-4) var(--space-5);
+    padding: var(--panel-pad);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: var(--panel-radius);
     box-shadow: var(--shadow-md);
     overflow: hidden;
 }
@@ -498,7 +498,7 @@ code {
     border: none;
     border-top: 1px solid var(--border-secondary);
     align-self: stretch;
-    margin: var(--space-4) calc(-1 * var(--space-5));
+    margin: var(--space-4) calc(-1 * var(--panel-pad));
     animation: hero-stats-in 0.4s ease-out both;
 }
 
@@ -516,7 +516,7 @@ code {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     padding: var(--space-3) var(--space-5);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     box-shadow: var(--shadow-sm);
     text-decoration: none;
     font-size: 0.9rem;
@@ -661,7 +661,7 @@ code {
     font-size: 0.8rem;
     line-height: 1.3;
     text-align: center;
-    border-radius: var(--radius-readonly);
+    border-radius: var(--chip-radius);
 }
 
 .ff-name {
@@ -855,7 +855,7 @@ h2.panel-title {
     font-weight: 400;
     font-size: 0.9rem;
     padding: var(--space-3) var(--space-3);
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     box-shadow: var(--shadow-sm);
     outline: none;
     transition: border-color 0.15s;
@@ -867,8 +867,8 @@ h2.panel-title {
 
 .status-message {
     margin-top: var(--space-5);
-    padding: var(--space-3) var(--space-4);
-    border-radius: 0.25rem;
+    padding: var(--panel-pad);
+    border-radius: var(--panel-radius);
     font-size: 0.85rem;
 }
 
@@ -909,7 +909,7 @@ h2.panel-title {
 .privacy-section hr {
     border: none;
     border-top: 1px solid var(--border-secondary);
-    margin: var(--space-3) calc(-1 * var(--space-5)) var(--space-4);
+    margin: var(--space-3) calc(-1 * var(--panel-pad)) var(--space-4);
 }
 
 .privacy-content p,
@@ -987,7 +987,7 @@ h2.panel-title {
     display: inline-flex;
     align-items: center;
     padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-readonly);
+    border-radius: var(--chip-radius);
     font-family: "JetBrains Mono", monospace;
     font-size: 0.8rem;
     border: 1px solid;
@@ -1040,7 +1040,7 @@ body[class$="-dark"] .chip-value {
     color: var(--ink-palette-5, var(--palette-5));
     background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--palette-5) 35%, transparent);
-    border-radius: var(--radius-control);
+    border-radius: var(--chip-radius);
     transition: all 0.2s ease;
 }
 
@@ -1165,7 +1165,7 @@ body[class$="-dark"] .chip-value {
     color: var(--ink-color-success, var(--color-success));
     background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
-    border-radius: var(--radius-readonly);
+    border-radius: var(--chip-radius);
     white-space: nowrap;
 }
 

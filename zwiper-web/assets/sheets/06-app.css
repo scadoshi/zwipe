@@ -210,7 +210,7 @@
        muted ink, held at 4.5:1 on every theme's panel and sink, rather than
        a decorative border. */
     border: 1px solid var(--ink-text-muted, var(--text-muted));
-    border-radius: 0.4rem;
+    border-radius: var(--chip-radius);
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
     font-size: 1rem;
@@ -324,7 +324,7 @@
 .settings-list {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: var(--panel-radius);
     overflow: hidden;
     width: 100%;
     max-width: 40rem;
@@ -505,7 +505,7 @@
     );
     box-sizing: border-box;
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: var(--panel-radius);
     background: var(--bg-primary);
     box-shadow: var(--shadow-lg);
     color: var(--text-primary);
@@ -589,7 +589,7 @@
     display: inline-block;
     padding: var(--space-1) var(--space-4);
     border: 1px solid var(--border-primary);
-    border-radius: 0.6rem;
+    border-radius: var(--chip-radius);
     background-color: var(--bg-primary);
     box-shadow: var(--shadow-sm);
     color: var(--text-primary);

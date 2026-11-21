@@ -137,7 +137,7 @@
     margin: 0 0 var(--space-2);
     padding: var(--stack-head-inset) var(--stack-head-inset) var(--stack-head-inset) calc(var(--stack-head-inset) + var(--stack-arrow-room));
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: var(--panel-radius);
     background-color: var(--bg-primary);
     box-shadow: var(--shadow-sm);
     color: var(--ink-accent-tertiary, var(--accent-tertiary));

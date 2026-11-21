@@ -58,7 +58,7 @@ fn the_flag_wears_the_quantity_badge_s_box() {
     for declaration in [
         "padding: 0.05rem var(--space-2);",
         "border: 1px solid var(--border-secondary);",
-        "border-radius: 0.5rem;",
+        "border-radius: var(--chip-radius);",
         "font-size: 0.75rem;",
         "background-color: color-mix(in srgb, var(--bg-primary) 85%, transparent);",
     ] {

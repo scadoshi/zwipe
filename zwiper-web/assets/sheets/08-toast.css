@@ -132,9 +132,9 @@
     box-sizing: border-box;
     align-items: center;
     justify-content: flex-start;
-    padding: var(--space-4);
+    padding: var(--panel-pad);
     border: 1px solid var(--border-primary);
-    border-radius: var(--corner-radius);
+    border-radius: var(--panel-radius);
     background: var(--bg-primary);
     color: var(--text-primary);
     font-family: 'JetBrains Mono', monospace;
@@ -261,7 +261,7 @@
     height: 2rem;
     padding: 0;
     border: none;
-    border-radius: max(0.15rem, calc(var(--corner-radius) - 1px - var(--space-2)));
+    border-radius: max(0.15rem, calc(var(--panel-radius) - 1px - var(--space-2)));
     margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
     background: transparent;
     color: var(--text-primary);
