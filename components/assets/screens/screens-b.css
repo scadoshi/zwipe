@@ -350,11 +350,12 @@
     word-break: break-word;
 }
 
-/* Full-bleed divider under a subtitle inside a padded box (e.g. charts). */
+/* Full-bleed divider under a card's title, out through the card's padding
+   to its border. */
 .box-rule {
     border: none;
     border-top: 1px solid var(--border-secondary);
-    margin: var(--space-1) calc(-1 * var(--space-3)) var(--space-2) calc(-1 * var(--space-3));
+    margin: var(--space-1) calc(-1 * var(--panel-pad)) var(--space-2);
     align-self: stretch;
 }
 

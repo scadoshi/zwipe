@@ -16,7 +16,7 @@ pub fn UpdateRequired() -> Element {
                             class: "settings-list-title update-required-title",
                             "Update required"
                         }
-                        hr { class: "box-rule", style: "margin-left: calc(-1 * var(--space-4)); margin-right: calc(-1 * var(--space-4));" }
+                        hr { class: "box-rule" }
                         p { class: "text-muted",
                             "This version of "
                             strong { style: "color: var(--palette-3);", "Zwipe" }
