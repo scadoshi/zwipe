@@ -1,8 +1,9 @@
 //! One radius across the app, the web app and zwipe.net: every container rounds at the kit's
-//! panel radius, every chip and button at its chip radius (the panel's less the panel padding), so
-//! a chip in a container's corner nests in it. No sheet and no inline style sets a radius of its
-//! own, except the shapes that are no container, chip or button: card art and thumbnails, circles,
-//! bars and tracks, mana pips, focus rings and scrollbars.
+//! panel radius and every chip and button at its chip radius. A box in a container's corner,
+//! nearer than the padding, takes the container's radius less the border and its inset, so the
+//! two curves match. No sheet and no inline style sets a radius of its own, except the shapes that
+//! are no container, chip or button: card art and thumbnails, circles, bars and tracks, mana pips,
+//! focus rings and scrollbars.
 
 #![expect(
     clippy::string_slice,
@@ -24,6 +25,17 @@ const ALLOWED: [&str; 6] = [
     "inherit",
     "0",
 ];
+
+/// Whether `radius` is the nested formula: a container's radius token less the 1px border and an
+/// inset, floored so it never goes square.
+fn nested(radius: &str) -> bool {
+    radius
+        .strip_prefix("max(0.15rem, calc(var(--")
+        .and_then(|rest| rest.split_once(") - 1px - "))
+        .is_some_and(|(outer, inset)| {
+            ["panel-radius", "dock-radius"].contains(&outer) && inset.ends_with("))")
+        })
+}
 
 /// Rules whose shape is no container, chip or button, each keeping its own radius.
 const OUT_OF_SCOPE: &[&str] = &[
@@ -48,16 +60,9 @@ const OUT_OF_SCOPE: &[&str] = &[
     ".card-list-results .skeleton-image",
     ".card-row-art",
     ".card-proxy.card-row-art",
-    ".deck-row-art-img",
-    ".skeleton-deck-list-art",
     ".skeleton-card-thumb",
     // A card proxy's chips scale with the proxy, in em.
     ".card-proxy .detail-chip, .card-proxy .stat-chip, .card-proxy .chip, .card-proxy .card-row-price",
-    // Guide screenshots and diagrams: images.
-    ".media-frame",
-    ".guide-diagram",
-    ".guide-gallery-col .media-frame",
-    ".guide-img-frame",
     // Circles and pills.
     ".filter-dot",
     ".spinner",
@@ -204,7 +209,10 @@ fn no_sheet_sets_a_radius_of_its_own() {
             let Some(radius) = value(&body, "border-radius") else {
                 continue;
             };
-            if !ALLOWED.contains(&radius.as_str()) && !OUT_OF_SCOPE.contains(&selector.as_str()) {
+            if !ALLOWED.contains(&radius.as_str())
+                && !nested(&radius)
+                && !OUT_OF_SCOPE.contains(&selector.as_str())
+            {
                 let file = path.strip_prefix(root()).unwrap().display().to_string();
                 own.push(format!("{file}: {selector} {{ border-radius: {radius} }}"));
             }

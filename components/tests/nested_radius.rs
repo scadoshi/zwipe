@@ -57,14 +57,16 @@ fn a_hovered_deck_row_on_the_web_keeps_the_rows_corner() {
 }
 
 #[test]
-fn a_docks_text_buttons_take_the_chip_corner_the_dock_is_built_around() {
+fn a_docks_text_buttons_nest_in_the_docks_corners() {
     let button = rule(SCREENS_BASE, ".action-dock > .btn-action");
     assert!(
         button.contains("margin: var(--dock-inset) 0;"),
         "{button:?}"
     );
     assert!(
-        button.contains("border-radius: var(--chip-radius);"),
+        button.contains(
+            "border-radius: max(0.15rem, calc(var(--dock-radius) - 1px - var(--dock-inset)));"
+        ),
         "as orangui's dock buttons: {button:?}"
     );
 }

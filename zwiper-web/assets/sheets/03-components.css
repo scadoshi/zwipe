@@ -26,14 +26,16 @@
        the gap is the same from both physical edges and each float sits on a 45 degree line from
        its corner. */
     --corner-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2));
-    /* One corner for every container (a panel, a sheet, a dialog, a toast) and
-       one padding inside it. A chip's or a button's corner is the panel's less
-       that padding, so a chip in a container's corner nests in it. Clickable
-       and read-only chips share it and differ by border, hover, press and
+    /* One corner for every container (a panel, a sheet, a dialog, a toast, the
+       dock) and one padding inside it, and one corner for every chip and
+       button. A box in a container's corner, nearer than the padding, takes
+       max(0.15rem, calc(outer - 1px - inset)) instead, the container's corner
+       less the border and its inset, so the two curves match. Clickable and
+       read-only chips share the corner and differ by border, hover, press and
        fill. */
-    --panel-radius: 1.5rem;
+    --panel-radius: 0.75rem;
     --panel-pad: var(--space-4);
-    --chip-radius: calc(var(--panel-radius) - var(--panel-pad));
+    --chip-radius: 0.375rem;
     --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
     --enter-duration: 280ms;
 }
@@ -1113,10 +1115,10 @@ a.nav-dropdown-item.active:visited {
 
 /* Soft: the bar's gap, padding and radius. */
 :where(.action-dock) {
-    /* The dock's corner and the buttons' inset from its top and bottom: a
-       button rounds at the chip radius, and the dock's corner is that plus the
-       border and the inset, so the gap around each end button stays even. */
-    --dock-radius: calc(var(--chip-radius) + 1px + var(--dock-inset));
+    /* The dock's corner and the buttons' inset from its top and bottom: the
+       dock is a container, and a button's corner is the dock's less the border
+       and that inset, so the gap around each end button stays even. */
+    --dock-radius: var(--panel-radius);
     --dock-inset: var(--space-1);
     gap: var(--space-1);
     padding: 0 var(--space-2);
@@ -1159,7 +1161,7 @@ a.nav-dropdown-item.active:visited {
     width: 2.4rem;
     height: 2.4rem;
     margin: var(--dock-inset) 0;
-    border-radius: var(--chip-radius);
+    border-radius: max(0.15rem, calc(var(--dock-radius) - 1px - var(--dock-inset)));
 }
 
 .action-dock-btn {

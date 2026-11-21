@@ -148,7 +148,7 @@
     flex: none;
     width: min(100%, calc(var(--media-max-h) * var(--media-w) / var(--media-h)));
     aspect-ratio: var(--media-w) / var(--media-h);
-    border-radius: 0.5rem;
+    border-radius: var(--chip-radius);
     overflow: hidden;
 }
 
@@ -495,7 +495,7 @@
 /* The border sits on the wrapper so the scroller's edge fade leaves it whole. */
 .guide-diagram {
     border: 1px solid var(--accent-tertiary);
-    border-radius: 0.5rem;
+    border-radius: var(--chip-radius);
     margin: var(--space-5) 0;
 }
 
@@ -550,7 +550,7 @@
 .guide-gallery-col .media-frame {
     --media-max-h: 60vh;
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: var(--chip-radius);
     box-shadow: var(--shadow-sm);
 }
 
@@ -573,7 +573,7 @@
     --media-max-h: 34rem;
     margin: 0 auto;
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: var(--chip-radius);
     box-shadow: var(--shadow-sm);
 }
 
