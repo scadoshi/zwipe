@@ -1356,15 +1356,21 @@ html.js:not(.splash-skip).splash-over .splash {
    the box from the left corner to the nav's right padding. It stays out of
    sight until it knows it is the header's. */
 
-/* The glass is a store icon's twin (GLASS_CLASS), so it is their width. */
+/* The glass wears the web app's nav icon class (GLASS_CLASS), so it takes
+   the web app's header icon color, at a store icon's width. */
 nav .card-search-nav {
     --card-search-glass: 1.85rem;
 }
 
+nav .card-search-label.nav-icon {
+    width: var(--card-search-glass);
+    height: var(--card-search-glass);
+    font-size: 0.8rem;
+}
+
 /* Its glyph is the store glyphs' size in the pill (the kit's
-   :where(.nav-cta-icon svg)), over the kit's own size for a stroked dock
-   icon, at every width. */
-nav .card-search-label svg {
+   :where(.nav-cta-icon svg)), over a nav icon's own size, at every width. */
+nav .card-search-label.nav-icon svg {
     width: 1.25em;
     height: 1.25em;
 }
