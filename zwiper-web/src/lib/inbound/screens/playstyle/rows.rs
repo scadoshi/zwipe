@@ -15,6 +15,7 @@ use zwipe_ui::playstyle::{
     staple_colors_present, staple_decks, staple_identity, staple_percent, staple_type_line,
     staple_types_present,
 };
+use zwipe_ui::screens::playstyle::WHY;
 
 use super::chips::{IdentityPips, identity_key};
 use crate::inbound::cards::card_row::CardRow;
@@ -26,10 +27,11 @@ use crate::inbound::router::Route;
 const STAPLES_TITLE: &str = "Staples";
 
 /// The "Why this commander?" block under a suggestion, folded under its chip
-/// in a list row and in the swipe's card details alike, closed on mount. It holds the shared oracle tags grouped by card role, or
+/// in a list row and in the swipe's card details alike, closed on mount. It
+/// holds the shared oracle tags grouped by card role, or
 /// [`deal::POPULAR_REASON`] when the commander shares none, then one bullet
-/// per shared color. Tag reveals use `describe_tag` and `on_examples`,
-/// else the screen's contexts.
+/// per shared color. Tag reveals use `describe_tag` and `on_examples`, else
+/// the screen's contexts.
 #[component]
 pub fn SuggestionReasons(
     reasons: HttpSuggestionReasons,
@@ -78,7 +80,7 @@ pub fn SuggestionReasons(
                     class: if reasons_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
                     "\u{25b8}"
                 }
-                "Why this commander?"
+                {WHY}
             }
             div { class: if reasons_open() { "collapsible open" } else { "collapsible" },
                 div { class: "collapsible-inner", {bullets} }

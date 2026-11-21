@@ -473,8 +473,8 @@ pub(crate) fn BuilderProfileSections(
 
 /// The "Why this commander?" block under a suggestion's details, folded under
 /// its chip in a list row and in the swipe's card details alike, closed on
-/// mount, over the shared oracle tags grouped by card role (the card's own role-chip grammar)
-/// and one bullet per shared color, each omitted when empty. Renders nothing
+/// mount, over the shared oracle tags grouped by card role (the card's own
+/// role-chip grammar) and one bullet per shared color, each omitted when empty. Renders nothing
 /// at all when both are. A tapped tag shows its description and its examples
 /// button through `describe_tag` and `on_examples`; a host that leaves them
 /// unset gets the `OtagDescribe` and `OtagExamplesOpen` contexts the card rows
