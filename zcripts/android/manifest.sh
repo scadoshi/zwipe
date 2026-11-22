@@ -29,6 +29,11 @@
 #    rotates to landscape with the phone. The layout is built for portrait
 #    only, as iOS's UISupportedInterfaceOrientations in Dioxus.toml says.
 #
+# 5. <uses-feature android.hardware.screen.portrait required="false"> — a
+#    portrait lock makes Android infer that feature as required, and Play
+#    then blocks review (1.26.0 vc80) because it hides the app from devices
+#    that only report landscape. Marked optional, the lock still holds.
+#
 # dx REGENERATES AndroidManifest.xml on every `dx bundle`, so run this AFTER
 # `dx bundle` and BEFORE the Gradle repackage — the same window as
 # launcher_icons.sh and back_handler.sh. `patch_bundle.sh` runs all three.
@@ -91,9 +96,15 @@ else:
 if app_patched != app_tag:
     src = src.replace(app_tag, app_patched, 1)
 
+# 5. The portrait screen as an optional feature, so the lock above doesn't
+#    filter the app off landscape-only devices on Play.
+feature = '<uses-feature android:name="android.hardware.screen.portrait" android:required="false" />'
+if 'android.hardware.screen.portrait' not in src:
+    src = src.replace(app_patched, feature + "\n    " + app_patched, 1)
+
 open(path, "w").write(src)
 
-print("launchMode=singleTask, screenOrientation=portrait, allowBackup=false, configChanges=" + config_changes)
+print("launchMode=singleTask, screenOrientation=portrait (optional feature), allowBackup=false, configChanges=" + config_changes)
 PY
 
 echo "Patched MainActivity attributes into $MANIFEST"
