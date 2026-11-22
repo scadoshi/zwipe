@@ -1,0 +1,9 @@
+error: failed to run custom build command for `zwiper v1.24.0 (/home/scadoshi/composer-ship/zwiper)`
+
+Caused by:
+  process didn't exit successfully: `/home/scadoshi/composer-ship/target/debug/build/zwiper/f64f6e9b94857562/out/build_script_build` (exit status: 101)
+  --- stderr
+
+  thread 'main' (382110) panicked at zwiper/build.rs:17:29:
+  BACKEND_URL must be set in .env file
+  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

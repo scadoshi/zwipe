@@ -19,7 +19,7 @@ fn a_result_chip_hovers_as_the_other_chips_do() {
 fn the_glass_is_as_wide_as_the_store_icons_and_wears_the_web_app_s_class() {
     let css = include_str!("../assets/style.css");
     assert!(
-        css.contains("nav .card-search-nav {\n    --card-search-glass: 1.85rem;\n}"),
+        css.contains("nav .card-search-nav {\n    --card-search-glass: 2rem;\n}"),
         "zite tells the bar its glass is a store icon's width"
     );
     let source = include_str!("../src/components/card_search.rs");

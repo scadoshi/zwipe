@@ -64,6 +64,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web at phone width, a deck's Cards screen ends with the site footer",
         "On the web, every button in the top bar stands the same height",
         "On the web, Playstyle's Colors runs as tall as Summary beside it",
+        "On zwipe.net, the card search button stands as tall as the search box",
     ],
 }];
 

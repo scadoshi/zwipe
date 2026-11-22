@@ -1359,7 +1359,7 @@ html.js:not(.splash-skip).splash-over .splash {
 /* The glass wears the web app's nav icon class (GLASS_CLASS), so it takes
    the web app's header icon color, at a store icon's width. */
 nav .card-search-nav {
-    --card-search-glass: 1.85rem;
+    --card-search-glass: 2rem;
 }
 
 nav .card-search-label.nav-icon {
