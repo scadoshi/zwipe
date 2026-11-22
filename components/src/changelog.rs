@@ -179,6 +179,9 @@ pub fn Changelog(
     /// The client's own version, a chip beside the title; none on zite.
     #[props(default)]
     version: Option<String>,
+    /// Whether the title is the page's `h1`, for a page with no other heading.
+    #[props(default)]
+    title_h1: bool,
 ) -> Element {
     let selection = use_signal(|| Filter::Latest);
     // Every release starts open; a header or Collapse all shuts them.
@@ -187,7 +190,11 @@ pub fn Changelog(
         div { class: "settings-list about-panel changelog-panel",
             div { class: "settings-list-header",
                 div { class: "home-panel-header-title",
-                    span { class: "settings-list-title", {TITLE} }
+                    if title_h1 {
+                        h1 { class: "settings-list-title", {TITLE} }
+                    } else {
+                        span { class: "settings-list-title", {TITLE} }
+                    }
                     if let Some(version) = version {
                         span { class: "stat-chip", "{version}" }
                     }

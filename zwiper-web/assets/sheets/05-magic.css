@@ -1825,6 +1825,14 @@ i.ms.ms-cost.ms-gp {
     color: var(--ink-accent-primary, var(--accent-primary));
 }
 
+/* As a page's h1 the title drops a heading's margin and weight, so it reads
+   as the span it is elsewhere. */
+.changelog-panel h1.settings-list-title {
+    margin: 0;
+    font-weight: inherit;
+    line-height: inherit;
+}
+
 /* The version chip fits inside the title's line (0.75rem at 1.6 with 2px of
    padding is 25.2px against the title's 25.6px), so the header is one height
    with or without it, in every browser. */

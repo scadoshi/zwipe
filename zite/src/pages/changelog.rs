@@ -62,7 +62,7 @@ pub fn Changelog() -> Element {
         }
         Nav {}
         main { id: "content", class: "page content-enter",
-            ChangelogView { data, anchor: anchor(), link_versions: true, page_size: PAGE_SIZE }
+            ChangelogView { data, anchor: anchor(), link_versions: true, page_size: PAGE_SIZE, title_h1: true }
         }
         Footer {}
     }
