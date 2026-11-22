@@ -41,35 +41,36 @@ pub struct Release {
 /// submission day, not when review clears; until Apple and Google release
 /// it, a phone may still offer the version before. Compiled in, not
 /// served: each client reads its own copy.
-pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 9);
+pub const MOBILE_STORE_VERSION: Version = Version::new(1, 26, 0);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 26, 0),
-    date: None,
-    entries: &[
-        "On Android, the app no longer signs you out now and then after a restart",
-        "On Android, Send to, Oracle tag examples and the update screen show their header below the status bar",
-        "On Android, opening a card role in a deck's card list no longer leaves doubled pieces of the row behind",
-        "In the app, Commanders, a new screen with your commander maybeboard and suggested commanders",
-        "In the app, the Themes sheet no longer has a search",
-        "An expanded card row puts all its buttons on one line that wraps",
-        "In the Suggested swipe, Why this commander? opens inside the card's details instead of the footer",
-        "The Activity heatmap no longer draws a scroll bar over its cells",
-        "Playstyle's Summary puts each label above its pips and count, so nothing splits on a phone",
-        "Panels have squarer corners, and every chip and button shares one smaller corner whether or not you can tap it",
-        "On a narrow phone, Home's Decks header no longer cuts off its title",
-        "Dividers inside a panel no longer poke past its edge",
-        "On the web at phone width, a deck's Cards screen ends with the site footer",
-        "On the web, every button in the top bar stands the same height",
-        "On the web, Playstyle's Colors runs as tall as Summary beside it",
-        "On zwipe.net, the card search button stands as tall as the search box",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 26, 0),
+        date: NaiveDate::from_ymd_opt(2026, 11, 21),
+        entries: &[
+            "On Android, the app no longer signs you out now and then after a restart",
+            "On Android, Send to, Oracle tag examples and the update screen show their header below the status bar",
+            "On Android, opening a card role in a deck's card list no longer leaves doubled pieces of the row behind",
+            "In the app, Commanders, a new screen with your commander maybeboard and suggested commanders",
+            "In the app, the Themes sheet no longer has a search",
+            "An expanded card row puts all its buttons on one line that wraps",
+            "In the Suggested swipe, Why this commander? opens inside the card's details instead of the footer",
+            "The Activity heatmap no longer draws a scroll bar over its cells",
+            "Playstyle's Summary puts each label above its pips and count, so nothing splits on a phone",
+            "Panels have squarer corners, and every chip and button shares one smaller corner whether or not you can tap it",
+            "On a narrow phone, Home's Decks header no longer cuts off its title",
+            "Dividers inside a panel no longer poke past its edge",
+            "On the web at phone width, a deck's Cards screen ends with the site footer",
+            "On the web, every button in the top bar stands the same height",
+            "On the web, Playstyle's Colors runs as tall as Summary beside it",
+            "On zwipe.net, the card search button stands as tall as the search box",
+        ],
+    },
     Release {
         version: Version::new(1, 25, 0),
         date: NaiveDate::from_ymd_opt(2026, 11, 20),
