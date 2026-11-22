@@ -643,6 +643,12 @@ body {
         display: none !important;
     }
 
+    /* With no back arrow the bar keeps no slot for one: the card search sits
+       right after the Z as on zwipe.net, and moves over when an arrow shows. */
+    .web-app-nav .app-nav-back.nav-back-held {
+        display: none;
+    }
+
     /* The menu footer sits in the bar after the pills, one row of icons
        and Log out, with no band of its own. */
     .web-shell .nav-panel .nav-trailing {
