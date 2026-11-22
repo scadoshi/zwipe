@@ -13,7 +13,8 @@ use crate::inbound::shell::ScreenFrame;
 pub fn NotFound(segments: Vec<String>) -> Element {
     let _ = segments;
     rsx! {
-        ScreenFrame { title: "Page not found",
+        // The dead end's card names the page in its own h1.
+        ScreenFrame { title: "Page not found", titled: true,
             div { class: "screen-content",
                 DeadEnd {
                     title: "Page not found",
