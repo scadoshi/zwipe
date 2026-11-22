@@ -17,3 +17,6 @@ zite/assets/guides/_staging/
 
 # Scratch drafts, never committed
 _scratch/
+
+# Build and test logs from local runs
+*.log
