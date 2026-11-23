@@ -429,6 +429,14 @@ pub fn SwipeSelect(
     // The Refresh count the pile was last dealt at; `None` before the first.
     let mut dealt_at: Signal<Option<u32>> = use_signal(|| None);
     let mut refreshes = use_signal(|| 0u32);
+    // Whether this open has taken the host's `start_filter` yet. Apply and Refresh deal again
+    // within the same open, so they must keep the filter the user just applied.
+    let mut seeded = use_signal(|| false);
+    use_effect(move || {
+        if !open() {
+            seeded.set(false);
+        }
+    });
     // Every fresh open starts on Search: closing on Maybe parks its filter, takes back Search's
     // and deals afresh at the next open. A sheet or the details over the overlay keep it open, so
     // they keep Maybe.
@@ -577,12 +585,14 @@ pub fn SwipeSelect(
             return;
         }
         let refresh = refreshes();
-        // The host's filter is where the pile starts: a change since the last
-        // open deals again from the top.
+        // The host's filter is where the pile starts: on a fresh open, a change
+        // from the filter in place deals again from the top.
         let mut restart = false;
         if let Some(start) = start_filter
             && *source.peek() == Source::Search
+            && !*seeded.peek()
         {
+            seeded.set(true);
             let start = start.peek().clone();
             if *user_filter.peek() != start {
                 let mut user_filter = user_filter;
