@@ -86,7 +86,7 @@ jobs:
       - name: Install dioxus-cli
         # A prebuilt dx, matched to the workspace dioxus version, as in
         # deploy-zite.yml; compiling it would cost minutes.
-        uses: taiki-e/install-action@3a3daafd3b7f23b8f65d9f5ba2db203fb59b79e2 # v2
+        uses: taiki-e/install-action@75a7c0f87bd666af3cdb75c5b9e9d03ab6044e6f # v2
         with:
           tool: dioxus-cli@0.7.10
 
