@@ -6532,10 +6532,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Cares about or rewards you for controlling creatures of the Horror type.",
     ),
     (
-        "typal-multi-sea-monster",
-        "Cares about Krakens, Leviathans, Octopuses, and Serpents, sometimes Merfolk too.",
-    ),
-    (
         "karnstructs",
         "Creates 0/0 colorless Construct tokens that get +1/+1 for each artifact you control.",
     ),
@@ -17959,14 +17955,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "A Star Trek Test spell that has you choose one of two modes.",
     ),
     (
-        "repeatable-dilemma",
-        "Lets you choose among several modes again and again, each turn or activation.",
-    ),
-    (
-        "commander-lord",
-        "Makes the commanders you control stronger or harder to remove.",
-    ),
-    (
         "tutor-land-planet",
         "Searches your library for a basic land or Planet card.",
     ),
@@ -18035,6 +18023,46 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "cycle-trk-mission",
         "A one-color enchantment that gets a quest counter each time it triggers, with a bonus that grows once enough counters pile up.",
+    ),
+    (
+        "repeatable-modal-choice",
+        "Lets you choose among several modes again and again, each time it triggers or activates.",
+    ),
+    (
+        "gives-prismatic",
+        "Gives cards prismatic, so you can spend mana of any color to cast them.",
+    ),
+    (
+        "synergy-shard",
+        "Rewards you for having Shard tokens, enchantments you sacrifice to scry 1 and draw a card.",
+    ),
+    (
+        "typal-proto-sea-monster",
+        "Cares about Krakens, Leviathans, Octopuses, and Serpents, sometimes Merfolk too.",
+    ),
+    (
+        "typal-sea-monster",
+        "Cares about sea monsters: Krakens, Leviathans, Octopuses, Serpents, and Whales.",
+    ),
+    (
+        "gives-saboteur",
+        "Gives other creatures an ability that triggers when they deal combat damage to a player.",
+    ),
+    (
+        "charge-counters-matter",
+        "Puts charge counters on permanents or gets more from each charge counter they have.",
+    ),
+    (
+        "star-trek-episode-saga",
+        "A Saga named for a Star Trek episode, doing something new at each chapter.",
+    ),
+    (
+        "gives-teamwork",
+        "Lets you tap creatures with enough total power to help pay for your spells.",
+    ),
+    (
+        "synergy-pw-saheeli",
+        "Works with Saheeli planeswalkers, such as letting a Saheeli card be your second commander.",
     ),
 ];
 
