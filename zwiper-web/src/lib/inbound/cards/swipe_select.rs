@@ -577,9 +577,8 @@ pub fn SwipeSelect(
     });
 
     let commander_for_deal = commander;
-    // Deal on the first open and on Refresh. The suggested pile is read
-    // again on every open, since the host's own actions change it between
-    // opens; a commander pile is kept across a close.
+    // Deal on the first open and on Refresh. A pile is kept across a close, so
+    // reopening picks up where the user left off; Refresh deals a fresh one.
     use_effect(move || {
         if !open() {
             return;
