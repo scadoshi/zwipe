@@ -48,7 +48,10 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 26, 0);
 pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 26, 2),
     date: None,
-    entries: &["Swipe toasts say one short word, so a stack of them stays one width"],
+    entries: &[
+        "Swipe toasts say one short word, so a stack of them stays one width",
+        "Tag and keyword descriptions sit in soft bubbles instead of block quotes with a colored bar",
+    ],
 }];
 
 /// Shipped releases, newest first.
