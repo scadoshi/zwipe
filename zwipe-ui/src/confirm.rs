@@ -1,6 +1,6 @@
-//! The quiet chip's short word for a swipe's confirmation. The swipe screens
-//! confirm in a toast's full words ("Added to deck"); the chip says the
-//! short form ("Added"), so it stays quiet.
+//! The short word for a swipe's confirmation. The swipe screens name each
+//! confirmation in full ("Added to deck"); the quiet chip and the toast both
+//! say the short form ("Added"), so a stack of them stays close in width.
 
 use crate::screens::{add_cards, deck_cards, remove_cards, swipe_select};
 
@@ -25,7 +25,7 @@ pub fn chip_word(text: &str) -> &str {
         | remove_cards::UNDID_KEEP
         | remove_cards::UNDID_REMOVE
         | remove_cards::UNDID_MOVE
-        | swipe_select::UNSAVED => "Undone",
+        | swipe_select::UNSAVED => "Undid",
         picked if picked.ends_with(" selected") => "Picked",
         other => other,
     }
@@ -43,19 +43,19 @@ mod tests {
             (add_cards::ADDED_TO_DECK, "Added"),
             (add_cards::ADDED_TO_MAYBEBOARD, "Maybe"),
             (add_cards::ALREADY_ON_MAYBEBOARD, "Maybe"),
-            (add_cards::UNDID_SKIP, "Undone"),
-            (add_cards::UNDID_ADD, "Undone"),
-            (add_cards::UNDID_MAYBEBOARD, "Undone"),
-            (add_cards::UNDID_MOVE_TO_MAINBOARD, "Undone"),
+            (add_cards::UNDID_SKIP, "Undid"),
+            (add_cards::UNDID_ADD, "Undid"),
+            (add_cards::UNDID_MAYBEBOARD, "Undid"),
+            (add_cards::UNDID_MOVE_TO_MAINBOARD, "Undid"),
             (remove_cards::KEPT, "Kept"),
             (remove_cards::REMOVED, "Removed"),
             (remove_cards::MOVED_TO_MAYBEBOARD, "Maybe"),
             (deck_cards::MOVED_TO_MAINBOARD, "Main"),
-            (remove_cards::UNDID_KEEP, "Undone"),
-            (remove_cards::UNDID_REMOVE, "Undone"),
-            (remove_cards::UNDID_MOVE, "Undone"),
+            (remove_cards::UNDID_KEEP, "Undid"),
+            (remove_cards::UNDID_REMOVE, "Undid"),
+            (remove_cards::UNDID_MOVE, "Undid"),
             (swipe_select::SAVED, "Maybe"),
-            (swipe_select::UNSAVED, "Undone"),
+            (swipe_select::UNSAVED, "Undid"),
             ("Commander selected", "Picked"),
         ] {
             assert_eq!(chip_word(text), word, "{text}");

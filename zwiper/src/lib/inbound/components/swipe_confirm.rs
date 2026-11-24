@@ -1,6 +1,7 @@
 //! What a swipe screen says after a swipe, as the user's swipe
 //! confirmations setting has it: the last action's short word in a quiet
-//! chip at the screen's top left, a toast for each in full, or nothing.
+//! chip at the screen's top left, a toast with that word for each, or
+//! nothing. The short words keep stacked toasts close in width.
 
 use components::Toasts;
 use dioxus::prelude::*;
@@ -15,7 +16,7 @@ use crate::inbound::components::ui_toast;
 pub(crate) type Said = Signal<Option<(u32, String)>>;
 
 /// Confirms a swipe's `toast` as the session's setting says: its short word
-/// in the screen's chip (`said`), the toast itself, or nothing.
+/// in the screen's chip (`said`), a toast saying that word, or nothing.
 pub(crate) fn confirm(
     session: Signal<Option<Session>>,
     toasts: Toasts,
@@ -31,7 +32,12 @@ pub(crate) fn confirm(
             let count = said.peek().as_ref().map_or(0, |(n, _)| n.wrapping_add(1));
             said.set(Some((count, toast.chip_word().to_owned())));
         }
-        SwipeConfirmations::Toasts => ui_toast::raise(toasts, toast),
+        SwipeConfirmations::Toasts => {
+            let word = toast.chip_word().to_owned();
+            let mut short = toast;
+            short.text = word;
+            ui_toast::raise(toasts, short);
+        }
         SwipeConfirmations::Off => {}
     }
 }

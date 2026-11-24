@@ -1,6 +1,7 @@
 //! What a swipe screen says after a swipe, as the user's swipe
 //! confirmations setting has it: the last action's short word in a quiet
-//! chip at the screen's top left, a toast for each in full, or nothing.
+//! chip at the screen's top left, a toast with that word for each, or
+//! nothing. The short words keep stacked toasts close in width.
 
 use std::time::Duration;
 
@@ -48,24 +49,24 @@ impl PartialEq for SwipeConfirm {
 impl SwipeConfirm {
     /// Confirms a neutral action: skipped, kept, moved, undone.
     pub fn info(self, text: impl Into<String>) {
-        self.say(Tone::Info, text.into(), None, TOAST_QUICK);
+        self.say(Tone::Info, &text.into(), None, TOAST_QUICK);
     }
 
     /// Confirms an action that changed the deck: added, removed, picked.
     pub fn success(self, text: impl Into<String>) {
-        self.say(Tone::Success, text.into(), None, TOAST_QUICK);
+        self.say(Tone::Success, &text.into(), None, TOAST_QUICK);
     }
 
     /// [`Self::success`] with `chip` in the quiet chip in place of the text's
     /// own word.
     pub fn success_as(self, text: impl Into<String>, chip: &'static str) {
-        self.say(Tone::Success, text.into(), Some(chip), TOAST_QUICK);
+        self.say(Tone::Success, &text.into(), Some(chip), TOAST_QUICK);
     }
 
     /// [`Self::success`], its toast up for `lasting` rather than the quick
     /// band.
     pub fn success_for(self, text: impl Into<String>, lasting: Duration) {
-        self.say(Tone::Success, text.into(), None, lasting);
+        self.say(Tone::Success, &text.into(), None, lasting);
     }
 
     /// Updates the chip with `text` in chip mode, and raises no toast in any
@@ -96,19 +97,20 @@ impl SwipeConfirm {
         said.set(Some((count, word.to_owned())));
     }
 
-    fn say(self, tone: Tone, text: String, chip: Option<&'static str>, lasting: Duration) {
+    fn say(self, tone: Tone, text: &str, chip: Option<&'static str>, lasting: Duration) {
         let setting = self
             .session
             .peek()
             .as_ref()
             .map_or_default(|s| s.settings.swipe_confirmations);
         match setting {
-            SwipeConfirmations::Chip => self.set_chip(&text, chip),
+            SwipeConfirmations::Chip => self.set_chip(text, chip),
             SwipeConfirmations::Toasts => {
+                let word = chip.unwrap_or_else(|| chip_word(text)).to_owned();
                 let options = ToastOptions::default().duration(lasting);
                 match tone {
-                    Tone::Success => self.toast.success(text, options),
-                    Tone::Info => self.toast.info(text, options),
+                    Tone::Success => self.toast.success(word, options),
+                    Tone::Info => self.toast.info(word, options),
                 }
             }
             SwipeConfirmations::Off => {}
