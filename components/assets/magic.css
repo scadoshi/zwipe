@@ -70,7 +70,7 @@
     margin: var(--space-1) 0 0;
     padding: var(--panel-pad);
     border-radius: var(--chip-radius);
-    background-color: var(--bg-sink);
+    background-color: color-mix(in srgb, var(--text-primary) 6%, transparent);
     font-size: 0.75rem;
     line-height: 1.4;
     color: var(--ink-accent-tertiary, var(--accent-tertiary));
@@ -1080,12 +1080,15 @@ i.ms.ms-cost.ms-gp {
     color: var(--ink-palette-1, var(--palette-1));
 }
 
-/* A role's exposed otags in a sunken bubble, like .keyword-reveal-text. */
+/* A role's exposed otags in a bubble, like .keyword-reveal-text. Each bubble is
+   a faint wash of the text color over whatever it sits on, so it shows on a
+   panel, a sheet or a drawer, in light themes and dark, and a bubble inside
+   another stacks a second wash and reads one level deeper. */
 .otag-reveal-block {
     margin-top: var(--space-1);
     padding: var(--panel-pad);
     border-radius: var(--chip-radius);
-    background-color: var(--bg-sink);
+    background-color: color-mix(in srgb, var(--text-primary) 6%, transparent);
 }
 
 .otag-reveal-block .card-detail-otags {
@@ -1096,9 +1099,8 @@ i.ms.ms-cost.ms-gp {
     margin-bottom: 0;
 }
 
-/* One exposed tag's definition, telescoped under it, in a sunken bubble. Inside
-   a role's bubble it takes the panel's color back, so each level alternates
-   between the two fills and reads as its own layer without a border. */
+/* One exposed tag's definition, telescoped under it, in a bubble like
+   .otag-reveal-block's. */
 .otag-def {
     display: flex;
     flex-direction: column;
@@ -1107,11 +1109,7 @@ i.ms.ms-cost.ms-gp {
     margin-top: var(--space-2);
     padding: var(--panel-pad);
     border-radius: var(--chip-radius);
-    background-color: var(--bg-sink);
-}
-
-.otag-reveal-block .otag-def {
-    background-color: var(--bg-primary);
+    background-color: color-mix(in srgb, var(--text-primary) 6%, transparent);
 }
 
 .otag-def-text {
