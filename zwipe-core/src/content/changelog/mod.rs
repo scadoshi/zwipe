@@ -50,6 +50,16 @@ pub const UPCOMING: &[Release] = &[];
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
     Release {
+        version: Version::new(1, 26, 1),
+        date: NaiveDate::from_ymd_opt(2026, 11, 23),
+        entries: &[
+            "Toasts of different lengths no longer stretch or squeeze each other, and a stack eases to its new width",
+            "On the web, Apply in the Suggested swipe keeps the filter you picked",
+            "On the web, the top bar no longer leaves an empty space before the card search on wide windows",
+            "Ten new Oracle tags have descriptions",
+        ],
+    },
+    Release {
         version: Version::new(1, 26, 0),
         date: NaiveDate::from_ymd_opt(2026, 11, 21),
         entries: &[
