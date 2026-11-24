@@ -71,8 +71,9 @@
 }
 
 /* Collapsed, the older toasts line up behind the newest: each adds nothing to
-   the stack's width and takes the newest's, so a longer one wraps rather than
-   poking out to the right. */
+   the stack's width and takes the newest's. A longer one keeps to one line and
+   trails off rather than poking out to the right or growing taller, since only
+   a sliver of it shows. */
 .toast-container:not(.expanded) li:not(:first-child) {
     width: 0;
     min-width: 100%;
@@ -224,8 +225,9 @@
     margin-right: var(--space-2);
 }
 
-/* A message shows whole, wrapped over as many lines as it needs, collapsed
-   or not. A URL or any other unbroken run breaks wherever it has to. */
+/* The newest message, and every message expanded, shows whole, wrapped over as
+   many lines as it needs. A URL or any other unbroken run breaks wherever it
+   has to. */
 .toast-container [role="alertdialog"] [id$="-label"] {
     margin-bottom: var(--space-1);
     color: var(--text-primary);
@@ -236,6 +238,17 @@
     /* Center so any ragged trailing space on wrapped lines is symmetric,
        not dumped on the right edge next to the close button. */
     text-align: center;
+}
+
+/* An older toast in the collapsed stack, and a one-line message while its
+   toast eases to a new width (toast-width.js), stays on one line. */
+.toast-container:not(.expanded) li:not(:first-child) [id$="-label"],
+.toast-container:not(.expanded) li:not(:first-child) [id$="-description"],
+.toast-container .toast-easing [id$="-label"],
+.toast-container .toast-easing [id$="-description"] {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .toast-container [role="alertdialog"] [id$="-description"] {
