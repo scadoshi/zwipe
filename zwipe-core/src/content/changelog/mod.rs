@@ -45,17 +45,18 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 26, 0);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 26, 2),
-    date: None,
-    entries: &[
-        "Swipe toasts say one short word, so a stack of them stays one width",
-        "Tag and keyword descriptions sit in soft bubbles instead of block quotes with a colored bar",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 26, 2),
+        date: NaiveDate::from_ymd_opt(2026, 11, 23),
+        entries: &[
+            "Swipe toasts say one short word, so a stack of them stays one width",
+            "Tag and keyword descriptions sit in soft bubbles instead of block quotes with a colored bar",
+        ],
+    },
     Release {
         version: Version::new(1, 26, 1),
         date: NaiveDate::from_ymd_opt(2026, 11, 23),
