@@ -8,7 +8,7 @@
 //!
 //! dx bundles only files inside this crate, so the shared sheets (orangui's
 //! and components', the fonts' among them) are copied into `assets/sheets`, and a test keeps each
-//! copy equal to the string it copies. `tools/gate.sh` rewrites the copies
+//! copy equal to the string it copies. `zcripts/web/gate.sh` rewrites the copies
 //! and stops until they are committed; by hand, after a change to one of them
 //! or a `cargo update -p orangui`, run
 //! `ZWIPE_UPDATE_SHEETS=1 cargo test -p zwiper-web sheets`.
