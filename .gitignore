@@ -20,3 +20,4 @@ _scratch/
 
 # Build and test logs from local runs
 *.log
+__pycache__/

@@ -2,6 +2,21 @@
 
 Everything for running zwipe on your own machine: setting the machine up, filling a local database, and running the whole stack. Every script here works on local databases only.
 
+## What's here
+
+| File | What it does |
+|---|---|
+| `setup_macos.sh`, `setup_omarchy.sh`, `setup_ubuntu.sh` | Set up a new machine, one per platform |
+| `setup_macos.md`, `setup_omarchy.md`, `setup_ubuntu.md` | Each platform's guide: packages, prerequisites, gotchas |
+| `reset_macos.sh`, `reset_omarchy.sh`, `reset_ubuntu.sh` | Wipe the local `zerver` database back to a clean, migrated state |
+| `up.sh`, `down.sh` | Start and stop the local stack |
+| `stack_common.sh` | What `up.sh` and `down.sh` share: ports, work dir, which database to copy |
+| `drive.mjs`, `login.json` | Drive Chrome for the verify skill, and the sign-in steps it replays |
+| `seed.sh` | Seed a local database, running `seed.sql` (the accounts, decks and cards) and `seed_reset.sql` (removes them) |
+| `seed_activity.sh`, `seed_activity.sql` | Give one account a busy year of Activity |
+| `guard.sh` | Refuses any database that isn't on this machine; every seed script runs it first |
+| `stack_common_test.sh`, `drive_test.sh`, `guard_test.sh`, `seed_stdin_test.sh` | Tests for the scripts above; run them after changing one |
+
 ## Set up a machine
 
 Start with the guide for your platform: [macOS](setup_macos.md), [Omarchy](setup_omarchy.md) or [Ubuntu](setup_ubuntu.md).

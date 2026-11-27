@@ -39,6 +39,7 @@ It uses the verify skill's template lookup and the seed's local-only guard, so i
   ```json
   { "data": "printings", "oracle_ids": "*", "reason": "tied printings pick by collector number (578)", "approved_by": "composer" }
   ```
+- `replay.mjs`: sends each step to both servers and hands the pairs of replies to the comparison. `run.sh` calls it.
 - `lib.mjs` and `lib.test.mjs`: the comparison, tested with `node --test zcripts/wire-diff/lib.test.mjs`.
 
 Added response fields need an entry too, so every wire change is written down once, even the safe kind.
