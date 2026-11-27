@@ -55,6 +55,7 @@ pub const RELEASES: &[Release] = &[
         entries: &[
             "Pick a printing in a card's Printings, and Send to sends that printing",
             "On the web, a card's page on a wide window scrolls as one page, with the whole card always in view",
+            "The swipe screens show the card's stats: beside the card on a wide window, folded at the end of its details otherwise",
             "Two new Oracle tags have descriptions",
         ],
     },
