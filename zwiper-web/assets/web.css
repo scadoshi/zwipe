@@ -3140,7 +3140,7 @@ body {
         grid-template-columns: var(--web-dock-panel-width) minmax(0, 1fr) var(--web-dock-panel-width);
         align-items: start;
         max-width: none;
-        padding: var(--space-4) 1rem 5rem;
+        padding: var(--space-4) var(--space-4) 5rem;
         overflow: visible;
     }
 

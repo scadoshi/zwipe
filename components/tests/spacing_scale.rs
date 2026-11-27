@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 /// Lengths off the scale on purpose: (the sheet's path from the workspace root, the
 /// declaration's property, the length, why).
-const ALLOWED: [(&str, &str, &str, &str); 17] = [
+const ALLOWED: [(&str, &str, &str, &str); 18] = [
     (
         "components/assets/screens/base.css",
         "--content-pad-bottom",
@@ -70,6 +70,12 @@ const ALLOWED: [(&str, &str, &str, &str); 17] = [
         "padding-bottom",
         "5rem",
         "the deck page's room for its dock",
+    ),
+    (
+        "zwiper-web/assets/web.css",
+        "padding",
+        "5rem",
+        "the card page's room for its dock under the columns",
     ),
     (
         "components/assets/magic.css",
