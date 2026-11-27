@@ -41,6 +41,10 @@ fn compiled_line() -> String {
         .chain(&compiled.releases)
         .find_map(|release| release.entries.first().cloned())
         .unwrap()
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('\'', "&#39;")
 }
 
 #[derive(Clone, PartialEq, Props)]
