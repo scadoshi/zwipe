@@ -11,8 +11,8 @@ use std::collections::HashSet;
 
 use components::icons::{DockIcon, SEND, ShareIcon};
 use components::{
-    CardDetailsPanel, CardDetailsPanelSkeleton, CardResultsGrid, CardStatsWidget,
-    FlippableCardImage, LoadFailed, SendTo, Toasts, use_toast,
+    CardDetailsPanel, CardDetailsPanelSkeleton, CardResultsGrid, CardStatsList, FlippableCardImage,
+    LoadFailed, SendTo, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -23,9 +23,7 @@ use zwipe_core::domain::card::models::search_card::commander_eligibility;
 use zwipe_core::domain::card::scryfall_data::image_uris::ImageSize;
 use zwipe_core::domain::deck::models::format::Format;
 use zwipe_ui::screens::add_cards;
-use zwipe_ui::screens::card_lookup::{
-    self, Action, CardStats, Destination, Effect, Open, State, Status,
-};
+use zwipe_ui::screens::card_lookup::{self, Action, Destination, Effect, Open, State, Status};
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -222,10 +220,6 @@ fn CardScreen(open: Open) -> Element {
         (Status::One, Some(card)) => {
             let sd = card.scryfall_data.clone();
             let leads = commander_eligibility::is_valid_commander(&card, &Format::Commander);
-            let loaded = match stats {
-                CardStats::Loaded(counts) => Some(counts),
-                CardStats::Loading | CardStats::Failed => None,
-            };
             rsx! {
                 div { class: "screen-content content-enter card-page",
                     div { class: "card-page-image",
@@ -239,19 +233,11 @@ fn CardScreen(open: Open) -> Element {
                         on_printings: move |()| printings_open.set(true),
                     }
                     div { class: "card-page-stats",
-                        if matches!(stats, CardStats::Failed) {
-                            LoadFailed {
-                                message: "Couldn't load the card's stats",
-                                on_retry: move |()| dispatch(Action::RetryStats),
-                            }
-                        } else {
-                            for widget in card_lookup::stats::widgets(loaded.as_ref(), leads) {
-                                CardStatsWidget {
-                                    key: "{widget.title}",
-                                    widget,
-                                    folded: stats_folded,
-                                }
-                            }
+                        CardStatsList {
+                            stats,
+                            leads,
+                            folded: stats_folded,
+                            on_retry: move |()| dispatch(Action::RetryStats),
                         }
                     }
                 }

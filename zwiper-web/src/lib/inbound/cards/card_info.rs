@@ -1,6 +1,6 @@
 //! A swipe card's full details in the drawer behind the dock's eye.
 
-use components::CardDetailsSheet as SharedDetailsSheet;
+use components::{CardDetailsSheet as SharedDetailsSheet, CardStatsFolds};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 
@@ -21,7 +21,8 @@ pub(crate) const THROUGH_DRAWER_KEYS: [&str; 2] = ["v", "V"];
 /// Escape or the back gesture. The panel's foot has `Flip` for a
 /// multi-faced card, `Image` when the host passes `on_image` (called with
 /// the shown face) and the card has art, and a `Printings` pill when the
-/// host passes `on_printings`, as the wide pane does. `class` names the drawer, and a
+/// host passes `on_printings`, as the wide pane does. The body ends with the
+/// card's stats, every fold shut at first, fetched as the drawer opens. `class` names the drawer, and a
 /// host that adds its own class keeps `card-details-drawer` in it. Swapping
 /// to another card or face while open crossfades. Mount it at
 /// the screen root beside the printing sheet.
@@ -38,6 +39,7 @@ pub fn CardDetailsSheet(
     #[props(default)] on_face_change: Option<EventHandler<usize>>,
 ) -> Element {
     let describe_tag = use_describe_tag();
+    let stats_card = card.clone();
     rsx! {
         SharedDetailsSheet {
             open,
@@ -45,7 +47,12 @@ pub fn CardDetailsSheet(
             on_image,
             on_printings,
             footer,
-            body_end,
+            body_end: rsx! {
+                {body_end}
+                div { class: "card-details-stats",
+                    CardStatsFolds { card: stats_card, active: open() }
+                }
+            },
             class,
             face,
             on_face_change,

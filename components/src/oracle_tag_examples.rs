@@ -22,12 +22,13 @@ use crate::card_skeleton::CardSkeleton;
 use crate::details_eye::{DockEye, Surface, use_details_eye};
 use crate::hint::{ContentHintDialog, guide_for_one_time};
 use crate::keys::{ShortcutsList, use_offer_shortcuts, use_page_keys};
+use crate::media::{STATS_COLUMN_PX, use_min_width, use_wide};
 use crate::swipe_stack::{
     self, Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::{
-    CardDetailsPanel, CardDetailsPanelSkeleton, CardDetailsSheet, PageHeader, PrintingSheet,
-    use_overlay_back,
+    CardDetailsPanel, CardDetailsPanelSkeleton, CardDetailsSheet, CardStatsFolds, PageHeader,
+    PrintingSheet, StatsPlace, use_overlay_back,
 };
 
 /// One page of a tag's examples the screen asks its host for: the tag's slug, how many examples
@@ -198,10 +199,11 @@ pub fn OracleTagExamples(
         Swipe::Right | Swipe::Up => {}
     };
 
-    let (current, window, entering, past_end, empty) = {
+    let (current, next, window, entering, past_end, empty) = {
         let s = stack.read();
         (
             s.current().cloned(),
+            s.next().cloned(),
             s.window().to_vec(),
             s.entering(),
             !s.is_empty() && s.index() >= s.len(),
@@ -210,6 +212,10 @@ pub fn OracleTagExamples(
     };
 
     let has_card = current.is_some();
+    // From the stats column's width the card's stats stand at the left of the card; narrower,
+    // they end the docked details, or the drawer below the wide layout.
+    let docked = use_wide();
+    let column = use_min_width(STATS_COLUMN_PX);
 
     rsx! {
         div {
@@ -252,13 +258,23 @@ pub fn OracleTagExamples(
                         }
                     }
                 }
+                if let Some(card) = current.clone().filter(|_| column()) {
+                    div { class: "web-card-stats web-swipe-stats",
+                        CardStatsFolds { card, place: StatsPlace::Column, next }
+                    }
+                }
                 if let Some(card) = current.clone() {
                     div { class: "web-examples-details",
                         CardDetailsPanel {
                             key: "{card.scryfall_data.id}",
-                            card,
+                            card: card.clone(),
                             describe_tag,
                             on_printings: move |()| printing_open.set(true),
+                            body_end: (docked() && !column()).then(|| rsx! {
+                                div { class: "card-details-stats",
+                                    CardStatsFolds { card }
+                                }
+                            }),
                         }
                     }
                 } else if loading() || (empty && loading_more()) {
@@ -284,6 +300,11 @@ pub fn OracleTagExamples(
                     card: card.clone(),
                     on_printings: move |()| printing_open.set(true),
                     describe_tag,
+                    body_end: rsx! {
+                        div { class: "card-details-stats",
+                            CardStatsFolds { card: card.clone(), active: show_details() }
+                        }
+                    },
                 }
                 PrintingSheet {
                     card,

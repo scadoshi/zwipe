@@ -41,7 +41,7 @@ use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 use zwipe_ui::write_repeat::WriteKey;
 use zwipe_ui::{deck_cards, filter};
 
-use super::{OneLine, SwipeDetails};
+use super::{OneLine, SwipeDetails, SwipeStats};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::{CardStores, Restore};
 use crate::inbound::cards::card_info::CardDetailsSheet;
@@ -707,6 +707,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     ));
 
     let current = stack.read().current_wrapping().cloned();
+    let next = stack.read().next_wrapping().cloned();
     let (window, entering) = {
         let s = stack.read();
         (s.window().to_vec(), s.entering())
@@ -760,6 +761,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         }
                     }
                 }
+                SwipeStats { card: current.clone(), next }
                 SwipeDetails {
                     card: current.clone(),
                     on_printings: move |()| printing_open.set(true),

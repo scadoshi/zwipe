@@ -49,6 +49,7 @@ pub fn use_session_upkeep() -> UpgradeRequired {
     // A logout the server never heard goes again before anything else needs the cookie.
     crate::inbound::session::logout::use_pending_logout(client);
     crate::inbound::cards::meld::use_meld_source(client);
+    crate::inbound::cards::card_stats::use_card_stats_source(client);
     components::use_printings_face_root();
 
     let theme: Signal<ThemeConfig> = use_signal(|| {

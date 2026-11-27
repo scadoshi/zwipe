@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use components::{
-    CardDetailsCost, CardDetailsPanel, DrawerSheet, GhostCard, OpenFocus, share_face, use_meld,
-    use_overlay_back, use_shared_face,
+    CardDetailsCost, CardDetailsPanel, CardStatsFolds, DrawerSheet, GhostCard, OpenFocus,
+    share_face, use_meld, use_overlay_back, use_shared_face,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -35,7 +35,9 @@ pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
 /// host's `footer` in its foot, its body scrolling under the title bar. The host opens it through the shared
 /// `open` signal. It closes from its title bar's ×, a backdrop tap or the
 /// back gesture. The panel's foot has Flip for a multi-faced card and, with
-/// `on_printings`, a Printings pill, as the web's pane does.
+/// `on_printings`, a Printings pill, as the web's pane does. The body ends
+/// with the card's stats, every fold shut at first, fetched as the drawer
+/// opens.
 ///
 /// Printings leaves this drawer open: the host's printing sheet draws over
 /// it, and the host closes this one too when a printing is saved. Mount it
@@ -72,6 +74,7 @@ pub(crate) fn CardDetailsSheet(
     let meld = use_meld(&card.scryfall_data);
     let title_card = meld.apply(&card);
     let name = title_card.scryfall_data.name.clone();
+    let stats_card = card.clone();
     rsx! {
         DrawerSheet {
             layer: layer(),
@@ -93,7 +96,12 @@ pub(crate) fn CardDetailsSheet(
                 describe_tag: Some(describe_tag),
                 on_printings,
                 footer,
-                body_end,
+                body_end: rsx! {
+                    {body_end}
+                    div { class: "card-details-stats",
+                        CardStatsFolds { card: stats_card, active: open() }
+                    }
+                },
                 on_face_change: share_face(faces, id),
             }
         }

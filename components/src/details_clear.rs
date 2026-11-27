@@ -3,8 +3,9 @@
 //! On a wide window the card's details dock at the right as a fixed panel. When the shown panel
 //! would lie over the card and the room left of the card fits it clear, the card slides left just
 //! far enough to clear the panel, on the panel's own easing; with too little room it stays where
-//! it is and the panel lies over it, and a panel that misses the card moves nothing. Hidden, the
-//! card slides back. The surfaces are the web's: Add, Remove, Commander swipe and the Oracle tag
+//! it is and the panel lies over it, and a panel that misses the card moves nothing. The room
+//! left of the card ends at the stats column where one stands at the left. Hidden, the card
+//! slides back. The surfaces are the web's: Add, Remove, Commander swipe and the Oracle tag
 //! examples.
 
 use dioxus::prelude::*;
@@ -68,7 +69,11 @@ if (!window.__zwipeDetailsClear) {
                     const right = c.right - at;
                     const panelLeft = panel.getBoundingClientRect().left - offsetX(panel, 'transform');
                     const need = right - (panelLeft - gap);
-                    const room = left - (body.getBoundingClientRect().left + gap);
+                    const stats = body.querySelector('.web-swipe-stats');
+                    const floor = stats && getComputedStyle(stats).position === 'fixed'
+                        ? stats.getBoundingClientRect().right
+                        : body.getBoundingClientRect().left;
+                    const room = left - (floor + gap);
                     if (need > 0 && room >= need) shift = -need;
                 }
                 const next = shift ? `${shift}px 0` : '';

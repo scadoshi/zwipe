@@ -50,6 +50,9 @@ pub const SWIPES: &str = "Swipes";
 /// The card as a commander.
 pub const AS_COMMANDER: &str = "As a commander";
 
+/// The line in the widgets' place when the card's stats failed to load.
+pub const LOAD_FAILED: &str = "Couldn't load the card's stats";
+
 /// The widgets for a card, `leads` when it can lead a Commander deck, over its `stats`, or every
 /// figure [`Cell::Loading`] while they haven't arrived.
 #[must_use]

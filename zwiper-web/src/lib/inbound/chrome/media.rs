@@ -2,7 +2,7 @@
 //! window changes what a screen does and not only how it looks.
 
 pub use components::{
-    COMPUTER_QUERY, KIT_MODAL_PX, WIDE_PX, use_computer, use_min_width, use_wide,
+    COMPUTER_QUERY, KIT_MODAL_PX, STATS_COLUMN_PX, WIDE_PX, use_computer, use_min_width, use_wide,
 };
 
 /// The widest window whose header folds behind the hamburger. The full bar
@@ -85,6 +85,20 @@ mod tests {
             .expect("the chips' rule in that band");
         let chips = chips.get(..chips.find('}').unwrap()).unwrap();
         assert!(chips.contains("var(--web-nav-h"), "{chips}");
+    }
+
+    #[test]
+    fn the_stats_column_stands_at_the_left_from_its_breakpoint() {
+        let column = rule_in(
+            &format!("@media (min-width: {STATS_COLUMN_PX}px) {{"),
+            ".web-card-stats.web-swipe-stats",
+        );
+        assert!(column.contains("position: fixed"), "{column}");
+        assert!(column.contains("left: 1rem"), "{column}");
+        assert!(
+            column.contains("width: var(--web-dock-panel-width)"),
+            "the details panel's width: {column}"
+        );
     }
 
     /// The body of `selector`'s rule inside the block that opens with `query`.

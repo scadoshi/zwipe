@@ -2164,6 +2164,35 @@ body {
     }
 }
 
+/* ---- The card's stats on a wide window ----
+
+   From 1280px (media.rs's STATS_COLUMN_PX), where two docked panels and the
+   card fit side by side, the swipe screens stand the card's stats in a
+   column at the left as the card page does: the details panel's mirror,
+   inset as far from the left edge, as wide and as tall, ending above the
+   bottom row and scrolling inside itself. Narrower, the stats end the
+   card's details. */
+@media (min-width: 1280px) {
+    .web-card-stats.web-swipe-stats {
+        position: fixed;
+        top: var(--web-dock-panel-top);
+        left: 1rem;
+        z-index: 40;
+        width: var(--web-dock-panel-width);
+        max-width: none;
+        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        box-sizing: border-box;
+    }
+
+    /* The examples' modal is the column's containing block, as it is the
+       details panel's, so the column is capped to the modal's height. */
+    .web-examples .web-card-stats.web-swipe-stats {
+        max-height: calc(100% - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+    }
+}
+
 /* ---- Swipe screens on a wide window ----
 
    Swipe select sits under the nav as Add does: the nav names it, carries

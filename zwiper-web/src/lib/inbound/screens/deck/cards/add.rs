@@ -54,7 +54,7 @@ use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 use zwipe_ui::timing::{LOAD_MORE_AT, PILE_REVEAL_FALLBACK};
 use zwipe_ui::write_repeat::{self, WriteKey, Written};
 
-use super::{OneLine, SwipeDetails};
+use super::{OneLine, SwipeDetails, SwipeStats};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{
@@ -1020,6 +1020,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         AddSource::Search => stack.read().current().filter(|_| reveal.is_none()).cloned(),
         AddSource::Maybeboard => mb_stack.read().current_wrapping().cloned(),
     };
+    let next: Option<Card> = match at {
+        AddSource::Search => stack.read().next().filter(|_| reveal.is_none()).cloned(),
+        AddSource::Maybeboard => mb_stack.read().next_wrapping().cloned(),
+    };
     let has_current = current.is_some();
     let can_undo = match at {
         AddSource::Search => stack.read().has_history(),
@@ -1280,6 +1284,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         }
                     }
                 }
+                SwipeStats { card: current.clone(), next }
                 SwipeDetails {
                     card: current.clone(),
                     faces,

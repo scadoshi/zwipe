@@ -8,6 +8,8 @@ pub mod accordion;
 pub mod auth;
 /// The card search's lookup, signed in with a fresh session or signed out.
 pub mod card_search;
+/// The cards' stats the card details drawer shows.
+pub mod card_stats_source;
 /// App-wide cache of slow-changing filter catalogs (artists, sets, oracle tags…).
 pub mod catalog_cache;
 /// Generation counter that keeps a stale async reply from landing over a newer one.

@@ -7,6 +7,11 @@ use uuid::Uuid;
 /// The width at which the layout leaves the phone's: the stylesheet's wide breakpoint.
 pub const WIDE_PX: u32 = 900;
 
+/// The narrowest window whose swipe screens show the card's stats in a column at the left of the
+/// card, as the card page does: two docked panels (24rem each, an inset of 1rem) and the card at
+/// its widest between them. Narrower, the stats end the card's details.
+pub const STATS_COLUMN_PX: u32 = 1280;
+
 /// The width, 60rem, from which the kit draws a sheet form as a modal.
 pub const KIT_MODAL_PX: u32 = 960;
 

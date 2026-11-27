@@ -14,8 +14,8 @@ use std::collections::HashSet;
 
 use components::icons::{DockIcon, SEND, ShareIcon};
 use components::{
-    CardDetailsPanel, CardDetailsPanelSkeleton, CardResultsGrid, CardStatsWidget,
-    FlippableCardImage, LoadFailed, SendTo, USER_PLUS, focus_card_search,
+    CardDetailsPanel, CardDetailsPanelSkeleton, CardResultsGrid, CardStatsList, FlippableCardImage,
+    LoadFailed, SendTo, USER_PLUS, focus_card_search,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -28,9 +28,7 @@ use zwipe_core::domain::card::models::search_card::commander_eligibility;
 use zwipe_core::domain::card::scryfall_data::image_uris::ImageSize;
 use zwipe_core::domain::deck::models::format::Format;
 use zwipe_ui::screens::add_cards::PRINTING_SWAPPED;
-use zwipe_ui::screens::card_lookup::{
-    self, Action, Ask, CardStats, Destination, Effect, Open, State, Status,
-};
+use zwipe_ui::screens::card_lookup::{self, Action, Ask, Destination, Effect, Open, State, Status};
 use zwipe_ui::telemetry::vocabulary::Screen;
 
 use crate::inbound::cards::otag::{
@@ -261,24 +259,11 @@ fn CardScreen(open: Open, ask: Option<Ask>, printing: Option<Uuid>) -> Element {
                         }
                     }
                     div { class: "web-card-stats",
-                        match stats {
-                            CardStats::Failed => rsx! {
-                                LoadFailed {
-                                    message: "Couldn't load the card's stats",
-                                    on_retry: move |()| dispatch(Action::RetryStats),
-                                }
-                            },
-                            CardStats::Loading | CardStats::Loaded(_) => {
-                                let loaded = match stats {
-                                    CardStats::Loaded(counts) => Some(counts),
-                                    CardStats::Loading | CardStats::Failed => None,
-                                };
-                                rsx! {
-                                    for widget in card_lookup::stats::widgets(loaded.as_ref(), leads) {
-                                        CardStatsWidget { key: "{widget.title}", widget, folded: stats_folded }
-                                    }
-                                }
-                            }
+                        CardStatsList {
+                            stats,
+                            leads,
+                            folded: stats_folded,
+                            on_retry: move |()| dispatch(Action::RetryStats),
                         }
                     }
                 }

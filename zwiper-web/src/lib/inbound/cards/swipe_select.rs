@@ -78,7 +78,7 @@ use crate::inbound::chrome::authed::{Authed, use_authed};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
 use crate::inbound::chrome::shortcuts::{self, SELECT_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::{use_global_keys, use_offer_shortcuts};
-use crate::inbound::screens::deck::cards::SwipeDetailsPanel;
+use crate::inbound::screens::deck::cards::{SwipeDetailsPanel, SwipeStats};
 use crate::inbound::screens::playstyle::SuggestionReasons;
 use crate::inbound::shell::{WebFooter, use_overlay_nav};
 use crate::inbound::telemetry;
@@ -1009,9 +1009,14 @@ fn SwipeSelectBody(
         on_decision((swipe, card));
     };
 
-    let (window, current, entering) = {
+    let (window, current, next, entering) = {
         let s = stack.read();
-        (s.window().to_vec(), s.current().cloned(), s.entering())
+        (
+            s.window().to_vec(),
+            s.current().cloned(),
+            s.next().cloned(),
+            s.entering(),
+        )
     };
     let reasons = current.as_ref().and_then(|card| {
         suggestions
@@ -1091,6 +1096,7 @@ fn SwipeSelectBody(
                     CardGhost {}
                 }
             }
+            SwipeStats { card: current.clone(), next }
             if let Some(card) = current.clone() {
                 div { class: "web-examples-details web-swipe-select-details",
                     SwipeDetailsPanel {

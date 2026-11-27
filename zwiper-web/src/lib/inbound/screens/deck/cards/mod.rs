@@ -10,7 +10,8 @@ pub mod remove;
 use std::collections::HashMap;
 
 use components::{
-    CardDetailsPanel, CardDetailsPanelSkeleton, TOAST_NORMAL, share_face, use_shared_face,
+    CardDetailsPanel, CardDetailsPanelSkeleton, CardStatsFolds, StatsPlace, TOAST_NORMAL,
+    share_face, use_min_width, use_shared_face, use_wide,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts};
@@ -21,6 +22,7 @@ use zwipe_ui::stack::NO_CARDS_LEFT;
 
 use crate::inbound::cards::otag::use_describe_tag;
 use crate::inbound::cards::swipe_confirm::{SwipeConfirm, Tone};
+use crate::inbound::chrome::media::STATS_COLUMN_PX;
 
 /// Raises a land or budget signal from zwipe-ui as the app's toast: info or
 /// warning, up for the normal band.
@@ -129,7 +131,9 @@ fn SwipeDetails(
 
 /// One card's details as a swipe screen's pane, keyed by the card so its face is that card's:
 /// the face the screen shares in `faces`, which the pane's Flip turns, with `describe_tag`'s Oracle
-/// tag descriptions and `body_end` (a commander suggestion's reasons) under the details.
+/// tag descriptions and `body_end` (a commander suggestion's reasons) under the details. Where the
+/// pane docks beside the card but the window is too narrow for the stats column, the card's stats
+/// end it, every fold shut at first.
 #[component]
 pub(crate) fn SwipeDetailsPanel(
     card: Card,
@@ -140,6 +144,9 @@ pub(crate) fn SwipeDetailsPanel(
 ) -> Element {
     let id = card.scryfall_data.id;
     let face = use_shared_face(faces, id);
+    let docked = use_wide();
+    let column = use_min_width(STATS_COLUMN_PX);
+    let stats_card = card.clone();
     rsx! {
         CardDetailsPanel {
             card,
@@ -147,7 +154,30 @@ pub(crate) fn SwipeDetailsPanel(
             on_printings,
             face,
             on_face_change: share_face(faces, id),
-            body_end,
+            body_end: rsx! {
+                {body_end}
+                if docked() && !column() {
+                    div { class: "card-details-stats",
+                        CardStatsFolds { card: stats_card }
+                    }
+                }
+            },
+        }
+    }
+}
+
+/// A swipe screen's stats column at the left of the card, from [`STATS_COLUMN_PX`] up: the top
+/// card's stats widgets, as on the card page, with `next`'s fetched too so the next swipe lands
+/// on loaded figures. Nothing narrower, or with no card on top.
+#[component]
+pub(crate) fn SwipeStats(card: Option<Card>, next: Option<Card>) -> Element {
+    let column = use_min_width(STATS_COLUMN_PX);
+    let Some(card) = card.filter(|_| column()) else {
+        return rsx! {};
+    };
+    rsx! {
+        div { class: "web-card-stats web-swipe-stats",
+            CardStatsFolds { card, place: StatsPlace::Column, next }
         }
     }
 }

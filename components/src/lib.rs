@@ -151,7 +151,9 @@ pub use card_search::{
 };
 pub use card_skeleton::CardSkeleton;
 pub use card_stack::{CardStack, StackCard};
-pub use card_stats_widget::CardStatsWidget;
+pub use card_stats_widget::{
+    CardStatsFolds, CardStatsList, CardStatsSource, CardStatsWidget, StatsPlace,
+};
 pub use changelog::{
     Changelog, ChangelogCollapseAll, ChangelogFilters, ChangelogReleases, Filter as ChangelogFilter,
 };
@@ -200,8 +202,8 @@ pub use layer_presence::{LAYER_OUT, LayerPresence, use_layer_presence};
 pub use list_more::{ListMore, ends_list_more_leave};
 pub use load_failed::LoadFailed;
 pub use media::{
-    COMPUTER_QUERY, KIT_MODAL_PX, POINTER_QUERY, WIDE_PX, use_computer, use_min_width, use_pointer,
-    use_wide,
+    COMPUTER_QUERY, KIT_MODAL_PX, POINTER_QUERY, STATS_COLUMN_PX, WIDE_PX, use_computer,
+    use_min_width, use_pointer, use_wide,
 };
 pub use media_frame::{MediaFrame, MediaSize};
 pub use meld::{MeldFetch, MeldSource, MeldToggle, use_meld};
