@@ -3125,39 +3125,53 @@ body {
 }
 
 @media (min-width: 900px) {
-    /* The stats and details panels share the window with the card: each
-       takes up to 30% of it (13rem to 24rem), and the card takes what lies
-       between them less a 1rem edge and a 1rem gap on each side, plus room
-       for a scrollbar, so no panel covers the card at any width. */
+    /* The card page is three columns that scroll as one page: the stats
+       widgets at the left, the card in the middle and its details at the
+       right. Each side column takes up to 30% of the window (13rem to
+       24rem) and grows with its content. The card stays in view while the
+       page scrolls, and its width follows the window's height as well as
+       its width, so the whole card fits under the nav at any size. */
     .web-card-page {
         --web-dock-panel-width: clamp(13rem, calc((100vw - 4rem) * 0.3), 24rem);
+        --web-card-room: calc(100dvh - var(--web-nav-h, 4.7rem) - 2 * var(--space-4));
+    }
+
+    .web-cards-swipe.screen-content.web-card-page {
+        grid-template-columns: var(--web-dock-panel-width) minmax(0, 1fr) var(--web-dock-panel-width);
+        align-items: start;
+        max-width: none;
+        padding: var(--space-4) 1rem 5rem;
+        overflow: visible;
+    }
+
+    .web-card-page .web-cards-swipe-main {
+        grid-column: 2;
+        grid-row: 1;
+        max-width: none;
+        position: sticky;
+        top: var(--space-4);
     }
 
     .web-card-page .web-card-image {
-        max-width: min(26rem, calc(100vw - 2 * var(--web-dock-panel-width) - 5rem));
+        max-width: min(26rem, calc(var(--web-card-room) * 488 / 680));
     }
 
-    /* The column reaches past its panels' top and sides by a gutter, held
-       as padding, so a panel's hover lift and outline stay inside its
-       scroll box; its foot keeps its place. */
-    .web-card-stats {
-        --web-dock-panel-reach: var(--space-2);
-        position: fixed;
-        top: calc(var(--web-dock-panel-top) - var(--web-dock-panel-reach));
-        left: calc(1rem - var(--web-dock-panel-reach));
-        z-index: 40;
-        width: calc(var(--web-dock-panel-width) + 2 * var(--web-dock-panel-reach));
+    .web-card-page .web-swipe-details {
+        grid-column: 3;
+        grid-row: 1;
+        position: static;
+        width: auto;
+        max-height: none;
+        overflow: visible;
+        transform: none;
+        animation: none;
+    }
+
+    .web-card-page .web-card-stats {
+        grid-column: 1;
+        grid-row: 1;
         max-width: none;
-        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) + var(--web-dock-panel-reach, 0px));
-        padding: var(--web-dock-panel-reach) var(--web-dock-panel-reach) 0;
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        box-sizing: border-box;
-    }
-
-    /* Each widget keeps its height; the column scrolls instead. */
-    .web-card-stats > * {
-        flex-shrink: 0;
+        animation: none;
     }
 
     /* Room for five results at their widest (the grid's 15rem), their
