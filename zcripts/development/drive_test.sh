@@ -2,7 +2,7 @@
 # Checks drive.mjs types nothing into a page until the page's API calls all go to this machine.
 # Serves three local pages: one that calls its own /api/, one that calls an API elsewhere and one
 # that calls none. Needs node and Chrome.
-# Usage: zcripts/local/drive_test.sh
+# Usage: zcripts/development/drive_test.sh
 set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

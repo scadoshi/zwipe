@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Checks common.sh: a database URL with no user gets this machine's user, and the web build's
+# Checks stack_common.sh: a database URL with no user gets this machine's user, and the web build's
 # backend must be this machine.
-# Usage: zcripts/local/common_test.sh
+# Usage: zcripts/development/stack_common_test.sh
 set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=common.sh
-. "$DIR/common.sh"
+# shellcheck source=stack_common.sh
+. "$DIR/stack_common.sh"
 failures=0
 
 fail() {
@@ -53,12 +53,12 @@ backend_is "" refused
 # another's server or database.
 state_is() {
   local got
-  got="$(env -u VERIFY_DIR -u VERIFY_DB ZERVER_PORT="$1" bash -c ". '$DIR/common.sh'; echo \"\$RUN_DIR \$VERIFY_DB\"")"
+  got="$(env -u VERIFY_DIR -u VERIFY_DB ZERVER_PORT="$1" bash -c ". '$DIR/stack_common.sh'; echo \"\$RUN_DIR \$VERIFY_DB\"")"
   [ "$got" = "$2" ] || fail "state for port $1 -> $got, want $2"
 }
 state_is 3100 "/tmp/zwipe-verify-3100 zwipe_verify_3100"
 state_is 3200 "/tmp/zwipe-verify-3200 zwipe_verify_3200"
-got="$(VERIFY_DIR=/tmp/elsewhere VERIFY_DB=mine bash -c ". '$DIR/common.sh'; echo \"\$RUN_DIR \$VERIFY_DB\"")"
+got="$(VERIFY_DIR=/tmp/elsewhere VERIFY_DB=mine bash -c ". '$DIR/stack_common.sh'; echo \"\$RUN_DIR \$VERIFY_DB\"")"
 [ "$got" = "/tmp/elsewhere mine" ] || fail "VERIFY_DIR and VERIFY_DB override -> $got"
 
 # down.sh drops the database up.sh copied, from the template up.sh saved, unless
@@ -66,9 +66,9 @@ got="$(VERIFY_DIR=/tmp/elsewhere VERIFY_DB=mine bash -c ". '$DIR/common.sh'; ech
 scratch="$(mktemp -d)"
 RUN_DIR="$scratch"
 echo "postgres://me@localhost:55432/dev" >"$scratch/template.url"
-got="$(env -u VERIFY_TEMPLATE_URL bash -c ". '$DIR/common.sh'; RUN_DIR='$scratch'; saved_template_url")"
+got="$(env -u VERIFY_TEMPLATE_URL bash -c ". '$DIR/stack_common.sh'; RUN_DIR='$scratch'; saved_template_url")"
 [ "$got" = "postgres://me@localhost:55432/dev" ] || fail "saved template -> $got"
-got="$(VERIFY_TEMPLATE_URL=postgres:///other bash -c ". '$DIR/common.sh'; RUN_DIR='$scratch'; saved_template_url")"
+got="$(VERIFY_TEMPLATE_URL=postgres:///other bash -c ". '$DIR/stack_common.sh'; RUN_DIR='$scratch'; saved_template_url")"
 [ "$got" = "postgres:///other" ] || fail "VERIFY_TEMPLATE_URL wins -> $got"
 
 # down.sh stops a pid only when it is a zerver: a reused pid, or another tool's, is left alone.

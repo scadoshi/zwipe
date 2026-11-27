@@ -3,7 +3,7 @@
 # and seeded, zerver on :3100 and the web app on :8100. Local only. Undo with down.sh.
 set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
-. "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+. "$(dirname "${BASH_SOURCE[0]}")/stack_common.sh"
 mkdir -p "$RUN_DIR/logs"
 started=$SECONDS
 step() { echo "[$((SECONDS - started))s] $*"; }
@@ -66,8 +66,8 @@ if ! (cd "$ROOT" && DATABASE_URL="$VERIFY_URL" sqlx migrate run --source zerver/
   exit 1
 fi
 
-step "seed (zcripts/seed/seed.sh small --reset)"
-DATABASE_URL="$VERIFY_URL" "$ROOT/zcripts/seed/seed.sh" small --reset
+step "seed (zcripts/development/seed.sh small --reset)"
+DATABASE_URL="$VERIFY_URL" "$ROOT/zcripts/development/seed.sh" small --reset
 
 step "build zerver"
 (cd "$ROOT" && SQLX_OFFLINE=true cargo build -q --bin zerver)

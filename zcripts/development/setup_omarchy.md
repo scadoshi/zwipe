@@ -1,17 +1,17 @@
 # Omarchy (Arch) Dev Environment
 
-Brings a fresh Arch-based (Omarchy) machine up to "can run zwipe" for backend and **web/desktop** frontend development. iOS builds are macOS-only; see the [macOS guide](../macos/README.md) for those.
+Brings a fresh Arch-based (Omarchy) machine up to "can run zwipe" for backend and **web/desktop** frontend development. iOS builds are macOS-only; see the [macOS guide](setup_macos.md) for those.
 
 ```bash
-./zcripts/dev-env/omarchy/setup.sh   # first-time / fresh-machine setup
-./zcripts/dev-env/omarchy/reset.sh   # wipe + reseed the local DB only
+./zcripts/development/setup_omarchy.sh   # first-time / fresh-machine setup
+./zcripts/development/reset_omarchy.sh   # wipe + reseed the local DB only
 ```
 
 The script uses `pacman` and refuses to run unless `/etc/os-release` reports `ID=arch`.
 
-## What setup.sh does (Arch specifics)
+## What setup_omarchy.sh does (Arch specifics)
 
-Beyond the [shared end state](../README.md#shared-end-state), the Omarchy script:
+Beyond the [shared end state](README.md#set-up-a-machine), the Omarchy script:
 
 - Installs `base-devel` plus `openssl` and `pkgconf` for the C build toolchain.
 - Installs the **Dioxus desktop (WebKitGTK) deps** needed to render the frontend natively: `webkit2gtk-4.1`, `xdotool`, `libappindicator-gtk3`, `gtk3`, `glib2`, `librsvg`.
@@ -31,9 +31,9 @@ cd zwiper && dx serve        # frontend: web hot reload by default
 
 ## dx / dioxus version pinning
 
-`setup.sh` installs `dioxus-cli` **pinned** to the `dioxus` crate version in `zwiper/Cargo.toml` (`DX_VERSION` in the script), so `dx` and the crate stay in lockstep and you don't hit the "dx and dioxus versions are incompatible" warning. When you bump `dioxus` in `Cargo.toml`, bump `DX_VERSION` to match.
+`setup_omarchy.sh` installs `dioxus-cli` **pinned** to the `dioxus` crate version in `zwiper/Cargo.toml` (`DX_VERSION` in the script), so `dx` and the crate stay in lockstep and you don't hit the "dx and dioxus versions are incompatible" warning. When you bump `dioxus` in `Cargo.toml`, bump `DX_VERSION` to match.
 
-## reset.sh
+## reset_omarchy.sh
 
 Drops and recreates the `zerver` database, regenerates both `.env` files, and re-applies migrations. It does **not** touch toolchains or system packages, and prompts before dropping.
 
@@ -42,7 +42,7 @@ Drops and recreates the `zerver` database, regenerates both `.env` files, and re
 | Symptom | Cause / fix |
 |---|---|
 | `error: this script is for arch linux (omarchy) only` | Wrong distro; use the matching platform script. |
-| Frontend build fails on `webkit2gtk` / `gdk` headers | WebKitGTK deps missing; re-run `setup.sh` or install the packages listed above. |
+| Frontend build fails on `webkit2gtk` / `gdk` headers | WebKitGTK deps missing; re-run `setup_omarchy.sh` or install the packages listed above. |
 | `dx and dioxus versions are incompatible` | Pin `dx`: `cargo install dioxus-cli --version <Cargo.toml dioxus version> --locked --force`. |
 | dx install fails on `auth-git2` / `credential_helper` | Missing `--locked`: cargo pulled `git2 0.21`; re-run the install with `--locked`. |
 | `psql: could not connect` | Postgres not running: `sudo systemctl start postgresql`. |

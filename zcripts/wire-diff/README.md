@@ -16,7 +16,7 @@ It builds committed trees, so commit what you want tested: uncommitted changes i
 |---|---|
 | Exports each ref with `git archive` into `/tmp/wire-diff/{main,cand}` (no worktrees) | ~1s |
 | Builds each zerver in its own target dir | ~1 min cold, seconds warm |
-| Copies the dev database, migrates it with main's migrations, seeds it with main's `zcripts/seed/seed.sh small --reset` (the checkout's until main has one) | ~15s |
+| Copies the dev database, migrates it with main's migrations, seeds it with main's `zcripts/development/seed.sh small --reset` (the checkout's until main has one) | ~15s |
 | Copies that twice and migrates each copy with its own ref's migrations, so a migration change shows as a wire change | ~10s |
 | Starts both zervers (:3201 and :3202) and replays `requests.json` (100 steps) | ~20s |
 | Stops both and drops the three databases (`KEEP=1` keeps them) | ~1s |

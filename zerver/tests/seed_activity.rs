@@ -1,4 +1,4 @@
-//! `zcripts/seed/activity.sql`, the local-only seed that gives an account a
+//! `zcripts/development/seed_activity.sql`, the local-only seed that gives an account a
 //! busy year of Activity for the marketing clip: it fills every Activity
 //! panel, keeps the usage tables in step with each other, replaces rather
 //! than adds on a second run, and its wrapper refuses a database that isn't
@@ -23,7 +23,7 @@ use uuid::Uuid;
 use zwipe_core::http::paths::ACTIVITY_ROUTE;
 
 /// The seed, as the wrapper runs it.
-const SEED_SQL: &str = include_str!("../../zcripts/seed/activity.sql");
+const SEED_SQL: &str = include_str!("../../zcripts/development/seed_activity.sql");
 
 /// The card roles the fixture cards cycle through.
 const ROLES: [&str; 6] = ["ramp", "removal", "draw", "tokens", "counters", "lifegain"];
@@ -160,7 +160,10 @@ async fn the_seed_refuses_an_unknown_account(pool: PgPool) {
 
 #[test]
 fn the_wrapper_refuses_a_database_that_is_not_local() {
-    let script = concat!(env!("CARGO_MANIFEST_DIR"), "/../zcripts/seed/activity.sh");
+    let script = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../zcripts/development/seed_activity.sh"
+    );
     for url in [
         "postgres://zwipe:secret@db.zwipe.net:5432/zwipe",
         "postgres://zwipe:secret@10.0.0.4/zwipe",

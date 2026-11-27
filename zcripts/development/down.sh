@@ -2,7 +2,7 @@
 # Stops what up.sh started and drops the verify database (KEEP=1 keeps it).
 set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
-. "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+. "$(dirname "${BASH_SOURCE[0]}")/stack_common.sh"
 
 if [ -f "$RUN_DIR/zerver.pid" ]; then
   pid="$(cat "$RUN_DIR/zerver.pid")"

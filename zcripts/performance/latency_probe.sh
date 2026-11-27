@@ -2,9 +2,9 @@
 # Latency probe — measures backend vs tunnel latency for representative endpoints.
 #
 # Usage:
-#   bash probe.sh           # measure both localhost and public
-#   bash probe.sh local     # localhost only (run on the server)
-#   bash probe.sh public    # public hostname only (run anywhere)
+#   bash latency_probe.sh           # measure both localhost and public
+#   bash latency_probe.sh local     # localhost only (run on the server)
+#   bash latency_probe.sh public    # public hostname only (run anywhere)
 #
 # Reads credentials from `.env` (next to this script) so secrets stay out of git.
 # The `.env` is gitignored — copy `.env.example` to `.env` and fill in real values.

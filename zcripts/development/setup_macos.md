@@ -3,8 +3,8 @@
 Brings a fresh Mac up to "can run zwipe on the iOS Simulator." Apple Silicon (`arm64`) is the assumed and tested target.
 
 ```bash
-./zcripts/dev-env/macos/setup.sh     # first-time / fresh-machine setup
-./zcripts/dev-env/macos/reset.sh     # wipe + reseed the local DB only
+./zcripts/development/setup_macos.sh     # first-time / fresh-machine setup
+./zcripts/development/reset_macos.sh     # wipe + reseed the local DB only
 ```
 
 ## Prerequisites: full Xcode (not just Command Line Tools)
@@ -15,11 +15,11 @@ zwiper is a mobile app; `dx serve` builds for the iOS Simulator target (`aarch64
 xcrun: error: SDK "iphonesimulator" cannot be located
 ```
 
-`setup.sh` guards against this: it verifies `xcrun --show-sdk-path --sdk iphonesimulator` resolves and, if not, exits with the fix steps rather than letting the failure surface later inside a Rust build.
+`setup_macos.sh` guards against this: it verifies `xcrun --show-sdk-path --sdk iphonesimulator` resolves and, if not, exits with the fix steps rather than letting the failure surface later inside a Rust build.
 
 ### One-time Xcode setup
 
-If `setup.sh` reports the SDK is missing, do this once, then re-run it:
+If `setup_macos.sh` reports the SDK is missing, do this once, then re-run it:
 
 ```bash
 # 1. install Xcode from the App Store (large download)
@@ -41,9 +41,9 @@ xcrun simctl list runtimes                     # lists an "iOS <n>" runtime
 
 > If `-downloadPlatform` warns about `CoreSimulator.framework ... no such file`, the first-launch components didn't finish installing; run `sudo xcodebuild -runFirstLaunch` and retry the download.
 
-## What setup.sh does (macOS specifics)
+## What setup_macos.sh does (macOS specifics)
 
-Beyond the [shared end state](../README.md#shared-end-state), the macOS script:
+Beyond the [shared end state](README.md#set-up-a-machine), the macOS script:
 
 - Requires the `iphonesimulator` SDK (exits early with fix steps otherwise).
 - Provisions a **6.9" iPhone 17 Pro Max** Simulator device if one doesn't already exist (idempotent: re-running won't create duplicates).
@@ -66,7 +66,7 @@ xcrun simctl boot "<device name>"     # a non-default device; sim.sh only boots 
 cd zwiper && dx serve --ios
 ```
 
-The Simulator persists across reboots; you only create it once (setup.sh does this for you); afterward just `boot` it.
+The Simulator persists across reboots; you only create it once (setup_macos.sh does this for you); afterward just `boot` it.
 
 ### Managing Simulator devices
 
@@ -80,7 +80,7 @@ xcrun simctl shutdown "iPhone 17 Pro Max"  # free resources when done
 
 ## dx / dioxus version pinning
 
-`setup.sh` installs `dioxus-cli` **pinned** to the `dioxus` crate version in `zwiper/Cargo.toml` (`DX_VERSION` in the script). An unpinned `cargo install dioxus-cli` pulls the newest published version (including prereleases), which produces this at serve time:
+`setup_macos.sh` installs `dioxus-cli` **pinned** to the `dioxus` crate version in `zwiper/Cargo.toml` (`DX_VERSION` in the script). An unpinned `cargo install dioxus-cli` pulls the newest published version (including prereleases), which produces this at serve time:
 
 ```
 🚫 dx and dioxus versions are incompatible!
@@ -96,9 +96,9 @@ cargo install dioxus-cli --version 0.7.10 --locked --force   # version from Carg
 
 > `--locked` is required. Without it, cargo re-resolves dx's transitive deps to newest-compatible and pulls `git2 0.21`, which fails to compile `auth-git2` (`no associated function ... credential_helper`). The `--locked` flag pins the dep set dx was released with. `--force` overwrites an already-installed `dx` of a different version (otherwise cargo aborts with "binary `dx` already exists").
 
-When you bump `dioxus` in `Cargo.toml`, bump `DX_VERSION` in `setup.sh` to match.
+When you bump `dioxus` in `Cargo.toml`, bump `DX_VERSION` in `setup_macos.sh` to match.
 
-## reset.sh
+## reset_macos.sh
 
 Drops and recreates the `zerver` database, regenerates both `.env` files, and re-applies migrations. It does **not** touch Xcode, Homebrew, the Rust toolchain, or your Simulators; it's purely a local-database reset. It prompts before dropping.
 

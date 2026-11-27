@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Checks guard.sh: every local form passes, everything else is refused.
-# Usage: zcripts/seed/guard_test.sh
+# Usage: zcripts/development/guard_test.sh
 set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

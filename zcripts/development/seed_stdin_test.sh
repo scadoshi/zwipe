@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Checks that seed.sh and activity.sh hand psql their SQL over stdin, with their settings as SET
+# Checks that seed.sh and seed_activity.sh hand psql their SQL over stdin, with their settings as SET
 # lines quoted through psql variables, so they work with a psql that runs in a container and sees
 # neither the host's files nor its environment.
-# Usage: zcripts/seed/stdin_test.sh
+# Usage: zcripts/development/seed_stdin_test.sh
 set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -40,19 +40,19 @@ check() {
 calls="$WORK/calls"
 
 [ "$(run "$DIR/seed.sh" small --reset 7)" = 0 ] || { echo "FAIL: seed.sh small --reset 7 exited nonzero" >&2; failures=$((failures + 1)); }
-check "seed.sh resets over stdin" 'cmp -s "$calls/1.stdin" "$DIR/reset.sql"'
+check "seed.sh resets over stdin" 'cmp -s "$calls/1.stdin" "$DIR/seed_reset.sql"'
 check "seed.sh passes the size as a psql variable" 'grep -qx "seed_size=small" "$calls/2.args"'
 check "seed.sh passes the seed as a psql variable" 'grep -qx "seed=7" "$calls/2.args"'
 check "seed.sh sets the size first" 'head -n 2 "$calls/2.stdin" | grep -qx "SET zwipe.seed_size = :'"'"'seed_size'"'"';"'
 check "seed.sh sets the seed first" 'head -n 2 "$calls/2.stdin" | grep -qx "SET zwipe.seed = :'"'"'seed'"'"';"'
 check "seed.sh sends seed.sql after the settings" 'tail -n +3 "$calls/2.stdin" | cmp -s - "$DIR/seed.sql"'
 
-[ "$(run "$DIR/activity.sh" "o'brien" 0.5)" = 0 ] || { echo "FAIL: activity.sh exited nonzero" >&2; failures=$((failures + 1)); }
-check "activity.sh passes the account as a psql variable" 'grep -qx "seed_user=o'"'"'brien" "$calls/1.args"'
-check "activity.sh passes the seed as a psql variable" 'grep -qx "seed=0.5" "$calls/1.args"'
-check "activity.sh sets the account first" 'head -n 2 "$calls/1.stdin" | grep -qx "SET zwipe.seed_user = :'"'"'seed_user'"'"';"'
-check "activity.sh sets the seed first" 'head -n 2 "$calls/1.stdin" | grep -qx "SET zwipe.seed = :'"'"'seed'"'"';"'
-check "activity.sh sends activity.sql after the settings" 'tail -n +3 "$calls/1.stdin" | cmp -s - "$DIR/activity.sql"'
+[ "$(run "$DIR/seed_activity.sh" "o'brien" 0.5)" = 0 ] || { echo "FAIL: seed_activity.sh exited nonzero" >&2; failures=$((failures + 1)); }
+check "seed_activity.sh passes the account as a psql variable" 'grep -qx "seed_user=o'"'"'brien" "$calls/1.args"'
+check "seed_activity.sh passes the seed as a psql variable" 'grep -qx "seed=0.5" "$calls/1.args"'
+check "seed_activity.sh sets the account first" 'head -n 2 "$calls/1.stdin" | grep -qx "SET zwipe.seed_user = :'"'"'seed_user'"'"';"'
+check "seed_activity.sh sets the seed first" 'head -n 2 "$calls/1.stdin" | grep -qx "SET zwipe.seed = :'"'"'seed'"'"';"'
+check "seed_activity.sh sends seed_activity.sql after the settings" 'tail -n +3 "$calls/1.stdin" | cmp -s - "$DIR/seed_activity.sql"'
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures failed" >&2

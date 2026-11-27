@@ -52,8 +52,8 @@ dx build --release --platform desktop
 
 ### Database Setup
 ```bash
-./zcripts/dev-env/macos/setup.sh     # macOS
-./zcripts/dev-env/omarchy/setup.sh   # Linux (Arch)
+./zcripts/development/setup_macos.sh     # macOS
+./zcripts/development/setup_omarchy.sh   # Linux (Arch)
 ```
 
 ### SQLx Offline Mode (run after any query change)

@@ -16,7 +16,7 @@ on:
       - 'Cargo.lock'
       - '.sqlx/**'
       - 'zcripts/wire-diff/**'
-      - 'zcripts/seed/**'
+      - 'zcripts/development/**'
       - '.github/workflows/wire-diff.yml'
   pull_request:
     branches: [main]
@@ -28,7 +28,7 @@ on:
       - 'Cargo.lock'
       - '.sqlx/**'
       - 'zcripts/wire-diff/**'
-      - 'zcripts/seed/**'
+      - 'zcripts/development/**'
       - '.github/workflows/wire-diff.yml'
 
 permissions:

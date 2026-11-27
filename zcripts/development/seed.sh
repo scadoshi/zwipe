@@ -2,7 +2,7 @@
 # Seeds accounts, decks and deck cards on a LOCAL database for testing a branch
 # before it merges. Refuses any database that isn't on this machine.
 #
-# Usage: DATABASE_URL=postgres://user@localhost:5432/zwipe zcripts/seed/seed.sh <small|load|reset> [--reset] [seed]
+# Usage: DATABASE_URL=postgres://user@localhost:5432/zwipe zcripts/development/seed.sh <small|load|reset> [--reset] [seed]
 #   small    the three test accounts and 40 users
 #   load     the three test accounts and 100,000 users
 #   reset    removes every seeded account and stops
@@ -31,7 +31,7 @@ seed_guard
 # The SQL goes over stdin and the settings as SET lines, quoted by psql, so a psql that runs in
 # a container, seeing neither this machine's files nor its environment, works too.
 if [ "$SIZE" = reset ] || [ "$RESET" = true ]; then
-  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q < "$DIR/reset.sql"
+  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q < "$DIR/seed_reset.sql"
   echo "removed the seeded accounts"
 fi
 [ "$SIZE" = reset ] && exit 0

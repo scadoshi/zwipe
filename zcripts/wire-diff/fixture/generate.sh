@@ -9,8 +9,8 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$DIR/../../.." && pwd)"
-# shellcheck source=../../seed/guard.sh
-. "$ROOT/zcripts/seed/guard.sh"
+# shellcheck source=../../development/guard.sh
+. "$ROOT/zcripts/development/guard.sh"
 seed_guard
 
 # One table's rows, in key order, as CSV lines of (table, row).

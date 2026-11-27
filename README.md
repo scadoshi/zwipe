@@ -32,8 +32,8 @@ zwiper ──→ zwipe-ui ──→ zwipe-core;  components ──→ zwipe-ui
 ```bash
 # prerequisites: rust (https://rustup.rs), macos: xcode-select --install
 
-./zcripts/dev-env/macos/setup.sh    # macos setup (postgres, dx, sqlx-cli, database)
-./zcripts/dev-env/omarchy/setup.sh  # linux setup (arch)
+./zcripts/development/setup_macos.sh    # macos setup (postgres, dx, sqlx-cli, database)
+./zcripts/development/setup_omarchy.sh  # linux setup (arch)
 
 cargo run --bin zerver              # backend api
 cd zwiper && dx serve               # mobile app (web preview)

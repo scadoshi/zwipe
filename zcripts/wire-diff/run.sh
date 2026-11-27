@@ -17,7 +17,7 @@ WIRE_DIR="${WIRE_DIR:-/tmp/wire-diff}"
 MAIN_PORT="${MAIN_PORT:-3201}"
 CAND_PORT="${CAND_PORT:-3202}"
 # The verify skill's template lookup and local-only guard.
-. "$ROOT/zcripts/local/common.sh"
+. "$ROOT/zcripts/development/stack_common.sh"
 started=$SECONDS
 step() { echo "[$((SECONDS - started))s] $*"; }
 
@@ -110,8 +110,8 @@ psql_admin "create database $SEEDED template \"$TEMPLATE_DB\""
 SEEDED_URL="$(with_db "$TEMPLATE" "$SEEDED")"
 migrate main "$SEEDED_URL"
 # Main's own seed when it has one, so the seed matches the schema it runs on.
-SEED_SH="$WIRE_DIR/main/zcripts/seed/seed.sh"
-[ -x "$SEED_SH" ] || SEED_SH="$ROOT/zcripts/seed/seed.sh"
+SEED_SH="$WIRE_DIR/main/zcripts/development/seed.sh"
+[ -x "$SEED_SH" ] || SEED_SH="$ROOT/zcripts/development/seed.sh"
 DATABASE_URL="$SEEDED_URL" "$SEED_SH" small --reset >/dev/null
 
 for side in main cand; do

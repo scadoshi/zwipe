@@ -1,6 +1,6 @@
 -- A busy year of Activity for one account on a LOCAL database, for recording
 -- the Activity clip. Never run it against prod: the swipes and searches
--- would land in the public counters on zwipe.net. activity.sh runs it and
+-- would land in the public counters on zwipe.net. seed_activity.sh runs it and
 -- refuses any database that isn't local.
 --
 -- It reads two session settings, so plain SQL can run it (psql, or a test):

@@ -14,7 +14,7 @@ This repo is the code and the docs that describe it (`context/architecture/`, `c
 
 ```bash
 # macOS
-./zcripts/dev-env/macos/setup.sh
+./zcripts/development/setup_macos.sh
 
 # Runs the backend
 cargo run --bin zerver

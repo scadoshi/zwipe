@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Seeds a busy year of Activity for one account on a LOCAL database, for
 # recording the Activity clip. It replaces that account's activity (see
-# activity.sql) and refuses to run against any database that isn't on this
+# seed_activity.sql) and refuses to run against any database that isn't on this
 # machine, because seeded swipes in prod would land in zwipe.net's public
 # counters.
 #
-# Usage: DATABASE_URL=postgres://user:pass@localhost:5432/zwipe zcripts/seed/activity.sh <username-or-email> [seed]
+# Usage: DATABASE_URL=postgres://user:pass@localhost:5432/zwipe zcripts/development/seed_activity.sh <username-or-email> [seed]
 #   seed: a number from -1 to 1 for a different year (default 0.42)
 set -euo pipefail
 
@@ -26,5 +26,5 @@ seed_guard
 {
   echo "SET zwipe.seed_user = :'seed_user';"
   echo "SET zwipe.seed = :'seed';"
-  cat "$DIR/activity.sql"
+  cat "$DIR/seed_activity.sql"
 } | psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -v seed_user="$ACCOUNT" -v seed="$SEED"

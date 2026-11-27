@@ -6,7 +6,7 @@
 --   zwipe.seed_size  small (the test accounts and 40 users) or load (100,000 users)
 --   zwipe.seed       a whole number for a different but repeatable world (default 42)
 --
--- Every seeded account's email ends in @seed.zwipe.test, and reset.sql
+-- Every seeded account's email ends in @seed.zwipe.test, and seed_reset.sql
 -- removes exactly those accounts and everything they own. It refuses to run
 -- while seeded accounts exist, so a second run never doubles them.
 --

@@ -53,17 +53,17 @@ is_zerver_pid() {
 }
 
 # Refuses any database URL that isn't this machine, through the seed scripts' shared guard
-# (zcripts/seed/guard.sh): its host, every host= and PGHOST must be local, and hostaddr=,
+# (zcripts/development/guard.sh): its host, every host= and PGHOST must be local, and hostaddr=,
 # service=, PGHOSTADDR, PGSERVICE, percent-encoded keywords and control characters are refused.
 require_local() {
-  [ -f "$ROOT/zcripts/seed/guard.sh" ] || {
-    echo "zcripts/seed/guard.sh is missing; this skill needs thinker's seed (feat/seed) merged" >&2
+  [ -f "$ROOT/zcripts/development/guard.sh" ] || {
+    echo "zcripts/development/guard.sh is missing; this skill needs thinker's seed (feat/seed) merged" >&2
     exit 1
   }
   (
     export DATABASE_URL="$1"
-    # shellcheck source=../seed/guard.sh
-    . "$ROOT/zcripts/seed/guard.sh"
+    # shellcheck source=guard.sh
+    . "$ROOT/zcripts/development/guard.sh"
     seed_guard
   ) || exit 1
 }
