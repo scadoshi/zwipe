@@ -17721,10 +17721,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "A card that only matters against a specific creature type, such as Walls or Spirits.",
     ),
     (
-        "static-from-graveyard",
-        "A card with a static ability that works while it sits in your graveyard.",
-    ),
-    (
         "supercycle-mmmm-enrager",
         "A cycle of Horrors costing four mana of one color, each reacting to damage dealt to it.",
     ),
@@ -18063,6 +18059,14 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "synergy-pw-saheeli",
         "Works with Saheeli planeswalkers, such as letting a Saheeli card be your second commander.",
+    ),
+    (
+        "idempotent",
+        "Cards whose effect adds nothing more once one copy is out, like granting a keyword your creatures already have.",
+    ),
+    (
+        "gives-mutate",
+        "Gives other creature cards mutate.",
     ),
 ];
 
