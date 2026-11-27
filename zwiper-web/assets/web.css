@@ -1450,15 +1450,6 @@ body {
         box-sizing: border-box;
     }
 
-    /* The floating card details drawer rises over both docks of a stacked
-       pair: one more dock's height and the pair's gap above where the kit's
-       single dock would put it, on a whole pixel as the kit's offsets are.
-       A pair that is one dock (the swipes with a tail) leaves the kit's
-       offset and the screen's room for one dock. */
-    body:has(.web-dock-pair > .action-dock + .action-dock) .sheet-form-drawer > .bottom-sheet.drawer-every-width {
-        bottom: round(calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2) + 2 * (2.4rem + 2 * var(--space-1) + 2px) + var(--space-2) + var(--drawer-float-gap)), 1px);
-    }
-
     .web-dock-pair > .action-dock {
         width: auto;
         justify-content: space-around;

@@ -282,33 +282,25 @@ fn every_inline_spacing_length_in_the_rust_names_a_step() {
     }
 }
 
-/// The dock's height and gap as zwipe writes them where it reserves room for the kit's dock.
-const DOCK: &str = "var(--space-2) + 2.4rem + 2 * var(--space-1) + 2px";
+/// The kit dock's height as zwipe would write it to keep room for the dock.
+const DOCK: &str = "2.4rem + 2 * var(--space-1) + 2px";
 
 #[test]
-fn the_room_kept_for_the_dock_is_the_kit_dock() {
-    let kit = components::COMPONENTS_CSS;
-    assert!(
-        kit.contains("--corner-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2));")
-            && kit.contains("--dock-gap: var(--corner-gap);"),
-        "the kit's dock sits on the corner gap, --space-2 off the bottom"
-    );
-    assert!(
-        kit.contains("--dock-inset: var(--space-1);"),
-        "its buttons sit --space-1 in"
-    );
-    assert!(
-        kit.contains("height: 2.4rem;\n    margin: var(--dock-inset) 0;"),
-        "its buttons are 2.4rem"
-    );
+fn the_floating_drawer_keeps_no_room_for_the_docks() {
     let filter = include_str!("../assets/filter.css");
-    assert!(
-        filter.contains(DOCK),
-        "the filter drawer clears one dock: {DOCK}"
-    );
     let web = include_str!("../../zwiper-web/assets/web.css");
-    assert!(
-        web.contains("var(--space-2) + 2 * (2.4rem + 2 * var(--space-1) + 2px) + var(--space-2)"),
-        "the card details drawer clears a stacked pair of docks"
-    );
+    for (sheet, css) in [("filter.css", filter), ("web.css", web)] {
+        let drawer_bottoms = css
+            .split(".bottom-sheet.drawer-every-width {")
+            .skip(1)
+            .filter_map(|rule| rule.split('}').next())
+            .flat_map(str::lines)
+            .filter(|line| line.trim().starts_with("bottom:"));
+        for bottom in drawer_bottoms {
+            assert!(
+                !bottom.contains(DOCK),
+                "{sheet}: the drawer runs over the docks to the bottom edge: {bottom}"
+            );
+        }
+    }
 }

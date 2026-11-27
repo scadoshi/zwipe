@@ -9,23 +9,26 @@
 
 /* A drawer at every width (DrawerSheet's `every_width`). Above the kit's
    breakpoint it is the kit's drawer. Below it the drawer floats along the
-   right edge: under the status bar and the header (the kit's --app-nav-h),
-   above the docks at the bottom (their gap from the edge plus their
-   height, written from the kit's dock: its --space-2 gap, its 2.4rem
-   buttons, their two --space-1 insets and its 2px border) and the host's
-   --sheet-drawer-floor, as the kit's drawer is, one
-   dock gap in from the right, with the panel's corners, border and shadow,
-   and slides in from the right as the wide one does. Its offsets round to
-   whole pixels so its border draws crisp. */
+   right edge, one gap in from the top (under the status bar and the
+   header, the kit's --app-nav-h) and the right, as tall as its content up
+   to one gap above the bottom (above the host's --sheet-drawer-floor, as
+   the kit's drawer is), where a long card scrolls inside it. It has the
+   panel's corners, border and shadow, and slides in from the right as the
+   wide one does. It lies over the screen's docks, as over the rest of the
+   screen, until its × or a swipe shuts it. Its offsets round to whole
+   pixels so its border draws crisp. */
 @media (max-width: 59.99rem) {
     .sheet-form-drawer > .bottom-sheet.drawer-every-width {
         --drawer-float-gap: var(--space-2);
-        top: round(calc(env(safe-area-inset-top, 0px) + var(--app-nav-h, 2.75rem) + var(--drawer-float-gap)), 1px);
-        bottom: round(calc(env(safe-area-inset-bottom, 0px) / 2 + var(--space-2) + 2.4rem + 2 * var(--space-1) + 2px + var(--drawer-float-gap) + var(--sheet-drawer-floor, 0px)), 1px);
+        --drawer-top: round(calc(env(safe-area-inset-top, 0px) + var(--app-nav-h, 2.75rem) + var(--drawer-float-gap)), 1px);
+        --drawer-bottom: round(calc(env(safe-area-inset-bottom, 0px) / 2 + var(--drawer-float-gap) + var(--sheet-drawer-floor, 0px)), 1px);
+        top: var(--drawer-top);
+        bottom: auto;
         left: auto;
         right: round(var(--drawer-float-gap), 1px);
         width: min(calc(100vw - 3rem), 26rem);
-        max-height: none;
+        height: auto;
+        max-height: calc(100dvh - var(--drawer-top) - var(--drawer-bottom));
         border-radius: var(--panel-radius);
         border: 1px solid var(--border-secondary);
         box-shadow: var(--shadow-lg);

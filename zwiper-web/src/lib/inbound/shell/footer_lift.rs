@@ -106,11 +106,15 @@ mod tests {
         let bottom = narrow
             .lines()
             .map(str::trim)
-            .find(|line| line.starts_with("bottom:"))
-            .expect("the narrow drawer sets its bottom");
+            .find(|line| line.starts_with("--drawer-bottom:"))
+            .expect("the narrow drawer sets how near the bottom it may reach");
         assert!(
             bottom.contains("var(--sheet-drawer-floor, 0px)"),
             "the narrow drawer rises with the floor too: {bottom}"
+        );
+        assert!(
+            narrow.contains("max-height: calc(100dvh - var(--drawer-top) - var(--drawer-bottom));"),
+            "its height stops there: {narrow}"
         );
     }
 
