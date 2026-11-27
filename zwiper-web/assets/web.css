@@ -225,8 +225,8 @@ body {
 /* The floating controls a scroll screen holds stop above the footer as it
    scrolls in (magic.css's footer rise): the action docks, the swipes' dock
    pair and a swipe screen's bottom row, but not the ones inside them, a
-   sheet or an overlay screen. The docked details panel and the card page's
-   stats column shrink from their foot by as much, so they keep ending above
+   sheet or an overlay screen. The docked details panel and the stats
+   column shrink from their foot by as much, so they keep ending above
    the docks. */
 @supports (animation-timeline: view()) {
     .web-scroll-screen :is(.action-dock, .web-dock-pair, .swipe-bottom-row):not(:is(.swipe-bottom-row, .web-dock-pair, .web-list-console, .bottom-sheet, .screen .screen) *) {
@@ -3145,53 +3145,17 @@ body {
 }
 
 @media (min-width: 900px) {
-    /* The card page is three columns that scroll as one page: the stats
-       widgets at the left, the card in the middle and its details at the
-       right. Each side column takes up to 30% of the window (13rem to
-       24rem) and grows with its content. The card stays in view while the
-       page scrolls, and its width follows the window's height as well as
+    /* The card page is a swipe screen's layout: the card in the middle of
+       the window, its details docked at the right as the eye leaves them,
+       and from 1280px (media.rs's STATS_COLUMN_PX) its stats in the column
+       at the left. The card's width follows the window's height as well as
        its width, so the whole card fits under the nav at any size. */
     .web-card-page {
-        --web-dock-panel-width: clamp(13rem, calc((100vw - 4rem) * 0.3), 24rem);
         --web-card-room: calc(100dvh - var(--web-nav-h, 4.7rem) - 2 * var(--space-4));
-    }
-
-    .web-cards-swipe.screen-content.web-card-page {
-        grid-template-columns: var(--web-dock-panel-width) minmax(0, 1fr) var(--web-dock-panel-width);
-        align-items: start;
-        max-width: none;
-        padding: var(--space-4) var(--space-4) 5rem;
-        overflow: visible;
-    }
-
-    .web-card-page .web-cards-swipe-main {
-        grid-column: 2;
-        grid-row: 1;
-        max-width: none;
-        position: sticky;
-        top: var(--space-4);
     }
 
     .web-card-page .web-card-image {
         max-width: min(26rem, calc(var(--web-card-room) * 488 / 680));
-    }
-
-    .web-card-page .web-swipe-details {
-        grid-column: 3;
-        grid-row: 1;
-        position: static;
-        width: auto;
-        max-height: none;
-        overflow: visible;
-        transform: none;
-        animation: none;
-    }
-
-    .web-card-page .web-card-stats {
-        grid-column: 1;
-        grid-row: 1;
-        max-width: none;
-        animation: none;
     }
 
     /* Room for five results at their widest (the grid's 15rem), their
@@ -3203,36 +3167,27 @@ body {
 }
 
 @media (max-width: 899px) {
+    /* Below the wide layout the card fills the screen, as wide as the
+       gutters leave it and no taller than the room between the header and
+       the dock, the page a screen tall so the footer starts below the fold;
+       the eye opens its details. */
     .web-card-page {
+        --web-card-room: calc(100dvh - var(--app-nav-h, 2.75rem) - 7rem);
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: var(--space-4);
-        padding: var(--space-3) var(--space-4);
+        justify-content: center;
+        padding: var(--space-3) var(--space-4) 5rem;
+        box-sizing: border-box;
     }
 
-    .web-card-page .web-cards-swipe-main {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: var(--space-3);
-        width: 100%;
+    .web-scroll-screen > .screen-content.web-card-page {
+        min-height: 100%;
     }
 
     .web-card-page .web-card-image {
-        max-width: 20rem;
-    }
-
-    .web-card-page .web-swipe-details {
-        display: block;
         width: 100%;
-        max-width: 20rem;
-    }
-
-    .web-card-page .web-swipe-details > .card-details-panel {
-        margin: 0;
-        width: 100%;
-        box-sizing: border-box;
+        max-width: min(100%, calc(var(--web-card-room) * 488 / 680));
     }
 }
 

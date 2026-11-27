@@ -12,6 +12,7 @@
 //! its words, an icon button by its icon alone, as a [`KeyIcon`] the
 //! renderer draws inside the chip. Copy never describes an icon in words.
 
+pub mod card_page;
 pub mod guide;
 pub mod one_time;
 pub mod search_results;

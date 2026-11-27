@@ -22,7 +22,8 @@ pub(crate) const THROUGH_DRAWER_KEYS: [&str; 2] = ["v", "V"];
 /// multi-faced card, `Image` when the host passes `on_image` (called with
 /// the shown face) and the card has art, and a `Printings` pill when the
 /// host passes `on_printings`, as the wide pane does. The body ends with the
-/// card's stats, every fold shut at first, fetched as the drawer opens. `class` names the drawer, and a
+/// card's stats, every fold shut at first, fetched as the drawer opens. With
+/// `on_examples` an Oracle tag opens its example cards. `class` names the drawer, and a
 /// host that adds its own class keeps `card-details-drawer` in it. Swapping
 /// to another card or face while open crossfades. Mount it at
 /// the screen root beside the printing sheet.
@@ -37,6 +38,7 @@ pub fn CardDetailsSheet(
     #[props(default = DETAILS_DRAWER_CLASS)] class: &'static str,
     #[props(default)] face: Option<usize>,
     #[props(default)] on_face_change: Option<EventHandler<usize>>,
+    #[props(default)] on_examples: Option<Callback<String>>,
 ) -> Element {
     let describe_tag = use_describe_tag();
     let stats_card = card.clone();
@@ -57,6 +59,7 @@ pub fn CardDetailsSheet(
             face,
             on_face_change,
             describe_tag: Some(describe_tag),
+            on_examples,
         }
     }
 }

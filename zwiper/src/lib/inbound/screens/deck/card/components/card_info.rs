@@ -61,6 +61,9 @@ pub(crate) fn CardDetailsSheet(
     /// card's image too, and the image's flip turns the drawer.
     #[props(default)]
     faces: Option<Signal<HashMap<Uuid, usize>>>,
+    /// Opens an Oracle tag's example cards, where the host shows them.
+    #[props(default)]
+    on_examples: Option<Callback<String>>,
 ) -> Element {
     let describe_tag = use_describe_tag();
     let layer = use_overlay_back(open);
@@ -94,6 +97,7 @@ pub(crate) fn CardDetailsSheet(
                 face,
                 meld: Some(meld),
                 describe_tag: Some(describe_tag),
+                on_examples,
                 on_printings,
                 footer,
                 body_end: rsx! {

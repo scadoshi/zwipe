@@ -1,35 +1,34 @@
 //! The card page in the app at `/card/<slug>` and `/card/<slug>/<id>`, over the shared
-//! `card_lookup` model: the web's card page at phone width. One card shows its image, its
-//! details with Printings, and its stats widgets, with Send to and Share in the action dock.
+//! `card_lookup` model: the web's card page at phone width. One card shows alone, filling the
+//! screen, with Send to, Share and the eye in the action dock; the eye opens its details drawer,
+//! as on the swipe screens, with Printings and its stats folded at the end.
 //! Several cards that share a name show in the results grid, each opening its printing. Share
 //! copies the card's link. A printing picked in Printings takes the card's place, for Send to
 //! and Share too.
 
 pub mod search;
 
-use std::collections::HashSet;
-
-use components::icons::{DockIcon, SEND, ShareIcon};
+use components::hint::ContentHintDialog;
+use components::icons::{DockIcon, EyeIcon, SEND, ShareIcon};
 use components::{
-    CardDetailsPanel, CardDetailsPanelSkeleton, CardResultsGrid, CardStatsList, FlippableCardImage,
-    LoadFailed, SendTo, Toasts, use_toast,
+    CardDetailsPanelSkeleton, CardResultsGrid, FlippableCardImage, LoadFailed, SendTo, Toasts,
+    use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::models::search_card::commander_eligibility;
 use zwipe_core::domain::card::scryfall_data::image_uris::ImageSize;
-use zwipe_core::domain::deck::models::format::Format;
+use zwipe_ui::hint::card_page as hint_copy;
 use zwipe_ui::screens::add_cards;
 use zwipe_ui::screens::card_lookup::{self, Action, Destination, Effect, Open, State, Status};
 
-use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::screen;
 use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
+use crate::inbound::screens::deck::card::components::card_info::CardDetailsSheet;
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
@@ -148,16 +147,6 @@ impl Driver {
                 document::eval(&js);
                 ui_toast::raise(toasts, done);
             }
-            Effect::FetchStats { ticket, oracle_id } => {
-                spawn(async move {
-                    let http = client.peek().clone();
-                    let reply = match http.fetch_card_stats(oracle_id).await {
-                        Ok(stats) => Action::Stats { ticket, stats },
-                        Err(_) => Action::StatsFailed { ticket },
-                    };
-                    self.dispatch(reply);
-                });
-            }
         }
     }
 }
@@ -175,21 +164,10 @@ fn CardScreen(open: Open) -> Element {
     };
     let dispatch = move |action: Action| driver.dispatch(action);
     let mut printings_open = use_signal(|| false);
-    // The stats folds the user shut; every one starts open.
-    let stats_folded = use_signal(HashSet::<String>::new);
-    // The role tags' descriptions and their example cards.
-    let cache: CatalogCache = use_context();
-    let client = driver.client;
-    use_effect(move || {
-        cache.ensure_oracle_tags(client);
-    });
-    let describe_tag = use_callback(move |slug: String| {
-        cache.oracle_tags.cell().read().loaded().and_then(|tags| {
-            tags.iter()
-                .find(|t| t.slug == slug)
-                .and_then(|t| t.description.clone())
-        })
-    });
+    // The card's details drawer, which the eye in the dock opens, as on the swipe screens.
+    let mut show_details = use_signal(|| false);
+    let hint_open = use_signal(|| false);
+    // The role tags' example cards, which a tag in the drawer opens.
     let mut otag_examples_open = use_signal(|| false);
     let mut otag_examples_slug = use_signal(String::new);
     let open_examples = use_callback(move |slug: String| {
@@ -212,33 +190,16 @@ fn CardScreen(open: Open) -> Element {
     let card = state.card().cloned();
     let cards = state.cards().to_vec();
     let message = state.message();
-    let stats = state.stats();
     let title = state.screen_title();
     drop(state);
 
     let body = match (status, card) {
         (Status::One, Some(card)) => {
             let sd = card.scryfall_data.clone();
-            let leads = commander_eligibility::is_valid_commander(&card, &Format::Commander);
             rsx! {
                 div { class: "screen-content content-enter card-page",
                     div { class: "card-page-image",
                         FlippableCardImage { sd, size: ImageSize::Large }
-                    }
-                    CardDetailsPanel {
-                        card: card.clone(),
-                        send_to: false,
-                        describe_tag,
-                        on_examples: open_examples,
-                        on_printings: move |()| printings_open.set(true),
-                    }
-                    div { class: "card-page-stats",
-                        CardStatsList {
-                            stats,
-                            leads,
-                            folded: stats_folded,
-                            on_retry: move |()| dispatch(Action::RetryStats),
-                        }
                     }
                 }
                 div { class: "action-dock action-dock-right",
@@ -254,6 +215,19 @@ fn CardScreen(open: Open) -> Element {
                         onclick: move |_| dispatch(Action::Share),
                         ShareIcon {}
                     }
+                    span { class: "action-dock-divider" }
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Card details",
+                        onclick: move |_| show_details.toggle(),
+                        EyeIcon {}
+                    }
+                }
+                CardDetailsSheet {
+                    open: show_details,
+                    card: card.clone(),
+                    on_printings: move |()| printings_open.set(true),
+                    on_examples: open_examples,
                 }
                 PrintingSheet {
                     card,
@@ -304,9 +278,14 @@ fn CardScreen(open: Open) -> Element {
     };
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: header, back: move |()| navigator.go_back() }
+            ScreenHeader {
+                title: header,
+                back: move |()| navigator.go_back(),
+                hint: (status == Status::One).then_some(hint_open),
+            }
             {body}
         }
+        ContentHintDialog { open: hint_open, content: hint_copy::content(true) }
         if otag_examples_open() {
             OracleTagExamples { open: otag_examples_open, slug: otag_examples_slug() }
         }

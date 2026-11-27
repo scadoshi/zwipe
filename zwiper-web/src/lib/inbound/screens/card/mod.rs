@@ -1,21 +1,23 @@
 //! The card screen at `/card/<slug>` and `/card/<slug>/<id>`, signed in or out, over the
 //! [`card_lookup`] model.
 //!
-//! One card draws the deck page's wide card layout: the card in the middle column, its details
-//! docked at the right and its stats widgets at the left; a phone stacks the card,
-//! the details and the widgets. Send to and Share are the floating action dock, Create account in
-//! Send to's place signed out. Several cards
+//! One card draws as a swipe screen does: on a wide window the card in the middle, its details
+//! the docked panel the eye hides and shows, and its stats in the column at the left from
+//! [`STATS_COLUMN_PX`], folded at the end of the details narrower; on a phone the card alone,
+//! the eye opening its details drawer. Send to, Share and the eye are the floating action dock,
+//! Create account in Send to's place signed out; `?` says what the dock's buttons do. Several
+//! cards
 //! that share a name show as the deck page's Stacks grid, each a whole card that opens its
 //! printing. `?open=send-to` opens Send to once the card shows: a signed-out Send to goes to
 //! Login and comes back with it. A printing picked in Printings takes the card's place and goes
 //! in the route as `?printing=<id>`, so a reload or a shared link shows it.
 
-use std::collections::HashSet;
-
+use components::hint::ContentHintDialog;
 use components::icons::{DockIcon, SEND, ShareIcon};
 use components::{
-    CardDetailsPanel, CardDetailsPanelSkeleton, CardResultsGrid, CardStatsList, FlippableCardImage,
-    LoadFailed, SendTo, USER_PLUS, focus_card_search,
+    CardDetailsPanel, CardDetailsPanelSkeleton, CardResultsGrid, CardStatsFolds, DockEye,
+    FlippableCardImage, LoadFailed, STATS_COLUMN_PX, SendTo, SheetFrame, SheetWide, StatsPlace,
+    Surface, USER_PLUS, focus_card_search, use_details_eye, use_min_width, use_wide,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -24,13 +26,13 @@ use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::models::search_card::commander_eligibility;
 use zwipe_core::domain::card::scryfall_data::image_uris::ImageSize;
-use zwipe_core::domain::deck::models::format::Format;
+use zwipe_ui::hint::card_page as hint_copy;
 use zwipe_ui::screens::add_cards::PRINTING_SWAPPED;
 use zwipe_ui::screens::card_lookup::{self, Action, Ask, Destination, Effect, Open, State, Status};
 use zwipe_ui::telemetry::vocabulary::Screen;
 
+use crate::inbound::cards::card_info::CardDetailsSheet;
 use crate::inbound::cards::otag::{
     OtagDescribe, OtagExamplesHost, OtagExamplesOpen, use_otag_reveals,
 };
@@ -170,16 +172,6 @@ impl Driver {
                 browser::copy_to_clipboard(&text);
                 toast::raise(toasts, &done);
             }
-            Effect::FetchStats { ticket, oracle_id } => {
-                spawn(async move {
-                    let http = client.peek().clone();
-                    let reply = match http.fetch_card_stats(oracle_id).await {
-                        Ok(stats) => Action::Stats { ticket, stats },
-                        Err(_) => Action::StatsFailed { ticket },
-                    };
-                    self.dispatch(reply);
-                });
-            }
         }
     }
 }
@@ -196,8 +188,13 @@ fn CardScreen(open: Open, ask: Option<Ask>, printing: Option<Uuid>) -> Element {
     let send_to = use_send_to();
     let model = use_signal(State::new);
     let mut printings_open = use_signal(|| false);
-    // The stats folds the user shut; every one starts open.
-    let stats_folded = use_signal(HashSet::<String>::new);
+    // The card's details: the drawer the eye opens below the wide layout, the docked panel it
+    // hides and shows on a wide window, as on the swipe screens.
+    let show_details = use_signal(|| false);
+    let eye = use_details_eye(show_details, Surface::Window);
+    let docked = use_wide();
+    let column = use_min_width(STATS_COLUMN_PX);
+    let mut hint_open = use_signal(|| false);
     // The role tags' descriptions and their example cards.
     let examples = use_otag_reveals();
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
@@ -228,7 +225,6 @@ fn CardScreen(open: Open, ask: Option<Ask>, printing: Option<Uuid>) -> Element {
     let card = state.card().cloned();
     let cards = state.cards().to_vec();
     let message = state.message();
-    let stats = state.stats();
     let title = state.screen_title();
     drop(state);
     // Several cards draw their own heading; one card's name is on the card and its details.
@@ -237,9 +233,8 @@ fn CardScreen(open: Open, ask: Option<Ask>, printing: Option<Uuid>) -> Element {
     let body = match (status, card) {
         (Status::One, Some(card)) => {
             let sd = card.scryfall_data.clone();
-            let leads = commander_eligibility::is_valid_commander(&card, &Format::Commander);
             rsx! {
-                div { class: "screen-content content-enter web-cards-swipe web-card-page",
+                div { class: "screen-content content-enter web-cards-swipe web-card-page {eye.body_class()}",
                     CardPageKeys {
                         on_printings: move |()| printings_open.set(true),
                         on_send_to: move |()| dispatch(Action::SendTo { signed_in: signed_in() }),
@@ -249,21 +244,25 @@ fn CardScreen(open: Open, ask: Option<Ask>, printing: Option<Uuid>) -> Element {
                             FlippableCardImage { sd, size: ImageSize::Large }
                         }
                     }
-                    div { class: "web-swipe-details",
-                        CardDetailsPanel {
-                            card: card.clone(),
-                            send_to: false,
-                            describe_tag,
-                            on_examples,
-                            on_printings: move |()| printings_open.set(true),
+                    if column() {
+                        div { class: "web-card-stats web-swipe-stats",
+                            CardStatsFolds { card: card.clone(), place: StatsPlace::Column }
                         }
                     }
-                    div { class: "web-card-stats",
-                        CardStatsList {
-                            stats,
-                            leads,
-                            folded: stats_folded,
-                            on_retry: move |()| dispatch(Action::RetryStats),
+                    if docked() {
+                        div { class: "web-swipe-details",
+                            CardDetailsPanel {
+                                card: card.clone(),
+                                send_to: false,
+                                describe_tag,
+                                on_examples,
+                                on_printings: move |()| printings_open.set(true),
+                                body_end: (!column()).then(|| rsx! {
+                                    div { class: "card-details-stats",
+                                        CardStatsFolds { card: card.clone() }
+                                    }
+                                }),
+                            }
                         }
                     }
                 }
@@ -289,6 +288,18 @@ fn CardScreen(open: Open, ask: Option<Ask>, printing: Option<Uuid>) -> Element {
                         "aria-label": "Share",
                         onclick: move |_| dispatch(Action::Share),
                         ShareIcon {}
+                    }
+                    span { class: "action-dock-divider" }
+                    DockEye { eye, disabled: false }
+                }
+                if !docked() {
+                    SheetFrame { wide: SheetWide::Modal,
+                        CardDetailsSheet {
+                            open: show_details,
+                            card: card.clone(),
+                            on_printings: move |()| printings_open.set(true),
+                            on_examples,
+                        }
                     }
                 }
                 PrintingSheet {
@@ -327,7 +338,8 @@ fn CardScreen(open: Open, ask: Option<Ask>, printing: Option<Uuid>) -> Element {
     };
 
     rsx! {
-        ScreenFrame { title, titled, {body} }
+        ScreenFrame { title, titled, on_hint: move |()| hint_open.set(true), {body} }
+        ContentHintDialog { open: hint_open, content: hint_copy::content(signed_in()) }
         OtagExamplesHost { examples }
         if signed_in() {
             SendToHost { send_to }

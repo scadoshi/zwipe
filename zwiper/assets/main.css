@@ -370,13 +370,16 @@ body {
 
 /* ---- Card page ----
    The card page and the card search's results (screens/card), the web's
-   card page at phone width: one column, the card over its details and its
-   stats widgets, room left under them for the action dock. */
+   card page at phone width: the card alone, filling the screen, as wide as
+   the gutters leave it and no taller than the room between the header and
+   the action dock; the dock's eye opens its details. */
 .card-page {
     --card-page-gap: var(--space-4);
+    --card-page-room: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - var(--app-nav-h, 2.75rem) - 7rem);
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: var(--card-page-gap);
     padding: var(--space-3) var(--space-4) calc(var(--space-4) + var(--space-7));
     box-sizing: border-box;
@@ -388,48 +391,14 @@ body {
     margin-bottom: calc(-1 * var(--card-page-gap));
 }
 
-/* The page scrolls as one: nothing in its column shrinks to fit the screen,
-   and the details panel, which elsewhere scrolls its body inside a bounded
-   host, shows whole. */
-.screen-content.card-page {
-    overflow-y: auto;
-}
-
-.card-page > * {
-    flex-shrink: 0;
-}
-
-.card-page > .card-details-panel {
-    overflow: visible;
-}
-
-.card-page > .card-details-panel > .panel-body {
-    overflow-y: visible;
-}
-
 .card-page-image {
     width: 100%;
-    max-width: 20rem;
+    max-width: min(100%, calc(var(--card-page-room) * 488 / 680));
 }
 
 .card-page-image img {
     width: 100%;
     height: auto;
-}
-
-.card-page > .card-details-panel {
-    width: 100%;
-    max-width: 20rem;
-    margin: 0;
-    box-sizing: border-box;
-}
-
-.card-page-stats {
-    width: 100%;
-    max-width: 20rem;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
 }
 
 .card-page-list {
