@@ -10,7 +10,7 @@ Run the cheap checks first: fmt, clippy and the crate tests. This skill comes af
 ## Up
 
 ```bash
-.claude/skills/verify/scripts/up.sh
+zcripts/local/up.sh
 ```
 
 | Step | Time |
@@ -46,7 +46,7 @@ To look and click: open http://localhost:8100/login with Claude in Chrome. Befor
 To repeat runs and keep the evidence, use the headless driver. It prints what each labeled step reads and saves screenshots:
 
 ```bash
-S=.claude/skills/verify/scripts
+S=zcripts/local
 node $S/drive.mjs http://localhost:8100/login 1440 steps.json
 H=844 node $S/drive.mjs http://localhost:8100/login 390 steps.json
 ```
@@ -60,8 +60,8 @@ For app work, build a debug APK with `BACKEND_URL=http://10.0.2.2:3100` and run 
 ## Down
 
 ```bash
-.claude/skills/verify/scripts/down.sh          # stops both servers, drops zwipe_verify_3100
-KEEP=1 .claude/skills/verify/scripts/down.sh   # keeps the database to look at
+zcripts/local/down.sh          # stops both servers, drops zwipe_verify_3100
+KEEP=1 zcripts/local/down.sh   # keeps the database to look at
 ```
 
 ## Report

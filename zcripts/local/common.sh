@@ -62,7 +62,7 @@ require_local() {
   }
   (
     export DATABASE_URL="$1"
-    # shellcheck source=../../../../zcripts/seed/guard.sh
+    # shellcheck source=../seed/guard.sh
     . "$ROOT/zcripts/seed/guard.sh"
     seed_guard
   ) || exit 1

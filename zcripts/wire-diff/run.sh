@@ -17,7 +17,7 @@ WIRE_DIR="${WIRE_DIR:-/tmp/wire-diff}"
 MAIN_PORT="${MAIN_PORT:-3201}"
 CAND_PORT="${CAND_PORT:-3202}"
 # The verify skill's template lookup and local-only guard.
-. "$ROOT/.claude/skills/verify/scripts/common.sh"
+. "$ROOT/zcripts/local/common.sh"
 started=$SECONDS
 step() { echo "[$((SECONDS - started))s] $*"; }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Checks common.sh: a database URL with no user gets this machine's user, and the web build's
 # backend must be this machine.
-# Usage: .claude/skills/verify/scripts/common_test.sh
+# Usage: zcripts/local/common_test.sh
 set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
