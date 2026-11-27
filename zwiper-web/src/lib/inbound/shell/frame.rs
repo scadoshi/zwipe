@@ -222,11 +222,13 @@ mod tests {
             Route::CardNamed {
                 slug: "sol-ring".to_owned(),
                 open: None,
+                printing: None,
             },
             Route::CardPrinting {
                 slug: "sol-ring".to_owned(),
                 id,
                 open: None,
+                printing: None,
             },
             Route::Search {
                 q: "sol".to_owned(),

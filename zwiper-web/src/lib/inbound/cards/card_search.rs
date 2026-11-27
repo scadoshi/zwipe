@@ -83,6 +83,7 @@ pub fn route_of(to: Destination) -> Option<Route> {
         Destination::Card(slug) => Some(Route::CardNamed {
             slug: slug.to_string(),
             open: None,
+            printing: None,
         }),
         Destination::Printing { path } => path.parse().ok(),
         Destination::Results { query } => Some(Route::Search { q: query }),
@@ -157,7 +158,8 @@ mod tests {
             route_of(Destination::Card(slug::card_slug("Sol Ring").unwrap())),
             Some(Route::CardNamed {
                 slug: "sol-ring".to_owned(),
-                open: None
+                open: None,
+                printing: None
             })
         );
         let id = Uuid::new_v4();

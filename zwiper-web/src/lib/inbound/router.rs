@@ -88,12 +88,13 @@ pub enum Route {
         /// A shared deck's decklist, read only, as the owner's Export.
         #[route("/:owner/deck/:slug/:token/export")]
         SharedDeckExport { owner: String, slug: String, token: String },
-        /// A card by its name's slug, `?open=send-to` opening Send to once it shows.
-        #[route("/card/:slug?:open")]
-        CardNamed { slug: String, open: Option<Ask> },
-        /// One printing of a card.
-        #[route("/card/:slug/:id?:open")]
-        CardPrinting { slug: String, id: Uuid, open: Option<Ask> },
+        /// A card by its name's slug, `?open=send-to` opening Send to once it shows and
+        /// `?printing=<id>` showing that printing of it.
+        #[route("/card/:slug?:open&:printing")]
+        CardNamed { slug: String, open: Option<Ask>, printing: Option<Uuid> },
+        /// One printing of a card, `?printing=<id>` showing another printing of it.
+        #[route("/card/:slug/:id?:open&:printing")]
+        CardPrinting { slug: String, id: Uuid, open: Option<Ask>, printing: Option<Uuid> },
         /// Every card the card search matches for `q`, from Enter with several matches.
         #[route("/search?:q")]
         Search { q: String },

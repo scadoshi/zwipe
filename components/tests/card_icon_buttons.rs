@@ -232,6 +232,7 @@ fn send_to_is_the_paper_plane_named_send_to() {
         use_context_provider(|| components::SendTo {
             open: Signal::new(false),
             card: Signal::new(None),
+            picked: Signal::new(false),
         });
         let card: zwipe_core::domain::card::Card =
             serde_json::from_str(include_str!("../../zwipe-ui/src/test_support/card.json"))

@@ -23,6 +23,7 @@ fn load(open: Open) -> Action {
         open,
         send: false,
         signed_in: true,
+        printing: None,
     }
 }
 
@@ -45,6 +46,7 @@ fn by_name(slug: &str, send: bool, signed_in: bool) -> (State, Ticket, Vec<Effec
         open: named(slug),
         send,
         signed_in,
+        printing: None,
     });
     let Some(Effect::FetchNamed { ticket, .. }) = effects.last() else {
         panic!("expected a name fetch: {effects:?}");
@@ -255,6 +257,7 @@ fn picking_one_of_several_opens_its_printing() {
             slug: "rampant-growth".to_owned(),
             id,
             send: false,
+            printing: None,
         })]
     );
     assert_eq!(
@@ -289,6 +292,7 @@ fn a_printing_loads_by_its_id_and_fixes_a_stale_slug() {
             slug: "fire-ice".to_owned(),
             id,
             send: false,
+            printing: None,
         })]
     );
 }
@@ -361,6 +365,7 @@ fn send_to_signed_out_goes_to_login_and_back_to_the_card() {
             Effect::RememberReturn(Destination::Named {
                 slug: parsed("bind"),
                 send: true,
+                printing: None,
             }),
             Effect::Navigate(Destination::Login),
         ]
@@ -380,6 +385,7 @@ fn send_to_signed_out_goes_to_login_and_back_to_the_card() {
                 slug: "bind-liberate".to_owned(),
                 id,
                 send: true,
+                printing: None,
             }),
             Effect::Navigate(Destination::Login),
         ]
@@ -396,7 +402,10 @@ fn send_to_signed_in_opens_the_sheet() {
     });
     assert_eq!(
         state.update(Action::SendTo { signed_in: true }),
-        vec![Effect::OpenSendTo(Box::new(bind))]
+        vec![Effect::OpenSendTo {
+            card: Box::new(bind),
+            picked: false,
+        }]
     );
 }
 
@@ -408,6 +417,7 @@ fn an_asked_for_send_to_opens_once_and_leaves_the_route() {
         Some(&Effect::Replace(Destination::Named {
             slug: parsed("bind"),
             send: false,
+            printing: None,
         })),
         "the ask leaves the route at once: {effects:?}"
     );
@@ -417,7 +427,10 @@ fn an_asked_for_send_to_opens_once_and_leaves_the_route() {
             ticket,
             cards: vec![bind.clone()]
         })),
-        vec![Effect::OpenSendTo(Box::new(bind))]
+        vec![Effect::OpenSendTo {
+            card: Box::new(bind),
+            picked: false,
+        }]
     );
     let _ = state.update(Action::Retry);
     let Some(Effect::FetchNamed { ticket, .. }) = state.update(Action::Retry).pop() else {
@@ -475,6 +488,7 @@ fn an_asked_for_send_to_on_a_list_goes_with_the_picked_card() {
             slug: "rampant-growth".to_owned(),
             id,
             send: true,
+            printing: None,
         })],
         "the printing opens with the sheet"
     );
@@ -552,6 +566,7 @@ fn the_ask_leaving_the_route_reloads_nothing_and_keeps_send_to_asked() {
             open: named("bind"),
             send: false,
             signed_in: true,
+            printing: None,
         }),
         vec![],
         "no second fetch"
@@ -562,7 +577,10 @@ fn the_ask_leaving_the_route_reloads_nothing_and_keeps_send_to_asked() {
             ticket,
             cards: vec![bind.clone()]
         })),
-        vec![Effect::OpenSendTo(Box::new(bind))],
+        vec![Effect::OpenSendTo {
+            card: Box::new(bind),
+            picked: false,
+        }],
         "the first fetch still answers and the ask still opens Send to"
     );
 }
@@ -686,6 +704,7 @@ fn create_account_goes_to_register_and_back_to_the_card() {
             Effect::RememberReturn(Destination::Named {
                 slug: parsed("bind"),
                 send: false,
+                printing: None,
             }),
             Effect::Navigate(Destination::Register),
         ]
@@ -701,8 +720,287 @@ fn create_account_before_the_card_shows_still_goes_to_register() {
             Effect::RememberReturn(Destination::Named {
                 slug: parsed("bind"),
                 send: false,
+                printing: None,
             }),
             Effect::Navigate(Destination::Register),
         ]
     );
+}
+
+/// Another printing of `card`: the same Oracle id under a fresh Scryfall id, from `set`.
+fn reprint(card: &Card, set: &str) -> Card {
+    let mut other = card.clone();
+    let id = Uuid::new_v4();
+    other.card_profile.scryfall_data_id = id;
+    other.scryfall_data.id = id;
+    other.scryfall_data.set_name = set.to_owned();
+    other
+}
+
+/// `/card/sol-ring` showing `sol`, opened with `printing` in its route.
+fn sol_ring_shown(sol: &Card, printing: Option<Uuid>) -> (State, Vec<Effect>) {
+    let mut state = State::new();
+    let effects = state.update(Action::Load {
+        open: named("sol-ring"),
+        send: false,
+        signed_in: true,
+        printing,
+    });
+    let Some(Effect::FetchNamed { ticket, .. }) = effects.last() else {
+        panic!("expected a name fetch: {effects:?}");
+    };
+    let effects = state.update(Action::Named {
+        ticket: *ticket,
+        cards: vec![sol.clone()],
+    });
+    (state, besides_stats(effects))
+}
+
+#[test]
+fn a_pick_shows_the_printing_and_writes_it_into_the_route() {
+    let sol = card("Sol Ring");
+    let alpha = reprint(&sol, "Limited Edition Alpha");
+    let (mut state, _) = sol_ring_shown(&sol, None);
+    assert_eq!(
+        state.update(Action::PickPrinting(Box::new(alpha.clone()))),
+        vec![Effect::ShowPrinting(Destination::Named {
+            slug: parsed("sol-ring"),
+            send: false,
+            printing: Some(alpha.scryfall_data.id),
+        })]
+    );
+    assert_eq!(state.status(), Status::One);
+    assert_eq!(state.card(), Some(&alpha));
+    assert_eq!(
+        state.update(Action::SendTo { signed_in: true }),
+        vec![Effect::OpenSendTo {
+            card: Box::new(alpha.clone()),
+            picked: true,
+        }],
+        "Send to sends the pick"
+    );
+    let Some(Effect::Copy { text, .. }) = state.update(Action::Share).pop() else {
+        panic!("expected a copy");
+    };
+    assert!(
+        text.ends_with(&format!("/card/sol-ring/{}", alpha.scryfall_data.id)),
+        "Share copies the pick's link: {text}"
+    );
+    assert_eq!(
+        state.update(Action::Load {
+            open: named("sol-ring"),
+            send: false,
+            signed_in: true,
+            printing: Some(alpha.scryfall_data.id),
+        }),
+        vec![],
+        "the route written back loads nothing"
+    );
+}
+
+#[test]
+fn picking_the_card_again_drops_the_pick_from_the_route() {
+    let sol = card("Sol Ring");
+    let alpha = reprint(&sol, "Limited Edition Alpha");
+    let (mut state, _) = sol_ring_shown(&sol, None);
+    let _ = state.update(Action::PickPrinting(Box::new(alpha)));
+    assert_eq!(
+        state.update(Action::PickPrinting(Box::new(sol.clone()))),
+        vec![Effect::ShowPrinting(Destination::Named {
+            slug: parsed("sol-ring"),
+            send: false,
+            printing: None,
+        })]
+    );
+    assert_eq!(state.card(), Some(&sol));
+    assert_eq!(
+        state.update(Action::SendTo { signed_in: true }),
+        vec![Effect::OpenSendTo {
+            card: Box::new(sol),
+            picked: false,
+        }]
+    );
+}
+
+#[test]
+fn a_printing_of_another_card_is_no_pick() {
+    let sol = card("Sol Ring");
+    let (mut state, _) = sol_ring_shown(&sol, None);
+    assert_eq!(
+        state.update(Action::PickPrinting(Box::new(card("Mana Crypt")))),
+        vec![]
+    );
+    assert_eq!(state.card(), Some(&sol));
+}
+
+#[test]
+fn a_route_s_printing_waits_for_the_card_then_shows() {
+    let sol = card("Sol Ring");
+    let alpha = reprint(&sol, "Limited Edition Alpha");
+    let (mut state, effects) = sol_ring_shown(&sol, Some(alpha.scryfall_data.id));
+    let [Effect::FetchPrinting { ticket, id }] = effects.as_slice() else {
+        panic!("expected the printing's fetch: {effects:?}");
+    };
+    assert_eq!(*id, alpha.scryfall_data.id);
+    assert_eq!(state.status(), Status::Loading, "the page waits on it");
+    assert_eq!(state.card(), None);
+    assert_eq!(
+        state.update(Action::PrintingPicked {
+            ticket: *ticket,
+            card: Box::new(alpha.clone()),
+        }),
+        vec![]
+    );
+    assert_eq!(state.status(), Status::One);
+    assert_eq!(state.card(), Some(&alpha));
+}
+
+#[test]
+fn an_unknown_route_printing_falls_back_to_the_card() {
+    let sol = card("Sol Ring");
+    let missing = Uuid::new_v4();
+    let (mut state, effects) = sol_ring_shown(&sol, Some(missing));
+    let [Effect::FetchPrinting { ticket, .. }] = effects.as_slice() else {
+        panic!("expected the printing's fetch: {effects:?}");
+    };
+    assert_eq!(
+        state.update(Action::PrintingUnknown { ticket: *ticket }),
+        vec![Effect::ShowPrinting(Destination::Named {
+            slug: parsed("sol-ring"),
+            send: false,
+            printing: None,
+        })],
+        "the bad id leaves the route"
+    );
+    assert_eq!(state.status(), Status::One);
+    assert_eq!(state.card(), Some(&sol));
+}
+
+#[test]
+fn a_route_printing_of_another_card_falls_back_to_the_card() {
+    let sol = card("Sol Ring");
+    let crypt = card("Mana Crypt");
+    let (mut state, effects) = sol_ring_shown(&sol, Some(crypt.scryfall_data.id));
+    let [Effect::FetchPrinting { ticket, .. }] = effects.as_slice() else {
+        panic!("expected the printing's fetch: {effects:?}");
+    };
+    let effects = state.update(Action::PrintingPicked {
+        ticket: *ticket,
+        card: Box::new(crypt),
+    });
+    assert!(
+        matches!(
+            effects.as_slice(),
+            [Effect::ShowPrinting(Destination::Named {
+                printing: None,
+                ..
+            })]
+        ),
+        "{effects:?}"
+    );
+    assert_eq!(state.card(), Some(&sol));
+}
+
+#[test]
+fn a_route_naming_the_card_itself_fetches_nothing_more() {
+    let sol = card("Sol Ring");
+    let (state, effects) = sol_ring_shown(&sol, Some(sol.scryfall_data.id));
+    assert_eq!(effects, vec![]);
+    assert_eq!(state.status(), Status::One);
+    assert_eq!(state.card(), Some(&sol));
+}
+
+#[test]
+fn an_asked_for_send_to_waits_for_the_route_s_printing() {
+    let sol = card("Sol Ring");
+    let alpha = reprint(&sol, "Limited Edition Alpha");
+    let mut state = State::new();
+    let effects = state.update(Action::Load {
+        open: named("sol-ring"),
+        send: true,
+        signed_in: true,
+        printing: Some(alpha.scryfall_data.id),
+    });
+    assert_eq!(
+        effects.first(),
+        Some(&Effect::Replace(Destination::Named {
+            slug: parsed("sol-ring"),
+            send: false,
+            printing: Some(alpha.scryfall_data.id),
+        })),
+        "the ask leaves the route and the printing stays"
+    );
+    let Some(Effect::FetchNamed { ticket, .. }) = effects.last() else {
+        panic!("expected a name fetch: {effects:?}");
+    };
+    let effects = besides_stats(state.update(Action::Named {
+        ticket: *ticket,
+        cards: vec![sol],
+    }));
+    let [Effect::FetchPrinting { ticket, .. }] = effects.as_slice() else {
+        panic!("Send to waits: {effects:?}");
+    };
+    assert_eq!(
+        state.update(Action::PrintingPicked {
+            ticket: *ticket,
+            card: Box::new(alpha.clone()),
+        }),
+        vec![Effect::OpenSendTo {
+            card: Box::new(alpha),
+            picked: true,
+        }]
+    );
+}
+
+#[test]
+fn a_route_printing_that_answers_late_is_ignored() {
+    let sol = card("Sol Ring");
+    let alpha = reprint(&sol, "Limited Edition Alpha");
+    let (mut state, effects) = sol_ring_shown(&sol, Some(alpha.scryfall_data.id));
+    let [Effect::FetchPrinting { ticket, .. }] = effects.as_slice() else {
+        panic!("expected the printing's fetch: {effects:?}");
+    };
+    assert_eq!(
+        state.update(Action::Load {
+            open: named("sol-ring"),
+            send: false,
+            signed_in: true,
+            printing: None,
+        }),
+        vec![],
+        "the route drops the printing"
+    );
+    assert_eq!(state.card(), Some(&sol));
+    assert_eq!(
+        state.update(Action::PrintingPicked {
+            ticket: *ticket,
+            card: Box::new(alpha),
+        }),
+        vec![]
+    );
+    assert_eq!(state.card(), Some(&sol));
+}
+
+#[test]
+fn the_stats_stay_the_card_s_across_picks() {
+    let sol = card("Sol Ring");
+    let oracle = sol.scryfall_data.oracle_id.unwrap();
+    let alpha = reprint(&sol, "Limited Edition Alpha");
+    let mut state = State::new();
+    let effects = state.update(Action::Load {
+        open: named("sol-ring"),
+        send: false,
+        signed_in: true,
+        printing: Some(alpha.scryfall_data.id),
+    });
+    let Some(Effect::FetchNamed { ticket, .. }) = effects.last() else {
+        panic!("expected a name fetch: {effects:?}");
+    };
+    let effects = state.update(Action::Named {
+        ticket: *ticket,
+        cards: vec![sol],
+    });
+    assert_eq!(stats_fetch(&effects).map(|(_, id)| id), Some(oracle));
+    let effects = state.update(Action::PickPrinting(Box::new(alpha)));
+    assert_eq!(stats_fetch(&effects), None, "a pick asks for nothing more");
 }

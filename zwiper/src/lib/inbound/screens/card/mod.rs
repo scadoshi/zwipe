@@ -2,7 +2,8 @@
 //! `card_lookup` model: the web's card page at phone width. One card shows its image, its
 //! details with Printings, and its stats widgets, with Send to and Share in the action dock.
 //! Several cards that share a name show in the results grid, each opening its printing. Share
-//! copies the card's link.
+//! copies the card's link. A printing picked in Printings takes the card's place, for Send to
+//! and Share too.
 
 pub mod search;
 
@@ -17,9 +18,11 @@ use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::models::search_card::commander_eligibility;
 use zwipe_core::domain::card::scryfall_data::image_uris::ImageSize;
 use zwipe_core::domain::deck::models::format::Format;
+use zwipe_ui::screens::add_cards;
 use zwipe_ui::screens::card_lookup::{
     self, Action, CardStats, Destination, Effect, Open, State, Status,
 };
@@ -122,15 +125,22 @@ impl Driver {
             Effect::Navigate(to) => {
                 navigator.push(route_of(to));
             }
-            // A sign-in never comes between: the app's screens are signed in.
-            Effect::RememberReturn(_) => {}
-            Effect::OpenSendTo(card) => {
-                let SendTo {
-                    mut open,
-                    card: mut held,
-                } = send_to;
-                held.set(Some(*card));
-                open.set(true);
+            // A sign-in never comes between, as the app's screens are signed in, and the app's
+            // card routes carry no printing: the pick lives in the model.
+            Effect::RememberReturn(_) | Effect::ShowPrinting(_) => {}
+            Effect::OpenSendTo { card, picked } => send_to.open_with(*card, picked),
+            Effect::FetchPrinting { ticket, id } => {
+                spawn(async move {
+                    let http = client.peek().clone();
+                    let reply = match http.fetch_card(id).await {
+                        Ok(card) => Action::PrintingPicked {
+                            ticket,
+                            card: Box::new(card),
+                        },
+                        Err(_) => Action::PrintingUnknown { ticket },
+                    };
+                    self.dispatch(reply);
+                });
             }
             Effect::Copy { text, done } => {
                 let js = format!(
@@ -195,6 +205,7 @@ fn CardScreen(open: Open) -> Element {
             open,
             send: false,
             signed_in: true,
+            printing: None,
         });
     }));
 
@@ -262,6 +273,8 @@ fn CardScreen(open: Open) -> Element {
                     card,
                     open: printings_open,
                     host_screen: screen::CARD,
+                    on_save: move |picked: Card| dispatch(Action::PickPrinting(Box::new(picked))),
+                    saved_message: add_cards::PRINTING_SWAPPED,
                 }
             }
         }

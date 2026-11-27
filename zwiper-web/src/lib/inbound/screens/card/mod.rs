@@ -7,7 +7,8 @@
 //! Send to's place signed out. Several cards
 //! that share a name show as the deck page's Stacks grid, each a whole card that opens its
 //! printing. `?open=send-to` opens Send to once the card shows: a signed-out Send to goes to
-//! Login and comes back with it.
+//! Login and comes back with it. A printing picked in Printings takes the card's place and goes
+//! in the route as `?printing=<id>`, so a reload or a shared link shows it.
 
 use std::collections::HashSet;
 
@@ -22,9 +23,11 @@ use dioxus_primitives::toast::{Toasts, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::models::search_card::commander_eligibility;
 use zwipe_core::domain::card::scryfall_data::image_uris::ImageSize;
 use zwipe_core::domain::deck::models::format::Format;
+use zwipe_ui::screens::add_cards::PRINTING_SWAPPED;
 use zwipe_ui::screens::card_lookup::{
     self, Action, Ask, CardStats, Destination, Effect, Open, State, Status,
 };
@@ -46,17 +49,17 @@ use crate::outbound::browser;
 
 /// `/card/<slug>`: every card with the name.
 #[component]
-pub fn CardNamed(slug: String, open: Option<Ask>) -> Element {
+pub fn CardNamed(slug: String, open: Option<Ask>, printing: Option<Uuid>) -> Element {
     rsx! {
-        CardScreen { key: "{slug}", open: Open::Named { slug }, ask: open }
+        CardScreen { key: "{slug}", open: Open::Named { slug }, ask: open, printing }
     }
 }
 
 /// `/card/<slug>/<id>`: one printing.
 #[component]
-pub fn CardPrinting(slug: String, id: Uuid, open: Option<Ask>) -> Element {
+pub fn CardPrinting(slug: String, id: Uuid, open: Option<Ask>, printing: Option<Uuid>) -> Element {
     rsx! {
-        CardScreen { key: "{id}", open: Open::Printing { slug, id }, ask: open }
+        CardScreen { key: "{id}", open: Open::Printing { slug, id }, ask: open, printing }
     }
 }
 
@@ -64,14 +67,25 @@ pub fn CardPrinting(slug: String, id: Uuid, open: Option<Ask>) -> Element {
 fn route_of(to: Destination) -> Route {
     let ask = |send: bool| send.then_some(Ask::SendTo);
     match to {
-        Destination::Named { slug, send } => Route::CardNamed {
+        Destination::Named {
+            slug,
+            send,
+            printing,
+        } => Route::CardNamed {
             slug: slug.to_string(),
             open: ask(send),
+            printing,
         },
-        Destination::Printing { slug, id, send } => Route::CardPrinting {
+        Destination::Printing {
+            slug,
+            id,
+            send,
+            printing,
+        } => Route::CardPrinting {
             slug,
             id,
             open: ask(send),
+            printing,
         },
         Destination::Login => Route::Login {},
         Destination::Register => Route::Register {},
@@ -133,20 +147,26 @@ impl Driver {
                     self.dispatch(reply);
                 });
             }
-            Effect::Replace(to) => {
+            Effect::Replace(to) | Effect::ShowPrinting(to) => {
                 navigator.replace(route_of(to));
             }
             Effect::Navigate(to) => {
                 navigator.push(route_of(to));
             }
             Effect::RememberReturn(to) => return_to::remember(&route_of(to)),
-            Effect::OpenSendTo(card) => {
-                let SendTo {
-                    mut open,
-                    card: mut held,
-                } = send_to;
-                held.set(Some(*card));
-                open.set(true);
+            Effect::OpenSendTo { card, picked } => send_to.open_with(*card, picked),
+            Effect::FetchPrinting { ticket, id } => {
+                spawn(async move {
+                    let http = client.peek().clone();
+                    let reply = match http.fetch_card(id).await {
+                        Ok(card) => Action::PrintingPicked {
+                            ticket,
+                            card: Box::new(card),
+                        },
+                        Err(_) => Action::PrintingUnknown { ticket },
+                    };
+                    self.dispatch(reply);
+                });
             }
             Effect::Copy { text, done } => {
                 browser::copy_to_clipboard(&text);
@@ -166,9 +186,10 @@ impl Driver {
     }
 }
 
-/// The card screen for `open`, opening Send to once the card shows when `ask` says so.
+/// The card screen for `open`, opening Send to once the card shows when `ask` says so and
+/// showing `printing` of the card in its place.
 #[component]
-fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
+fn CardScreen(open: Open, ask: Option<Ask>, printing: Option<Uuid>) -> Element {
     telemetry::use_telemetry_screen(Screen::Card);
     let client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
@@ -195,11 +216,12 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
     let dispatch = move |action: Action| driver.dispatch(action);
 
     // Loads on mount and again whenever the route opens another card in place.
-    use_effect(use_reactive!(|(open, ask)| {
+    use_effect(use_reactive!(|(open, ask, printing)| {
         dispatch(Action::Load {
             open,
             send: ask == Some(Ask::SendTo),
             signed_in: signed_in(),
+            printing,
         });
     }));
 
@@ -284,7 +306,12 @@ fn CardScreen(open: Open, ask: Option<Ask>) -> Element {
                         ShareIcon {}
                     }
                 }
-                PrintingSheet { card, open: printings_open }
+                PrintingSheet {
+                    card,
+                    open: printings_open,
+                    on_save: move |picked: Card| dispatch(Action::PickPrinting(Box::new(picked))),
+                    saved_message: PRINTING_SWAPPED,
+                }
             }
         }
         (Status::Several, _) => rsx! {
@@ -354,6 +381,7 @@ mod tests {
         let route = route_of(Destination::Named {
             slug: slug("Sol Ring"),
             send: false,
+            printing: None,
         });
         // The router prints an empty query as a bare `?`, as it does for every route.
         let printed = route.to_string();
@@ -372,6 +400,7 @@ mod tests {
                 route_of(Destination::Named {
                     slug: slug("Sol Ring"),
                     send: true,
+                    printing: None,
                 }),
                 "/card/sol-ring?open=send-to".to_owned(),
             ),
@@ -380,11 +409,14 @@ mod tests {
                     slug: "sol-ring".to_owned(),
                     id,
                     send: true,
+                    printing: None,
                 }),
                 format!("/card/sol-ring/{id}?open=send-to"),
             ),
         ] {
-            assert_eq!(route.to_string(), path);
+            // The router follows a query value with `&` when another may come after it.
+            let printed = route.to_string();
+            assert_eq!(printed.strip_suffix('&').unwrap_or(&printed), path);
             assert_eq!(Route::from_str(&path).ok(), Some(route), "{path}");
         }
     }
@@ -396,11 +428,46 @@ mod tests {
                 Route::from_str(path).ok(),
                 Some(Route::CardNamed {
                     slug: "sol-ring".to_owned(),
-                    open: None
+                    open: None,
+                    printing: None
                 }),
                 "{path}"
             );
         }
+    }
+
+    #[test]
+    fn a_picked_printing_rides_the_link_and_reads_back() {
+        let id = Uuid::new_v4();
+        let route = route_of(Destination::Named {
+            slug: slug("Sol Ring"),
+            send: false,
+            printing: Some(id),
+        });
+        let path = format!("/card/sol-ring?printing={id}");
+        assert_eq!(route.to_string(), path);
+        assert_eq!(Route::from_str(&path).ok(), Some(route));
+        let both = format!("/card/sol-ring?open=send-to&printing={id}");
+        assert_eq!(
+            Route::from_str(&both).ok(),
+            Some(Route::CardNamed {
+                slug: "sol-ring".to_owned(),
+                open: Some(Ask::SendTo),
+                printing: Some(id),
+            })
+        );
+    }
+
+    #[test]
+    fn a_printing_that_is_no_id_opens_the_card() {
+        assert_eq!(
+            Route::from_str("/card/sol-ring?printing=nope").ok(),
+            Some(Route::CardNamed {
+                slug: "sol-ring".to_owned(),
+                open: None,
+                printing: None,
+            })
+        );
     }
 
     #[test]

@@ -25,16 +25,26 @@ pub struct SendTo {
     pub open: Signal<bool>,
     /// The card the sheet sends.
     pub card: Signal<Option<Card>>,
+    /// Whether the card is a printing picked over its default, which the sent toast names by
+    /// its set.
+    pub picked: Signal<bool>,
 }
 
 impl SendTo {
     /// Opens the sheet to send `card`, as its Send to button does.
     pub fn open_for(self, card: Card) {
+        self.open_with(card, /* picked */ false);
+    }
+
+    /// Opens the sheet to send `card`, a printing picked over its default when `picked`.
+    pub fn open_with(self, card: Card, picked: bool) {
         let Self {
             mut open,
             card: mut sending,
+            picked: mut naming,
         } = self;
         sending.set(Some(card));
+        naming.set(picked);
         open.set(true);
     }
 }

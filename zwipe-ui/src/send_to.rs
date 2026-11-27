@@ -51,6 +51,13 @@ pub fn sent(deck: &str, board: Board) -> String {
     format!("Sent to {deck}, {}", board_name(board))
 }
 
+/// The toast once a printing picked over the card's default, from the set `set`, is in `deck`
+/// on `board`.
+#[must_use]
+pub fn sent_printing(deck: &str, board: Board, set: &str) -> String {
+    format!("Sent the {set} printing to {deck}, {}", board_name(board))
+}
+
 /// The toast when `deck` already holds the card, naming the deck it went to rather than the
 /// one the user is on. A deck holds one copy of a card across its boards, and the add's answer
 /// doesn't say which, so the toast shows as the answer lands without naming one.
@@ -297,6 +304,10 @@ mod tests {
             "Sent to Krenko, maybeboard"
         );
         assert_eq!(sent("Krenko", Board::Deck), "Sent to Krenko, mainboard");
+        assert_eq!(
+            sent_printing("Krenko", Board::Deck, "Limited Edition Alpha"),
+            "Sent the Limited Edition Alpha printing to Krenko, mainboard"
+        );
         assert_eq!(
             sent("Krenko", Board::Sideboard),
             "Sent to Krenko, sideboard"

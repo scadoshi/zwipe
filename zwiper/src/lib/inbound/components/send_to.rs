@@ -25,6 +25,7 @@ pub(crate) fn use_send_to() -> SendTo {
     let send_to = SendTo {
         open: use_signal(|| false),
         card: use_signal(|| None::<Card>),
+        picked: use_signal(|| false),
     };
     use_context_provider(|| send_to)
 }
@@ -32,7 +33,7 @@ pub(crate) fn use_send_to() -> SendTo {
 /// The Send to sheet for `send_to`, beside the screens it serves.
 #[component]
 pub(crate) fn SendToHost(send_to: SendTo) -> Element {
-    let SendTo { open, card } = send_to;
+    let SendTo { open, card, picked } = send_to;
     let route = use_route::<Router>();
     let current = deck_of(&route);
     let screen = host_screen(&route);
@@ -66,6 +67,11 @@ pub(crate) fn SendToHost(send_to: SendTo) -> Element {
             on_send: move |(target, board): (Target, Board)| {
                 let Some(sent) = card.peek().clone() else {
                     return;
+                };
+                let done = if *picked.peek() {
+                    send_to::sent_printing(&target.name, board, &sent.scryfall_data.set_name)
+                } else {
+                    send_to::sent(&target.name, board)
                 };
                 let mut open = open;
                 open.set(false);
@@ -101,7 +107,7 @@ pub(crate) fn SendToHost(send_to: SendTo) -> Element {
                                 undo_store.record(from, entry.into());
                             }
                             toast.info(
-                                send_to::sent(&target.name, board),
+                                done,
                                 ToastOptions::default().duration(TOAST_QUICK),
                             );
                         }

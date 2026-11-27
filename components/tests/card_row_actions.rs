@@ -44,6 +44,7 @@ fn open_row() -> Element {
     use_context_provider(|| SendTo {
         open: Signal::new(false),
         card: Signal::new(None),
+        picked: Signal::new(false),
     });
     let card = card();
     let expanded: Signal<Option<Uuid>> = use_signal(|| Some(card.scryfall_data.id));
@@ -75,6 +76,7 @@ fn open_maybeboard_row() -> Element {
     use_context_provider(|| SendTo {
         open: Signal::new(false),
         card: Signal::new(None),
+        picked: Signal::new(false),
     });
     let card = card();
     let expanded: Signal<Option<Uuid>> = use_signal(|| Some(card.scryfall_data.id));
@@ -116,6 +118,7 @@ fn drawer_panel() -> Element {
     use_context_provider(|| SendTo {
         open: Signal::new(false),
         card: Signal::new(None),
+        picked: Signal::new(false),
     });
     rsx! {
         CardDetailsPanel {

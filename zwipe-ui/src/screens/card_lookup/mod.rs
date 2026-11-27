@@ -13,6 +13,11 @@
 //! link for a card opened by name, the printing's link for a printing, which is where a name
 //! several cards share leads.
 //!
+//! The Printings sheet picks another printing of the card shown, which takes the page's place
+//! until another pick; Send to and Share take it too. A route can name one (`?printing=<id>`):
+//! the page waits for it once the card loads, and falls back to the card when it is unknown or
+//! another card's.
+//!
 //! The model holds what loaded and decides what each action does. Drawing the card, the sheets,
 //! the share sheet and the clipboard stay in the client.
 
@@ -122,6 +127,8 @@ pub enum Destination {
         slug: CardSlug,
         /// Whether the screen opens Send to once the card shows.
         send: bool,
+        /// The Scryfall id of the printing picked over the card, if any.
+        printing: Option<Uuid>,
     },
     /// One printing, asking for Send to when `send`.
     Printing {
@@ -131,6 +138,8 @@ pub enum Destination {
         id: Uuid,
         /// Whether the screen opens Send to once the card shows.
         send: bool,
+        /// The Scryfall id of the printing picked over the card, if any.
+        printing: Option<Uuid>,
     },
     /// Login, for Send to signed out.
     Login,
@@ -165,6 +174,8 @@ pub enum Action {
         send: bool,
         /// Whether a session exists, so the asked-for Send to can open.
         signed_in: bool,
+        /// The Scryfall id of the printing the route picks over the card (`?printing=`).
+        printing: Option<Uuid>,
     },
     /// The cards with the name arrived for the fetch holding `ticket`.
     Named {
@@ -217,6 +228,20 @@ pub enum Action {
     },
     /// Retry the card's stats after a failure.
     RetryStats,
+    /// The Printings sheet's pick: another printing of the card shown, or the card itself.
+    PickPrinting(Box<Card>),
+    /// The route's printing arrived for the fetch holding `ticket`.
+    PrintingPicked {
+        /// The ticket from the [`Effect::FetchPrinting`] this answers.
+        ticket: Ticket,
+        /// The printing.
+        card: Box<Card>,
+    },
+    /// The route's printing is gone, or its fetch failed.
+    PrintingUnknown {
+        /// The ticket from the [`Effect::FetchPrinting`] this answers.
+        ticket: Ticket,
+    },
 }
 
 /// What the client does for an action, in order.
@@ -243,8 +268,24 @@ pub enum Effect {
     Navigate(Destination),
     /// Saves this route for Login to return to after a sign-in.
     RememberReturn(Destination),
-    /// Opens Send to for this card.
-    OpenSendTo(Box<Card>),
+    /// Opens Send to for `card`.
+    OpenSendTo {
+        /// The card it sends.
+        card: Box<Card>,
+        /// Whether `card` is a printing picked over the card, which the sent toast names.
+        picked: bool,
+    },
+    /// Fetches the route's printing (`fetch_card`), answered with [`Action::PrintingPicked`],
+    /// or [`Action::PrintingUnknown`] for a 404 or a failure.
+    FetchPrinting {
+        /// Handed back on the reply.
+        ticket: Ticket,
+        /// The printing's Scryfall id.
+        id: Uuid,
+    },
+    /// Writes the printing shown into the route in place. A client whose routes carry no
+    /// printing does nothing.
+    ShowPrinting(Destination),
     /// Fetches the card's stats (`fetch_card_stats`), answered with [`Action::Stats`] or
     /// [`Action::StatsFailed`].
     FetchStats {
@@ -274,6 +315,19 @@ enum Shown {
     Failed,
 }
 
+/// The printing that takes the loaded card's place.
+#[derive(Debug, Clone, Default, PartialEq)]
+enum Pick {
+    /// None: the loaded card shows.
+    #[default]
+    Loaded,
+    /// The route's printing, by its Scryfall id, fetched once the card shows. The page waits on
+    /// it.
+    Wanted(Uuid),
+    /// A printing of the loaded card, shown in its place.
+    Shown(Box<Card>),
+}
+
 /// Where the card's stats stand, for the client to pick what its stats widgets draw.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum CardStats {
@@ -296,6 +350,8 @@ pub struct State {
     fetch: Generation,
     stats: CardStats,
     stats_fetch: Generation,
+    pick: Pick,
+    pick_fetch: Generation,
 }
 
 impl State {
@@ -313,7 +369,8 @@ impl State {
                 open,
                 send,
                 signed_in,
-            } => self.load(open, send, signed_in),
+                printing,
+            } => self.load(open, send, signed_in, printing),
             Action::Named { ticket, cards } => {
                 if !self.fetch.is_current(ticket) {
                     return Vec::new();
@@ -332,6 +389,7 @@ impl State {
                     _ => Shown::Several(cards),
                 };
                 let mut effects = self.fetch_stats();
+                effects.extend(self.fetch_wanted());
                 effects.extend(self.send_if_asked());
                 effects
             }
@@ -356,14 +414,19 @@ impl State {
                 };
                 let slug = own_printing_slug(picked);
                 let send = std::mem::take(&mut self.send_pending);
-                vec![Effect::Navigate(Destination::Printing { slug, id, send })]
+                vec![Effect::Navigate(Destination::Printing {
+                    slug,
+                    id,
+                    send,
+                    printing: None,
+                })]
             }
             Action::SendTo { signed_in } => {
                 let Some(card) = self.card().cloned() else {
                     return Vec::new();
                 };
                 if signed_in {
-                    return vec![Effect::OpenSendTo(Box::new(card))];
+                    return vec![self.open_send_to(card)];
                 }
                 let Some(back) = self.route(/* send */ true) else {
                     return Vec::new();
@@ -381,7 +444,7 @@ impl State {
                 .collect(),
             Action::Share => match (&self.open, self.card()) {
                 (Some(open), Some(card)) => vec![Effect::Copy {
-                    text: share_link(open, card),
+                    text: share_link(open, card, self.picked()),
                     done: link_copied(),
                 }],
                 _ => Vec::new(),
@@ -396,19 +459,31 @@ impl State {
                 }
                 self.fetch_stats()
             }
+            Action::PickPrinting(card) => self.pick_printing(card),
+            Action::PrintingPicked { ticket, card } => self.printing_answered(ticket, Some(card)),
+            Action::PrintingUnknown { ticket } => self.printing_answered(ticket, None),
         }
     }
 
     /// Opens the screen at `open`: drops a Send to ask from the route at once, keeping it for
     /// when the card shows if a session exists, then asks for what the route names.
-    fn load(&mut self, open: Open, send: bool, signed_in: bool) -> Vec<Effect> {
+    fn load(
+        &mut self,
+        open: Open,
+        send: bool,
+        signed_in: bool,
+        printing: Option<Uuid>,
+    ) -> Vec<Effect> {
         // The route the screen is on, without an ask, is the screen's own Replace dropping the
-        // ask: the card is already loading or shown, and an asked-for Send to still waits.
+        // ask or writing a pick: the card is already loading or shown, and an asked-for Send to
+        // still waits.
         if !send && self.open.as_ref() == Some(&open) {
-            return Vec::new();
+            return self.want(printing);
         }
         self.open = Some(open);
         self.send_pending = send && signed_in;
+        self.pick_fetch.next_ticket();
+        self.pick = printing.map_or(Pick::Loaded, Pick::Wanted);
         let mut effects = Vec::new();
         if send && let Some(route) = self.route(/* send */ false) {
             effects.push(Effect::Replace(route));
@@ -456,10 +531,118 @@ impl State {
                 slug: own,
                 id,
                 send: false,
+                printing: self.printing(),
             }));
         }
+        effects.extend(self.fetch_wanted());
         effects.extend(self.send_if_asked());
         effects
+    }
+
+    /// Takes the printing a route of the same card names: nothing when it is the one shown or
+    /// already wanted, the loaded card again when it names none or the card itself, else waits
+    /// for it.
+    fn want(&mut self, printing: Option<Uuid>) -> Vec<Effect> {
+        if printing == self.printing() {
+            return Vec::new();
+        }
+        self.pick_fetch.next_ticket();
+        match printing {
+            Some(id)
+                if self
+                    .loaded()
+                    .is_none_or(|loaded| loaded.scryfall_data.id != id) =>
+            {
+                self.pick = Pick::Wanted(id);
+                self.fetch_wanted()
+            }
+            Some(_) | None => {
+                self.pick = Pick::Loaded;
+                self.send_if_asked()
+            }
+        }
+    }
+
+    /// Asks for the wanted printing once one card shows: none is wanted, or it is the card
+    /// itself, and nothing goes out. Several cards, or none, drop it.
+    fn fetch_wanted(&mut self) -> Vec<Effect> {
+        let Pick::Wanted(id) = self.pick else {
+            return Vec::new();
+        };
+        match self.loaded() {
+            Some(loaded) if loaded.scryfall_data.id == id => {
+                self.pick = Pick::Loaded;
+                Vec::new()
+            }
+            Some(_) => {
+                let ticket = self.pick_fetch.next_ticket();
+                vec![Effect::FetchPrinting { ticket, id }]
+            }
+            None if self.shown == Shown::Loading => Vec::new(),
+            None => {
+                self.pick = Pick::Loaded;
+                Vec::new()
+            }
+        }
+    }
+
+    /// Takes the route's printing fetch's answer, `card` or none, when `ticket` is still the
+    /// current fetch's: shows it when it is the wanted printing of the loaded card, else falls
+    /// back to the card.
+    fn printing_answered(&mut self, ticket: Ticket, card: Option<Box<Card>>) -> Vec<Effect> {
+        if !self.pick_fetch.is_current(ticket) {
+            return Vec::new();
+        }
+        let Some(card) = card.filter(|card| {
+            matches!(self.pick, Pick::Wanted(id) if id == card.scryfall_data.id)
+                && self.loaded().is_some_and(|loaded| same_card(loaded, card))
+        }) else {
+            return self.drop_wanted();
+        };
+        self.pick = Pick::Shown(card);
+        self.send_if_asked()
+    }
+
+    /// Falls back from a wanted printing that is unknown or another card's to the loaded card,
+    /// taking it out of the route, then opens an asked-for Send to.
+    fn drop_wanted(&mut self) -> Vec<Effect> {
+        self.pick = Pick::Loaded;
+        let mut effects: Vec<Effect> = self
+            .route(/* send */ false)
+            .map(Effect::ShowPrinting)
+            .into_iter()
+            .collect();
+        effects.extend(self.send_if_asked());
+        effects
+    }
+
+    /// Shows the sheet's pick, `card`, in the loaded card's place, the loaded card again when it
+    /// is that one, and writes it into the route. A printing of another card does nothing.
+    fn pick_printing(&mut self, card: Box<Card>) -> Vec<Effect> {
+        let Some(loaded) = self.loaded() else {
+            return Vec::new();
+        };
+        if self.card().is_none() || !same_card(loaded, &card) {
+            return Vec::new();
+        }
+        self.pick = if loaded.scryfall_data.id == card.scryfall_data.id {
+            Pick::Loaded
+        } else {
+            Pick::Shown(card)
+        };
+        self.pick_fetch.next_ticket();
+        self.route(/* send */ false)
+            .map(Effect::ShowPrinting)
+            .into_iter()
+            .collect()
+    }
+
+    /// Opens Send to for `card`, the card on screen.
+    fn open_send_to(&self, card: Card) -> Effect {
+        Effect::OpenSendTo {
+            card: Box::new(card),
+            picked: self.picked(),
+        }
     }
 
     /// Takes the stats fetch's answer, `answer`, when `ticket` is still the current fetch's.
@@ -474,7 +657,7 @@ impl State {
     /// dropped. A card with no oracle id has no stats to ask for, so its figures stay blank.
     fn fetch_stats(&mut self) -> Vec<Effect> {
         let ticket = self.stats_fetch.next_ticket();
-        let Some(oracle_id) = self.card().and_then(|c| c.scryfall_data.oracle_id) else {
+        let Some(oracle_id) = self.loaded().and_then(|c| c.scryfall_data.oracle_id) else {
             self.stats = CardStats::Loaded(HttpCardStats::default());
             return Vec::new();
         };
@@ -485,29 +668,57 @@ impl State {
     /// Opens the asked-for Send to, once, when one card shows. On a list the ask waits for the
     /// pick ([`Action::Pick`]), which carries it to that card's printing.
     fn send_if_asked(&mut self) -> Vec<Effect> {
-        if !self.send_pending || matches!(self.shown, Shown::Loading | Shown::Several(_)) {
+        if !self.send_pending
+            || matches!(self.shown, Shown::Loading | Shown::Several(_))
+            || matches!(self.pick, Pick::Wanted(_))
+        {
             return Vec::new();
         }
         self.send_pending = false;
         let Some(card) = self.card().cloned() else {
             return Vec::new();
         };
-        vec![Effect::OpenSendTo(Box::new(card))]
+        vec![self.open_send_to(card)]
     }
 
     /// The route the screen is on, asking for Send to when `send`. A name that isn't a slug has
     /// no route to come back to.
     fn route(&self, send: bool) -> Option<Destination> {
+        let printing = self.printing();
         match self.open.as_ref()? {
             Open::Named { slug } => Some(Destination::Named {
                 slug: slug.parse().ok()?,
                 send,
+                printing,
             }),
             Open::Printing { slug, id } => Some(Destination::Printing {
                 slug: slug.clone(),
                 id: *id,
                 send,
+                printing,
             }),
+        }
+    }
+
+    /// The Scryfall id of the printing picked or wanted over the loaded card, for the route.
+    fn printing(&self) -> Option<Uuid> {
+        match &self.pick {
+            Pick::Loaded => None,
+            Pick::Wanted(id) => Some(*id),
+            Pick::Shown(card) => Some(card.scryfall_data.id),
+        }
+    }
+
+    /// Whether a picked printing shows in the loaded card's place.
+    fn picked(&self) -> bool {
+        matches!(self.pick, Pick::Shown(_))
+    }
+
+    /// The card the route loaded, when one did.
+    fn loaded(&self) -> Option<&Card> {
+        match &self.shown {
+            Shown::One(card) => Some(card),
+            Shown::Loading | Shown::Several(_) | Shown::NotFound | Shown::Failed => None,
         }
     }
 
@@ -516,6 +727,7 @@ impl State {
     pub fn status(&self) -> Status {
         match self.shown {
             Shown::Loading => Status::Loading,
+            Shown::One(_) if matches!(self.pick, Pick::Wanted(_)) => Status::Loading,
             Shown::One(_) => Status::One,
             Shown::Several(_) => Status::Several,
             Shown::NotFound => Status::NotFound,
@@ -529,12 +741,13 @@ impl State {
         self.stats
     }
 
-    /// The card, when one shows.
+    /// The card, when one shows: the printing picked, else the card the route loaded.
     #[must_use]
     pub fn card(&self) -> Option<&Card> {
-        match &self.shown {
-            Shown::One(card) => Some(card),
-            Shown::Loading | Shown::Several(_) | Shown::NotFound | Shown::Failed => None,
+        match &self.pick {
+            Pick::Loaded => self.loaded(),
+            Pick::Wanted(_) => None,
+            Pick::Shown(card) => Some(card),
         }
     }
 
@@ -593,6 +806,12 @@ fn named_matches(cards: Vec<Card>, slug: &str) -> Vec<Card> {
     if full.is_empty() { fronts } else { full }
 }
 
+/// Whether `printing` is a printing of `card`: the same Oracle id.
+fn same_card(card: &Card, printing: &Card) -> bool {
+    card.scryfall_data.oracle_id.is_some()
+        && card.scryfall_data.oracle_id == printing.scryfall_data.oracle_id
+}
+
 /// The slug segment of `card`'s printing link ([`slug::printing_path`]'s).
 fn own_printing_slug(card: &Card) -> String {
     slug::card_slug(&card.scryfall_data.name)
@@ -604,11 +823,12 @@ fn link_copied() -> Toast {
     Toast::new(ToastKind::Info, LINK_COPIED, crate::toast::QUICK).carried()
 }
 
-/// The link Share copies for `card`, opened as `open`.
-fn share_link(open: &Open, card: &Card) -> String {
+/// The link Share copies for `card`, opened as `open`: the printing's link when `picked` over
+/// the card.
+fn share_link(open: &Open, card: &Card, picked: bool) -> String {
     let name = &card.scryfall_data.name;
     match (open, slug::card_slug(name)) {
-        (Open::Named { .. }, Some(own)) => slug::card_url(&own),
+        (Open::Named { .. }, Some(own)) if !picked => slug::card_url(&own),
         _ => slug::printing_url(name, card.scryfall_data.id),
     }
 }

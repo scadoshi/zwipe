@@ -18,7 +18,9 @@
 //! top one instead, armed or not, and the guard only asks once nothing is
 //! open. One closed another way takes its entry back out. An overlay with no
 //! entry of its own, such as one open as the screen showed, still closes on a
-//! back, which puts the screen's URL back.
+//! back, which puts the screen's URL back. A route replaced while overlays own
+//! entries, such as a pick a sheet writes into the URL, lands on each entry
+//! the browser comes back to as they close.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -91,6 +93,9 @@ struct Guard {
     steps: Cell<OverlaySteps>,
     /// How many open overlays a route's entry stands for ([`RouteOverlays`]).
     route_overlays: Cell<usize>,
+    /// A route replaced while overlays owned entries, put on each entry a closing overlay's pop
+    /// comes back to until none is owned.
+    replaced_under: RefCell<Option<String>>,
 }
 
 thread_local! {
@@ -176,6 +181,24 @@ fn close_overlay_on_pop() -> bool {
     let shown = GUARD.with(|g| g.shown.borrow().clone());
     inner.push(shown);
     true
+}
+
+/// After a pop that took an overlay's entry out, puts a route replaced while it was open on the
+/// entry the browser came back to.
+fn carry_replace_down() {
+    GUARD.with(|g| {
+        let Some(path) = g.replaced_under.borrow().clone() else {
+            return;
+        };
+        if let Some(inner) = g.inner.borrow().as_ref()
+            && inner.current_route() != path
+        {
+            inner.replace(path);
+        }
+        if g.steps.get().owned() == 0 {
+            *g.replaced_under.borrow_mut() = None;
+        }
+    });
 }
 
 /// Runs `f` on the overlays' history entries.
@@ -358,6 +381,7 @@ impl History for GuardedHistory {
         if route == self.inner.current_route() || !hold(Held::Push(route.clone())) {
             if route != self.inner.current_route() {
                 with_steps(OverlaySteps::route_moved);
+                GUARD.with(|g| *g.replaced_under.borrow_mut() = None);
             }
             self.inner.push(route.clone());
             show(route);
@@ -368,6 +392,10 @@ impl History for GuardedHistory {
     fn replace(&self, path: String) {
         if !hold(Held::Replace(path.clone())) {
             self.inner.replace(path.clone());
+            GUARD.with(|g| {
+                let owned = g.steps.get().owned() > 0;
+                *g.replaced_under.borrow_mut() = owned.then(|| path.clone());
+            });
             show(path);
             fresh_build::after_move();
         }
@@ -379,7 +407,11 @@ impl History for GuardedHistory {
 
     fn updater(&self, callback: Arc<dyn Fn() + Send + Sync>) {
         self.inner.updater(Arc::new(move || {
-            if pop_overlay_step() || close_overlay_on_pop() || undo_pop() {
+            if pop_overlay_step() {
+                carry_replace_down();
+                return;
+            }
+            if close_overlay_on_pop() || undo_pop() {
                 return;
             }
             show_current();
@@ -720,6 +752,33 @@ mod tests {
         );
         assert!(undo_pop(), "the guard holds the next back");
         arm(None);
+    }
+
+    #[test]
+    fn a_route_replaced_under_an_open_sheet_stays_once_the_sheet_closes() {
+        let inner: Rc<dyn History> = Rc::new(MemoryHistory::with_initial_path("/card/sol-ring"));
+        let guarded = GuardedHistory::new(Rc::clone(&inner));
+        let opened = with_steps(|steps| steps.follow(1));
+        assert_eq!(opened, Some(StepMove::Push(1)), "the sheet owns an entry");
+        inner.push("/card/sol-ring".to_owned());
+
+        guarded.replace("/card/sol-ring?printing=1".to_owned());
+        let closed = with_steps(|steps| steps.follow(0));
+        assert_eq!(
+            closed,
+            Some(StepMove::Back(1)),
+            "the sheet closes on its pick"
+        );
+        inner.go_back();
+        assert!(pop_overlay_step(), "the page's own pop");
+        carry_replace_down();
+
+        assert_eq!(inner.current_route(), "/card/sol-ring?printing=1");
+        assert!(
+            GUARD.with(|g| g.replaced_under.borrow().is_none()),
+            "nothing left to carry"
+        );
+        GUARD.with(|g| g.steps.set(OverlaySteps::default()));
     }
 
     #[test]

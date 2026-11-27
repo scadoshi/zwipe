@@ -37,6 +37,7 @@ fn a_wide_pane_s_panel_offers_send_to_where_the_page_does() {
         use_context_provider(|| SendTo {
             open: Signal::new(false),
             card: Signal::new(None),
+            picked: Signal::new(false),
         });
         rsx! { CardDetailsPanel { card: card() } }
     });
