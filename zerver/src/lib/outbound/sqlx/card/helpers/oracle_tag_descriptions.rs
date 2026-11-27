@@ -18064,10 +18064,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "idempotent",
         "Cards whose effect adds nothing more once one copy is out, like granting a keyword your creatures already have.",
     ),
-    (
-        "gives-mutate",
-        "Gives other creature cards mutate.",
-    ),
+    ("gives-mutate", "Gives other creature cards mutate."),
 ];
 
 /// Flatten [`ORACLE_TAG_DESCRIPTIONS`] into parallel `(slug, description)` arrays
