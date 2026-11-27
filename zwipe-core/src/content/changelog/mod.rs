@@ -50,6 +50,15 @@ pub const UPCOMING: &[Release] = &[];
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
     Release {
+        version: Version::new(1, 27, 0),
+        date: NaiveDate::from_ymd_opt(2026, 11, 27),
+        entries: &[
+            "Pick a printing in a card's Printings, and Send to sends that printing",
+            "On the web, a card's page on a wide window scrolls as one page, with the whole card always in view",
+            "Two new Oracle tags have descriptions",
+        ],
+    },
+    Release {
         version: Version::new(1, 26, 2),
         date: NaiveDate::from_ymd_opt(2026, 11, 23),
         entries: &[
