@@ -59,6 +59,8 @@ pub const RELEASES: &[Release] = &[
             "A card's page shows the card alone, with its details behind the eye as on the swipe screens",
             "On a narrow screen, a card's details fit its text and a long card's reach down over the buttons below",
             "A card opened in a deck ends with its stats, folded",
+            "Every card list's rows end with the card's stats, folded",
+            "On the web, every panel lifts on hover the same way, a panel inside another lifts alone, and no hovered border gets cut off",
             "Two new Oracle tags have descriptions",
         ],
     },
