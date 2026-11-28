@@ -62,6 +62,7 @@ pub const RELEASES: &[Release] = &[
             "Every card list's rows end with the card's stats, folded",
             "On the web, every panel lifts on hover the same way, a panel inside another lifts alone, and no hovered border gets cut off",
             "Two new Oracle tags have descriptions",
+            "A new account's Activity numbers settle on zero instead of loading forever",
         ],
     },
     Release {
