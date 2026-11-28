@@ -7,6 +7,24 @@
     transition: none !important;
 }
 
+/* A left-edge drawer's drag indicator stands on its right edge, inside,
+   at every width, so whatever scrolls in it keeps its scrollbar clear of
+   the indicator: the scroller ends a gap short of the edge and takes the
+   gap back from its own padding, its text where it was. */
+.sheet-form-drawer > .bottom-sheet.drawer-every-width.drawer-left {
+    --drawer-handle-clear: 1rem;
+}
+
+.sheet-form-drawer > .bottom-sheet.drawer-every-width.drawer-left:not(.card-details-drawer) > .sheet-content {
+    margin-right: var(--drawer-handle-clear);
+    padding-right: max(0px, calc(var(--panel-pad) - var(--drawer-handle-clear)));
+}
+
+.sheet-form-drawer > .bottom-sheet.drawer-every-width.drawer-left .card-details-panel > .panel-body {
+    margin-right: calc(-1 * var(--panel-pad) + var(--drawer-handle-clear));
+    padding-right: max(0px, calc(var(--panel-pad) - var(--drawer-handle-clear)));
+}
+
 /* A drawer at every width (DrawerSheet's `every_width`). Above the kit's
    breakpoint it is the kit's drawer. Below it the drawer floats along the
    right edge, one gap in from the top (under the status bar and the

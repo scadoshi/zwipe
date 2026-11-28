@@ -25,9 +25,13 @@ fn a_drawer_on_the_left_edge_mirrors_the_right_and_pulls_left() {
     assert_eq!(DrawerEdge::Left.pull(), orangui::Pull::Left);
     assert_eq!(DrawerEdge::Right.pull(), orangui::Pull::Right);
     let rule = ".sheet-form-drawer > .bottom-sheet.drawer-every-width.drawer-left {";
-    let at = FILTER
-        .find(rule)
-        .unwrap_or_else(|| panic!("no rule {rule}"));
+    let media = FILTER
+        .find("@media (max-width: 59.99rem) {")
+        .expect("the floating drawer's media block");
+    let at = FILTER.get(media..).and_then(|s| s.find(rule)).map_or_else(
+        || panic!("no rule {rule} in the floating drawer's block"),
+        |i| media + i,
+    );
     let body = FILTER
         .get(at..)
         .and_then(|s| s.split('}').next())

@@ -94,10 +94,15 @@ mod tests {
             ".web-card-stats.web-swipe-stats",
         );
         assert!(column.contains("position: fixed"), "{column}");
-        assert!(column.contains("left: 1rem"), "{column}");
         assert!(
-            column.contains("width: var(--web-dock-panel-width)"),
-            "the details panel's width: {column}"
+            column.contains("left: calc(1rem - var(--web-dock-panel-reach))"),
+            "{column}"
+        );
+        assert!(
+            column.contains(
+                "width: calc(var(--web-dock-panel-width) + 2 * var(--web-dock-panel-reach))"
+            ),
+            "the details panel's width, with room for a lifted panel's outline: {column}"
         );
     }
 

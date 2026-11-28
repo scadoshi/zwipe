@@ -480,17 +480,24 @@ body {
 
 /* ---- Panel lift ----
 
-   zwipe.net's: under a mouse a panel takes the medium shadow and the
-   accent border, and rises 3px. The .web-main prefix outranks the kit's
-   `transition: border-color`, and an entrance animation fills backwards
-   only, so its end transform lets go of the lift. A panel in a sheet, a
-   dialog, a screen over the page or a docked details panel holds still.
-   One holding card rows, a sheet, a picker screen, a preview, a dock, a
-   heatmap (its floating tip) or a grid backdrop takes the shadow and
-   border but does not rise: a transform makes the panel the containing
-   block of the fixed overlays inside it. Any width with a mouse. */
+   zwipe.net's: under a mouse a panel, a card list's group among them,
+   takes the medium shadow and the accent border, and rises 3px. The
+   .web-main prefix outranks the kit's `transition: border-color`, and an
+   entrance animation fills backwards only, so its end transform lets go
+   of the lift. A panel in a sheet, a dialog, a screen over the page or a
+   docked details panel holds still. One holding card rows, a sheet, a
+   picker screen, a preview, a dock, a heatmap (its floating tip) or a grid
+   backdrop takes the shadow and border but does not rise: a transform
+   makes the panel the containing block of the fixed overlays inside it.
+   A panel whose inner panel is under the mouse keeps its shadow and
+   border but holds still, so only the inner one rises. A card's details
+   docked beside it and its stats panels lift wherever they show, in a
+   sheet or a screen over the page too; their columns keep room for the
+   lift (--web-dock-panel-reach). Any width with a mouse. */
 @media (hover: hover) {
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .card-group:not(.deck-group)),
+    .web-shell :is(.web-swipe-details, .web-examples-details) > .card-details-panel,
+    .web-shell :is(.web-card-stats, .card-details-stats) .deck-fold {
         transition:
             border-color 0.4s ease,
             min-height 0.3s ease,
@@ -498,18 +505,22 @@ body {
             box-shadow 0.4s ease;
     }
 
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold):is(.content-enter, .content-enter-delayed, .row-enter) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .card-group:not(.deck-group)):is(.content-enter, .content-enter-delayed, .row-enter) {
         animation-fill-mode: backwards;
     }
 
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog, .web-swipe-details, .web-examples-details) *) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .card-group:not(.deck-group)):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog, .web-swipe-details, .web-examples-details) *),
+    .web-shell :is(.web-swipe-details, .web-examples-details) > .card-details-panel:hover,
+    .web-shell :is(.web-card-stats, .card-details-stats) .deck-fold:hover {
         box-shadow: var(--shadow-md);
         border-color: var(--accent-primary);
     }
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog, .web-swipe-details, .web-examples-details) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .card-group:not(.deck-group)):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog, .web-swipe-details, .web-examples-details) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)):not(:has(:is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .card-group):hover)),
+    .web-shell :is(.web-swipe-details, .web-examples-details) > .card-details-panel:hover:not(:has(.deck-fold:hover)),
+    .web-shell :is(.web-card-stats, .card-details-stats) .deck-fold:hover {
         transform: translateY(-3px);
     }
 }
@@ -2087,12 +2098,14 @@ body {
 
     .web-swipe-details,
     .web-examples-details {
+        --web-dock-panel-reach: var(--space-2);
         position: fixed;
-        top: var(--web-dock-panel-top);
-        right: 1rem;
+        top: calc(var(--web-dock-panel-top) - var(--web-dock-panel-reach));
+        right: calc(1rem - var(--web-dock-panel-reach));
         z-index: 40;
-        width: var(--web-dock-panel-width);
-        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+        width: calc(var(--web-dock-panel-width) + 2 * var(--web-dock-panel-reach));
+        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) + var(--web-dock-panel-reach));
+        padding: var(--web-dock-panel-reach) var(--web-dock-panel-reach) 0;
         overflow-y: auto;
         overscroll-behavior: contain;
         border-radius: var(--panel-radius);
@@ -2109,7 +2122,7 @@ body {
     }
 
     .web-examples .web-examples-details {
-        max-height: calc(100% - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+        max-height: calc(100% - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) + var(--web-dock-panel-reach));
     }
 
     .web-details-hidden :is(.web-swipe-details, .web-examples-details) {
@@ -2161,17 +2174,20 @@ body {
    card fit side by side, the swipe screens stand the card's stats in a
    column at the left as the card page does: the details panel's mirror,
    inset as far from the left edge, as wide and as tall, ending above the
-   bottom row and scrolling inside itself. Narrower, the stats end the
+   bottom row and scrolling inside itself, with the same reach for its
+   panels' lift. Narrower, the stats end the
    card's details. */
 @media (min-width: 1280px) {
     .web-card-stats.web-swipe-stats {
+        --web-dock-panel-reach: var(--space-2);
         position: fixed;
-        top: var(--web-dock-panel-top);
-        left: 1rem;
+        top: calc(var(--web-dock-panel-top) - var(--web-dock-panel-reach));
+        left: calc(1rem - var(--web-dock-panel-reach));
         z-index: 40;
-        width: var(--web-dock-panel-width);
+        width: calc(var(--web-dock-panel-width) + 2 * var(--web-dock-panel-reach));
         max-width: none;
-        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) + var(--web-dock-panel-reach));
+        padding: var(--web-dock-panel-reach) var(--web-dock-panel-reach) 0;
         overflow-y: auto;
         overscroll-behavior: contain;
         box-sizing: border-box;
@@ -2180,7 +2196,7 @@ body {
     /* The examples' modal is the column's containing block, as it is the
        details panel's, so the column is capped to the modal's height. */
     .web-examples .web-card-stats.web-swipe-stats {
-        max-height: calc(100% - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+        max-height: calc(100% - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) + var(--web-dock-panel-reach));
     }
 }
 
@@ -2811,6 +2827,12 @@ body {
     .web-page.deck-page-wide {
         max-width: none;
     }
+
+    /* The foot's lists run their column, edge to edge with the panels
+       above them. */
+    .deck-foot > .settings-list {
+        max-width: none;
+    }
 }
 
 /* On a phone a shared deck's page, and its not-shared and failed notes, keep
@@ -3097,7 +3119,9 @@ body {
    once and nothing pulses, slides or drops in. An animation the code waits
    on to end runs for 1ms, so its animationend still comes. */
 @media (prefers-reduced-motion: reduce) {
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold),
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .card-group:not(.deck-group)),
+    .web-shell :is(.web-swipe-details, .web-examples-details) > .card-details-panel,
+    .web-shell :is(.web-card-stats, .card-details-stats) .deck-fold,
     .card-row.deck-row,
     .home-deck-tile-art > img,
     :is(.web-cards-swipe, .web-swipe-select-body, .web-examples-body) .web-swipe-stack {
