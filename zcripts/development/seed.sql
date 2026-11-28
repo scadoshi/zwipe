@@ -7,7 +7,8 @@
 --   zwipe.seed       a whole number for a different but repeatable world (default 42)
 --
 -- Every seeded account's email ends in @seed.zwipe.test, and seed_reset.sql
--- removes exactly those accounts and everything they own. It refuses to run
+-- removes exactly those accounts and everything they own, and takes their
+-- swipes back out of the pooled signal tables. It refuses to run
 -- while seeded accounts exist, so a second run never doubles them.
 --
 -- Cards come from the local catalog (latest_cards), so the card sync must have
@@ -153,7 +154,7 @@ JOIN s_commanders c
 ALTER TABLE s_decks
     ADD COLUMN id uuid, ADD COLUMN main int, ADD COLUMN maybe int, ADD COLUMN side int,
     ADD COLUMN stars int, ADD COLUMN start int, ADD COLUMN step int,
-    ADD COLUMN created_at timestamptz, ADD COLUMN shared bool;
+    ADD COLUMN created_at timestamptz, ADD COLUMN shared bool, ADD COLUMN skips int;
 UPDATE s_decks SET
     id = md5('zwipe-seed-deck-' || user_n || '-' || j)::uuid,
     -- An unverified account stays under its lower card limit.
@@ -165,7 +166,8 @@ UPDATE s_decks SET
     -- A prime past every pool's size, so start + i * step visits distinct cards.
     step = (ARRAY[2503, 2521, 2531, 2539, 2543])[pg_temp.pick(11, deck_no, 1, 5)],
     created_at = user_created_at + make_interval(days => pg_temp.pick(12, deck_no, 0, 60)),
-    shared = pg_temp.rnd(13, deck_no) < 0.10;
+    shared = pg_temp.rnd(13, deck_no) < 0.10,
+    skips = pg_temp.pick(18, deck_no, 20, 60);
 
 INSERT INTO decks (id, name, commander_id, format, user_id, created_at, updated_at, share_token)
 SELECT id,
@@ -214,9 +216,37 @@ CROSS JOIN LATERAL generate_series(0, pg_temp.pick(16, u.n, 0, 5) - 1) AS k
 JOIN s_commanders c
   ON c.pos = (pg_temp.pick(17, u.n, 0, 1499) + k * 1511) % (SELECT count(*) FROM s_commanders);
 
+-- Each account's lifetime count of decks created, as zerver keeps it.
+INSERT INTO user_lifetime_counters (user_id, decks_created)
+SELECT user_id, count(*)::int FROM s_decks GROUP BY user_id;
+
+-- What the numbered accounts swiped building their decks (the first 2,000 at
+-- load size): each deck walks its commander's pool in the order its cards came
+-- from, so every card it holds was swiped right (a maybeboard card up), and the
+-- cards the walk passes next were skipped. seed_pools.sql adds these to the
+-- pooled tables the card stats read.
+INSERT INTO user_card_signal (user_id, commander_oracle_id, card_oracle_id,
+                              shown, added, skipped, maybed, removed, updated_at)
+SELECT d.user_id, d.commander_oracle, p.oracle_id,
+       count(*),
+       count(*) FILTER (WHERE i < d.main OR (i >= d.main + d.maybe AND i < d.main + d.maybe + d.side)),
+       count(*) FILTER (WHERE i >= d.main + d.maybe + d.side),
+       count(*) FILTER (WHERE i >= d.main AND i < d.main + d.maybe),
+       0,
+       max(d.created_at)
+FROM s_decks d
+JOIN s_users u ON u.id = d.user_id
+JOIN s_pool_size ps ON ps.mask = d.mask
+CROSS JOIN LATERAL generate_series(0, LEAST(d.main + d.maybe + d.side + d.skips, ps.size) - 1) AS i
+JOIN s_pool p ON p.mask = d.mask AND p.pos = (d.start + i::bigint * d.step) % ps.size
+WHERE u.n BETWEEN 1 AND 2000
+  AND p.oracle_id <> d.commander_oracle
+GROUP BY d.user_id, d.commander_oracle, p.oracle_id;
+
 SELECT (SELECT count(*) FROM s_users) AS users,
        (SELECT count(*) FROM s_decks) AS decks,
        (SELECT count(*) FROM deck_cards dc JOIN s_decks d ON d.id = dc.deck_id) AS deck_cards,
-       (SELECT count(*) FROM s_decks WHERE shared) AS shared_decks;
+       (SELECT count(*) FROM s_decks WHERE shared) AS shared_decks,
+       (SELECT count(*) FROM user_card_signal ucs JOIN s_users u ON u.id = ucs.user_id) AS swipe_rows;
 
 COMMIT;

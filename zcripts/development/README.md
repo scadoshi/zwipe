@@ -12,7 +12,7 @@ Everything for running zwipe on your own machine: setting the machine up, fillin
 | `up.sh`, `down.sh` | Start and stop the local stack |
 | `stack_common.sh` | What `up.sh` and `down.sh` share: ports, work dir, which database to copy |
 | `drive.mjs`, `login.json` | Drive Chrome for the verify skill, and the sign-in steps it replays |
-| `seed.sh` | Seed a local database, running `seed.sql` (the accounts, decks and cards) and `seed_reset.sql` (removes them) |
+| `seed.sh` | Seed a local database, running `seed.sql` (the accounts, decks, cards and their swipes), `seed_activity.sql` for `seed_tester`, `seed_pools.sql` (the pooled card signal) and `seed_reset.sql` (removes them all) |
 | `seed_activity.sh`, `seed_activity.sql` | Give one account a busy year of Activity |
 | `guard.sh` | Refuses any database that isn't on this machine; every seed script runs it first |
 | `stack_common_test.sh`, `drive_test.sh`, `guard_test.sh`, `seed_stdin_test.sh` | Tests for the scripts above; run them after changing one |
@@ -49,6 +49,6 @@ DATABASE_URL=postgres://zwipe@localhost:5432/zwipe zcripts/development/seed.sh s
 - `--reset` removes every seeded account first; `reset` alone removes them and stops. A run without it refuses while seeded accounts exist.
 - A whole number at the end picks a different world; the same number always gives the same rows. The default is 42.
 
-Seeded emails end in `@seed.zwipe.test` and every password is `Seedling.Local.42`, made up for local databases only. The accounts are `seed_tester` (12 decks), `seed_newbie` (none), `seed_unverified` (unverified, two small decks) and `seed_000001` on. `seed_activity.sh` gives one account a busy year of Activity.
+Seeded emails end in `@seed.zwipe.test` and every password is `Seedling.Local.42`, made up for local databases only. The accounts are `seed_tester` (12 decks), `seed_newbie` (none), `seed_unverified` (unverified, two small decks) and `seed_000001` on. `seed_tester` gets a busy year of Activity, and the numbered accounts the swipes that built their decks (the first 2,000 at load size), all summed into the pooled tables, so the card stats and Most skipped have numbers. `seed_activity.sh` gives any other account a year too.
 
 `guard.sh` is what refuses any database that isn't on this machine: the URL, every `host=` and `PGHOST` must be a local socket or localhost, and `hostaddr=`, `service=`, a percent-encoded keyword, `PGHOSTADDR` and `PGSERVICE` are refused outright. The seed scripts hand `psql` their SQL over stdin, so a `psql` inside a Postgres container works too.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Checks that seed.sh and seed_activity.sh hand psql their SQL over stdin, with their settings as SET
+# Checks that seed.sh (with the year and the pools it adds) and seed_activity.sh hand psql their SQL over stdin, with their settings as SET
 # lines quoted through psql variables, so they work with a psql that runs in a container and sees
 # neither the host's files nor its environment.
 # Usage: zcripts/development/seed_stdin_test.sh
@@ -46,6 +46,10 @@ check "seed.sh passes the seed as a psql variable" 'grep -qx "seed=7" "$calls/2.
 check "seed.sh sets the size first" 'head -n 2 "$calls/2.stdin" | grep -qx "SET zwipe.seed_size = :'"'"'seed_size'"'"';"'
 check "seed.sh sets the seed first" 'head -n 2 "$calls/2.stdin" | grep -qx "SET zwipe.seed = :'"'"'seed'"'"';"'
 check "seed.sh sends seed.sql after the settings" 'tail -n +3 "$calls/2.stdin" | cmp -s - "$DIR/seed.sql"'
+check "seed.sh gives seed_tester its year" 'grep -qx "seed_user=seed_tester" "$calls/3.args"'
+check "seed.sh seeds the year from the world's seed" 'grep -qx "seed=0.007" "$calls/3.args"'
+check "seed.sh sends seed_activity.sql after its settings" 'tail -n +3 "$calls/3.stdin" | cmp -s - "$DIR/seed_activity.sql"'
+check "seed.sh fills the pools last" 'cmp -s "$calls/4.stdin" "$DIR/seed_pools.sql"'
 
 [ "$(run "$DIR/seed_activity.sh" "o'brien" 0.5)" = 0 ] || { echo "FAIL: seed_activity.sh exited nonzero" >&2; failures=$((failures + 1)); }
 check "seed_activity.sh passes the account as a psql variable" 'grep -qx "seed_user=o'"'"'brien" "$calls/1.args"'

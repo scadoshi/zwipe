@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Seeds accounts, decks and deck cards on a LOCAL database for testing a branch
-# before it merges. Refuses any database that isn't on this machine.
+# Seeds accounts, decks, deck cards and swipes on a LOCAL database for testing
+# a branch before it merges: seed_tester gets a busy year of activity, the
+# numbered accounts the swipes that built their decks, and the pooled signal
+# tables the sum of them all. Refuses any database that isn't on this machine.
 #
 # Usage: DATABASE_URL=postgres://user@localhost:5432/zwipe zcripts/development/seed.sh <small|load|reset> [--reset] [seed]
 #   small    the three test accounts and 40 users
@@ -41,3 +43,13 @@ fi
   echo "SET zwipe.seed = :'seed';"
   cat "$DIR/seed.sql"
 } | psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -v seed_size="$SIZE" -v seed="$SEED"
+
+# seed_tester's year, its random generator seeded from the world's seed.
+ACTIVITY_SEED="$(printf '0.%03d' $((SEED % 1000)))"
+{
+  echo "SET zwipe.seed_user = :'seed_user';"
+  echo "SET zwipe.seed = :'seed';"
+  cat "$DIR/seed_activity.sql"
+} | psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -v seed_user=seed_tester -v seed="$ACTIVITY_SEED"
+
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q < "$DIR/seed_pools.sql"
