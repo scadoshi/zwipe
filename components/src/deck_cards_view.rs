@@ -25,8 +25,8 @@ use zwipe_ui::deck_cards::{Group, columns};
 
 use crate::keys::STACK_DETAILS_CLASS;
 use crate::{
-    CardDetailsSheet, CardEdit, CardRow, CardStack, CartButton, Chip, DeckBand, DeckGroupSection,
-    DeckSection, DrawerEdge, GroupBuy, StackCard, TailPlace, group_tail,
+    CardDetailsSheet, CardEdit, CardRow, CardStack, CardStatsFolds, CartButton, Chip, DeckBand,
+    DeckGroupSection, DeckSection, DrawerEdge, GroupBuy, StackCard, TailPlace, group_tail,
 };
 
 /// The deck's edits, each taking the card's id: a quantity change by a step, a move to a board,
@@ -607,7 +607,8 @@ fn row_actions(
 /// One listed row as a selectable [`CardRow`], with the edits its kind allows when the host
 /// passes `actions`, and the host's buttons from `host`. It reads whether
 /// it is the open row and the face it shows through memos of its own, so a change to one row
-/// renders that row alone. A click on it shows its front.
+/// renders that row alone. A click on it shows its front. Opened, its details end with the card's
+/// stats.
 #[component]
 pub fn DeckRow(
     row: RowInfo,
@@ -668,6 +669,7 @@ pub fn DeckRow(
                     card,
                     qty,
                     expanded_card: selected,
+                    stats: true,
                     show_art: show_art.map(|on| on()),
                     on_image,
                     on_face_change: move |next: usize| {
@@ -926,7 +928,8 @@ if (window.__zwStacksWidth) { window.__zwStacksWidth.disconnect(); delete window
 /// then, with `actions`, the quantity stepper and the star, then the board moves. `boards`
 /// holds each card's board, the main board for one it lacks. It shows the
 /// [`Reveal::drawn`] card and is mounted, closed, on the first row before any click, so it slides
-/// in and out; nothing when the list is empty.
+/// in and out; nothing when the list is empty. Its body ends with the card's stats, every fold
+/// shut at first, fetched as it opens.
 #[component]
 pub fn DeckStackDrawer(
     rows: Vec<RowInfo>,
@@ -1001,6 +1004,7 @@ pub fn DeckStackDrawer(
         current_board: board,
         on_move_to,
     });
+    let stats_card = card.clone();
     rsx! {
         CardDetailsSheet {
             open: details_open,
@@ -1015,6 +1019,11 @@ pub fn DeckStackDrawer(
             },
             describe_tag,
             on_examples,
+            body_end: rsx! {
+                div { class: "card-details-stats",
+                    CardStatsFolds { card: stats_card, active: details_open() }
+                }
+            },
             edge: match side() {
                 Side::Left => DrawerEdge::Left,
                 Side::Right => DrawerEdge::Right,

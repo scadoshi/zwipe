@@ -200,3 +200,75 @@ fn a_failed_fetch_offers_retry() {
         "shown anew, a failure asks again: {html}"
     );
 }
+
+/// The fixture's row, opened, ending with the stats when `stats`.
+fn opened_row(stats: bool) -> Element {
+    let asked = use_signal(Vec::new);
+    provide(Some(CardStats::Loaded(counts())), asked);
+    let expanded = use_signal(|| Some(card().scryfall_data.id));
+    rsx! {
+        components::CardRow {
+            card: card(),
+            qty: 1,
+            expanded_card: expanded,
+            on_image: None,
+            on_face_change: None,
+            on_qty_change: None,
+            on_move_to: None,
+            current_board: None,
+            on_printing: None,
+            mvp: None,
+            on_toggle_mvp: None,
+            on_hover_enter: None,
+            on_hover_leave: None,
+            stats,
+        }
+    }
+}
+
+#[test]
+fn a_deck_s_opened_row_ends_with_the_folded_stats() {
+    let html = render(|| opened_row(true));
+    assert!(html.contains("card-details-stats"), "{html}");
+    assert_eq!(
+        html.matches("deck-fold folded").count(),
+        2,
+        "Decks and Swipes, shut: {html}"
+    );
+}
+
+#[test]
+fn a_row_elsewhere_shows_no_stats() {
+    let html = render(|| opened_row(false));
+    assert!(!html.contains("card-details-stats"), "{html}");
+}
+
+#[test]
+fn a_shut_row_asks_for_nothing() {
+    fn app() -> Element {
+        let asked = use_signal(Vec::new);
+        provide(None, asked);
+        let expanded = use_signal(|| None);
+        rsx! {
+            components::CardRow {
+                card: card(),
+                qty: 1,
+                expanded_card: expanded,
+                on_image: None,
+                on_face_change: None,
+                on_qty_change: None,
+                on_move_to: None,
+                current_board: None,
+                on_printing: None,
+                mvp: None,
+                on_toggle_mvp: None,
+                on_hover_enter: None,
+                on_hover_leave: None,
+                stats: true,
+            }
+            {asked_line(asked)}
+        }
+    }
+    let html = render(app);
+    assert!(html.contains(r#"<p class="asked">0</p>"#), "{html}");
+}

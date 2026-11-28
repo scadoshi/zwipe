@@ -134,6 +134,10 @@ pub fn CardRow(
     /// (default) keeps the plain qty.
     #[props(default)]
     qty_tags: Vec<String>,
+    /// Opt-in: the opened row's details end with the card's stats, every fold shut at first,
+    /// fetched as the row opens (a deck's rows).
+    #[props(default)]
+    stats: bool,
 ) -> Element {
     let card_id = card.scryfall_data.id;
     // A memo, so the other rows sharing `expanded_card` render again only
@@ -379,7 +383,16 @@ pub fn CardRow(
                     on_image,
                     on_face_change: Some(face_change),
                     face,
-                    footer,
+                    footer: if stats {
+                        Some(rsx! {
+                            {footer}
+                            div { class: "card-details-stats",
+                                crate::CardStatsFolds { card: card.clone(), active: is_expanded }
+                            }
+                        })
+                    } else {
+                        footer
+                    },
                     has_actions: has_slot_actions,
                     actions: rsx! {
                         if send_to {
