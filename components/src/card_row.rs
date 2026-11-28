@@ -134,12 +134,13 @@ pub fn CardRow(
     /// (default) keeps the plain qty.
     #[props(default)]
     qty_tags: Vec<String>,
-    /// Opt-in: the opened row's details end with the card's stats, every fold shut at first,
-    /// fetched as the row opens (a deck's rows).
-    #[props(default)]
+    /// The opened row's details end with the card's stats, every fold shut at first, fetched as
+    /// the row opens. On by default; a host with no [`crate::CardStatsSource`] shows none.
+    #[props(default = true)]
     stats: bool,
 ) -> Element {
     let card_id = card.scryfall_data.id;
+    let stats = stats && try_use_context::<crate::CardStatsSource>().is_some();
     // A memo, so the other rows sharing `expanded_card` render again only
     // when their own open state flips.
     let is_expanded = use_memo(use_reactive!(|card_id| expanded_card() == Some(card_id)))();

@@ -201,34 +201,56 @@ fn a_failed_fetch_offers_retry() {
     );
 }
 
-/// The fixture's row, opened, ending with the stats when `stats`.
-fn opened_row(stats: bool) -> Element {
+/// The fixture's row, opened, under a stats source when `sourced`, with its `stats` prop left
+/// at its default or set.
+fn opened_row(sourced: bool, stats: Option<bool>) -> Element {
     let asked = use_signal(Vec::new);
-    provide(Some(CardStats::Loaded(counts())), asked);
+    if sourced {
+        provide(Some(CardStats::Loaded(counts())), asked);
+    }
     let expanded = use_signal(|| Some(card().scryfall_data.id));
-    rsx! {
-        components::CardRow {
-            card: card(),
-            qty: 1,
-            expanded_card: expanded,
-            on_image: None,
-            on_face_change: None,
-            on_qty_change: None,
-            on_move_to: None,
-            current_board: None,
-            on_printing: None,
-            mvp: None,
-            on_toggle_mvp: None,
-            on_hover_enter: None,
-            on_hover_leave: None,
-            stats,
-        }
+    match stats {
+        Some(stats) => rsx! {
+            components::CardRow {
+                card: card(),
+                qty: 1,
+                expanded_card: expanded,
+                on_image: None,
+                on_face_change: None,
+                on_qty_change: None,
+                on_move_to: None,
+                current_board: None,
+                on_printing: None,
+                mvp: None,
+                on_toggle_mvp: None,
+                on_hover_enter: None,
+                on_hover_leave: None,
+                stats,
+            }
+        },
+        None => rsx! {
+            components::CardRow {
+                card: card(),
+                qty: 1,
+                expanded_card: expanded,
+                on_image: None,
+                on_face_change: None,
+                on_qty_change: None,
+                on_move_to: None,
+                current_board: None,
+                on_printing: None,
+                mvp: None,
+                on_toggle_mvp: None,
+                on_hover_enter: None,
+                on_hover_leave: None,
+            }
+        },
     }
 }
 
 #[test]
-fn a_deck_s_opened_row_ends_with_the_folded_stats() {
-    let html = render(|| opened_row(true));
+fn every_opened_row_ends_with_the_folded_stats() {
+    let html = render(|| opened_row(true, None));
     assert!(html.contains("card-details-stats"), "{html}");
     assert_eq!(
         html.matches("deck-fold folded").count(),
@@ -238,8 +260,14 @@ fn a_deck_s_opened_row_ends_with_the_folded_stats() {
 }
 
 #[test]
-fn a_row_elsewhere_shows_no_stats() {
-    let html = render(|| opened_row(false));
+fn a_row_that_opts_out_shows_no_stats() {
+    let html = render(|| opened_row(true, Some(false)));
+    assert!(!html.contains("card-details-stats"), "{html}");
+}
+
+#[test]
+fn a_row_with_no_stats_source_shows_no_stats() {
+    let html = render(|| opened_row(false, None));
     assert!(!html.contains("card-details-stats"), "{html}");
 }
 
@@ -264,7 +292,6 @@ fn a_shut_row_asks_for_nothing() {
                 on_toggle_mvp: None,
                 on_hover_enter: None,
                 on_hover_leave: None,
-                stats: true,
             }
             {asked_line(asked)}
         }

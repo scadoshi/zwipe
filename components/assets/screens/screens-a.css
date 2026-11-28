@@ -710,8 +710,9 @@
    (.search-float-results, e.g. the command-zone pickers) can escape the clip;
    the guard keyframes pin overflow to hidden for the open transition's 250ms
    (both endpoints hold the same discrete value), and the base rule above
-   clips the collapse. Same trick as the filter sheet's accordion. */
-.collapsible.open .collapsible-inner {
+   clips the collapse. Same trick as the filter sheet's accordion. Only its
+   own inner: a shut collapsible inside an open one stays clipped. */
+.collapsible.open > .collapsible-inner {
     overflow: visible;
     animation: collapsible-open-guard 0.25s ease;
 }

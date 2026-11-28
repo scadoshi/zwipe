@@ -82,7 +82,9 @@ pub fn SuggestionReasons(
                 }
                 {WHY}
             }
-            div { class: if reasons_open() { "collapsible open" } else { "collapsible" },
+            div {
+                class: if reasons_open() { "collapsible open" } else { "collapsible" },
+                inert: (!reasons_open()).then_some(true),
                 div { class: "collapsible-inner", {bullets} }
             }
         }

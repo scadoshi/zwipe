@@ -1295,7 +1295,8 @@ i.ms.ms-cost.ms-gp {
     gap: var(--space-3);
 }
 
-.card-details-body-end > * + .card-details-stats {
+.card-details-body-end > * + .card-details-stats,
+.card-details-host > * + .card-details-stats {
     margin-top: var(--space-4);
 }
 

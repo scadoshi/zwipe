@@ -669,7 +669,6 @@ pub fn DeckRow(
                     card,
                     qty,
                     expanded_card: selected,
-                    stats: true,
                     show_art: show_art.map(|on| on()),
                     on_image,
                     on_face_change: move |next: usize| {
