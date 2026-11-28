@@ -191,12 +191,18 @@ pub enum Action {
         /// When the server's copy was made, `None` when it did not say.
         made_at: Option<DateTime<Utc>>,
     },
-    /// The user's own counters arrived for the fetch holding `ticket`. A failed fetch keeps the figures waiting, so the client sends nothing.
+    /// The user's own counters arrived for the fetch holding `ticket`.
     MyCountsLoaded {
         /// The ticket from the [`Effect::FetchMyCounts`] this answers.
         ticket: Ticket,
         /// The user's own counters.
         figures: Figures,
+    },
+    /// The user's own counters fetch holding `ticket` failed. Figures already held stay; with
+    /// none, Only me settles on zeros, untagged, instead of rolling on.
+    MyCountsFailed {
+        /// The ticket from the [`Effect::FetchMyCounts`] this answers.
+        ticket: Ticket,
     },
     /// The playstyle summary arrived for the fetch holding `ticket`.
     PlayStyleLoaded {
@@ -273,7 +279,7 @@ pub enum Effect {
     FetchSettings,
     /// Fetches everybody's counters, stores them, and answers with [`Action::CountsLoaded`] carrying this ticket. A failure only logs.
     FetchCounts(Ticket),
-    /// Fetches the user's own counters, stores them, and answers with [`Action::MyCountsLoaded`] carrying this ticket. A failure is reported without a toast.
+    /// Fetches the user's own counters, stores them, and answers with [`Action::MyCountsLoaded`] or [`Action::MyCountsFailed`] carrying this ticket. A failure is reported without a toast.
     FetchMyCounts(Ticket),
     /// Fetches the playstyle summary, stores it, and answers with [`Action::PlayStyleLoaded`] or [`Action::PlayStyleFailed`] carrying this ticket. A failure is reported without a toast.
     FetchPlayStyle(Ticket),
@@ -449,6 +455,7 @@ pub struct State {
     scope: Scope,
     everybody: Option<CachedFigures>,
     mine: Option<Figures>,
+    mine_failed: bool,
     play_style: Option<HttpPlayStyleSummary>,
     play_style_failed: bool,
     flavor: Option<FlavorCard>,
@@ -528,7 +535,11 @@ impl State {
             Action::MyCountsLoaded { ticket, figures } => {
                 if self.generations.my_counts.is_current(ticket) {
                     self.mine = Some(figures);
+                    self.mine_failed = false;
                 }
+            }
+            Action::MyCountsFailed { ticket } => {
+                self.mine_failed |= self.generations.my_counts.is_current(ticket);
             }
             Action::PlayStyleLoaded { ticket, summary } => {
                 if self.generations.play_style.is_current(ticket) {
@@ -683,12 +694,15 @@ impl State {
         self.scope
     }
 
-    /// The hero's three figures for the scope, each `None` while it loads.
+    /// The hero's three figures for the scope, each `None` while it loads. The user's own,
+    /// never fetched and failed, are zeros.
     #[must_use]
     pub fn figures(&self) -> Figures {
         match self.scope {
             Scope::Everybody => self.everybody.map(|e| e.figures),
-            Scope::OnlyMe => self.mine,
+            Scope::OnlyMe => self
+                .mine
+                .or_else(|| self.mine_failed.then_some(Figures::ZERO)),
         }
         .unwrap_or_default()
     }

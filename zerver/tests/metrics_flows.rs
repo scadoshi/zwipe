@@ -12,8 +12,9 @@
 
 use zwipe::inbound::http::handlers::metrics::get_public_metrics::PUBLIC_METRICS_CACHE;
 use zwipe_core::http::paths::{
-    DECK_ROUTE, DELETE_USER_ROUTE, PUBLIC_METRICS_ROUTE, RECORD_ANONYMOUS_EVENT_ROUTE,
-    RECORD_ANONYMOUS_SEARCH_ROUTE, RECORD_CRASH_ROUTE, RECORD_USAGE_ROUTE,
+    DECK_ROUTE, DELETE_USER_ROUTE, GET_MY_METRICS_ROUTE, PUBLIC_METRICS_ROUTE,
+    RECORD_ANONYMOUS_EVENT_ROUTE, RECORD_ANONYMOUS_SEARCH_ROUTE, RECORD_CRASH_ROUTE,
+    RECORD_USAGE_ROUTE,
 };
 mod common;
 
@@ -765,4 +766,35 @@ async fn a_signed_out_search_ignores_whatever_it_is_sent(pool: sqlx::PgPool) {
     .await
     .unwrap();
     assert_eq!(columns, ["id", "searches"], "only the count is kept");
+}
+
+#[sqlx::test]
+async fn an_account_without_a_counters_row_reads_as_zeros(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, user) = app.register("rowless").await;
+    let user_id: Uuid = user.parse().unwrap();
+    sqlx::query("DELETE FROM user_lifetime_counters WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    let (status, counts) = app.get(GET_MY_METRICS_ROUTE, Some(&token)).await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "no row is no counts, not missing: {counts}"
+    );
+    assert_eq!(counts["user_id"], user.as_str(), "{counts}");
+    for field in [
+        "swipes_right",
+        "swipes_left",
+        "swipes_up",
+        "swipes_down",
+        "searches",
+        "decks_created",
+        "decks_completed",
+    ] {
+        assert_eq!(counts[field], 0, "{field}: {counts}");
+    }
 }

@@ -99,6 +99,14 @@ impl Figures {
     /// The labels under the three figures, in order.
     pub const LABELS: [&'static str; 3] = ["Decks created", "Searches run", "Cards swiped"];
 
+    /// Every figure at zero: what counts that could not be fetched settle on, so they stop
+    /// rolling.
+    pub const ZERO: Self = Self {
+        decks_created: Some(0),
+        searches: Some(0),
+        cards_swiped: Some(0),
+    };
+
     /// The three values in the order of [`Figures::LABELS`].
     #[must_use]
     pub fn values(self) -> [Option<u64>; 3] {

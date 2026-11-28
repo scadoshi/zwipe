@@ -216,9 +216,11 @@ CROSS JOIN LATERAL generate_series(0, pg_temp.pick(16, u.n, 0, 5) - 1) AS k
 JOIN s_commanders c
   ON c.pos = (pg_temp.pick(17, u.n, 0, 1499) + k * 1511) % (SELECT count(*) FROM s_commanders);
 
--- Each account's lifetime count of decks created, as zerver keeps it.
+-- Each account's lifetime counters, which registration creates: its decks
+-- created, and zero for one with none.
 INSERT INTO user_lifetime_counters (user_id, decks_created)
-SELECT user_id, count(*)::int FROM s_decks GROUP BY user_id;
+SELECT u.id, (SELECT count(*)::int FROM s_decks d WHERE d.user_id = u.id)
+FROM s_users u;
 
 -- What the numbered accounts swiped building their decks (the first 2,000 at
 -- load size): each deck walks its commander's pool in the order its cards came

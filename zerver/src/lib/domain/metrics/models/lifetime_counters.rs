@@ -28,6 +28,25 @@ pub struct LifetimeCounters {
     pub updated_at: DateTime<Utc>,
 }
 
+impl LifetimeCounters {
+    /// The counters of an account that has counted nothing: every total zero, as of `at`.
+    /// What an account without a counters row reads as.
+    #[must_use]
+    pub fn zero(user_id: Uuid, at: DateTime<Utc>) -> Self {
+        Self {
+            user_id,
+            swipes_right: 0,
+            swipes_left: 0,
+            swipes_up: 0,
+            swipes_down: 0,
+            searches: 0,
+            decks_created: 0,
+            decks_completed: 0,
+            updated_at: at,
+        }
+    }
+}
+
 impl From<LifetimeCounters> for HttpLifetimeCounters {
     fn from(value: LifetimeCounters) -> Self {
         Self {

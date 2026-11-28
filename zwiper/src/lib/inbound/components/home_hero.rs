@@ -138,10 +138,15 @@ fn use_public_counts() -> (Option<HttpPublicMetrics>, Option<String>) {
 
 /// The signed-in user's counters from the cache above the router, fetched
 /// while `scope` is [`CountScope::JustMe`] and the copy is missing, another
-/// user's or older than `COUNTS_FRESH`. A failed fetch is only logged.
-fn use_my_counts(scope: Signal<CountScope>, screen: Screen) -> Option<HttpLifetimeCounters> {
+/// user's or older than `COUNTS_FRESH`, and whether the last fetch failed. A
+/// failed fetch is only logged.
+fn use_my_counts(
+    scope: Signal<CountScope>,
+    screen: Screen,
+) -> (Option<HttpLifetimeCounters>, bool) {
     let session: Signal<Option<Session>> = use_context();
     let mut cache: Signal<Option<CachedMyCounts>> = use_context();
+    let mut failed = use_signal(|| false);
     let authed = use_authed(screen);
     let user_id = session.peek().as_ref().map(|s| s.user.id);
     use_effect(move || {
@@ -168,14 +173,18 @@ fn use_my_counts(scope: Signal<CountScope>, screen: Screen) -> Option<HttpLifeti
                     metrics,
                     fetched_at: Instant::now(),
                 }));
+                failed.set(false);
+            } else {
+                failed.set(true);
             }
         });
     });
-    cache
+    let mine = cache
         .read()
         .as_ref()
         .filter(|c| Some(c.user_id) == user_id)
-        .map(|c| c.metrics.clone())
+        .map(|c| c.metrics.clone());
+    (mine, failed())
 }
 
 /// The three figures in the strip's order, `None` while a count is out.
@@ -294,14 +303,20 @@ pub fn HomeHeroScoped(
 #[component]
 pub fn MyCountsPanel(ready: bool) -> Element {
     let scope = use_signal(|| CountScope::JustMe);
-    let mine = use_my_counts(scope, Screen::Activity);
+    let (mine, failed) = use_my_counts(scope, Screen::Activity);
     let shown = mine.as_ref().filter(|_| ready);
     let live = shown.is_some();
+    // Counts that could not be fetched settle on zeros with the rest of the screen, untagged.
+    let strip = if shown.is_none() && ready && failed {
+        figures(Some(0), Some(0), Some(0))
+    } else {
+        my_figures(shown)
+    };
     rsx! {
         div { class: "home-hero activity-counts",
             Panel {
                 StatsStrip {
-                    figures: my_figures(shown),
+                    figures: strip,
                     compact: true,
                     source: rsx! {
                         if live {

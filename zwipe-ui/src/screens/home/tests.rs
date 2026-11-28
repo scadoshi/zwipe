@@ -305,6 +305,38 @@ fn only_me_shows_the_users_own_counts_once_they_arrive() {
 }
 
 #[test]
+fn only_me_settles_on_zeros_when_its_counts_fail() {
+    let (mut state, effects) = load(Cached {
+        scope: Scope::OnlyMe,
+        ..cold()
+    });
+    let ticket = ticket_of(&effects, my_counts_ticket);
+    let _ = state.update(Action::MyCountsFailed { ticket });
+    assert_eq!(state.figures(), Figures::ZERO, "settled, not rolling");
+    assert!(
+        !state.live(),
+        "zeros that were not fetched are not tagged Live"
+    );
+    assert_eq!(state.counts_tag(Utc::now()), None);
+}
+
+#[test]
+fn a_failure_after_counts_arrived_keeps_them() {
+    let (mut state, effects) = load(Cached {
+        scope: Scope::OnlyMe,
+        ..cold()
+    });
+    let ticket = ticket_of(&effects, my_counts_ticket);
+    let _ = state.update(Action::MyCountsLoaded {
+        ticket,
+        figures: figures(2),
+    });
+    let _ = state.update(Action::MyCountsFailed { ticket });
+    assert_eq!(state.figures(), figures(2), "the held counts stay");
+    assert!(state.live());
+}
+
+#[test]
 fn toggling_saves_the_scope_and_asks_for_mine_unless_fresh() {
     let (mut state, _) = load(cold());
     let effects = state.update(Action::ToggleScope {

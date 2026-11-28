@@ -82,7 +82,7 @@ pub trait MetricsRepository: Clone + Send + Sync + 'static {
         report: &HttpCrashReport,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
-    /// Fetches lifetime counters for a user.
+    /// Fetches lifetime counters for a user; a user with no counters row reads as zeros.
     fn lifetime_counters(
         &self,
         user_id: Uuid,
@@ -134,7 +134,7 @@ pub trait MetricsService: Clone + Send + Sync + 'static {
         batch: &HttpUsageBatch,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
-    /// Returns lifetime counters for the caller.
+    /// Returns lifetime counters for the caller; a caller with no counters row reads as zeros.
     fn lifetime_counters(
         &self,
         user_id: Uuid,

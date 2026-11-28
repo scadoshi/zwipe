@@ -3,6 +3,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::num::TryFromIntError;
 
+use chrono::Utc;
 use sqlx::query;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
@@ -943,7 +944,11 @@ impl MetricsRepository for Postgres {
         .await
         .map_err(db)?;
 
-        let row = row.ok_or(MetricsError::NotFound)?;
+        // An account whose row was never written (its signup's insert failed, or it was made
+        // outside registration) has counted nothing.
+        let Some(row) = row else {
+            return Ok(LifetimeCounters::zero(user_id, Utc::now()));
+        };
 
         Ok(LifetimeCounters {
             user_id: row.user_id,

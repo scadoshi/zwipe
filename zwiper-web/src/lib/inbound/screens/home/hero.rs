@@ -16,10 +16,12 @@ use crate::inbound::screens::auth::hero::{HeroPanel, strip_figures};
 
 /// The signed-in user's counters from the root's copy, fetched quietly while
 /// `scope` is `Only me` and the copy is missing, another user's or a minute
-/// old. Another user's copy is never returned.
-pub fn use_my_counts(scope: Signal<Scope>) -> Option<HttpLifetimeCounters> {
+/// old, and whether the last fetch failed. Another user's copy is never
+/// returned.
+pub fn use_my_counts(scope: Signal<Scope>) -> (Option<HttpLifetimeCounters>, bool) {
     let session: Signal<Option<Session>> = use_context();
     let mut cache: Signal<Option<CachedMyCounts>> = use_context();
+    let mut failed = use_signal(|| false);
     let authed = use_authed();
     let user_id = session.peek().as_ref().map(|s| s.user.id);
     use_effect(move || {
@@ -46,14 +48,18 @@ pub fn use_my_counts(scope: Signal<Scope>) -> Option<HttpLifetimeCounters> {
                     metrics,
                     fetched_at: Utc::now(),
                 }));
+                failed.set(false);
+            } else {
+                failed.set(true);
             }
         });
     });
-    cache
+    let mine = cache
         .read()
         .as_ref()
         .filter(|c| Some(c.user_id) == user_id)
-        .map(|c| c.metrics.clone())
+        .map(|c| c.metrics.clone());
+    (mine, failed())
 }
 
 /// Home's hero: the mark over everybody's or the user's own three
@@ -105,14 +111,20 @@ pub fn HomeHeroScoped(
 #[component]
 pub fn MyCountsPanel(ready: bool) -> Element {
     let scope = use_signal(|| Scope::OnlyMe);
-    let mine = use_my_counts(scope);
+    let (mine, failed) = use_my_counts(scope);
     let shown = mine.as_ref().filter(|_| ready);
     let live = shown.is_some();
+    // Counts that could not be fetched settle on zeros with the rest of the screen, untagged.
+    let figures = match shown {
+        Some(metrics) => Some(Figures::from(metrics)),
+        None if ready && failed => Some(Figures::ZERO),
+        None => None,
+    };
     rsx! {
         div { class: "home-hero activity-counts",
             Panel {
                 StatsStrip {
-                    figures: strip_figures(shown.map(Figures::from)),
+                    figures: strip_figures(figures),
                     compact: true,
                     source: rsx! {
                         if live {

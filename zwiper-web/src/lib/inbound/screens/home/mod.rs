@@ -264,7 +264,7 @@ impl Driver {
     }
 
     /// Fetches the user's own counters into the cache, reporting a failure
-    /// without a toast.
+    /// without a toast and to the model, which settles the figures.
     fn fetch_my_counts(self, ticket: Ticket) {
         let authed = self.authed;
         let mut my_counts = self.caches.my_counts;
@@ -283,6 +283,8 @@ impl Driver {
                     fetched_at: Utc::now(),
                 }));
                 self.dispatch(Action::MyCountsLoaded { ticket, figures });
+            } else {
+                self.dispatch(Action::MyCountsFailed { ticket });
             }
         });
     }
